@@ -156,7 +156,7 @@ export function BuildToolTile({
         active
           ? tone === 'neutral'
             ? 'bg-black/8 ring-1 ring-foreground/30 dark:bg-muted'
-            : 'bg-primary/10 ring-1 ring-primary/50'
+            : 'bg-selection-subtle ring-1 ring-selection'
           : 'bg-black/4 hover:bg-black/8 dark:bg-muted/40 dark:hover:bg-muted',
         className,
       )}

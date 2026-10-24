@@ -335,7 +335,7 @@ function LegacyItemsPanel({
                       className={cn(
                         'inline-flex cursor-pointer items-center gap-1 rounded-md py-0.5 pr-1.5 pl-2 font-medium text-xs capitalize transition-colors',
                         isActive
-                          ? 'bg-violet-500 text-white'
+                          ? 'bg-selection-strong text-selection-foreground'
                           : isEmpty
                             ? 'cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
@@ -350,7 +350,7 @@ function LegacyItemsPanel({
                         className={cn(
                           'text-[10px]',
                           isActive
-                            ? 'text-violet-200'
+                            ? 'text-selection-foreground/70'
                             : isEmpty
                               ? 'text-zinc-400 dark:text-zinc-600'
                               : 'text-zinc-500/70',

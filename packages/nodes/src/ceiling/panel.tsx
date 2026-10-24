@@ -373,13 +373,13 @@ export function CeilingPanel() {
                         }}
                       />
                     ) : isAutoHole ? (
-                      <div className="rounded-md bg-black/4 dark:bg-[#2C2C2E] px-2 py-1 text-[10px] text-muted-foreground">
+                      <div className="rounded-md bg-control px-2 py-1 text-[10px] text-muted-foreground">
                         Auto
                       </div>
                     ) : canEditHoles ? (
                       <>
                         <button
-                          className="flex h-7 w-7 items-center justify-center rounded-md bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground"
+                          className="flex h-7 w-7 items-center justify-center rounded-md bg-control text-muted-foreground hover:bg-control-hover hover:text-foreground"
                           onClick={() => handleEditHole(index)}
                           type="button"
                         >

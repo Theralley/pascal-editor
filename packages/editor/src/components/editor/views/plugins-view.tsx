@@ -243,7 +243,7 @@ function PluginDetail({
       aria-label={`${panel.label} details`}
       className={cn(
         'flex w-[360px] shrink-0 flex-col gap-5 overflow-y-auto border-border/60 border-l bg-sidebar p-5',
-        floating && 'absolute inset-y-0 right-0 z-10 max-w-full shadow-2xl',
+        floating && 'absolute inset-y-0 right-0 z-10 max-w-full shadow-elevation-4',
       )}
     >
       <div className="flex items-start gap-3.5">
@@ -643,7 +643,7 @@ export function PluginsView() {
 
       {undoEntry && (
         <div
-          className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-border bg-popover py-1.5 pr-1.5 pl-4 text-sm shadow-2xl"
+          className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-border bg-popover py-1.5 pr-1.5 pl-4 text-sm shadow-elevation-4"
           role="status"
         >
           <span>

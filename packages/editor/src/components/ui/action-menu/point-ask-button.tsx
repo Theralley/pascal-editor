@@ -25,8 +25,8 @@ export function PointAskButton() {
       className={cn(
         'group text-muted-foreground',
         active
-          ? 'bg-[#a99bff]/20 text-[#5d49df] dark:text-[#c9c1ff] dark:hover:text-accent-foreground'
-          : 'hover:bg-[#a99bff]/15 hover:text-[#5d49df] dark:hover:text-[#c9c1ff]',
+          ? 'bg-selection-subtle text-selection-text'
+          : 'hover:bg-selection-subtle hover:text-selection-text',
       )}
       data-guide-target="mode-point-ask"
       disabled={unavailable}

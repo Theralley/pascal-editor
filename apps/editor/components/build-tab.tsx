@@ -277,7 +277,7 @@ export function BuildTab() {
                         className={cn(
                           'rounded-lg px-2.5 py-2 text-left font-medium text-xs transition-colors',
                           active
-                            ? 'bg-primary/10 text-primary ring-1 ring-primary/50'
+                            ? 'bg-selection-subtle text-selection-text ring-1 ring-selection'
                             : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground',
                         )}
                         key={roofType.value}
@@ -330,7 +330,7 @@ export function BuildTab() {
                                 className={cn(
                                   'group relative flex aspect-square items-center justify-center rounded-xl p-1 transition-all duration-200',
                                   active
-                                    ? 'bg-primary/10 ring-1 ring-primary/50'
+                                    ? 'bg-selection-subtle ring-1 ring-selection'
                                     : 'bg-muted/40 opacity-70 grayscale hover:bg-muted hover:opacity-100 hover:grayscale-0',
                                 )}
                                 onClick={() => {
@@ -511,7 +511,7 @@ export function BuildTab() {
                             className={cn(
                               'group relative flex aspect-square items-center justify-center rounded-xl transition-all duration-200',
                               active
-                                ? 'bg-primary/10 ring-1 ring-primary/50'
+                                ? 'bg-selection-subtle ring-1 ring-selection'
                                 : 'bg-muted/40 opacity-70 grayscale hover:bg-muted hover:opacity-100 hover:grayscale-0',
                             )}
                             onClick={() => {
@@ -570,7 +570,7 @@ export function BuildTab() {
                     className={cn(
                       'flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200',
                       follow
-                        ? 'bg-primary/10 ring-1 ring-primary/50'
+                        ? 'bg-selection-subtle ring-1 ring-selection'
                         : 'bg-muted/40 hover:bg-muted',
                     )}
                     onClick={() => {

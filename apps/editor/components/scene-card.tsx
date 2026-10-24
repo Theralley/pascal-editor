@@ -93,7 +93,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
         </button>
         {menuOpen && (
           <div
-            className="absolute right-0 bottom-9 z-10 min-w-36 rounded-xl border border-border bg-popover p-1 text-sm shadow-2xl"
+            className="absolute right-0 bottom-9 z-10 min-w-36 rounded-xl border border-border bg-popover p-1 text-sm shadow-elevation-4"
             role="menu"
           >
             <button
@@ -153,7 +153,7 @@ function ModalFrame({
 }) {
   return (
     <dialog
-      className="m-auto w-full max-w-sm rounded-2xl border border-border bg-background p-5 text-foreground shadow-2xl backdrop:bg-black/60"
+      className="m-auto w-full max-w-sm rounded-2xl border border-border bg-background p-5 text-foreground shadow-elevation-5 backdrop:bg-black/60"
       onClick={(event) => {
         if (event.target === event.currentTarget) event.currentTarget.close()
       }}

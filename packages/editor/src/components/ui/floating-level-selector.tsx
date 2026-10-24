@@ -514,7 +514,7 @@ function UnitFocusChip() {
 
   return (
     <div
-      className="mt-4 flex h-7 max-w-48 items-center gap-1.5 rounded-full border border-border bg-background/90 pr-1 pl-2.5 font-medium text-xs shadow-2xl backdrop-blur-md"
+      className="mt-4 flex h-7 max-w-48 items-center gap-1.5 rounded-full border border-border bg-background/90 pr-1 pl-2.5 font-medium text-xs shadow-elevation-4 backdrop-blur-md"
       data-testid="unit-focus-chip"
     >
       <span
@@ -773,7 +773,7 @@ export function FloatingLevelSelector() {
             sensors={sensors}
           >
             <SortableContext items={sortableLevelIds} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-background/90 p-1 shadow-2xl backdrop-blur-md">
+              <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-background/90 p-1 shadow-elevation-4 backdrop-blur-md">
                 {reversedLevels.map((level, i) => {
                   const isSelected = level.id === levelId
                   const sortedIndex = levels.indexOf(level)

@@ -214,8 +214,8 @@ export default function ItemPanel() {
           <button
             className={
               uniformScale
-                ? 'flex h-6 w-6 items-center justify-center rounded-md bg-black/8 dark:bg-[#3e3e3e] text-muted-foreground transition-colors hover:text-foreground'
-                : 'flex h-6 w-6 items-center justify-center rounded-md bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground'
+                ? 'flex h-6 w-6 items-center justify-center rounded-md bg-control-hover text-muted-foreground transition-colors hover:text-foreground'
+                : 'flex h-6 w-6 items-center justify-center rounded-md bg-control text-muted-foreground transition-colors hover:bg-control-hover hover:text-foreground'
             }
             onClick={() => setUniformScale((v) => !v)}
             type="button"

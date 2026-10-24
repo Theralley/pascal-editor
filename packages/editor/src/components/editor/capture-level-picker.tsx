@@ -42,7 +42,7 @@ export function CaptureLevelPicker() {
   return (
     <div
       aria-label="Levels in the shot"
-      className="pointer-events-auto absolute top-4 left-4 flex w-36 flex-col gap-0.5 rounded-xl border border-border bg-background/90 p-1 shadow-2xl backdrop-blur-md"
+      className="pointer-events-auto absolute top-4 left-4 flex w-36 flex-col gap-0.5 rounded-xl border border-border bg-background/90 p-1 shadow-elevation-4 backdrop-blur-md"
       data-capture-level-picker
       role="group"
     >

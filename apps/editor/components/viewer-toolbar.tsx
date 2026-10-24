@@ -51,7 +51,7 @@ import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from './toolbar-tooltip'
 
 const TOOLBAR_CONTAINER =
-  'inline-flex h-8 items-stretch overflow-hidden rounded-xl border border-border bg-background/90 shadow-2xl backdrop-blur-md'
+  'inline-flex h-8 items-stretch overflow-hidden rounded-xl border border-border bg-background/90 shadow-elevation-4 backdrop-blur-md'
 
 const TOOLBAR_BTN =
   'flex w-8 items-center justify-center text-muted-foreground/80 transition-colors hover:bg-white/8 hover:text-foreground/90'

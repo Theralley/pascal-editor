@@ -114,7 +114,7 @@ export function GlazingPanelEditor({
         label="Reset to default"
         icon={<RotateCcw className="size-3.5" />}
         disabled={!overridden}
-        className="mt-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#2C2C2E]"
+        className="mt-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-control"
         onClick={() => update()}
       />
     </PanelSection>

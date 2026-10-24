@@ -623,7 +623,7 @@ export default function StairPanel() {
               From Level
             </div>
             <select
-              className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-foreground text-sm"
+              className="h-9 w-full rounded-lg border border-border/50 bg-control px-3 text-foreground text-sm"
               onChange={(event) => handleFromLevelChange(event.target.value)}
               value={resolvedFromLevelId ?? ''}
             >
@@ -640,7 +640,7 @@ export default function StairPanel() {
               To
             </div>
             <select
-              className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-foreground text-sm"
+              className="h-9 w-full rounded-lg border border-border/50 bg-control px-3 text-foreground text-sm"
               onChange={(event) => handleDestinationChange(event.target.value)}
               value={attachedDeck ? attachedDeck.id : (resolvedToLevelId ?? '')}
             >
@@ -752,7 +752,7 @@ export default function StairPanel() {
           <div className="flex flex-col gap-1">
             {segments.map((seg, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={seg.id}
                 onClick={() => handleSelectSegment(seg.id)}
                 type="button"

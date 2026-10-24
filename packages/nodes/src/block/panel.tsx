@@ -39,7 +39,7 @@ import {
 const SLOT_TRAILING_ACTION_CLASS =
   'm-2 ml-0 flex w-8 shrink-0 items-center justify-center rounded-md'
 const SLOT_DISABLED_ACTION_CLASS =
-  'disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-black/4 dark:disabled:hover:bg-[#2C2C2E] disabled:active:bg-black/4 dark:disabled:active:bg-[#2C2C2E]'
+  'disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-control disabled:active:bg-control'
 const NEW_BLOCK_SLOT_MATERIAL = {
   preset: 'custom',
   properties: {

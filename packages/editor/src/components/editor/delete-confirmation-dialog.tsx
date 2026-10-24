@@ -289,7 +289,7 @@ export function DeleteConfirmationDialog() {
   return (
     <Dialog onOpenChange={(open) => !open && cancel()} open={request !== null}>
       <DialogContent
-        className="border-border/70 bg-background/95 shadow-2xl backdrop-blur-xl sm:max-w-md"
+        className="border-border/70 bg-background/95 shadow-elevation-5 backdrop-blur-xl sm:max-w-md"
         data-delete-confirmation-dialog
         showCloseButton={false}
       >

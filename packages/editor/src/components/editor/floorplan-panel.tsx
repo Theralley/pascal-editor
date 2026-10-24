@@ -11298,7 +11298,7 @@ export function FloorplanPanel({
 
         {pendingReferenceScale && (
           <form
-            className="absolute top-1/2 left-1/2 z-40 w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-background/95 p-3.5 text-foreground shadow-2xl backdrop-blur-md"
+            className="absolute top-1/2 left-1/2 z-40 w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-background/95 p-3.5 text-foreground shadow-elevation-4 backdrop-blur-md"
             onKeyDown={(event) => {
               // The focused length input keeps Escape from reaching the global
               // handler — cancel the flow from here too.

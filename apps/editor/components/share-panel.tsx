@@ -100,7 +100,7 @@ export function SharePanel({ sceneId, anchorRef, onClose }: SharePanelProps) {
     // Keystrokes in here (Delete, Cmd+A, tool keys) must not reach the editor's shortcuts.
     <div
       aria-label="Share project"
-      className="dark absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-border/60 bg-background p-4 text-foreground shadow-2xl [color-scheme:dark]"
+      className="dark absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-border/60 bg-background p-4 text-foreground shadow-elevation-4 [color-scheme:dark]"
       onKeyDown={(event: KeyboardEvent) => {
         if (event.key !== 'Escape') event.stopPropagation()
       }}

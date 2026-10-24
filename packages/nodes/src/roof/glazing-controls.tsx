@@ -180,7 +180,7 @@ export function GlazingColor({
   preview: Preview
 }) {
   return (
-    <label className="flex h-10 items-center justify-between gap-2 rounded-lg border border-border/50 bg-[#2C2C2E] px-3 text-xs">
+    <label className="flex h-10 items-center justify-between gap-2 rounded-lg border border-border/50 bg-control px-3 text-xs">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-2">
         <span className="font-mono text-[11px] text-foreground">

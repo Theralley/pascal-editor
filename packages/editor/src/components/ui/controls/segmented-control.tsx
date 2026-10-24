@@ -26,7 +26,7 @@ export function SegmentedControl<T extends string>({
   return (
     <div
       className={cn(
-        'flex min-h-9 w-full items-stretch rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] p-[3px]',
+        'flex min-h-9 w-full items-stretch rounded-lg border border-border/50 bg-control p-[3px]',
         disabled && 'opacity-60',
         className,
       )}
@@ -41,7 +41,7 @@ export function SegmentedControl<T extends string>({
             className={cn(
               'relative flex min-h-7 min-w-0 flex-1 items-center justify-center rounded-md px-1.5 py-1 font-medium text-xs leading-4 transition-colors duration-200',
               isSelected
-                ? 'bg-white dark:bg-[#3e3e3e] text-foreground shadow-sm ring-1 ring-border/50'
+                ? 'bg-control-selected text-foreground shadow-sm ring-1 ring-border/50'
                 : 'text-muted-foreground hover:bg-black/4 dark:hover:bg-white/5 hover:text-foreground',
               isDisabled &&
                 'cursor-not-allowed hover:bg-transparent hover:text-muted-foreground dark:hover:bg-transparent',

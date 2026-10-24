@@ -93,7 +93,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-72 overflow-hidden rounded-xl border-border/50 bg-sidebar/95 p-0 shadow-2xl backdrop-blur-xl"
+        className="w-72 overflow-hidden rounded-xl border-border/50 bg-sidebar/95 p-0 shadow-elevation-4 backdrop-blur-xl"
         side="left"
         sideOffset={8}
       >

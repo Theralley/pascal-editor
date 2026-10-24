@@ -36,7 +36,7 @@ export function MobileSelectionBar({
   const stop: MouseEventHandler<HTMLButtonElement> = (e) => e.stopPropagation()
 
   return (
-    <div className="pointer-events-auto absolute right-3 bottom-6 left-3 z-50 flex h-12 items-stretch gap-1 rounded-2xl border border-border/50 bg-background/95 px-2 shadow-2xl backdrop-blur-xl">
+    <div className="pointer-events-auto absolute right-3 bottom-6 left-3 z-50 flex h-12 items-stretch gap-1 rounded-2xl border border-border/50 bg-background/95 px-2 shadow-elevation-4 backdrop-blur-xl">
       <button
         aria-label={`Edit ${resolvedLabel}`}
         className={cn(

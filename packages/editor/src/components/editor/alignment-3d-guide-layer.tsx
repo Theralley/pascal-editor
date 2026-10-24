@@ -32,7 +32,7 @@ import { formatMeasurement } from './measurement-pill'
  */
 
 const LINE_COLOR = 0x81_8c_f8 // indigo-400 — matches the editor's selection accent (box-select / wall highlights)
-const PILL_COLOR = '#6366f1' // indigo-500 — same hue, darker for white-text contrast
+const PILL_COLOR = '#4f46e5' // selection-strong (indigo-600): white text holds 4.5:1 on it
 const GUIDE_Y = 0.03 // small lift so guides read above the floor grid
 const DASH_LEN = 0.18 // world-meter dash length
 const DASH_GAP = 0.12 // world-meter gap between dashes

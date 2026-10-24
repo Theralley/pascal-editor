@@ -49,7 +49,7 @@ function ToolOptionRow({
               className={cn(
                 'rounded-lg px-2 py-2 text-center font-medium text-xs transition-colors',
                 selected
-                  ? 'bg-primary/10 text-primary ring-1 ring-primary/50'
+                  ? 'bg-selection-subtle text-selection-text ring-1 ring-selection'
                   : 'bg-black/4 text-muted-foreground hover:bg-black/8 hover:text-foreground dark:bg-muted/40 dark:hover:bg-muted',
               )}
               key={choice.value}

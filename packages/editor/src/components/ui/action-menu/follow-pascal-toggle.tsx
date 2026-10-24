@@ -20,8 +20,8 @@ export function FollowPascalToggle({
       aria-pressed={on}
       className={cn(
         on
-          ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 dark:hover:text-accent-foreground'
-          : 'hover:bg-black/4 hover:text-violet-600 dark:hover:text-violet-300',
+          ? 'bg-selection-subtle text-selection-text'
+          : 'hover:bg-control hover:text-selection-text',
         className,
       )}
       label={`Follow Pascal: ${on ? 'On' : 'Off'}`}

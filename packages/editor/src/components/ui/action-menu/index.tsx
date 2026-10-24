@@ -75,7 +75,7 @@ export function ActionMenu({
                 : effectivePlacement === 'top'
                   ? 'fixed top-3 left-1/2 -translate-x-1/2'
                   : 'fixed bottom-6 left-1/2 -translate-x-1/2',
-            'rounded-2xl border border-border bg-background/90 shadow-2xl backdrop-blur-md',
+            'rounded-2xl border border-border bg-background/90 shadow-elevation-4 backdrop-blur-md',
             'transition-colors duration-200 ease-out',
             className,
           )}

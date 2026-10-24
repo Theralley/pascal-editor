@@ -30,8 +30,8 @@ const controls: ControlConfig[] = [
     imageSrc: '/icons/select.webp',
     label: 'Select',
     shortcut: 'V',
-    color: 'hover:bg-blue-500/20 hover:text-blue-600 dark:hover:text-blue-400',
-    activeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 dark:hover:text-accent-foreground',
+    color: 'hover:bg-selection-subtle hover:text-selection-text',
+    activeColor: 'bg-selection-subtle text-selection-text',
   },
   {
     id: 'delete',
@@ -87,7 +87,7 @@ export function ControlModes() {
                 'group text-muted-foreground',
                 !(isImageMode || isActive) && c.color,
                 !isImageMode && isActive && c.activeColor,
-                isImageMode && isActive && 'bg-black/6 hover:bg-black/6 dark:bg-white/10',
+                isImageMode && isActive && 'bg-selection-subtle hover:bg-selection-subtle',
                 isImageMode && !isActive && 'hover:bg-black/4',
               )}
               // A static hook for a host app that wants to point a first-run

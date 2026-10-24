@@ -95,10 +95,10 @@ const DOOR_TYPE_OPTIONS = [
 ] as const
 
 const ICON_BUTTON_CLASS =
-  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/40 bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] hover:text-foreground disabled:opacity-30 disabled:hover:bg-black/4 dark:disabled:hover:bg-[#2C2C2E] disabled:hover:text-muted-foreground'
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/40 bg-control text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] hover:text-foreground disabled:opacity-30 disabled:hover:bg-control disabled:hover:text-muted-foreground'
 
 const STEPPER_BUTTON_CLASS =
-  'flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] hover:text-foreground'
+  'flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-control text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] hover:text-foreground'
 
 function Stepper({
   label,
@@ -156,7 +156,7 @@ function CompartmentTypeControl({
       ? [...COMPARTMENT_TYPE_CONTROL_OPTIONS, HOOD_TYPE_OPTION]
       : COMPARTMENT_TYPE_CONTROL_OPTIONS
   return (
-    <div className="grid w-full grid-cols-3 gap-1 rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] p-[3px]">
+    <div className="grid w-full grid-cols-3 gap-1 rounded-lg border border-border/50 bg-control p-[3px]">
       {options.map((option) => {
         const isSelected = value === option.value
         return (
@@ -164,7 +164,7 @@ function CompartmentTypeControl({
             className={[
               'flex min-h-8 min-w-0 items-center justify-center rounded-md px-2 py-1.5 text-center text-xs leading-4 font-medium transition-colors duration-200',
               isSelected
-                ? 'bg-white dark:bg-[#3e3e3e] text-foreground shadow-sm ring-1 ring-border/50'
+                ? 'bg-control-selected text-foreground shadow-sm ring-1 ring-border/50'
                 : 'text-muted-foreground hover:bg-black/4 dark:hover:bg-white/5 hover:text-foreground',
             ].join(' ')}
             key={option.value}
@@ -326,7 +326,7 @@ export function CompartmentCard({
             />
           </div>
           <button
-            className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-md border border-border/40 bg-black/4 dark:bg-[#2C2C2E] px-3 py-1.5 text-xs leading-4 font-medium text-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex min-h-8 w-full items-center justify-center gap-1.5 rounded-md border border-border/40 bg-control px-3 py-1.5 text-xs leading-4 font-medium text-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#343437] disabled:cursor-not-allowed disabled:opacity-40"
             disabled={
               compartmentDoorType(compartment, width) !== 'single-left' &&
               compartmentDoorType(compartment, width) !== 'single-right'

@@ -135,7 +135,7 @@ export function FunctionTreePanel({
                     className={cn(
                       'relative flex aspect-square items-center justify-center rounded-xl transition-all duration-200',
                       isActive
-                        ? 'bg-primary/10 ring-1 ring-primary/50'
+                        ? 'bg-selection-subtle ring-1 ring-selection'
                         : 'bg-black/4 opacity-70 grayscale hover:bg-black/8 hover:opacity-100 hover:grayscale-0 dark:bg-muted/40 dark:hover:bg-muted',
                     )}
                     onClick={() => {
@@ -211,7 +211,7 @@ export function FunctionTreePanel({
               className={cn(
                 'cursor-pointer rounded-md px-2 py-0.5 font-medium text-xs transition-colors',
                 activeChildSlug === null
-                  ? 'bg-violet-500 text-white'
+                  ? 'bg-selection-strong text-selection-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
               )}
               onClick={() => setActiveChildSlug(null)}
@@ -226,7 +226,7 @@ export function FunctionTreePanel({
                   className={cn(
                     'cursor-pointer rounded-md px-2 py-0.5 font-medium text-xs capitalize transition-colors',
                     isActive
-                      ? 'bg-violet-500 text-white'
+                      ? 'bg-selection-strong text-selection-foreground'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
                   )}
                   key={child.slug}

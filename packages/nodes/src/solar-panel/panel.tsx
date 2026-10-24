@@ -198,7 +198,7 @@ export default function SolarPanelPanel() {
                   'flex min-h-14 flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors',
                   isSelected
                     ? 'border-orange-400/60 bg-orange-400/10 text-foreground'
-                    : 'border-border/50 bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground',
+                    : 'border-border/50 bg-control text-muted-foreground hover:bg-control-hover hover:text-foreground',
                 )}
                 key={card.key}
                 onClick={() => handlePresetChange(card.key)}

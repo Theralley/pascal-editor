@@ -312,7 +312,7 @@ export default function RoofPanel() {
         <div className="flex flex-col gap-1">
           {segments.map((seg, i) => (
             <button
-              className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+              className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
               key={seg.id}
               onClick={() => handleSelectSegment(seg.id)}
               type="button"
@@ -429,7 +429,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {chimneys.map((chimney, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={chimney.id}
                 onClick={() => handleSelectElement(chimney.id)}
                 type="button"
@@ -450,7 +450,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {dormers.map((dormer, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={dormer.id}
                 onClick={() => handleSelectElement(dormer.id)}
                 type="button"
@@ -471,7 +471,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {skylights.map((skylight, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={skylight.id}
                 onClick={() => handleSelectElement(skylight.id)}
                 type="button"
@@ -492,7 +492,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {solarPanels.map((panel, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={panel.id}
                 onClick={() => handleSelectElement(panel.id)}
                 type="button"
@@ -513,7 +513,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {vents.map((vent, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={vent.id}
                 onClick={() => handleSelectElement(vent.id)}
                 type="button"
@@ -576,7 +576,7 @@ export default function RoofPanel() {
           <div className="flex flex-col gap-1">
             {gutters.map((gutter, i) => (
               <button
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 py-2 text-foreground text-sm transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-control px-3 py-2 text-foreground text-sm transition-colors hover:bg-control-hover"
                 key={gutter.id}
                 onClick={() => handleSelectElement(gutter.id)}
                 type="button"

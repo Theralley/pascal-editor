@@ -1061,7 +1061,7 @@ export default function CabinetPanel() {
                       ? 'Close cabinet'
                       : 'Open cabinet'
                 }
-                className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-border/40 bg-black/4 dark:bg-[#2C2C2E] px-2.5 text-[11px] font-medium text-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
+                className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-border/40 bg-control px-2.5 text-[11px] font-medium text-foreground transition-colors hover:bg-control-hover"
                 onClick={() => {
                   if (isAnimating) {
                     stopAnimation()

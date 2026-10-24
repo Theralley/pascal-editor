@@ -68,7 +68,7 @@ export function AppCard({ children, className }: { children: ReactNode; classNam
     <AppShell className="flex items-center justify-center p-6">
       <div
         className={cn(
-          'w-full max-w-sm rounded-2xl border border-border/60 bg-background p-6 shadow-2xl',
+          'w-full max-w-sm rounded-2xl border border-border/60 bg-background p-6 shadow-elevation-5',
           className,
         )}
       >
