@@ -7,7 +7,7 @@ import {
   roomAt,
 } from '../room-labels'
 
-// One room-label placement pass and one pointer pick, for a 900 × 600 px house of 31, 60 and 120
+// One room-label placement pass and one pointer pick and the tier flips of a jittering view, for a 900 × 600 px house of 31, 60 and 120
 // rooms (every third an L), printed as JSON medians in ms. Run with `bun run <this file>`.
 let seed = 11
 const random = () => {
@@ -81,6 +81,25 @@ for (const count of [31, 60, 120]) {
     previous = placePills(candidates, pane, previous)
     warm.push(performance.now() - started)
   }
+  // A view hovering at the edge of a fit (pills 2 px wider, then narrower): tier changes per pass.
+  const flipsWith = (keepPrevious: boolean) => {
+    let flips = 0
+    let last = previous
+    for (let i = 0; i < 100; i++) {
+      const grow = i % 2 ? 2 : -2
+      const next = placePills(
+        candidates.map(({ size, ...candidate }) => ({
+          ...candidate,
+          size: [size[0] + grow, size[1], size[2] + grow] as const,
+        })),
+        pane,
+        keepPrevious ? last : undefined,
+      )
+      for (const [id, placement] of next) if (placement.tier !== last.get(id)?.tier) flips++
+      last = next
+    }
+    return flips
+  }
   const points = Array.from(
     { length: 1000 },
     (): RoomHit => [270 + random() * 900, 150 + random() * 600, 0],
@@ -102,6 +121,8 @@ for (const count of [31, 60, 120]) {
     placeMs: median(cold),
     placeWithPreviousMs: median(warm),
     pickMs: median(picks),
+    tierFlipsPer100Passes: flipsWith(true),
+    tierFlipsWithoutPrevious: flipsWith(false),
     tiers,
   }
 }

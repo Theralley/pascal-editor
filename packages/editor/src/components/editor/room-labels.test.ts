@@ -296,6 +296,44 @@ describe('pill placement', () => {
     expect(placePills([moved], pane, previous).get('moved')).toEqual({ tier: 'full', dy: 0 })
   })
 
+  test('a pill keeps its tier through a few px of slack, and moves up only with room to spare', () => {
+    const tierIn = (side: number, last?: PillPlacement) =>
+      placePills(
+        [pill('room', 500, 500, side, [120, 24, 70], square(500, 500, side))],
+        pane,
+        last ? new Map([['room', last]]) : undefined,
+      ).get('room')!.tier
+    const full: PillPlacement = { tier: 'full', dy: 0 }
+    const name: PillPlacement = { tier: 'name', dy: 0 }
+    const hidden: PillPlacement = { tier: 'hidden', dy: 0 }
+    // Full needs a room 120 px wide: 118 is just short, 110 well short.
+    expect([tierIn(118), tierIn(118, full), tierIn(110, full)]).toEqual(['name', 'full', 'name'])
+    // Name to full needs the full pill's width and 6 px a side to spare.
+    expect([tierIn(124, name), tierIn(140, name), tierIn(124)]).toEqual(['name', 'full', 'full'])
+    // A hidden pill needs the same to come back; a dot (16 px) fits 24, not 20.
+    expect([tierIn(20, hidden), tierIn(30, hidden), tierIn(20)]).toEqual(['hidden', 'dot', 'dot'])
+  })
+
+  test('a held tier never puts a pill within the gap of another', () => {
+    const bar = pill('bar', 100, 100, 30, [120, 8, 60])
+    const moved = pill('moved', 100, 100, 10)
+    const last = new Map<string, PillPlacement>([['moved', { tier: 'full', dy: 0 }]])
+    const placements = placePills([bar, moved], pane, last)
+    const rects = [bar, moved].map((candidate) =>
+      placedRect(candidate, placements.get(candidate.id)!),
+    )
+    expect(rects.every(Boolean)).toBe(true)
+    expect(near(rects[0]!, rects[1]!)).toBe(false)
+  })
+
+  test('a pinned pill keeps its place; the larger room gives way', () => {
+    const big = pill('big', 100, 100, 30)
+    const small = pill('small', 110, 106, 10)
+    const placements = placePills([big, small], pane, undefined, new Set(['small']))
+    expect(placements.get('small')).toEqual({ tier: 'full', dy: 0 })
+    expect(placements.get('big')).not.toEqual({ tier: 'full', dy: 0 })
+  })
+
   test('the order is fixed by room size and id, not by input order', () => {
     const candidates = [pill('b', 100, 100, 10), pill('a', 105, 100, 10), pill('c', 110, 100, 10)]
     const first = placePills(candidates, pane)
@@ -491,6 +529,20 @@ describe('when pills re-read their overlaps', () => {
     expect(clock.shouldRead(at(0.7), 0.86)).toBe(true)
   })
 
+  test('while the camera moves, however little the view changes, nothing is read', () => {
+    const clock = new DeclutterClock()
+    const still = new Float64Array(50)
+    expect(clock.shouldRead(still, 0.2)).toBe(false)
+    expect(clock.shouldRead(still, 0.4)).toBe(true)
+    // A dragged camera paused for a second: the view is steady but the drag is not over.
+    for (const t of [0.5, 1, 1.5, 2]) expect(clock.shouldRead(still, t, true)).toBe(false)
+    expect(clock.atRest).toBe(false)
+    // It rests: one read after the quiet window.
+    expect(clock.shouldRead(still, 2.05)).toBe(false)
+    expect(clock.shouldRead(still, 2.2)).toBe(true)
+    expect(clock.shouldRead(still, 2.3)).toBe(false)
+  })
+
   test('a room whose anchor moves has the pills placed again', () => {
     const anchors = new RoomAnchors()
     let moves = 0
@@ -572,6 +624,23 @@ describe('applying placements', () => {
     clock.advance(179)
     expect(changes).toEqual([])
     clock.advance(1)
+    expect(placer.gone).toEqual(new Set(['far']))
+  })
+
+  test('a pill fading out when the camera starts moving stays mounted until it rests', () => {
+    const { elements, clock, placer } = setup()
+    const onlyNear = placements([
+      ['near', full()],
+      ['far', hidden],
+    ])
+    placer.apply(onlyNear, 180)
+    placer.hold(true)
+    clock.advance(500)
+    expect(placer.gone).toEqual(new Set())
+    expect(has(elements.get('far'), 'roomLabelHidden')).toBe(true)
+    placer.hold(false)
+    placer.apply(onlyNear, 180)
+    clock.advance(180)
     expect(placer.gone).toEqual(new Set(['far']))
   })
 

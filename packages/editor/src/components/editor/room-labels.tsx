@@ -172,6 +172,10 @@ const PILL_DOT_SIZE = 16
 export const PILL_GAP = 4
 const NUDGE_STEP = 4
 const TIERS = ['full', 'name', 'dot'] as const
+/** How far past its room a pill may sit and still keep the tier it had. */
+const TIER_SLACK = 3
+/** How much room a pill needs to spare to move up a tier, or out of hiding. */
+const TIER_UPGRADE_MARGIN = 6
 
 function near(a: LabelRect, b: LabelRect) {
   return (
@@ -269,6 +273,15 @@ function ringBox(ring: Ring): LabelRect {
   return box
 }
 
+function inflate(rect: LabelRect, by: number): LabelRect {
+  return {
+    left: rect.left - by,
+    top: rect.top - by,
+    right: rect.right + by,
+    bottom: rect.bottom + by,
+  }
+}
+
 function slotFor(
   pill: PillCandidate,
   bounds: PaneSize,
@@ -282,24 +295,43 @@ function slotFor(
   box.top = Math.max(box.top, 0)
   box.right = Math.min(box.right, bounds.width)
   box.bottom = Math.min(box.bottom, bounds.height)
-  for (const tier of TIERS) {
+  // `margin` shrinks (slack) or grows (clearance) the rect that has to fit in the room
+  // and the pane; the gap to pills already placed is never relaxed.
+  const tryTier = (tier: Exclude<PillTier, 'hidden'>, margin: number): PillPlacement | null => {
     const size = tierSize(pill.size, tier)
     // Wider or taller than the room's box: no nudge fits it.
-    if (size[0] > box.right - box.left || size[1] > box.bottom - box.top) continue
+    if (size[0] + 2 * margin > box.right - box.left || size[1] + 2 * margin > box.bottom - box.top)
+      return null
     const budget = tier === 'dot' ? PILL_DOT_SIZE : pill.size[1]
     for (const dy of nudges(budget, previous?.tier === tier ? previous.dy : undefined)) {
       const rect = pillRect(pill.x, pill.y + dy, size)
+      const fit = inflate(rect, margin)
       if (
-        rect.left < box.left ||
-        rect.top < box.top ||
-        rect.right > box.right ||
-        rect.bottom > box.bottom
+        fit.left < box.left ||
+        fit.top < box.top ||
+        fit.right > box.right ||
+        fit.bottom > box.bottom
       )
         continue
-      if (!rectInPolygon(rect, outline)) continue
-      if (placed.some((other) => near(rect, other))) continue
+      if (!rectInPolygon(fit, outline)) continue
+      if (placed.some((other) => near(margin > 0 ? fit : rect, other))) continue
       placed.push(rect)
       return { tier, dy }
+    }
+    return null
+  }
+  // A pill keeps its tier through a few px of slack, and only moves up a tier, or
+  // out of hiding, once it clears a margin: a view that hovers at the edge of a fit
+  // does not flip it back and forth.
+  const held = previous && previous.tier !== 'hidden' ? TIERS.indexOf(previous.tier) : -1
+  for (const [i, tier] of TIERS.entries()) {
+    if (previous && i < held) {
+      const placement = tryTier(tier, TIER_UPGRADE_MARGIN)
+      if (placement) return placement
+    } else {
+      const margin = !previous ? 0 : i === held ? -TIER_SLACK : held < 0 ? TIER_UPGRADE_MARGIN : 0
+      const placement = tryTier(tier, margin)
+      if (placement) return placement
     }
   }
   return { tier: 'hidden', dy: 0 }
@@ -307,21 +339,26 @@ function slotFor(
 
 /**
  * Where every pill goes, so that none overlap and each stays inside its room
- * and the pane. Larger rooms are placed first (ties by id, so the order holds
- * while the camera moves). Each pill takes the first slot that fits: its full
- * pill, then its name alone, then its dot, each at its anchor or nudged up or
- * down; with no slot it is hidden. A room's size on screen decides how much of
- * its label shows, so the detail follows the zoom.
+ * and the pane. Pinned pills (the open one) are placed first, then larger rooms
+ * (ties by id, so the order holds while the camera moves). Each pill takes the
+ * first slot that fits: its full pill, then its name alone, then its dot, each
+ * at its anchor or nudged up or down; with no slot it is hidden. A room's size
+ * on screen decides how much of its label shows, so the detail follows the
+ * zoom; a pill keeps the tier it had through a few px of slack.
  */
 export function placePills(
   candidates: readonly PillCandidate[],
   bounds: PaneSize,
   previous: ReadonlyMap<string, PillPlacement> = new Map(),
+  pinned: ReadonlySet<string> = new Set(),
 ): Map<string, PillPlacement> {
   const placed: LabelRect[] = []
   const placements = new Map<string, PillPlacement>()
   const order = [...candidates].sort(
-    (a, b) => b.area - a.area || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    (a, b) =>
+      Number(pinned.has(b.id)) - Number(pinned.has(a.id)) ||
+      b.area - a.area ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   )
   for (const pill of order)
     placements.set(pill.id, slotFor(pill, bounds, placed, previous.get(pill.id)))
@@ -428,10 +465,14 @@ export class DeclutterClock {
     this.dirty = true
   }
 
-  /** Whether to place pills for this view (any flat list of numbers) at `now` seconds. */
-  shouldRead(view: ArrayLike<number>, now: number): boolean {
+  /**
+   * Whether to place pills for this view (any flat list of numbers) at `now`
+   * seconds. While the camera is `moving` (a drag, a damped glide) the view
+   * counts as moved however little it changed, so pills hold their places.
+   */
+  shouldRead(view: ArrayLike<number>, now: number, moving = false): boolean {
     const reference = this.reference
-    let moved = !reference || reference.length !== view.length
+    let moved = moving || !reference || reference.length !== view.length
     for (let i = 0; !moved && i < view.length; i++) {
       moved = Math.abs(view[i]! - reference![i]!) > VIEW_EPSILON
     }
@@ -529,6 +570,7 @@ export class PillPlacer {
   private suppressed: ReadonlySet<string> = new Set()
   private open: string | null = null
   private shown = true
+  private holding = false
 
   constructor(
     private readonly elements: ReadonlyMap<string, HTMLElement>,
@@ -554,12 +596,19 @@ export class PillPlacer {
         id,
         this.schedule(() => {
           this.fading.delete(id)
-          this.setGone(new Set(this.gone).add(id))
+          // Unmounting and remounting a pill while the camera moves is what
+          // flickers: it leaves once the pass at rest still has it hidden.
+          if (!this.holding) this.setGone(new Set(this.gone).add(id))
         }, fadeMs),
       )
     }
     const kept = [...this.gone].filter((id) => (placements.get(id)?.tier ?? 'hidden') === 'hidden')
     if (kept.length !== this.gone.size) this.setGone(new Set(kept))
+  }
+
+  /** Keep hidden pills mounted while the camera moves; the next pass at rest removes them. */
+  hold(holding: boolean) {
+    this.holding = holding
   }
 
   /** A pill mounting takes its last placement at once, or waits hidden for one. */
@@ -821,7 +870,10 @@ class PillLayer {
   getDetail = () => this.detail
 
   place(candidates: PillCandidate[], bounds: PaneSize) {
-    const placements = placePills(candidates, bounds, this.placer.placements)
+    // The open pill keeps its place; the others give way around it.
+    const pinned = new Set<string>()
+    if (this.detail?.open) pinned.add(this.detail.id)
+    const placements = placePills(candidates, bounds, this.placer.placements, pinned)
     this.placer.apply(placements)
     this.bounds = { width: bounds.width, height: bounds.height }
     this.candidates = new Map(candidates.map((candidate) => [candidate.id, candidate]))
@@ -1637,7 +1689,9 @@ export function RoomPillsLayer3D({
     flat.set(level.matrixWorld.elements, 32)
     flat[48] = size.width
     flat[49] = size.height
-    const placed = layer.clock.shouldRead(flat, frameClock.elapsedTime)
+    const moving = useViewer.getState().cameraDragging
+    layer.placer.hold(moving)
+    const placed = layer.clock.shouldRead(flat, frameClock.elapsedTime, moving)
     if (placed) {
       timeSpan('room-labels', () =>
         layer.place(candidates3D(entries, anchors, layer.sizes, camera, level, size), size),
@@ -1702,7 +1756,8 @@ export function RoomLabelAnchor3D({
       position={position}
       // The wrapper lets the canvas keep everything but the pill itself.
       style={{ pointerEvents: 'none' }}
-      zIndexRange={[20, 0]}
+      // One layer for every pill: drei's distance sort would swap overlapping pills mid-orbit.
+      zIndexRange={[0, 0]}
     >
       {children}
     </Html>
