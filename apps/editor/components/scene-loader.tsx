@@ -16,6 +16,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PoolSectionBanner } from '@/components/pool-section-banner'
+import { createDeferredRetry } from '@/lib/deferred-retry'
 import { requestDuplicate } from '@/lib/duplicate-scene'
 import { countGraphNodes, isEmptyGraphOverwrite } from '@/lib/empty-graph-guard'
 import { useLocalArtifactStore } from '@/lib/local-artifact-store'
@@ -197,6 +198,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
   // store must never overwrite a populated server copy.
   const serverNodeCountRef = useRef(meta.nodeCount)
   const flushSaveRef = useRef<(() => Promise<boolean>) | null>(null)
+  const deferredRetryRef = useRef<ReturnType<typeof createDeferredRetry> | null>(null)
   // Set while a copy waits on a flush: that write may not be held back after a remote update.
   const strictSaveRef = useRef(false)
   const lastRemoteGraphJsonRef = useRef<string | null>(null)
@@ -255,7 +257,11 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         suppressRemoteSaveUntilRef.current = 0
         return true
       }
-      if (verdict === 'deferred') return false
+      if (verdict === 'deferred') {
+        // Not an error: the write comes due again when the hold-back ends.
+        deferredRetryRef.current?.schedule(suppressRemoteSaveUntilRef.current - Date.now() + 1)
+        return false
+      }
 
       // Wipe guard: never PUT an empty graph over a populated server copy.
       // An empty serialization here means the editor store was not hydrated
@@ -331,6 +337,15 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
     },
     [persistScene],
   )
+
+  useEffect(() => {
+    const retry = createDeferredRetry(() => void flushSaveRef.current?.())
+    deferredRetryRef.current = retry
+    return () => {
+      retry.cancel()
+      deferredRetryRef.current = null
+    }
+  }, [])
 
   const handleDuplicate = useCallback(
     async (name?: string): Promise<string | null> => {

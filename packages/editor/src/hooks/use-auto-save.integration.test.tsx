@@ -240,6 +240,23 @@ test('flush reports a failure of the write that followed an overlapping save', a
   expect(await flushed).toBe(false)
 })
 
+test('a write the host deferred stays unsaved, and one flush later writes it once', async () => {
+  let deferred = true
+  const { writes, statuses, controls } = await mount(12, undefined, () =>
+    deferred ? Promise.reject(new Error('deferred')) : Promise.resolve(),
+  )
+  agentAddsColumn()
+  controls.saveNow()
+  await Bun.sleep(0)
+  expect(statuses.at(-1)).toBe('error')
+
+  deferred = false
+  expect(await controls.flush()).toBe(true)
+  expect(await controls.flush()).toBe(true)
+  expect(writes).toEqual([13, 13])
+  expect(statuses.at(-1)).toBe('saved')
+})
+
 test('flush reports a clean scene saved while a version is previewed', async () => {
   const { writes, controls, update } = await mount(12)
   update({ isVersionPreviewMode: true })
