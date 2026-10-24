@@ -113,6 +113,7 @@ export type {
   FloorplanPoint,
   FloorplanScope,
   FloorplanStyle,
+  FollowsWallModeConfig,
   GeometryContext,
   GridSnapPositionArgs,
   GroupMoveSnapArgs,
@@ -198,5 +199,7 @@ export type {
   ToolOption,
   ToolOptionChoice,
   Vec2,
+  WallModeFacing,
+  WallModeSide,
 } from './types'
 export { validateNodeRelations } from './validate-relations'

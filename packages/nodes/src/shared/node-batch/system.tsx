@@ -15,6 +15,7 @@ import {
   isNodeRevealing,
   publishPerfBatchStats,
   registerMaterialCacheCleanup,
+  subscribeWallModeAffected,
   useViewer,
 } from '@pascal-app/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -193,6 +194,8 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
   })
   const unsubscribePreviews = subscribeSlotPaintPreviews(changed)
   const unsubscribeReleases = subscribeBatchReleases(changed)
+  // Release when the wall mode starts restyling a member, re-offer when it stops.
+  const unsubscribeWallMode = subscribeWallModeAffected(changed)
   const unsubscribeMaterials = registerMaterialCacheCleanup(() => {
     releaseAll()
     for (const nodeId of getBatchableNodeIds()) changedNodes.add(nodeId)
@@ -202,6 +205,7 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
     unsubscribeTransforms()
     unsubscribePreviews()
     unsubscribeReleases()
+    unsubscribeWallMode()
     unsubscribeMaterials()
   }
 }

@@ -420,6 +420,25 @@ Handlers now change only when the selection does, never mid-drag.
 
 ## Capability reference
 
+### `capabilities.followsWallMode`
+
+Opts a kind into the viewer's wall mode. `surfaceRole: 'wall'` is only a colour token and does not
+opt in; walls keep their own `WallCutout`. A generic viewer system (`WallModeFollowSystem`) applies to
+each opted-in node what walls get: `up` shows it, `down` hides it, `translucent` draws it see-through, and
+`cutaway` hides it when the camera is on its exterior side. It reuses `wallHiddenFromFacing` and the
+wall's hidden / translucent materials, so the look is the same.
+
+```ts
+type FollowsWallModeConfig = {
+  facing?: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) => WallModeFacing | undefined
+}
+```
+
+Without `facing`, the node counts as the building's exterior: its front faces away from the centre of
+its level's walls. Give a `facing` (`frontSide`, `backSide`, level-space `normal`) when the kind knows better.
+While the mode affects a node, the node batch releases it and draws its own meshes; the batch re-offers it
+when the mode no longer does. Block opts in; fence, column and chimney do not.
+
 ### `capabilities.roofAccessory`
 
 Marks a kind as a roof-segment-mounted accessory (chimney, dormer, skylight, solar-panel, ridge-vent, box-vent). Presence tells the viewer's roof-merge loop two things:

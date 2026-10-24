@@ -464,6 +464,14 @@ export {
   WallSystem,
 } from './systems/wall/wall-system'
 export {
+  isWallModeAffected,
+  subscribeWallModeAffected,
+  WallModeFollowCache,
+  WallModeFollowSystem,
+  type WallModeFollowViewerState,
+  type WallModeFollowViewerStore,
+} from './systems/wall-mode/wall-mode-follow'
+export {
   poseWindowMovingParts,
   WindowAnimationSystem,
 } from './systems/window/window-animation-system'

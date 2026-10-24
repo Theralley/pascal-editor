@@ -1732,6 +1732,13 @@ export type Capabilities = {
    */
   batchable?: BatchableConfig
   /**
+   * Opt this kind into the viewer's wall mode (up / cutaway / down / translucent): its meshes are
+   * hidden or drawn see-through with the same decision and material variants walls get. A kind
+   * that only declares `surfaceRole: 'wall'` (a colour token) is not affected. See
+   * `FollowsWallModeConfig`.
+   */
+  followsWallMode?: FollowsWallModeConfig
+  /**
    * How the node appears when an agent builds it: its construction phase and
    * motion. A kind without it appears at once, with its parent. See
    * `RevealConfig`.
@@ -2575,6 +2582,33 @@ export type FloorPlacedConfig = {
    * `floorPlacedCollides`.
    */
   collides?: boolean | ((node: AnyNode) => boolean)
+}
+
+/** Which side of a wall-like node faces the outside of the building. */
+export type WallModeSide = 'interior' | 'exterior' | 'unknown'
+
+/**
+ * The node's orientation for the cutaway, in the same terms as a wall's `frontSide` / `backSide`:
+ * `normal` is the horizontal direction (x, z, in the node's level space) the front side faces.
+ */
+export type WallModeFacing = {
+  frontSide: WallModeSide
+  backSide: WallModeSide
+  normal: readonly [number, number]
+}
+
+/**
+ * How a kind follows the viewer's wall mode (`capabilities.followsWallMode`). `up` shows the node,
+ * `down` hides it and `translucent` draws it see-through, like a wall. In `cutaway` it is hidden
+ * when the camera is on its exterior side.
+ */
+export type FollowsWallModeConfig = {
+  /**
+   * The node's oriented front/back. Without it, the node counts as the exterior of the building: its
+   * front faces away from the centre of the level's walls, so the cutaway hides it when the camera
+   * is on the outward side. Return `undefined` to say nothing about this node.
+   */
+  facing?: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) => WallModeFacing | undefined
 }
 
 /**

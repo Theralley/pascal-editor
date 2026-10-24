@@ -409,7 +409,7 @@ export function getHoverHighlightMaterials(materials: WallMaterialArray): WallMa
   ) as WallMaterialArray
 }
 
-function createInvisibleWallMaterial(color: string, shading: RenderShading): Material {
+export function createInvisibleWallMaterial(color: string, shading: RenderShading): Material {
   const material =
     shading === 'solid'
       ? new MeshLambertNodeMaterial({
@@ -429,7 +429,7 @@ function createInvisibleWallMaterial(color: string, shading: RenderShading): Mat
   return material
 }
 
-function createTranslucentWallMaterial(color: string, shading: RenderShading): Material {
+export function createTranslucentWallMaterial(color: string, shading: RenderShading): Material {
   const material =
     shading === 'solid'
       ? new MeshLambertNodeMaterial({

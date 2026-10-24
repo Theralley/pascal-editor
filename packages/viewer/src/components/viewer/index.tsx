@@ -36,6 +36,7 @@ import { GeometrySystem } from '../../systems/geometry/geometry-system'
 import { PerfActionSettleSystem } from '../../systems/perf-action-settle/perf-action-settle-system'
 import { getPendingRoofMergeCount } from '../../systems/roof/roof-system'
 import { subscribeWallBuildInteractions } from '../../systems/wall/wall-build-lifecycle'
+import { WallModeFollowSystem } from '../../systems/wall-mode/wall-mode-follow'
 import { ImmersiveXRPresentationProvider } from '../../xr/presentation-context'
 import { SceneRenderer } from '../renderers/scene-renderer'
 import { BATCH_SPIKE_ENABLED, BatchedMeshSpike } from './batched-mesh-spike'
@@ -818,6 +819,7 @@ function ViewerScene({
       {renderedScene}
       <FloorElevationSystem />
       <GeometrySystem />
+      <WallModeFollowSystem />
       <StairOpeningSystem />
       <RoofElevationSystem />
       <RegisteredSystems />

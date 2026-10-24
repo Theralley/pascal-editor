@@ -9,7 +9,13 @@ import {
   useLiveTransforms,
   useScene,
 } from '@pascal-app/core'
-import { hideFromScene, SCENE_LAYER, showInScene, useViewer } from '@pascal-app/viewer'
+import {
+  hideFromScene,
+  isWallModeAffected,
+  SCENE_LAYER,
+  showInScene,
+  useViewer,
+} from '@pascal-app/viewer'
 import { type Material, Matrix4, type Mesh, type Object3D } from 'three'
 import { isSlotPaintPreviewActive } from '../slot-paint'
 import type { BatchCandidate, BatchEntry } from './types'
@@ -110,7 +116,14 @@ export function collectBatchCandidate(nodeId: string): BatchCandidate | null {
 
   const levelId = resolveLevelId(node, batchable, nodes)
   if (!levelId) return null
-  if (batchable.excluded?.(node) || isSlotPaintPreviewActive(nodeId)) return null
+  // Hidden or see-through under the wall mode: the batch copy would keep the opaque material.
+  if (
+    batchable.excluded?.(node) ||
+    isSlotPaintPreviewActive(nodeId) ||
+    isWallModeAffected(nodeId)
+  ) {
+    return null
+  }
 
   const group = sceneRegistry.nodes.get(nodeId)
   if (!group) return null
