@@ -9,8 +9,16 @@ import { BATCHED_LAYER, SCENE_LAYER, SHADOW_ONLY_LAYER } from './layers'
  * - `batched` — a level's merged wall mesh draws this wall now.
  * - `ground-aside` — the site's ground while a level below grade is active: the floor is seen,
  *   and clicked, where the ground was.
+ * - `wall-mode` — a node that follows the wall mode (`capabilities.followsWallMode`) while walls
+ *   down or the cutaway hides it: not drawn, not picked and not casting a shadow.
  */
-export type HiddenReason = 'isolated' | 'shadow-only' | 'batched' | 'wall-batched' | 'ground-aside'
+export type HiddenReason =
+  | 'isolated'
+  | 'shadow-only'
+  | 'batched'
+  | 'wall-batched'
+  | 'ground-aside'
+  | 'wall-mode'
 
 /**
  * Single owner of `Object3D.layers` for every feature that hides an object.

@@ -1732,10 +1732,11 @@ export type Capabilities = {
    */
   batchable?: BatchableConfig
   /**
-   * Opt this kind into the viewer's wall mode (up / cutaway / down / translucent): its meshes are
-   * hidden or drawn see-through with the same decision and material variants walls get. A kind
-   * that only declares `surfaceRole: 'wall'` (a colour token) is not affected. See
-   * `FollowsWallModeConfig`.
+   * Opt this kind into the viewer's wall mode (up / cutaway / down / translucent): walls down hides
+   * the node, and the cutaway hides it when the camera is on its exterior side, with the decision
+   * walls use. It is held off the scene layer, so it is neither drawn, picked nor shadowed; no
+   * material changes. Translucent shows it as built. A kind that only declares
+   * `surfaceRole: 'wall'` (a colour token) is not affected. See `FollowsWallModeConfig`.
    */
   followsWallMode?: FollowsWallModeConfig
   /**
@@ -2598,9 +2599,9 @@ export type WallModeFacing = {
 }
 
 /**
- * How a kind follows the viewer's wall mode (`capabilities.followsWallMode`). `up` shows the node,
- * `down` hides it and `translucent` draws it see-through, like a wall. In `cutaway` it is hidden
- * when the camera is on its exterior side.
+ * How a kind follows the viewer's wall mode (`capabilities.followsWallMode`). `up` and
+ * `translucent` show the node, `down` hides it. In `cutaway` it is hidden when the camera is on its
+ * exterior side.
  */
 export type FollowsWallModeConfig = {
   /** Which nodes of the kind follow the mode. Without it, every node does. */

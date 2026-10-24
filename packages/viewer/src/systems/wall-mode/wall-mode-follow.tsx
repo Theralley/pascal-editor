@@ -1,6 +1,7 @@
 import {
   type AnyNode,
   type AnyNodeId,
+  emitter,
   type FollowsWallModeConfig,
   getRegistryVersion,
   nodeRegistry,
@@ -9,82 +10,40 @@ import {
 } from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
-import {
-  Box3,
-  type Camera,
-  type Color,
-  type Material,
-  type Mesh,
-  type Object3D,
-  Vector3,
-} from 'three'
-import { registerMaterialCacheCleanup } from '../../lib/materials'
+import { Box3, type Camera, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
+import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import useViewer from '../../store/use-viewer'
-import {
-  sameMaterialArray,
-  wallFacingNegative,
-  wallHiddenFromFacing,
-} from '../wall/wall-cutout-cache'
-import {
-  createHighlightedWallMaterial,
-  createInvisibleWallMaterial,
-  createTranslucentWallMaterial,
-  getHoverHighlightMaterials,
-  getSelectionHighlightMaterials,
-} from '../wall/wall-materials'
+import { wallFacingNegative, wallHiddenFromFacing } from '../wall/wall-cutout-cache'
 
 /**
- * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`: the same hide decision
- * (`wallHiddenFromFacing`) and the same see-through materials walls get, applied to the meshes the
- * kind's geometry builds. Walls keep their own `WallCutout`.
- *
- * While the mode affects a node this system is the only writer of its meshes' materials, as
- * `WallCutoutCache` is for walls: it composes the built material, the wall-mode variant and the
- * selection / hover / delete tint, and the editor's selection sync leaves the node alone
- * (`isWallModeAffected`). Anything else that swaps a material meanwhile is overwritten on the next
- * pass and never becomes the node's built material.
+ * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls down and the
+ * cutaway hide the node through the scene-visibility owner (`'wall-mode'` hold): off the scene
+ * layer it is neither drawn, picked nor shadowed, and no material is ever touched. Walls up shows
+ * it. Translucent leaves it shown as built until the display cut gives followers a see-through look.
+ * The cutaway decision is `wallHiddenFromFacing`, the one walls use. Walls keep their own `WallCutout`.
  */
 
-const FOLLOWER_FALLBACK_COLOR = '#e9e7e3'
 const CAMERA_MOVE_DISTANCE = 0.1
 const CAMERA_TURN_DOT = 0.9995
 
-type FollowerVariant = 'visible' | 'invisible' | 'translucent'
-type Highlight = 'none' | 'selection' | 'hover' | 'delete'
-type Shading = 'solid' | 'rendered'
-
 export type WallModeFollowViewerState = Pick<
   ReturnType<typeof useViewer.getState>,
-  | 'wallMode'
-  | 'shading'
-  | 'textures'
-  | 'geometryRevision'
-  | 'selection'
-  | 'previewSelectedIds'
-  | 'hoveredId'
-  | 'hoverHighlightMode'
+  'wallMode' | 'geometryRevision'
 >
 
 export type WallModeFollowViewerStore = { getState: () => WallModeFollowViewerState }
 
 const affectedIds = new Set<string>()
-const hiddenIds = new Set<string>()
 const affectedListeners = new Set<(nodeId: string) => void>()
 
-/** Whether the wall mode currently changes how this node draws (hidden or see-through). */
+/** Whether the wall mode currently hides this node. */
 export function isWallModeAffected(nodeId: string): boolean {
   return affectedIds.has(nodeId)
 }
 
-/** Whether the wall mode currently hides this node (see-through nodes keep their pointer events). */
-export function isWallModeHidden(nodeId: string): boolean {
-  return hiddenIds.has(nodeId)
-}
-
 /**
- * Calls back whenever a node starts or stops being drawn differently by the wall mode, so a system
- * that caches or tints the node's meshes (the node batch, the selection tint) can let go or take
- * over. Called before the node's meshes are restyled.
+ * Calls back whenever the wall mode starts or stops hiding a node, so a system that caches the
+ * node's meshes (the node batch) can release or re-offer it.
  */
 export function subscribeWallModeAffected(listener: (nodeId: string) => void): () => void {
   affectedListeners.add(listener)
@@ -93,107 +52,17 @@ export function subscribeWallModeAffected(listener: (nodeId: string) => void): (
   }
 }
 
-function setAffected(nodeId: string, variant: FollowerVariant): void {
-  const affected = variant !== 'visible'
-  if (variant === 'invisible') hiddenIds.add(nodeId)
-  else hiddenIds.delete(nodeId)
+function setAffected(nodeId: string, affected: boolean): void {
   if (affectedIds.has(nodeId) === affected) return
   if (affected) affectedIds.add(nodeId)
   else affectedIds.delete(nodeId)
   for (const listener of affectedListeners) listener(nodeId)
 }
 
-type MeshRecord = {
-  original: Material | Material[]
-  applied: Material | Material[]
-}
-
-const meshRecords = new WeakMap<Mesh, MeshRecord>()
-let variantMaterials = new WeakMap<Material, Map<string, Material>>()
-const ownedVariants = new Set<Material>()
-
-// Shared by every follower that wears the same source material; GeometrySystem must not dispose
-// them with one node's rebuild, so they are cached materials, released with the material cache.
-registerMaterialCacheCleanup(() => {
-  for (const material of ownedVariants) material.dispose()
-  ownedVariants.clear()
-  variantMaterials = new WeakMap()
-})
-
-function ownVariant(material: Material): Material {
-  material.userData.__pascalCachedMaterial = true
-  ownedVariants.add(material)
-  return material
-}
-
-function variantMaterial(
-  source: Material,
-  variant: Exclude<FollowerVariant, 'visible'>,
-  shading: Shading,
-  highlight: Highlight,
-): Material {
-  const key = `${variant}:${shading}:${highlight}`
-  let byKey = variantMaterials.get(source)
-  if (!byKey) {
-    byKey = new Map()
-    variantMaterials.set(source, byKey)
-  }
-  let material = byKey.get(key)
-  if (material) return material
-  if (highlight === 'none') {
-    const color = (source as { color?: Color }).color
-    const hex = color ? `#${color.getHexString()}` : FOLLOWER_FALLBACK_COLOR
-    material = ownVariant(
-      variant === 'invisible'
-        ? createInvisibleWallMaterial(hex, shading)
-        : createTranslucentWallMaterial(hex, shading),
-    )
-  } else {
-    const base = variantMaterial(source, variant, shading, 'none')
-    material =
-      highlight === 'delete'
-        ? ownVariant(createHighlightedWallMaterial(base, 'delete'))
-        : (highlight === 'selection'
-            ? getSelectionHighlightMaterials([base])
-            : getHoverHighlightMaterials([base]))[0]!
-  }
-  byKey.set(key, material)
-  return material
-}
-
-function applyToMesh(mesh: Mesh, variant: FollowerVariant, shading: Shading, highlight: Highlight) {
-  let record = meshRecords.get(mesh)
-  if (!record) {
-    if (variant === 'visible') return
-    record = { original: mesh.material, applied: mesh.material }
-  }
-  if (variant === 'visible') {
-    mesh.material = record.original
-    meshRecords.delete(mesh)
-    return
-  }
-  const applied = Array.isArray(record.original)
-    ? record.original.map((material) => variantMaterial(material, variant, shading, highlight))
-    : variantMaterial(record.original, variant, shading, highlight)
-  const unchanged =
-    mesh.material === applied ||
-    (Array.isArray(applied) &&
-      Array.isArray(mesh.material) &&
-      sameMaterialArray(mesh.material, applied))
-  if (!unchanged) mesh.material = applied
-  record.applied = mesh.material
-  meshRecords.set(mesh, record)
-}
-
-function isPickHitbox(mesh: Mesh): boolean {
-  const material = mesh.material
-  return !Array.isArray(material) && material?.visible === false
-}
-
 function collectMeshes(object: Object3D, out: Mesh[], hostedRoots: ReadonlySet<Object3D>): void {
-  if (object.visible === false || hostedRoots.has(object)) return
+  if (hostedRoots.has(object)) return
   const mesh = object as Mesh
-  if (mesh.isMesh && mesh.name !== 'cutout' && !isPickHitbox(mesh)) out.push(mesh)
+  if (mesh.isMesh) out.push(mesh)
   for (const child of object.children) collectMeshes(child, out, hostedRoots)
 }
 
@@ -206,15 +75,26 @@ function hostedRootsOf(node: AnyNode): Set<Object3D> {
   return roots
 }
 
-type Follower = {
-  variant: FollowerVariant
-  highlight: Highlight
-  negativeFacing: boolean | undefined
+/** The node's meshes: every one is held, since layers are per object and not inherited. */
+function meshesOf(group: Object3D, node: AnyNode | undefined): Mesh[] {
+  const meshes: Mesh[] = []
+  collectMeshes(group, meshes, node ? hostedRootsOf(node) : new Set())
+  return meshes
 }
 
-const scratchNormal = new Vector3()
-const scratchPoint = new Vector3()
+function setHidden(meshes: readonly Mesh[], hidden: boolean): void {
+  for (const mesh of meshes) {
+    if (hidden) hideFromScene(mesh, 'wall-mode')
+    else showInScene(mesh, 'wall-mode')
+  }
+}
+
+type Follower = { hidden: boolean; negativeFacing: boolean | undefined }
+
 const scratchBox = new Box3()
+const scratchMatrix = new Matrix4()
+const scratchInverse = new Matrix4()
+const scratchNormal = new Vector3()
 
 export class WallModeFollowCache {
   private readonly tracked = new Map<string, Follower>()
@@ -231,6 +111,8 @@ export class WallModeFollowCache {
     string,
     { node: AnyNode; revision: number; centre: readonly [number, number] | null }
   >()
+  /** Nodes a capture with whole walls has shown, to hide again after it. */
+  private shownForCapture: string[] = []
 
   constructor(private readonly viewerStore: WallModeFollowViewerStore = useViewer) {}
 
@@ -245,13 +127,7 @@ export class WallModeFollowCache {
       this.registryVersion !== this.followersVersion ||
       !previous ||
       previous.wallMode !== viewer.wallMode ||
-      previous.shading !== viewer.shading ||
-      previous.textures !== viewer.textures ||
-      previous.geometryRevision !== viewer.geometryRevision ||
-      previous.selection.selectedIds !== viewer.selection.selectedIds ||
-      previous.previewSelectedIds !== viewer.previewSelectedIds ||
-      previous.hoveredId !== viewer.hoveredId ||
-      previous.hoverHighlightMode !== viewer.hoverHighlightMode
+      previous.geometryRevision !== viewer.geometryRevision
 
     camera.getWorldDirection(this.cameraDirection)
     const cutaway = viewer.wallMode === 'cutaway'
@@ -269,11 +145,9 @@ export class WallModeFollowCache {
     this.nodes = scene.nodes
     this.viewer = viewer
     this.registryVersion = this.followersVersion
-    // Nothing is restyled in walls up, and nothing needs undoing when nothing was.
-    if (viewer.wallMode === 'up' && this.tracked.size === 0) return
+    // Nothing is hidden in the other modes, and nothing needs undoing when nothing was.
+    if (viewer.wallMode !== 'down' && !cutaway && this.tracked.size === 0) return
 
-    const shading: Shading = viewer.textures && viewer.shading !== 'solid' ? 'rendered' : 'solid'
-    const selected = new Set([...viewer.selection.selectedIds, ...viewer.previewSelectedIds])
     const seen = new Set<string>()
     for (const [kind, config] of followers) {
       for (const id of sceneRegistry.byType[kind] ?? []) {
@@ -282,7 +156,7 @@ export class WallModeFollowCache {
         if (!(node && group) || config.appliesTo?.(node) === false) continue
         seen.add(id)
         const previousFollower = this.tracked.get(id)
-        const decision = this.decide(
+        const follower = this.decide(
           node,
           config,
           group,
@@ -290,66 +164,54 @@ export class WallModeFollowCache {
           previousFollower?.negativeFacing,
           scene.nodes,
         )
-        const highlight = this.highlightOf(id, decision.variant, selected, viewer)
-        const follower = { ...decision, highlight }
         this.tracked.set(id, follower)
-        // Whoever tints the node lets go before it is restyled, and takes over after it is restored.
-        if (follower.variant !== 'visible') setAffected(id, follower.variant)
-        if (
-          inputsChanged ||
-          previousFollower?.variant !== follower.variant ||
-          previousFollower.highlight !== follower.highlight
-        ) {
-          const meshes: Mesh[] = []
-          collectMeshes(group, meshes, hostedRootsOf(node))
-          for (const mesh of meshes)
-            applyToMesh(mesh, follower.variant, shading, follower.highlight)
-        }
-        if (follower.variant === 'visible') setAffected(id, follower.variant)
+        // Holds are per mesh and a rebuild brings fresh meshes, so a pass that saw new inputs
+        // re-holds them (idempotent); a camera-only pass acts on a changed decision.
+        if (!inputsChanged && previousFollower?.hidden === follower.hidden) continue
+        setHidden(meshesOf(group, node), follower.hidden)
+        setAffected(id, follower.hidden)
       }
     }
     for (const id of [...this.tracked.keys()]) {
-      if (seen.has(id)) continue
-      this.release(id)
+      if (!seen.has(id)) this.release(id)
     }
   }
 
-  /** Puts every followed node back as built. */
+  /** Shows every followed node again, as built. */
   dispose(): void {
+    this.afterCapture()
     for (const id of [...this.tracked.keys()]) this.release(id)
     this.viewer = undefined
     this.nodes = undefined
+  }
+
+  /** A capture of whole walls sees every followed node, as it sees every wall. */
+  beforeCapture(wholeWalls: boolean): void {
+    if (!wholeWalls) return
+    for (const [id, follower] of this.tracked) {
+      if (!follower.hidden) continue
+      const group = sceneRegistry.nodes.get(id)
+      if (!group) continue
+      setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), false)
+      this.shownForCapture.push(id)
+    }
+  }
+
+  afterCapture(): void {
+    for (const id of this.shownForCapture.splice(0)) {
+      const group = sceneRegistry.nodes.get(id)
+      if (group && this.tracked.get(id)?.hidden) {
+        setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), true)
+      }
+    }
   }
 
   private release(id: string): void {
     this.tracked.delete(id)
     this.nodeCentres.delete(id)
     const group = sceneRegistry.nodes.get(id)
-    const node = this.nodes?.[id as AnyNodeId]
-    if (group) {
-      const meshes: Mesh[] = []
-      collectMeshes(group, meshes, node ? hostedRootsOf(node) : new Set())
-      for (const mesh of meshes) applyToMesh(mesh, 'visible', 'solid', 'none')
-    }
-    setAffected(id, 'visible')
-  }
-
-  private highlightOf(
-    id: string,
-    variant: FollowerVariant,
-    selected: ReadonlySet<string>,
-    viewer: WallModeFollowViewerState,
-  ): Highlight {
-    if (variant === 'visible') return 'none'
-    if (viewer.hoveredId === id && viewer.hoverHighlightMode === 'delete') return 'delete'
-    if (selected.has(id)) return 'selection'
-    if (
-      viewer.hoveredId === id &&
-      viewer.hoverHighlightMode === 'default' &&
-      variant === 'invisible'
-    )
-      return 'hover'
-    return 'none'
+    if (group) setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), false)
+    setAffected(id, false)
   }
 
   private followerKinds(): ReadonlyMap<string, FollowsWallModeConfig> {
@@ -373,21 +235,19 @@ export class WallModeFollowCache {
     viewer: WallModeFollowViewerState,
     previousNegative: boolean | undefined,
     nodes: Readonly<Record<string, AnyNode>>,
-  ): Omit<Follower, 'highlight'> {
+  ): Follower {
     const mode = viewer.wallMode
-    if (mode === 'translucent') return { variant: 'translucent', negativeFacing: undefined }
-    if (mode === 'down') return { variant: 'invisible', negativeFacing: undefined }
-    if (mode !== 'cutaway') return { variant: 'visible', negativeFacing: undefined }
+    if (mode === 'down') return { hidden: true, negativeFacing: undefined }
+    if (mode !== 'cutaway') return { hidden: false, negativeFacing: undefined }
     const facing = config.facing
       ? this.declaredFacing(config.facing(node, nodes), group)
       : this.outwardFacing(node, group, viewer.geometryRevision, nodes)
-    if (!facing) return { variant: 'visible', negativeFacing: undefined }
+    if (!facing) return { hidden: false, negativeFacing: undefined }
     const negativeFacing = wallFacingNegative(
       facing.worldNormal.dot(this.cameraDirection),
       previousNegative,
     )
-    const hidden = wallHiddenFromFacing(facing, 'cutaway', negativeFacing)
-    return { variant: hidden ? 'invisible' : 'visible', negativeFacing }
+    return { hidden: wallHiddenFromFacing(facing, 'cutaway', negativeFacing), negativeFacing }
   }
 
   private declaredFacing(
@@ -403,7 +263,8 @@ export class WallModeFollowCache {
 
   /**
    * The default: the node is the building's exterior, facing away from the centre of its level's
-   * walls, judged from where the built node stands (the centre of its meshes), not from its origin.
+   * walls. Both centres are in the level's own frame, so moving anything above the level changes
+   * nothing; only the outward direction is taken to world space, at the moment of the decision.
    */
   private outwardFacing(
     node: AnyNode,
@@ -412,15 +273,17 @@ export class WallModeFollowCache {
     nodes: Readonly<Record<string, AnyNode>>,
   ) {
     const levelId = node.parentId
-    if (!levelId) return undefined
+    const levelObject = levelId ? sceneRegistry.nodes.get(levelId) : undefined
+    if (!(levelId && levelObject)) return undefined
     const buildingCentre = this.levelCentre(levelId, nodes)
-    const centre = this.nodeCentre(node, group, revision)
+    const centre = this.nodeCentre(node, group, levelObject, revision)
     if (!(buildingCentre && centre)) return undefined
     const dx = centre[0] - buildingCentre[0]
     const dz = centre[1] - buildingCentre[1]
     const length = Math.hypot(dx, dz)
     if (length < 1e-6) return undefined
-    scratchNormal.set(dx / length, 0, dz / length)
+    levelObject.updateWorldMatrix(true, false)
+    scratchNormal.set(dx / length, 0, dz / length).transformDirection(levelObject.matrixWorld)
     return {
       frontSide: 'exterior' as const,
       backSide: 'interior' as const,
@@ -428,14 +291,22 @@ export class WallModeFollowCache {
     }
   }
 
-  private nodeCentre(node: AnyNode, group: Object3D, revision: number) {
+  /** The centre of the node's built meshes in the level's frame, from their geometry. */
+  private nodeCentre(node: AnyNode, group: Object3D, levelObject: Object3D, revision: number) {
     const cached = this.nodeCentres.get(node.id)
     if (cached && cached.node === node && cached.revision === revision) return cached.centre
+    levelObject.updateWorldMatrix(true, false)
+    scratchInverse.copy(levelObject.matrixWorld).invert()
     group.updateWorldMatrix(true, true)
-    const meshes: Mesh[] = []
-    collectMeshes(group, meshes, hostedRootsOf(node))
     scratchBox.makeEmpty()
-    for (const mesh of meshes) scratchBox.expandByObject(mesh)
+    for (const mesh of meshesOf(group, node)) {
+      const geometry = mesh.geometry
+      if (!geometry) continue
+      geometry.boundingBox ??= (geometry.computeBoundingBox(), geometry.boundingBox)
+      if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) continue
+      scratchMatrix.multiplyMatrices(scratchInverse, mesh.matrixWorld)
+      scratchBox.union(geometry.boundingBox.clone().applyMatrix4(scratchMatrix))
+    }
     const centre = scratchBox.isEmpty()
       ? null
       : ([
@@ -446,14 +317,12 @@ export class WallModeFollowCache {
     return centre
   }
 
-  /** The centre of the level's walls in world space, from the scene's wall nodes. */
+  /** The centre of the level's walls in the level's frame, from the scene's wall nodes. */
   private levelCentre(levelId: string, nodes: Readonly<Record<string, AnyNode>>) {
     const cached = this.levelCentres.get(levelId)
     if (cached) return cached
     const level = nodes[levelId]
-    const levelObject = sceneRegistry.nodes.get(levelId)
-    if (!(level && levelObject)) return null
-    levelObject.updateWorldMatrix(true, false)
+    if (!level) return null
     let minX = Infinity
     let maxX = -Infinity
     let minZ = Infinity
@@ -462,11 +331,10 @@ export class WallModeFollowCache {
       const wall = nodes[childId]
       if (wall?.type !== 'wall') continue
       for (const [x, z] of [wall.start, wall.end]) {
-        scratchPoint.set(x, 0, z).applyMatrix4(levelObject.matrixWorld)
-        minX = Math.min(minX, scratchPoint.x)
-        maxX = Math.max(maxX, scratchPoint.x)
-        minZ = Math.min(minZ, scratchPoint.z)
-        maxZ = Math.max(maxZ, scratchPoint.z)
+        minX = Math.min(minX, x)
+        maxX = Math.max(maxX, x)
+        minZ = Math.min(minZ, z)
+        maxZ = Math.max(maxZ, z)
       }
     }
     if (!Number.isFinite(minX)) return null
@@ -477,7 +345,7 @@ export class WallModeFollowCache {
 }
 
 /**
- * After GeometrySystem (2), which rebuilds the meshes this restyles, and before the node batch (5),
+ * After GeometrySystem (2), which rebuilds the meshes this holds, and before the node batch (5),
  * which reads {@link isWallModeAffected} to release what this hides.
  */
 export const WALL_MODE_FOLLOW_FRAME_PRIORITY = 3
@@ -491,7 +359,18 @@ export const WallModeFollowSystem = ({
 
   useFrame((state) => cache.update(state.camera), WALL_MODE_FOLLOW_FRAME_PRIORITY)
 
-  useEffect(() => () => cache.dispose(), [cache])
+  useEffect(() => {
+    const before = (event?: { wholeWalls?: boolean }) =>
+      cache.beforeCapture(event?.wholeWalls === true)
+    const after = () => cache.afterCapture()
+    emitter.on('thumbnail:before-capture', before)
+    emitter.on('thumbnail:after-capture', after)
+    return () => {
+      emitter.off('thumbnail:before-capture', before)
+      emitter.off('thumbnail:after-capture', after)
+      cache.dispose()
+    }
+  }, [cache])
 
   return null
 }

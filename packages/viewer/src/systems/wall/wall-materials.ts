@@ -284,10 +284,7 @@ function getHighlightedColor(color: Color, kind: WallHighlightKind): Color {
   return color.clone().lerp(profile.color, profile.blend)
 }
 
-export function createHighlightedWallMaterial(
-  material: Material,
-  kind: WallHighlightKind,
-): Material {
+function createHighlightedWallMaterial(material: Material, kind: WallHighlightKind): Material {
   const highlightedMaterial = material.clone() as Material & {
     color?: Color
     emissive?: Color
@@ -412,7 +409,7 @@ export function getHoverHighlightMaterials(materials: WallMaterialArray): WallMa
   ) as WallMaterialArray
 }
 
-export function createInvisibleWallMaterial(color: string, shading: RenderShading): Material {
+function createInvisibleWallMaterial(color: string, shading: RenderShading): Material {
   const material =
     shading === 'solid'
       ? new MeshLambertNodeMaterial({
@@ -432,7 +429,7 @@ export function createInvisibleWallMaterial(color: string, shading: RenderShadin
   return material
 }
 
-export function createTranslucentWallMaterial(color: string, shading: RenderShading): Material {
+function createTranslucentWallMaterial(color: string, shading: RenderShading): Material {
   const material =
     shading === 'solid'
       ? new MeshLambertNodeMaterial({

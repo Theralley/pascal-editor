@@ -12,7 +12,7 @@ import {
   useScene,
 } from '@pascal-app/core'
 import * as viewerExports from '@pascal-app/viewer'
-import { SCENE_LAYER, useViewer, WallModeFollowCache } from '@pascal-app/viewer'
+import { BATCHED_LAYER, SCENE_LAYER, useViewer, WallModeFollowCache } from '@pascal-app/viewer'
 import {
   BackSide,
   type BatchedMesh,
@@ -934,7 +934,7 @@ test('a built single-slot block joins the batch; a painted multi-slot block keep
   expect(collectBatchCandidate('block_1')).toBeNull()
 })
 
-test('a block the wall mode restyles leaves the batch, and is re-offered when the mode lifts', () => {
+test('a block the wall mode hides leaves the batch, and is re-offered when the mode lifts', () => {
   restoreRegistry ??= nodeRegistry._snapshot()
   nodeRegistry._register({
     kind: 'block',
@@ -957,19 +957,20 @@ test('a block the wall mode restyles leaves the batch, and is re-offered when th
   const follow = new WallModeFollowCache()
   const camera = new PerspectiveCamera()
   settle()
-  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(false)
+  const batched = (index: number) => meshes[index]!.layers.isEnabled(BATCHED_LAYER)
+  expect(batched(1)).toBe(true)
 
   useViewer.setState({ wallMode: 'down' })
   follow.update(camera)
   frame()
-  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(true)
-  // Still restyled: a settled wave must not take it back.
+  expect(batched(1)).toBe(false)
+  // Still hidden: a settled wave must not take it back.
   settle()
-  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(true)
+  expect(batched(1)).toBe(false)
 
   useViewer.setState({ wallMode: 'up' })
   follow.update(camera)
   settle()
-  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(false)
+  expect(batched(1)).toBe(true)
   follow.dispose()
 })

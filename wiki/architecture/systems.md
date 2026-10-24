@@ -34,7 +34,7 @@ Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts
 | Directory | Owns |
 |---|---|
 | `geometry/` | `GeometrySystem`: rebuilds `def.geometry` kinds on dirty |
-| `wall-mode/` | `WallModeFollowSystem`: wall mode (hide / fade / cutaway) for kinds with `capabilities.followsWallMode` |
+| `wall-mode/` | `WallModeFollowSystem`: walls down and cutaway hide nodes of kinds with `capabilities.followsWallMode` |
 | `floor-elevation/` | `FloorElevationSystem`: lifts `floorPlaced` kinds over slabs |
 | `level/` | `LevelSystem`: stacked / exploded / solo / manual level positions |
 | `wall/` | `WallSystem` (dirty drain, miter cache, initial build) and `WallCutout` (opening holes) |
@@ -54,7 +54,7 @@ clears the marks it owns (floor-placed kinds with no `geometry` or `system`, suc
 columns and procedural items) at priority 2. A definition's
 `system.priority` orders mounted components; it does not set `useFrame` priority.
 
-`WallModeFollowSystem` (priority 3, after `GeometrySystem`, before the node batch) restyles nodes of kinds that
+`WallModeFollowSystem` (priority 3, after `GeometrySystem`, before the node batch) hides nodes of kinds that
 declare `capabilities.followsWallMode` for the wall mode; see `node-definitions.md`. The batch releases a node while it is affected.
 
 A kind joins by declaring `capabilities.batchable` (`BatchableConfig`): its scope

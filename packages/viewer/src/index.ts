@@ -132,11 +132,6 @@ export {
   unionRegisteredNodeBounds,
 } from './lib/hero-pose'
 export {
-  HIDDEN_FOLLOWER_SELECTION_EPSILON,
-  hiddenFollowerOutrankedOnRay,
-  hiddenFollowerPointerSuppressed,
-} from './lib/hidden-follower-pointer'
-export {
   applyIsolation,
   clearIsolation,
   collectIsolationSubtree,
@@ -470,7 +465,6 @@ export {
 } from './systems/wall/wall-system'
 export {
   isWallModeAffected,
-  isWallModeHidden,
   subscribeWallModeAffected,
   WallModeFollowCache,
   WallModeFollowSystem,

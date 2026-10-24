@@ -423,10 +423,14 @@ Handlers now change only when the selection does, never mid-drag.
 ### `capabilities.followsWallMode`
 
 Opts a kind into the viewer's wall mode. `surfaceRole: 'wall'` is only a colour token and does not
-opt in; walls keep their own `WallCutout`. A generic viewer system (`WallModeFollowSystem`) applies to
-each opted-in node what walls get: `up` shows it, `down` hides it, `translucent` draws it see-through, and
-`cutaway` hides it when the camera is on its exterior side. It reuses `wallHiddenFromFacing` and the
-wall's hidden / translucent materials, so the look is the same.
+opt in; walls keep their own `WallCutout`. A generic viewer system (`WallModeFollowSystem`) hides an
+opted-in node: `down` hides it, `cutaway` hides it when the camera is on its exterior side (the
+`wallHiddenFromFacing` decision walls use), `up` shows it. `translucent` shows it as built for now;
+a see-through look for followers comes with the display-cut work.
+
+Hiding goes through the one owner of visibility (`scene-visibility.ts`, reason `'wall-mode'`): the node's
+meshes leave the scene layer, so they are not drawn, not picked and not shadowed, and no material is
+ever written. A capture of whole walls shows the node, as it shows every wall.
 
 ```ts
 type FollowsWallModeConfig = {
@@ -440,12 +444,10 @@ type FollowsWallModeConfig = {
   unchanged). The inspector's "Follows wall modes" toggle is one undo step; agents set the same flag
   through the existing node update path, so no separate agent tool exists (no agent operation exposes wall mode itself).
 - Without `facing`, the node counts as the building's exterior: its front faces away from the centre
-  of its level's wall nodes, judged from the centre of its built meshes. Give a `facing` (`frontSide`,
-  `backSide`, level-space `normal`) when the kind knows better.
-- While the mode affects a node, the system alone writes its meshes' materials (built material, mode
-  variant and selection / hover / delete tint). The editor's selection tint and the node batch skip an
-  affected node (`isWallModeAffected`, `subscribeWallModeAffected`), and a hidden node yields pointer events
-  like a hidden wall (`hiddenFollowerPointerSuppressed`). Its variant materials are cached materials released with the material cache.
+  of its level's wall nodes, judged from the centre of its built meshes, both in the level's frame (moving
+  the building changes no decision). Give a `facing` (`frontSide`, `backSide`, level-space `normal`) when the kind knows better.
+- The node batch releases a node while it is hidden (`isWallModeAffected`, `subscribeWallModeAffected`)
+  and re-offers it afterwards.
 
 ### `capabilities.roofAccessory`
 
