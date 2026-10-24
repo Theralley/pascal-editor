@@ -27,6 +27,9 @@ type FloorplanModeState = {
   showNotice: (message: string) => void
 }
 
+/** What the self-hosted app called every scene without a project id, before scenes got their own. */
+const LEGACY_PROJECT_ID = 'default'
+
 let nextNoticeId = 0
 
 const useFloorplanMode = create<FloorplanModeState>()(
@@ -62,7 +65,9 @@ const useFloorplanMode = create<FloorplanModeState>()(
         set((state) => ({
           projectId,
           mode: projectId
-            ? (state.modesByProject[projectId] ?? DEFAULT_FLOORPLAN_MODE)
+            ? (state.modesByProject[projectId] ??
+              state.modesByProject[LEGACY_PROJECT_ID] ??
+              DEFAULT_FLOORPLAN_MODE)
             : DEFAULT_FLOORPLAN_MODE,
           notice: null,
         })),

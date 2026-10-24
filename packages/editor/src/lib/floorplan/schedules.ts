@@ -68,6 +68,7 @@ export type ScheduleSceneInput =
   | Readonly<Record<string, AnyNode>>
 
 export type ScheduleOptions = {
+  /** Default: the display unit the viewer shows. Headless callers have none worth following (it comes from the server's timezone): pass it. */
   unit?: ScheduleUnit
   /** Collapse identical openings into one row carrying `count`. Default false. */
   group?: boolean

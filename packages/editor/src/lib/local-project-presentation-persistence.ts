@@ -6,6 +6,8 @@ import { z } from 'zod'
 export const LOCAL_PROJECT_PRESENTATION_STORAGE_KEY_PREFIX = 'pascal:project-presentation:v1:'
 const LOCAL_PROJECT_PRESENTATION_VERSION = 1 as const
 const DEFAULT_FLUSH_DELAY_MS = 250
+/** What the self-hosted app called every scene without a project id, before scenes got their own. */
+const LEGACY_PROJECT_ID = 'default'
 
 type PresentationConfiguration = NonNullable<ViewerPresentationContribution['configuration']>
 
@@ -170,6 +172,12 @@ class LocalProjectPresentationPersistenceImpl implements LocalProjectPresentatio
           source: 'missing' as const,
         }
     this.contributions = stored.contributions
+    // A scene's first open adopts what was stored under the id every project-less scene used to share.
+    const legacy =
+      stored.source === 'missing' && nextProjectId && nextProjectId !== LEGACY_PROJECT_ID
+        ? readSidecar(this.storage, LEGACY_PROJECT_ID)
+        : null
+    const adoptsLegacy = legacy?.source === 'stored' && !legacy.malformed
 
     if (assigningAnonymousPresentation && stored.source === 'missing') {
       let capturedConfiguration = false
@@ -186,7 +194,8 @@ class LocalProjectPresentationPersistenceImpl implements LocalProjectPresentatio
       return
     }
 
-    let recoveredInvalidConfiguration = stored.malformed
+    if (adoptsLegacy) this.contributions = legacy.contributions
+    let recoveredInvalidConfiguration = stored.malformed || adoptsLegacy
     for (const [id, entry] of this.configurations) {
       if (!this.restoreConfiguration(id, entry.configuration)) {
         recoveredInvalidConfiguration = true

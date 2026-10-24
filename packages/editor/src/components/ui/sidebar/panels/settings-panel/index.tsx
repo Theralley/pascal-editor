@@ -369,7 +369,10 @@ export function InterfaceThemeRow({
   )
 }
 
-const PROJECT_UNIT_OPTIONS: { label: ReactNode; value: 'metric' | 'imperial' }[] = [
+type ProjectUnitsChoice = 'none' | 'metric' | 'imperial'
+
+const PROJECT_UNIT_OPTIONS: { label: ReactNode; value: ProjectUnitsChoice }[] = [
+  { label: 'Not set', value: 'none' },
   { label: 'Metric', value: 'metric' },
   { label: 'Imperial', value: 'imperial' },
 ]
@@ -388,13 +391,16 @@ function ProjectUnitsRow() {
   const unitSource = useViewer((state) => state.unitSource)
   if (!site) return null
 
-  const setProjectUnits = (system: 'metric' | 'imperial') => {
-    const metricNotation = system === 'metric' ? site.presentation?.units?.metricNotation : undefined
+  const projectUnits = site.presentation?.units
+  const setProjectUnits = (choice: ProjectUnitsChoice) => {
+    const { units: _units, ...rest } = site.presentation ?? {}
+    const metricNotation =
+      choice === 'metric' ? site.presentation?.units?.metricNotation : undefined
     useScene.getState().updateNode(site.id, {
-      presentation: {
-        ...site.presentation,
-        units: { system, ...(metricNotation ? { metricNotation } : {}) },
-      },
+      presentation:
+        choice === 'none'
+          ? rest
+          : { ...rest, units: { system: choice, ...(metricNotation ? { metricNotation } : {}) } },
     })
   }
 
@@ -405,16 +411,18 @@ function ProjectUnitsRow() {
           Units
         </p>
         <p className="text-muted-foreground text-xs">
-          {unitSource === 'local'
-            ? 'You are showing different units than the project. Use project units in the Display menu.'
-            : 'Saved with the project for everyone who opens it.'}
+          {projectUnits
+            ? unitSource === 'local'
+              ? 'You are showing different units than the project. Use project units in the Display menu.'
+              : 'Everyone who opens the project reads these units.'
+            : `Not set: using ${unit === 'imperial' ? 'imperial' : 'metric'} (your default).`}
         </p>
       </div>
       <div aria-labelledby={labelId} className="w-full shrink-0 @sm:w-60" role="group">
         <SegmentedControl
           onChange={setProjectUnits}
           options={PROJECT_UNIT_OPTIONS}
-          value={site.presentation?.units?.system ?? unit}
+          value={projectUnits?.system ?? 'none'}
         />
       </div>
     </div>
@@ -1020,8 +1028,14 @@ export function SettingsPanel({
           </SettingsSection>
         )}
 
-        <SettingsSection description="Rendering options for this editor session." title="Viewer">
+        <SettingsSection
+          description="Saved with this project for everyone who opens it."
+          title="Project units"
+        >
           <ProjectUnitsRow />
+        </SettingsSection>
+
+        <SettingsSection description="Rendering options for this editor session." title="Viewer">
           <SettingsSwitchRow
             checked={shadows}
             description="Cast shadows from lights."

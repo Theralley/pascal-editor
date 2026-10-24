@@ -1,0 +1,71 @@
+// @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
+// include Bun ambient types in its production declaration build.
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+
+// The store only gains its persist API when a storage exists at creation, so one is installed
+// before the store module is first evaluated.
+const items = new Map<string, string>()
+const target = globalThis as { window?: unknown }
+const hadWindow = 'window' in target
+const previousWindow = target.window
+target.window = {
+  localStorage: {
+    getItem: (name: string) => items.get(name) ?? null,
+    setItem: (name: string, value: string) => void items.set(name, value),
+    removeItem: (name: string) => void items.delete(name),
+  },
+}
+const { default: useViewer } = await import('./use-viewer?with-storage')
+if (hadWindow) target.window = previousWindow
+else delete target.window
+
+describe('stored viewer preferences', () => {
+  const original = useViewer.getState()
+  const rehydrateFrom = async (state: Record<string, unknown>) => {
+    items.set('viewer-preferences', JSON.stringify({ state, version: 0 }))
+    await useViewer.persist.rehydrate()
+  }
+  beforeEach(() => useViewer.setState(original, true))
+  afterEach(() => {
+    items.clear()
+    useViewer.setState(original, true)
+  })
+
+  test('a unit saved under the old keys becomes the personal default', async () => {
+    await rehydrateFrom({ unit: 'imperial', metricNotation: 'millimeters' })
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'imperial',
+      unitDefault: 'imperial',
+      metricNotationDefault: 'millimeters',
+      unitExplicit: true,
+      unitSource: 'personal',
+    })
+  })
+
+  test('no saved unit, or an invalid one, leaves the locale guess unexplicit', async () => {
+    for (const saved of [{}, { unit: 'cubits' }]) {
+      await rehydrateFrom(saved)
+      expect(useViewer.getState()).toMatchObject({ unitExplicit: false, unitSource: 'guess' })
+      expect(['metric', 'imperial']).toContain(useViewer.getState().unit)
+    }
+  })
+
+  test('the new keys win over a stale unit', async () => {
+    await rehydrateFrom({ unit: 'metric', unitDefault: 'imperial' })
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitDefault: 'imperial' })
+  })
+
+  test('what was stored for scenes without a project id carries to a scene opened for the first time', async () => {
+    await rehydrateFrom({
+      projectPreferences: { default: { look: { edges: 'strong' }, showGrid: false } },
+    })
+    useViewer.getState().setProjectId('scene-1')
+    expect(useViewer.getState()).toMatchObject({ edges: 'strong', showGrid: false })
+
+    useViewer.getState().setEdges('off')
+    useViewer.getState().setProjectId('scene-2')
+    expect(useViewer.getState()).toMatchObject({ edges: 'strong', showGrid: false })
+    useViewer.getState().setProjectId('scene-1')
+    expect(useViewer.getState().edges).toBe('off')
+  })
+})

@@ -506,11 +506,15 @@ export const DEFAULT_UNDERGROUND_LOOK: UndergroundLook = {
   transition: 'fade',
 }
 
+/** What the self-hosted app called every scene without a project id, before scenes got their own. */
+const LEGACY_PROJECT_ID = 'default'
+
 function resolveUnits(
   state: ViewerState,
 ): Pick<ViewerState, 'unit' | 'metricNotation' | 'unitSource'> {
-  const local = state.projectPreferences[state.projectId ?? '']?.units
   const project = state.projectPresentation?.units
+  // A local choice only exists to differ from the project's own units.
+  const local = project ? state.projectPreferences[state.projectId ?? '']?.units : undefined
   return {
     unit: local?.system ?? project?.system ?? state.unitDefault,
     metricNotation: local?.metricNotation ?? project?.metricNotation ?? state.metricNotationDefault,
@@ -524,12 +528,20 @@ function resolveUnits(
   }
 }
 
+/** A project that sets units gets a local override; otherwise the choice is the personal default for every project. */
 function chooseUnits(state: ViewerState, choice: UnitChoice): Partial<ViewerState> {
-  if (!state.projectId) {
+  if (!state.projectId || !state.projectPresentation?.units) {
+    const projectPreferences = { ...state.projectPreferences }
+    const key = state.projectId ?? ''
+    if (projectPreferences[key]) {
+      const { units: _units, ...rest } = projectPreferences[key]
+      projectPreferences[key] = rest
+    }
     return resolveLook(state, {
       ...(choice.system ? { unitDefault: choice.system } : {}),
       ...(choice.metricNotation ? { metricNotationDefault: choice.metricNotation } : {}),
       unitExplicit: true,
+      projectPreferences,
     })
   }
   const previous = state.projectPreferences[state.projectId]
@@ -801,8 +813,11 @@ const useViewer = create<ViewerState>()(
       setProjectId: (id) =>
         set((state) => {
           if (id === state.projectId) return state
-          const prefs = (id && state.projectPreferences?.[id]) || {}
           const { '': _unscoped, ...projectPreferences } = state.projectPreferences
+          // A scene's first open adopts what was stored under the id every project-less scene used to share.
+          if (id && !projectPreferences[id] && projectPreferences[LEGACY_PROJECT_ID])
+            projectPreferences[id] = projectPreferences[LEGACY_PROJECT_ID]
+          const prefs = (id && projectPreferences[id]) || {}
           return resolveLook(state, {
             projectId: id,
             projectPreferences,

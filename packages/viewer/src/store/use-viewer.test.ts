@@ -375,6 +375,54 @@ describe('project display units', () => {
   })
 })
 
+describe('choosing a unit', () => {
+  const original = useViewer.getState()
+  beforeEach(() => useViewer.setState(original, true))
+  afterEach(() => useViewer.setState(original, true))
+
+  test('on a project that sets no units is the personal default, shown in every other project', () => {
+    useViewer.getState().setProjectId('scene-a')
+    useViewer.getState().setProjectPresentation(undefined)
+    useViewer.getState().setUnit('imperial')
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'imperial',
+      unitDefault: 'imperial',
+      unitExplicit: true,
+      unitSource: 'personal',
+    })
+    expect(useViewer.getState().projectPreferences['scene-a']?.units).toBeUndefined()
+
+    useViewer.getState().setProjectId('scene-b')
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitSource: 'personal' })
+  })
+
+  test('the notation choice is personal too, and drops a stale local override', () => {
+    useViewer.getState().setProjectId('scene-a')
+    useViewer.getState().setProjectPresentation({ units: { system: 'imperial' } })
+    useViewer.getState().setUnit('metric')
+    useViewer.getState().setProjectPresentation(undefined)
+    useViewer.getState().setMetricNotation('millimeters')
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'metric',
+      metricNotation: 'millimeters',
+      metricNotationDefault: 'millimeters',
+    })
+    expect(useViewer.getState().projectPreferences['scene-a']?.units).toBeUndefined()
+  })
+
+  test('a project that sets units keeps the choice local to it', () => {
+    useViewer.getState().setProjectId('scene-a')
+    useViewer.getState().setProjectPresentation({ units: { system: 'imperial' } })
+    useViewer.getState().setUnit('metric')
+    expect(useViewer.getState()).toMatchObject({ unit: 'metric', unitSource: 'local' })
+    expect(useViewer.getState().unitExplicit).toBe(false)
+
+    useViewer.getState().setProjectId('scene-b')
+    useViewer.getState().setProjectPresentation(undefined)
+    expect(useViewer.getState().unitSource).toBe('guess')
+  })
+})
+
 describe('the site ground with showGround off', () => {
   test('stands in while a level below grade is shown, and leaves showGround to the author otherwise', () => {
     // An authored landscape supplies the ground (showGround false): the level display hides it

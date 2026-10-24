@@ -983,7 +983,36 @@ export const DISPLAY_UNITS_CASES: AgentToolCase[] = [
     tool: 'set_display_units',
     scene: () => scene(site({ presentation: { units: { system: 'metric' } } })),
     input: { system: 'metric' },
-    expect: { result: { unchanged: true, system: 'metric', metricNotation: 'meters' } },
+    expect: { result: { unchanged: true, system: 'metric', metricNotation: null } },
+  },
+  {
+    name: 'with two sites set_display_units refuses without a site, naming both',
+    tool: 'set_display_units',
+    scene: () => scene(site({ id: 'site_a' }), site({ id: 'site_b' })),
+    input: { system: 'imperial' },
+    expect: { refusal: 'site_required', mentions: ['site_a', 'site_b'] },
+  },
+  {
+    name: 'set_display_units writes the site named when the scene has several',
+    tool: 'set_display_units',
+    scene: () => scene(site({ id: 'site_b' }), site({ id: 'site_a' })),
+    input: { site: 'site_a', system: 'imperial' },
+    expect: {
+      result: { siteId: 'site_a', system: 'imperial' },
+      after: { site_a: { presentation: { units: { system: 'imperial' } } } },
+    },
+  },
+  {
+    name: 'get_display_units reads the site named when the scene has several',
+    tool: 'get_display_units',
+    scene: () =>
+      scene(
+        site({ id: 'site_b' }),
+        site({ id: 'site_a', presentation: { units: { system: 'imperial' } } }),
+      ),
+    input: { site: 'site_a' },
+    readOnly: true,
+    expect: { result: { siteId: 'site_a', system: 'imperial', metricNotation: null } },
   },
   {
     name: 'set_display_units on a scene with no site is refused',

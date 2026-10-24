@@ -84,6 +84,7 @@ export type SheetGeometryOptions = {
   annotationVisibility: FloorplanAnnotationVisibility
   /** Return false to leave a node out of this viewport (the layer switches). */
   accept?: (node: AnyNode, category: string | undefined) => boolean
+  /** Default: the display unit and notation the viewer shows. Headless callers have none worth following (it comes from the server's timezone): pass both. */
   unit?: 'metric' | 'imperial'
   metricNotation?: FloorplanMetricNotation
 }

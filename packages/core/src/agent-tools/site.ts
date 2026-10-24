@@ -56,20 +56,25 @@ export const placeBuildingTool = {
   },
 }
 
+const displayUnitsSite = NodeId.optional().describe(
+  "The site, by its id (get_site's siteId). Needed only when the scene has several (site_required); default: its only site.",
+)
+
 export const getDisplayUnitsTool = {
   name: 'get_display_units',
   title: 'Get display units',
   description:
-    "Read the units the project shows lengths and areas in: system (metric: m, mm and m²; imperial: feet, inches and ft²) and, for metric, metricNotation (meters or millimeters), or none while the project sets no units of its own and each person sees their own choice or their locale's. Geometry is always stored in metres; this only changes how it reads. A person can still show something else on their own screen; set_display_units changes what the project shows everyone. Refusal: no_site.",
-  input: {},
+    "Read the units the project shows lengths and areas in: system (metric: m, mm and m²; imperial: feet, inches and ft²) and, for metric, metricNotation (meters or millimeters); system is null while the project sets no units of its own, and each person then sees their own choice or their locale's. metricNotation is null when the project sets none: each person's own notation applies. Geometry is always stored in metres; this only changes how it reads. A person can still show something else on their own screen; set_display_units changes what the project shows everyone. Refusals: no_site, site_required, site_not_found, not_a_site.",
+  input: { site: displayUnitsSite },
 }
 
 export const setDisplayUnitsTool = {
   name: 'set_display_units',
   title: 'Set display units',
   description:
-    "Set the units the project shows lengths and areas in, for everyone who opens it: metric (m, mm, m²) or imperial (feet, inches, ft²). It changes how stored metres read, never the geometry. metricNotation (meters or millimeters) applies to metric; omit it to keep the project's current one. Use it when the person asks for feet or square feet, or for metres or millimetres; a person's own screen choice, if they made one, still wins on their screen. One undo step. Answering unchanged: true when the project already has these units. Refusal: no_site.",
+    "Set the units the project shows lengths and areas in, for everyone who opens it: metric (m, mm, m²) or imperial (feet, inches, ft²). It changes how stored metres read, never the geometry. metricNotation (meters or millimeters) applies to metric; omit it to keep the project's current one, else the project sets none (each person's own notation applies). Use it when the person asks for feet or square feet, or for metres or millimetres; a person's own screen choice, if they made one, still wins on their screen. One undo step. Answering unchanged: true when the project already has these units. Refusals: no_site, site_required, site_not_found, not_a_site.",
   input: {
+    site: displayUnitsSite,
     system: z
       .enum(['metric', 'imperial'])
       .describe('metric: m, mm, m². imperial: feet, inches, ft².'),
@@ -77,7 +82,7 @@ export const setDisplayUnitsTool = {
       .enum(['meters', 'millimeters'])
       .optional()
       .describe(
-        'How metric lengths read. Default: the one the project has, else meters. Ignored for imperial.',
+        'How metric lengths read. Default: the one the project has, else none set. Ignored for imperial.',
       ),
   },
 }

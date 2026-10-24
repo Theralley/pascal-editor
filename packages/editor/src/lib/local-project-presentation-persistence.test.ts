@@ -172,6 +172,43 @@ describe('local project presentation persistence', () => {
     persistence.dispose()
   })
 
+  test('a scene opened for the first time adopts what was stored under the old shared project id', () => {
+    const storage = new MemoryStorage()
+    const open = (projectId: string) => {
+      const registry = new TestRegistry()
+      const configuration = new TestConfiguration()
+      registry.register(configuration)
+      const persistence = createLocalProjectPresentationPersistence({
+        registry,
+        storage,
+        pageHideTarget: null,
+        flushDelayMs: 60_000,
+      })
+      persistence.switchProject(projectId)
+      return { configuration, persistence }
+    }
+    const legacy = open('default')
+    legacy.configuration.setValue('shared atmosphere')
+    legacy.persistence.flush()
+    legacy.persistence.dispose()
+
+    const first = open('scene-1')
+    expect(first.configuration.value).toBe('shared atmosphere')
+    first.configuration.setValue('first scene atmosphere')
+    first.persistence.flush()
+    first.persistence.dispose()
+
+    const second = open('scene-2')
+    expect(second.configuration.value).toBe('shared atmosphere')
+    second.persistence.flush()
+    expect(readStoredValue(storage, 'scene-2')).toBe('shared atmosphere')
+    second.persistence.dispose()
+
+    const reopened = open('scene-1')
+    expect(reopened.configuration.value).toBe('first scene atmosphere')
+    reopened.persistence.dispose()
+  })
+
   test('flushes the old project before restoring defaults or the next project', () => {
     const storage = new MemoryStorage()
     const registry = new TestRegistry()

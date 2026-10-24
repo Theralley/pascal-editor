@@ -154,30 +154,53 @@ export const placeBuilding: AgentOperation<PlaceBuildingInput> = (nodes, input, 
 }
 
 type DisplayUnitsInput = {
+  site?: string
   system: 'metric' | 'imperial'
   metricNotation?: 'meters' | 'millimeters'
 }
 
-function requireSite(nodes: SceneNodes) {
-  const [site] = queryNodes<AnyNode & { type: 'site' }>(nodes, { type: 'site' })
+/** The site named, else the scene's only one: with several, the editor's choice is not knowable here. */
+function requireSite(nodes: SceneNodes, siteId?: string) {
+  const sites = queryNodes<AnyNode & { type: 'site' }>(nodes, { type: 'site' })
+  if (siteId) {
+    const named = nodes[siteId]
+    if (!named) refuse('site_not_found', `Site not found: ${siteId}.`, { siteId })
+    if (named.type !== 'site')
+      refuse('not_a_site', `Node ${siteId} is a ${named.type}, not a site.`, {
+        siteId,
+        type: named.type,
+      })
+    return named
+  }
+  const [site] = sites
   if (!site)
     refuse('no_site', 'The scene has no site to hold the project units: add_level starts one.')
+  if (sites.length > 1)
+    refuse(
+      'site_required',
+      `The scene has ${sites.length} sites (${sites.map((candidate) => candidate.id).join(', ')}): name one with site.`,
+      {
+        siteIds: sites.map((candidate) => candidate.id),
+      },
+    )
   return site
 }
 
 const describeUnits = (units: NonNullable<SitePresentation['units']>) =>
   units.system === 'imperial'
     ? 'imperial (feet, inches, ft²)'
-    : `metric (${units.metricNotation === 'millimeters' ? 'mm' : 'm'}, m²)`
+    : `metric (${units.metricNotation === 'millimeters' ? 'mm, ' : units.metricNotation === 'meters' ? 'm, ' : ''}m²)`
 
 /** `get_display_units`: the units the project shows everyone, or none while it sets no units. */
-export const getDisplayUnits: AgentOperation<Record<string, never>> = (nodes) => {
-  const units = requireSite(nodes).presentation?.units
+export const getDisplayUnits: AgentOperation<{ site?: string }> = (nodes, input) => {
+  const site = requireSite(nodes, input.site)
+  const units = site.presentation?.units
   return {
     result: {
       ok: true,
+      siteId: site.id,
       system: units?.system ?? null,
-      metricNotation: units?.system === 'metric' ? (units.metricNotation ?? 'meters') : null,
+      metricNotation: units?.system === 'metric' ? (units.metricNotation ?? null) : null,
       message: units
         ? `The project shows ${describeUnits(units)}.`
         : "The project sets no units: each person sees their own choice, else their locale's.",
@@ -187,7 +210,7 @@ export const getDisplayUnits: AgentOperation<Record<string, never>> = (nodes) =>
 
 /** `set_display_units`: writes `site.presentation.units`, the same change the Settings Units row makes. */
 export const setDisplayUnits: AgentOperation<DisplayUnitsInput> = (nodes, input) => {
-  const site = requireSite(nodes)
+  const site = requireSite(nodes, input.site)
   const previous = site.presentation?.units
   const metricNotation =
     input.system === 'metric' ? (input.metricNotation ?? previous?.metricNotation) : undefined
@@ -201,7 +224,7 @@ export const setDisplayUnits: AgentOperation<DisplayUnitsInput> = (nodes, input)
     ok: true,
     siteId: site.id,
     system: units.system,
-    metricNotation: units.system === 'metric' ? (units.metricNotation ?? 'meters') : null,
+    metricNotation: units.metricNotation ?? null,
     ...(unchanged ? { unchanged: true } : {}),
     message: unchanged
       ? `The project already shows ${describeUnits(units)}.`
