@@ -8,6 +8,7 @@ import {
   siteBrief,
   type YardKey,
 } from '../lib/site-placement'
+import type { AnyNode, SitePresentation } from '../schema'
 import { targetBuilding } from './add-level'
 import { pointInPolygon, type Vec2 } from './plan-geometry'
 import { queryNodes } from './scene-queries'
@@ -149,5 +150,68 @@ export const placeBuilding: AgentOperation<PlaceBuildingInput> = (nodes, input, 
           },
         }
       : {}),
+  }
+}
+
+type DisplayUnitsInput = {
+  system: 'metric' | 'imperial'
+  metricNotation?: 'meters' | 'millimeters'
+}
+
+function requireSite(nodes: SceneNodes) {
+  const [site] = queryNodes<AnyNode & { type: 'site' }>(nodes, { type: 'site' })
+  if (!site)
+    refuse('no_site', 'The scene has no site to hold the project units: add_level starts one.')
+  return site
+}
+
+const describeUnits = (units: NonNullable<SitePresentation['units']>) =>
+  units.system === 'imperial'
+    ? 'imperial (feet, inches, ft²)'
+    : `metric (${units.metricNotation === 'millimeters' ? 'mm' : 'm'}, m²)`
+
+/** `get_display_units`: the units the project shows everyone, or none while it sets no units. */
+export const getDisplayUnits: AgentOperation<Record<string, never>> = (nodes) => {
+  const units = requireSite(nodes).presentation?.units
+  return {
+    result: {
+      ok: true,
+      system: units?.system ?? null,
+      metricNotation: units?.system === 'metric' ? (units.metricNotation ?? 'meters') : null,
+      message: units
+        ? `The project shows ${describeUnits(units)}.`
+        : "The project sets no units: each person sees their own choice, else their locale's.",
+    },
+  }
+}
+
+/** `set_display_units`: writes `site.presentation.units`, the same change the Settings Units row makes. */
+export const setDisplayUnits: AgentOperation<DisplayUnitsInput> = (nodes, input) => {
+  const site = requireSite(nodes)
+  const previous = site.presentation?.units
+  const metricNotation =
+    input.system === 'metric' ? (input.metricNotation ?? previous?.metricNotation) : undefined
+  const units: NonNullable<SitePresentation['units']> = {
+    system: input.system,
+    ...(metricNotation ? { metricNotation } : {}),
+  }
+  const unchanged =
+    previous?.system === units.system && previous.metricNotation === units.metricNotation
+  const result = {
+    ok: true,
+    siteId: site.id,
+    system: units.system,
+    metricNotation: units.system === 'metric' ? (units.metricNotation ?? 'meters') : null,
+    ...(unchanged ? { unchanged: true } : {}),
+    message: unchanged
+      ? `The project already shows ${describeUnits(units)}.`
+      : `The project now shows ${describeUnits(units)}. The geometry is unchanged; a person's own screen choice still wins on their screen.`,
+  }
+  if (unchanged) return { result }
+  return {
+    result,
+    changes: {
+      update: [{ id: site.id, data: { presentation: { ...site.presentation, units } } }],
+    },
   }
 }

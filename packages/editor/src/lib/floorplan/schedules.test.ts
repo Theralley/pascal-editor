@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { AnyNode, AnyNodeId } from '@pascal-app/core'
+import { useViewer } from '@pascal-app/viewer'
 import { doorSchedule, formatScheduleLength, roomSchedule, windowSchedule } from './schedules'
 
 function fixture(): Record<string, AnyNode> {
@@ -117,6 +118,9 @@ describe('formatScheduleLength', () => {
   })
 })
 
+beforeEach(() => useViewer.setState({ unit: 'imperial' }))
+afterEach(() => useViewer.setState({ unit: 'metric' }))
+
 describe('doorSchedule', () => {
   test('rows carry mark, type, size, rough opening, frame, hardware, remarks', () => {
     const { rows, issues } = doorSchedule(fixture(), 'level_1' as AnyNodeId)
@@ -178,6 +182,14 @@ describe('roomSchedule', () => {
     expect(rows[0]?.floorFinish).toBe('Oak')
     expect(rows[0]?.area).toBeCloseTo(24, 6)
     expect(rows[0]?.areaText).toBe('258.3 ft²')
+  })
+
+  test('areas follow the resolved display unit unless one is passed', () => {
+    useViewer.setState({ unit: 'metric' })
+    expect(roomSchedule(fixture(), 'level_1' as AnyNodeId).rows[0]?.areaText).toBe('24.00 m²')
+    expect(
+      roomSchedule(fixture(), 'level_1' as AnyNodeId, { unit: 'imperial' }).rows[0]?.areaText,
+    ).toBe('258.3 ft²')
   })
 
   test('a room without a number is reported', () => {

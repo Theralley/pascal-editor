@@ -150,7 +150,7 @@ export const SiteNode = BaseNode.extend({
   - polygon: polygon data (metres, x east, z south, origin = geocoded point)
   - terrain: optional sculpted heightfield; absent means flat ground
   - showGround: false hides site ground (including sculpted terrain) and horizon in 3D; buildings and parcel lines remain
-  - presentation: optional project rendering defaults (theme, lighting, exposure, shading, edges and postprocessing); local viewer choices override them
+  - presentation: optional project rendering defaults (theme, lighting, exposure, shading, edges, postprocessing and display units); local viewer choices override them
   - address / parcel: civic address + GIS parcel provenance (optional)
   - setbacks: required yards in metres; setbacksSource / zone cite them
   - frontEdge: index of the street-facing polygon edge

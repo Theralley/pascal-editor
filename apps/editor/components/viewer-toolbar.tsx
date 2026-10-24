@@ -255,6 +255,8 @@ function DisplayMenu() {
   const setUnit = useViewer((state) => state.setUnit)
   const metricNotation = useViewer((state) => state.metricNotation)
   const setMetricNotation = useViewer((state) => state.setMetricNotation)
+  const unitSource = useViewer((state) => state.unitSource)
+  const resetProjectUnits = useViewer((state) => state.resetProjectUnits)
   const cameraMode = useViewer((state) => state.cameraMode)
   const setCameraMode = useViewer((state) => state.setCameraMode)
   const shading = useViewer((state) => state.shading)
@@ -461,6 +463,11 @@ function DisplayMenu() {
                 : metricNotation === 'millimeters'
                   ? 'Millimeters'
                   : 'Meters'}
+              {unitSource === 'project'
+                ? ' · Project default'
+                : unitSource === 'local'
+                  ? ' · Your choice'
+                  : ''}
             </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
@@ -489,6 +496,14 @@ function DisplayMenu() {
               <span>Feet & inches</span>
               {unit === 'imperial' ? <Check className="ml-auto h-4 w-4 text-foreground" /> : null}
             </DropdownMenuItem>
+            {unitSource === 'local' ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={resetProjectUnits}>
+                  <span>Use project units</span>
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 

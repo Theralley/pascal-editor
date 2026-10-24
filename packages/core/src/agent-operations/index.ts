@@ -29,7 +29,7 @@ import { searchAssets } from './search-assets'
 import { searchMaterials } from './search-materials'
 import { setCheckpoint } from './set-checkpoint'
 import { setGroundLevel } from './set-ground-level'
-import { getSite, placeBuilding } from './site'
+import { getDisplayUnits, getSite, placeBuilding, setDisplayUnits } from './site'
 import { fitStair, measureStairOperation } from './stairs'
 import type { AgentOperation, AgentOperations } from './types'
 import { verifyScene } from './verify-scene'
@@ -127,6 +127,8 @@ const SINGLE_OPERATIONS = {
   search_materials: searchMaterials,
   get_site: getSite,
   place_building: placeBuilding,
+  get_display_units: getDisplayUnits,
+  set_display_units: setDisplayUnits,
   ...ROOM_OPERATIONS,
 } as const
 

@@ -41,6 +41,9 @@ type Outliner = {
 }
 
 type LookDefaults = { theme: string; edges: EdgeMode; shadows: boolean }
+type UnitChoice = { system?: 'metric' | 'imperial'; metricNotation?: MetricNotation }
+/** Where the resolved unit comes from: this project's local choice, the project's authored default, the user's saved pick, or the locale guess. */
+export type UnitSource = 'local' | 'project' | 'personal' | 'guess'
 type LocalLook = Partial<LookDefaults> & {
   shadingByContext?: Partial<Record<RenderContext, RenderShading>>
 }
@@ -74,6 +77,8 @@ type ViewerState = {
   projectPresentation?: SitePresentation
   setProjectPresentation: (presentation: SitePresentation | undefined) => void
   resetProjectLook: () => void
+  /** Drops this project's local unit choice so the project's units (or the personal default) apply. */
+  resetProjectUnits: () => void
   previewSceneTheme: string | null
   contextDefaultShading: RenderShading
   /** The selected project/global theme before a temporary preview. */
@@ -122,13 +127,19 @@ type ViewerState = {
   shadows: boolean
   setShadows: (shadows: boolean) => void
 
+  /** The resolved display unit: local project choice > project default > personal default > locale guess. */
   unit: 'metric' | 'imperial'
+  /** With a project open this writes that project's local choice; otherwise the personal default. */
   setUnit: (unit: 'metric' | 'imperial') => void
   metricNotation: MetricNotation
   setMetricNotation: (notation: MetricNotation) => void
-  /** True once the user explicitly picked a unit. Until then `unit` is a
-   * locale-derived default and is not persisted, so the default can keep
-   * tracking the browser locale across sessions. */
+  unitSource: UnitSource
+  /** The personal unit across projects. A locale guess until `unitExplicit`. */
+  unitDefault: 'metric' | 'imperial'
+  metricNotationDefault: MetricNotation
+  /** True once the user explicitly picked a personal unit. Until then
+   * `unitDefault` is a locale-derived guess and is not persisted, so it can
+   * keep tracking the browser locale across sessions. */
   unitExplicit: boolean
 
   levelMode: 'stacked' | 'exploded' | 'solo' | 'manual'
@@ -251,6 +262,7 @@ type ViewerState = {
     string,
     {
       look?: LocalLook
+      units?: UnitChoice
       showScans?: boolean
       showGuides?: boolean
       showGrid?: boolean
@@ -310,8 +322,8 @@ type PersistedViewerState = Partial<
     | 'colorPreset'
     | 'edges'
     | 'shadows'
-    | 'unit'
-    | 'metricNotation'
+    | 'unitDefault'
+    | 'metricNotationDefault'
     | 'unitExplicit'
     | 'levelMode'
     | 'wallMode'
@@ -411,7 +423,24 @@ function normalizeProjectPreferences(value: unknown): ViewerState['projectPrefer
       record.look && typeof record.look === 'object'
         ? (record.look as Record<string, unknown>)
         : undefined
+    const units =
+      record.units && typeof record.units === 'object'
+        ? (record.units as Record<string, unknown>)
+        : undefined
     next[projectId] = {
+      ...(units
+        ? {
+            units: {
+              ...(typeof units.system === 'string' && UNITS.includes(units.system as 'metric')
+                ? { system: units.system as UnitChoice['system'] }
+                : {}),
+              ...(typeof units.metricNotation === 'string' &&
+              METRIC_NOTATIONS.includes(units.metricNotation as MetricNotation)
+                ? { metricNotation: units.metricNotation as MetricNotation }
+                : {}),
+            },
+          }
+        : {}),
       ...(look
         ? {
             look: {
@@ -453,10 +482,18 @@ function normalizePersistedViewerState(value: unknown): PersistedViewerState {
     colorPreset: pickString<ColorPreset>(state.colorPreset, COLOR_PRESETS, 'clay'),
     edges: pickString<EdgeMode>(state.edges, EDGE_MODES, 'soft'),
     shadows: typeof state.shadows === 'boolean' ? state.shadows : true,
-    unit: pickString<ViewerState['unit']>(state.unit, UNITS, detectDefaultUnit()),
-    metricNotation: pickString<MetricNotation>(state.metricNotation, METRIC_NOTATIONS, 'meters'),
-    unitExplicit:
-      typeof state.unit === 'string' && UNITS.includes(state.unit as ViewerState['unit']),
+    // `unit` / `metricNotation` are the keys this persisted before the personal default was kept apart from the resolved unit.
+    unitDefault: pickString<ViewerState['unit']>(
+      state.unitDefault ?? state.unit,
+      UNITS,
+      detectDefaultUnit(),
+    ),
+    metricNotationDefault: pickString<MetricNotation>(
+      state.metricNotationDefault ?? state.metricNotation,
+      METRIC_NOTATIONS,
+      'meters',
+    ),
+    unitExplicit: UNITS.includes((state.unitDefault ?? state.unit) as ViewerState['unit']),
     levelMode: pickString<ViewerState['levelMode']>(state.levelMode, LEVEL_MODES, 'stacked'),
     wallMode: pickString<ViewerState['wallMode']>(state.wallMode, WALL_MODES, 'up'),
     projectPreferences: normalizeProjectPreferences(state.projectPreferences),
@@ -469,6 +506,41 @@ export const DEFAULT_UNDERGROUND_LOOK: UndergroundLook = {
   transition: 'fade',
 }
 
+function resolveUnits(
+  state: ViewerState,
+): Pick<ViewerState, 'unit' | 'metricNotation' | 'unitSource'> {
+  const local = state.projectPreferences[state.projectId ?? '']?.units
+  const project = state.projectPresentation?.units
+  return {
+    unit: local?.system ?? project?.system ?? state.unitDefault,
+    metricNotation: local?.metricNotation ?? project?.metricNotation ?? state.metricNotationDefault,
+    unitSource: local?.system
+      ? 'local'
+      : project?.system
+        ? 'project'
+        : state.unitExplicit
+          ? 'personal'
+          : 'guess',
+  }
+}
+
+function chooseUnits(state: ViewerState, choice: UnitChoice): Partial<ViewerState> {
+  if (!state.projectId) {
+    return resolveLook(state, {
+      ...(choice.system ? { unitDefault: choice.system } : {}),
+      ...(choice.metricNotation ? { metricNotationDefault: choice.metricNotation } : {}),
+      unitExplicit: true,
+    })
+  }
+  const previous = state.projectPreferences[state.projectId]
+  return resolveLook(state, {
+    projectPreferences: {
+      ...state.projectPreferences,
+      [state.projectId]: { ...previous, units: { ...previous?.units, ...choice } },
+    },
+  })
+}
+
 function resolveLook(state: ViewerState, patch: Partial<ViewerState>): Partial<ViewerState> {
   const next = { ...state, ...patch }
   const local = next.projectPreferences[next.projectId ?? '']?.look
@@ -476,6 +548,7 @@ function resolveLook(state: ViewerState, patch: Partial<ViewerState>): Partial<V
   const theme = getSceneTheme(next.previewSceneTheme ?? savedTheme)
   return {
     ...patch,
+    ...resolveUnits(next),
     savedSceneTheme: savedTheme,
     sceneTheme: theme.id,
     sceneAppearance: projectSceneTheme(
@@ -557,6 +630,14 @@ const useViewer = create<ViewerState>()(
       projectPresentation: undefined,
       setProjectPresentation: (projectPresentation) =>
         set((state) => resolveLook(state, { projectPresentation })),
+      resetProjectUnits: () =>
+        set((state) => {
+          const key = state.projectId ?? ''
+          const { units: _units, ...rest } = state.projectPreferences[key] ?? {}
+          return resolveLook(state, {
+            projectPreferences: { ...state.projectPreferences, [key]: rest },
+          })
+        }),
       resetProjectLook: () =>
         set((state) => {
           const projectPreferences = { ...state.projectPreferences }
@@ -624,10 +705,13 @@ const useViewer = create<ViewerState>()(
 
       unit: detectDefaultUnit(),
       metricNotation: 'meters',
+      unitSource: 'guess',
+      unitDefault: detectDefaultUnit(),
+      metricNotationDefault: 'meters',
       unitExplicit: false,
-      setUnit: (unit) => set({ unit, unitExplicit: true }),
+      setUnit: (system) => set((state) => chooseUnits(state, { system })),
       setMetricNotation: (metricNotation) =>
-        set({ unit: 'metric', metricNotation, unitExplicit: true }),
+        set((state) => chooseUnits(state, { system: 'metric', metricNotation })),
 
       levelMode: 'stacked',
       setLevelMode: (mode) => set({ levelMode: mode }),
@@ -811,8 +895,9 @@ const useViewer = create<ViewerState>()(
         colorPreset: state.colorPreset,
         edges: state.lookDefaults.edges,
         shadows: state.lookDefaults.shadows,
-        ...(state.unitExplicit ? { unit: state.unit } : {}),
-        metricNotation: state.metricNotation,
+        ...(state.unitExplicit
+          ? { unitDefault: state.unitDefault, metricNotationDefault: state.metricNotationDefault }
+          : {}),
         levelMode: state.levelMode,
         wallMode: state.wallMode,
         projectPreferences: Object.fromEntries(
@@ -902,7 +987,7 @@ export function applyCountryUnitDefault(country: string | null | undefined) {
   const state = useViewer.getState()
   if (state.unitExplicit) return
   const unit = IMPERIAL_REGIONS.includes(country.toUpperCase()) ? 'imperial' : 'metric'
-  if (state.unit !== unit) useViewer.setState({ unit })
+  if (state.unitDefault !== unit) useViewer.setState(resolveLook(state, { unitDefault: unit }))
 }
 
 export default useViewer

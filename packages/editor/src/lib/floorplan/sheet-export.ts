@@ -31,6 +31,7 @@ import type {
   LiveNodeOverrides,
 } from '@pascal-app/core'
 import { nodeRegistry, resolveBuildingForLevel } from '@pascal-app/core'
+import { useViewer } from '@pascal-app/viewer'
 import {
   buildContext,
   collectFloorplanLinkedLevelNodes,
@@ -98,8 +99,8 @@ export function collectSheetGeometry(options: SheetGeometryOptions): SheetGeomet
     drawingType,
     annotationVisibility,
     accept,
-    unit = 'imperial',
-    metricNotation = 'meters',
+    unit = useViewer.getState().unit,
+    metricNotation = useViewer.getState().metricNotation,
   } = options
   const noLiveOverrides = new Map<string, LiveNodeOverrides>()
   const levelNodeIdsByType = new Map<string, AnyNodeId[]>()

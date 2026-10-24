@@ -937,3 +937,59 @@ export const SITE_VERIFY_CASES: AgentToolCase[] = [
     },
   },
 ]
+
+export const DISPLAY_UNITS_CASES: AgentToolCase[] = [
+  {
+    name: 'get_display_units reads none while the project sets no units',
+    tool: 'get_display_units',
+    scene: () => scene(site()),
+    input: {},
+    readOnly: true,
+    expect: { result: { system: null, metricNotation: null }, mentions: ['no units'] },
+  },
+  {
+    name: 'get_display_units reads the project units, millimeters for metric',
+    tool: 'get_display_units',
+    scene: () =>
+      scene(site({ presentation: { units: { system: 'metric', metricNotation: 'millimeters' } } })),
+    input: {},
+    readOnly: true,
+    expect: { result: { system: 'metric', metricNotation: 'millimeters' }, mentions: ['mm'] },
+  },
+  {
+    name: 'set_display_units stores imperial on the site without touching the rest of its presentation',
+    tool: 'set_display_units',
+    scene: () => scene(site({ presentation: { theme: 'studio' } })),
+    input: { system: 'imperial' },
+    expect: {
+      result: { ok: true, siteId: 'site_lot', system: 'imperial', metricNotation: null },
+      mentions: ['ft²'],
+      after: { site_lot: { presentation: { theme: 'studio', units: { system: 'imperial' } } } },
+    },
+  },
+  {
+    name: 'set_display_units keeps the notation the project has when only the system is given',
+    tool: 'set_display_units',
+    scene: () =>
+      scene(site({ presentation: { units: { system: 'imperial', metricNotation: 'millimeters' } } })),
+    input: { system: 'metric' },
+    expect: {
+      result: { system: 'metric', metricNotation: 'millimeters' },
+      after: { site_lot: { presentation: { units: { system: 'metric', metricNotation: 'millimeters' } } } },
+    },
+  },
+  {
+    name: 'set_display_units answers unchanged when the project already shows those units',
+    tool: 'set_display_units',
+    scene: () => scene(site({ presentation: { units: { system: 'metric' } } })),
+    input: { system: 'metric' },
+    expect: { result: { unchanged: true, system: 'metric', metricNotation: 'meters' } },
+  },
+  {
+    name: 'set_display_units on a scene with no site is refused',
+    tool: 'set_display_units',
+    scene: () => ({ nodes: {}, rootNodeIds: [] }),
+    input: { system: 'imperial' },
+    expect: { refusal: 'no_site' },
+  },
+]

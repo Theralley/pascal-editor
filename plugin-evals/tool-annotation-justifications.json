@@ -514,6 +514,19 @@
       }
     },
     {
+      "name": "get_display_units",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "justifications": {
+        "readOnlyHint": "It reads the display units the project saves on its site, from the connected Pascal scene without changing it.",
+        "destructiveHint": "It does not create, update, replace, delete, load, or save Pascal scene or project state.",
+        "openWorldHint": "It operates only on data supplied by or already available inside the connected Pascal service and does not access the public internet."
+      }
+    },
+    {
       "name": "get_level_summary",
       "annotations": {
         "readOnlyHint": true,
@@ -992,6 +1005,19 @@
         "readOnlyHint": "It is not read-only because it records a named checkpoint of the connected Pascal scene in the agent's session record.",
         "destructiveHint": "It only adds a checkpoint to the session record; it changes no scene content and removes or replaces nothing but a checkpoint of the same name.",
         "openWorldHint": "It operates only on the connected Pascal scene and does not access the public internet."
+      }
+    },
+    {
+      "name": "set_display_units",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "justifications": {
+        "readOnlyHint": "It writes the project's display units on the site node in the connected scene.",
+        "destructiveHint": "It replaces the site's stored display units, in one undoable edit; geometry is not changed.",
+        "openWorldHint": "It operates on the connected scene and its configured live persistence transport without accessing the public internet."
       }
     },
     {

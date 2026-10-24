@@ -26,6 +26,13 @@ export const SitePresentation = z.object({
   shading: z.enum(['solid', 'rendered']).optional(),
   edges: z.enum(['off', 'soft', 'strong']).optional(),
   shadows: z.boolean().optional(),
+  /** The project's display units. Geometry stays in metres; this only picks how it reads. */
+  units: z
+    .object({
+      system: z.enum(['metric', 'imperial']),
+      metricNotation: z.enum(['meters', 'millimeters']).optional(),
+    })
+    .optional(),
   lighting: z
     .object({
       background: color.optional(),

@@ -64,6 +64,23 @@ describe('SiteNode.terrain', () => {
       ).toBe(false)
     }
   })
+  test('project display units round-trip, legacy presentations stay unitless, and bad units are rejected', () => {
+    const legacy = SiteNode.parse({ id: 'site_units', presentation: { theme: 'studio' } })
+    expect(legacy.presentation?.units).toBeUndefined()
+    for (const units of [
+      { system: 'imperial' },
+      { system: 'metric', metricNotation: 'millimeters' },
+    ]) {
+      const restored = SiteNode.parse(
+        JSON.parse(JSON.stringify({ ...legacy, presentation: { units } })),
+      )
+      expect(restored.presentation?.units).toEqual(units)
+    }
+    for (const units of [{ system: 'cubits' }, { metricNotation: 'meters' }]) {
+      expect(SiteNode.safeParse({ ...legacy, presentation: { units } }).success).toBe(false)
+    }
+  })
+
   test('ground presentation is optional and survives a scene round-trip without changing children', () => {
     const original = SiteNode.parse({ id: 'site_authored-ground', children: ['building_house'] })
     expect(original.showGround).toBeUndefined()

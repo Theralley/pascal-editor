@@ -10,8 +10,13 @@ const resetMeasurementPreferences = () => {
     projectId: null,
     projectPreferences: {},
     showMeasurements: true,
+    projectPresentation: undefined,
     unit: 'metric',
     metricNotation: 'meters',
+    unitSource: 'guess',
+    unitDefault: 'metric',
+    metricNotationDefault: 'meters',
+    unitExplicit: false,
   })
 }
 
@@ -56,12 +61,13 @@ describe('measurement display preferences', () => {
     const viewer = useViewer.getState()
     viewer.setProjectId('project-a')
     viewer.setShowMeasurements(false)
-    const preferences = useViewer.getState().projectPreferences
 
     useViewer.getState().setUnit('imperial')
 
     expect(useViewer.getState().unit).toBe('imperial')
-    expect(useViewer.getState().projectPreferences).toEqual(preferences)
+    expect(useViewer.getState().projectPreferences['project-a']).toMatchObject({
+      showMeasurements: false,
+    })
     expect(useViewer.getState().showMeasurements).toBe(false)
   })
 
@@ -297,6 +303,75 @@ describe('project rendering defaults', () => {
     expect(useViewer.getState().projectPreferences['']).toBeUndefined()
     store.setProjectPresentation(authored)
     expect(useViewer.getState().sceneAppearance.background).toBe('#dce4e5')
+  })
+})
+
+describe('project display units', () => {
+  const original = useViewer.getState()
+  beforeEach(() => useViewer.setState(original, true))
+  afterEach(() => useViewer.setState(original, true))
+
+  test('resolve as local choice > project > personal pick > locale guess', () => {
+    const store = useViewer.getState()
+    store.setProjectId('units-a')
+    expect(useViewer.getState().unitSource).toBe('guess')
+
+    store.setProjectPresentation({ units: { system: 'imperial' } })
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitSource: 'project' })
+
+    useViewer.getState().setUnit('metric')
+    useViewer.getState().setMetricNotation('millimeters')
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'metric',
+      metricNotation: 'millimeters',
+      unitSource: 'local',
+    })
+    expect(useViewer.getState()).toMatchObject({
+      unitExplicit: false,
+      unitDefault: original.unitDefault,
+    })
+
+    useViewer.getState().resetProjectUnits()
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'imperial',
+      metricNotation: 'meters',
+      unitSource: 'project',
+    })
+
+    useViewer.getState().setProjectPresentation(undefined)
+    expect(useViewer.getState().unitSource).toBe('guess')
+  })
+
+  test('a local choice stays with its project while another project follows its own default', () => {
+    const store = useViewer.getState()
+    store.setProjectId('units-a')
+    store.setProjectPresentation({ units: { system: 'imperial' } })
+    useViewer.getState().setUnit('metric')
+
+    useViewer.getState().setProjectId('units-b')
+    useViewer.getState().setProjectPresentation({ units: { system: 'imperial' } })
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitSource: 'project' })
+
+    useViewer.getState().setProjectId('units-a')
+    useViewer.getState().setProjectPresentation({ units: { system: 'imperial' } })
+    expect(useViewer.getState()).toMatchObject({ unit: 'metric', unitSource: 'local' })
+  })
+
+  test('the personal pick applies where the project sets nothing and never leaks a project default', () => {
+    useViewer.getState().setUnit('imperial')
+    expect(useViewer.getState()).toMatchObject({
+      unit: 'imperial',
+      unitDefault: 'imperial',
+      unitSource: 'personal',
+    })
+
+    useViewer.getState().setProjectId('units-a')
+    useViewer.getState().setProjectPresentation({ units: { system: 'metric' } })
+    expect(useViewer.getState()).toMatchObject({ unit: 'metric', unitSource: 'project' })
+    expect(useViewer.getState().unitDefault).toBe('imperial')
+
+    useViewer.getState().setProjectId('units-b')
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitSource: 'personal' })
   })
 })
 

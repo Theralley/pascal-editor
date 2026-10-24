@@ -198,6 +198,7 @@ function ZoneUnitPanel({ zone }: { zone: ZoneNode }) {
 export default function ZoneQuantitiesPanel() {
   const selectedZoneId = useViewer((state) => state.selection.zoneId)
   const unit = useViewer((state) => state.unit)
+  const setUnit = useViewer((state) => state.setUnit)
   const metricNotation = useViewer((state) => state.metricNotation)
   const nodes = useScene((state) => state.nodes)
   const zone = selectedZoneId ? (nodes[selectedZoneId] as ZoneNode | undefined) : undefined
@@ -241,7 +242,14 @@ export default function ZoneQuantitiesPanel() {
           </div>
           <div className="flex items-baseline gap-2 px-2.5 py-2 font-mono text-[10px]">
             <span className="text-cyan-800">A</span>
-            <span>{formatAreaLabel(report.footprintArea, unit, 2)}</span>
+            <button
+              className="rounded-sm underline decoration-dotted underline-offset-2 hover:text-cyan-800"
+              onClick={() => setUnit(unit === 'imperial' ? 'metric' : 'imperial')}
+              title={unit === 'imperial' ? 'Show in m²' : 'Show in ft²'}
+              type="button"
+            >
+              {formatAreaLabel(report.footprintArea, unit, 2)}
+            </button>
             <span className="ml-auto text-slate-600">P</span>
             <span>{formatLinearMeasurement(report.perimeter, unit, metricNotation)}</span>
           </div>

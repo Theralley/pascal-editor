@@ -1,5 +1,6 @@
 import type { AnyNode, AnyNodeId, DoorNode, WallNode, WindowNode, ZoneNode } from '@pascal-app/core'
 import { deriveZoneQuantityReport } from '@pascal-app/core'
+import { useViewer } from '@pascal-app/viewer'
 import { collectFloorplanSchedules } from './floorplan-export'
 import type { FloorplanSchedule } from './floorplan-extension'
 import { resolveMarkDetail } from './marks'
@@ -97,7 +98,7 @@ function openingSchedule(
   options: ScheduleOptions,
 ): ScheduleResult<OpeningScheduleRow> {
   const nodes = normalizeNodes(scene)
-  const unit = options.unit ?? 'imperial'
+  const unit = options.unit ?? useViewer.getState().unit
   const levelIds = levelId ? [levelId] : allLevelIds(nodes)
 
   const rows: OpeningScheduleRow[] = []
@@ -214,7 +215,7 @@ export function roomSchedule(
   options: ScheduleOptions = {},
 ): ScheduleResult<RoomScheduleRow> {
   const nodes = normalizeNodes(scene)
-  const unit = options.unit ?? 'imperial'
+  const unit = options.unit ?? useViewer.getState().unit
   const levelIds = levelId ? [levelId] : allLevelIds(nodes)
 
   const rows: RoomScheduleRow[] = []

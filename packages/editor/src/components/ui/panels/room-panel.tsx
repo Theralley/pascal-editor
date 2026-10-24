@@ -324,6 +324,7 @@ function ringPerimeter(ring: readonly (readonly [number, number])[]) {
 /** Area, perimeter and inside height, in the user's units. */
 function RoomStats({ room }: { room: RoomSelectionRecord }) {
   const unit = useViewer((s) => s.unit)
+  const setUnit = useViewer((s) => s.setUnit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const nodes = useScene((scene) => scene.nodes)
   const zone = nodes[room.zoneId as AnyNodeId]
@@ -333,7 +334,12 @@ function RoomStats({ room }: { room: RoomSelectionRecord }) {
       : 0
   const { height } = roomInsideHeight(room, nodes)
   const stats = [
-    { label: 'Area', value: formatAreaLabel(room.area, unit, 2) },
+    {
+      label: 'Area',
+      value: formatAreaLabel(room.area, unit, 2),
+      toggle: () => setUnit(unit === 'imperial' ? 'metric' : 'imperial'),
+      toggleTitle: unit === 'imperial' ? 'Show in m²' : 'Show in ft²',
+    },
     { label: 'Perimeter', value: formatLinearMeasurement(perimeter, unit, metricNotation) },
     {
       label: 'Height',
@@ -348,9 +354,20 @@ function RoomStats({ room }: { room: RoomSelectionRecord }) {
       {stats.map((stat) => (
         <div className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2" key={stat.label}>
           <span className="text-[11px] text-muted-foreground">{stat.label}</span>
-          <span className="truncate font-medium font-mono text-[13px] text-foreground tabular-nums">
-            {stat.value}
-          </span>
+          {'toggle' in stat ? (
+            <button
+              className="truncate text-left font-medium font-mono text-[13px] text-foreground tabular-nums underline decoration-dotted underline-offset-2 hover:text-primary"
+              onClick={stat.toggle}
+              title={stat.toggleTitle}
+              type="button"
+            >
+              {stat.value}
+            </button>
+          ) : (
+            <span className="truncate font-medium font-mono text-[13px] text-foreground tabular-nums">
+              {stat.value}
+            </span>
+          )}
         </div>
       ))}
     </div>

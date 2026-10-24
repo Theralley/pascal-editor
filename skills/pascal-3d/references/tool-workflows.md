@@ -120,3 +120,7 @@ When a requested deliverable is unsupported, return `partial` or `failed` with t
 Use `create_roof` with `roofSystem: "glazed"` for a gable, straight shed or barrel greenhouse roof. For a barrel roof, `depth` is the span and `barrelRise` is the arch rise, no more than half the span. `barrelSegments` controls faceting. `glazing` sets frame dimensions, glass appearance, grid layouts, glazed ends and individual glass, solid or empty panels. Standard barrel construction uses a solid covering.
 
 Paint glazed segments with `glazing-frame`, `glazing-glass` or `glazing-solid`. Without a role, paint changes the frame and solid panels while preserving the glass finish. Painting a roof container with glazed segments applies the finish to its segments. Standard roofs use `top`, `edge` and `wall`.
+
+## Display units
+
+Geometry is stored in metres. `get_display_units` reads the units the project shows (metric with meters or millimeters, or imperial feet and inches) and `set_display_units` saves them on the site, so everyone who opens the project reads the same units; a person's own choice on their screen still wins there. Use it when the person asks for feet, square feet, metres or millimetres.

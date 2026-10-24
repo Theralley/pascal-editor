@@ -369,6 +369,58 @@ export function InterfaceThemeRow({
   )
 }
 
+const PROJECT_UNIT_OPTIONS: { label: ReactNode; value: 'metric' | 'imperial' }[] = [
+  { label: 'Metric', value: 'metric' },
+  { label: 'Imperial', value: 'imperial' },
+]
+
+/** The project's display units, saved on the site so everyone who opens the project reads the same. */
+function ProjectUnitsRow() {
+  const labelId = useId()
+  const site = useScene((state) => {
+    for (const id of state.rootNodeIds) {
+      const node = state.nodes[id]
+      if (node?.type === 'site') return node
+    }
+    return undefined
+  })
+  const unit = useViewer((state) => state.unit)
+  const unitSource = useViewer((state) => state.unitSource)
+  if (!site) return null
+
+  const setProjectUnits = (system: 'metric' | 'imperial') => {
+    const metricNotation = system === 'metric' ? site.presentation?.units?.metricNotation : undefined
+    useScene.getState().updateNode(site.id, {
+      presentation: {
+        ...site.presentation,
+        units: { system, ...(metricNotation ? { metricNotation } : {}) },
+      },
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-2 py-1 @sm:flex-row @sm:items-center @sm:justify-between @sm:gap-4">
+      <div className="min-w-0 space-y-0.5">
+        <p className="font-medium text-sm" id={labelId}>
+          Units
+        </p>
+        <p className="text-muted-foreground text-xs">
+          {unitSource === 'local'
+            ? 'You are showing different units than the project. Use project units in the Display menu.'
+            : 'Saved with the project for everyone who opens it.'}
+        </p>
+      </div>
+      <div aria-labelledby={labelId} className="w-full shrink-0 @sm:w-60" role="group">
+        <SegmentedControl
+          onChange={setProjectUnits}
+          options={PROJECT_UNIT_OPTIONS}
+          value={site.presentation?.units?.system ?? unit}
+        />
+      </div>
+    </div>
+  )
+}
+
 export interface SettingsPanelProps {
   /** Merged onto the scrolling root so hosts can restyle padding (e.g. inside a dialog). */
   className?: string
@@ -969,6 +1021,7 @@ export function SettingsPanel({
         )}
 
         <SettingsSection description="Rendering options for this editor session." title="Viewer">
+          <ProjectUnitsRow />
           <SettingsSwitchRow
             checked={shadows}
             description="Cast shadows from lights."
