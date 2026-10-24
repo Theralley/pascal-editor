@@ -40,7 +40,7 @@ describe('duplicate_scene', () => {
     expect(parsed.id).not.toBe('house')
     expect(parsed.name).toBe('Copy of House')
     expect(parsed.version).toBe(1)
-    expect(parsed.forkedFrom).toEqual({ id: 'house', version: 1 })
+    expect(parsed.forkedFrom).toEqual({ id: 'house', version: 1, name: 'House' })
     expect((await store.load('house'))?.version).toBe(1)
     expect(await store.load(parsed.id as string)).not.toBeNull()
   })

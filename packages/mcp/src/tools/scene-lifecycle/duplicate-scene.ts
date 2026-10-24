@@ -24,7 +24,9 @@ export const duplicateSceneOutput = {
   sizeBytes: z.number(),
   nodeCount: z.number(),
   editorUrl: z.string(),
-  forkedFrom: z.object({ id: z.string(), version: z.number() }).nullable(),
+  forkedFrom: z
+    .object({ id: z.string(), version: z.number(), name: z.string().nullable().optional() })
+    .nullable(),
 }
 
 export function registerDuplicateScene(server: McpServer, operations: SceneOperations): void {

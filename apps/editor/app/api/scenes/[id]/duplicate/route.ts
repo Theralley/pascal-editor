@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const operations = await getSceneOperations()
-  if (!operations.duplicateStoredScene) {
+  if (!(operations.canDuplicateScene && operations.duplicateStoredScene)) {
     return sceneApiJson(request, { error: 'duplicate_unavailable' }, { status: 501 })
   }
 

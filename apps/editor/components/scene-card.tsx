@@ -171,7 +171,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
 }
 
 /** Opens a native modal dialog on mount; Escape, backdrop and Cancel all end in `onClose`. */
-export function useModal(onClose: () => void) {
+function useModal(onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -186,7 +186,7 @@ export function useModal(onClose: () => void) {
   return ref
 }
 
-export function ModalFrame({
+function ModalFrame({
   children,
   dialogRef,
   title,

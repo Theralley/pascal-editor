@@ -935,9 +935,10 @@ export function SettingsPanel({
                     : 'Copy'}
               </Button>
             </div>
-            {projectSection}
           </SettingsSection>
         )}
+
+        {projectSection && <section className="space-y-3 py-5">{projectSection}</section>}
 
         {/* Sharing (only for cloud projects) */}
         {projectId && !isLocalProject && (

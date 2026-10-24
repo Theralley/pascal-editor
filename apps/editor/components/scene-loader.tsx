@@ -20,6 +20,7 @@ import { requestDuplicate } from '@/lib/duplicate-scene'
 import { countGraphNodes, isEmptyGraphOverwrite } from '@/lib/empty-graph-guard'
 import { useLocalArtifactStore } from '@/lib/local-artifact-store'
 import {
+  classifyOutgoingSave,
   isPendingSceneGraphEcho,
   type PersistedSceneGraph,
   sceneGraphSignature,
@@ -43,7 +44,7 @@ export interface SceneMeta {
   ownerId: string | null
   sizeBytes: number
   nodeCount: number
-  forkedFrom?: { id: string; version: number } | null
+  forkedFrom?: { id: string; version: number; name?: string | null } | null
 }
 
 // The open-source editor only ships the built-in catalog (no uploaded items),
@@ -196,6 +197,8 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
   // store must never overwrite a populated server copy.
   const serverNodeCountRef = useRef(meta.nodeCount)
   const flushSaveRef = useRef<(() => Promise<boolean>) | null>(null)
+  // Set while a copy waits on a flush: that write may not be held back after a remote update.
+  const strictSaveRef = useRef(false)
   const lastRemoteGraphJsonRef = useRef<string | null>(null)
   const pendingGraphSignaturesRef = useRef(new Set<string>())
   const suppressRemoteSaveUntilRef = useRef(0)
@@ -236,18 +239,23 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
     [meta.id],
   )
 
-  // Resolves false when the server does not hold the graph afterwards, true when it does or
-  // there was nothing to write.
+  // Resolves false when the server does not hold the graph afterwards, true when it does.
   const persistScene = useCallback(
     async (graph: SceneGraph, options?: { keepalive?: boolean }): Promise<boolean> => {
       const graphJson = sceneGraphSignature(graph)
-      const isRecentRemoteApply = Date.now() < suppressRemoteSaveUntilRef.current
-      if (lastRemoteGraphJsonRef.current === graphJson) {
+      const verdict = classifyOutgoingSave({
+        graphJson,
+        remoteGraphJson: lastRemoteGraphJsonRef.current,
+        suppressUntil: suppressRemoteSaveUntilRef.current,
+        now: Date.now(),
+        strict: strictSaveRef.current,
+      })
+      if (verdict === 'already-saved') {
         lastRemoteGraphJsonRef.current = null
         suppressRemoteSaveUntilRef.current = 0
         return true
       }
-      if (isRecentRemoteApply) return true
+      if (verdict === 'deferred') return false
 
       // Wipe guard: never PUT an empty graph over a populated server copy.
       // An empty serialization here means the editor store was not hydrated
@@ -327,9 +335,14 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
   const handleDuplicate = useCallback(
     async (name?: string): Promise<string | null> => {
       // The copy is made from what the server holds, so the pending edit goes there first.
-      if (!(await flushSaveRef.current?.())) {
-        return 'Your latest changes could not be saved, so nothing was copied.'
+      strictSaveRef.current = true
+      let flushed: boolean | undefined
+      try {
+        flushed = await flushSaveRef.current?.()
+      } finally {
+        strictSaveRef.current = false
       }
+      if (!flushed) return 'Your latest changes could not be saved, so nothing was copied.'
       const result = await requestDuplicate(meta.id, { name, version: versionRef.current })
       if (!result.ok) return result.message
       router.push(`/project/${result.id}`)

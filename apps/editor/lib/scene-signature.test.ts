@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import {
+  classifyOutgoingSave,
   isPendingSceneGraphEcho,
   type PersistedSceneGraph,
   sceneGraphSignature,
@@ -52,4 +53,15 @@ test('an in-flight save echo cannot replace tools when event metadata is omitted
   expect(isPendingSceneGraphEcho(graph({ rootNodeIds: [] }), pending)).toBe(false)
   pending.clear()
   expect(isPendingSceneGraphEcho(saved, pending)).toBe(false)
+})
+
+test('only the graph the server sent counts as saved; a differing one is held back, or written when strict', () => {
+  const held = { graphJson: 'local', remoteGraphJson: 'remote', suppressUntil: 2500, now: 1000 }
+
+  expect(classifyOutgoingSave({ ...held, graphJson: 'remote', strict: false })).toBe(
+    'already-saved',
+  )
+  expect(classifyOutgoingSave({ ...held, strict: false })).toBe('deferred')
+  expect(classifyOutgoingSave({ ...held, strict: true })).toBe('write')
+  expect(classifyOutgoingSave({ ...held, now: 3000, strict: false })).toBe('write')
 })

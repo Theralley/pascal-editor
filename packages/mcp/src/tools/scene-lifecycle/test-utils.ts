@@ -222,7 +222,7 @@ export class InMemorySceneStore implements SceneStore {
       ownerId: opts?.ownerId ?? null,
       editorUrl: `/editor/${copyId}`,
       url: `/editor/${copyId}`,
-      forkedFrom: { id: rec.id, version: rec.version },
+      forkedFrom: { id: rec.id, version: rec.version, name: rec.name },
       graph: JSON.parse(JSON.stringify(rec.graph)),
     }
     this.data.set(copyId, copy)
@@ -287,7 +287,9 @@ export class InMemorySceneStore implements SceneStore {
       url: editorUrl,
       published: rec.published ?? true,
       graphHash: rec.graphHash ?? computeGraphHash(rec.graph),
-      forkedFrom: rec.forkedFrom ?? null,
+      forkedFrom: rec.forkedFrom
+        ? { ...rec.forkedFrom, name: this.data.get(rec.forkedFrom.id)?.name ?? null }
+        : null,
     }
   }
 

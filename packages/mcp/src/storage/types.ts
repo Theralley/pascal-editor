@@ -38,6 +38,8 @@ export interface SceneMeta {
 export interface SceneForkOrigin {
   id: SceneId
   version: number
+  /** The source's current name; null once the source has been deleted. */
+  name?: string | null
 }
 
 export interface SceneWithGraph extends SceneMeta {

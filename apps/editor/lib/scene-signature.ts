@@ -47,3 +47,23 @@ export function isPendingSceneGraphEcho(
   }
   return false
 }
+
+export type OutgoingSaveVerdict = 'already-saved' | 'deferred' | 'write'
+
+/**
+ * What to do with a graph the autosave wants to write. The graph the server just sent is already
+ * saved. Shortly after applying a remote graph the editor's own re-derived writes are held back
+ * (`deferred`, reported as not saved so they stay unsaved); a `strict` write, which a copy of the
+ * project waits on, goes through that window.
+ */
+export function classifyOutgoingSave(opts: {
+  graphJson: string
+  remoteGraphJson: string | null
+  suppressUntil: number
+  now: number
+  strict: boolean
+}): OutgoingSaveVerdict {
+  if (opts.remoteGraphJson === opts.graphJson) return 'already-saved'
+  if (!opts.strict && opts.now < opts.suppressUntil) return 'deferred'
+  return 'write'
+}

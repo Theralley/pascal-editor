@@ -213,14 +213,39 @@ test('flush waits for a write in flight and then writes the edit made meanwhile'
     held ? new Promise<void>((resolve) => (release = resolve)) : Promise.resolve(),
   )
   agentAddsColumn()
-  const inFlight = controls.flush()
-  await Bun.sleep(0)
+  controls.saveNow()
   useScene.getState().updateNode('column_agent' as never, { visible: false } as never)
+  const flushed = controls.flush()
   held = false
   release()
 
-  expect(await inFlight).toBe(true)
+  expect(await flushed).toBe(true)
   expect(writes).toEqual([13, 13])
+})
+
+test('flush reports a failure of the write that followed an overlapping save', async () => {
+  let release: () => void = () => {}
+  let calls = 0
+  const { controls } = await mount(12, undefined, () => {
+    calls++
+    if (calls === 1) return new Promise<void>((resolve) => (release = resolve))
+    return Promise.reject(new Error('offline'))
+  })
+  agentAddsColumn()
+  controls.saveNow()
+  useScene.getState().updateNode('column_agent' as never, { visible: false } as never)
+  const flushed = controls.flush()
+  release()
+
+  expect(await flushed).toBe(false)
+})
+
+test('flush reports a clean scene saved while a version is previewed', async () => {
+  const { writes, controls, update } = await mount(12)
+  update({ isVersionPreviewMode: true })
+
+  expect(await controls.flush()).toBe(true)
+  expect(writes).toEqual([])
 })
 
 test('flush reports a write that failed', async () => {

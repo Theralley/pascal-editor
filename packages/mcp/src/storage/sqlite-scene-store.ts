@@ -54,6 +54,7 @@ interface SceneRow {
   graph_json: string
   forked_from_id: string | null
   forked_from_version: number | null
+  forked_from_name?: string | null
 }
 
 interface SceneEventRow {
@@ -163,7 +164,11 @@ function rowToMeta(row: SceneRow): SceneMeta {
 function rowForkOrigin(row: SceneRow | null): SceneMeta['forkedFrom'] {
   return row?.forked_from_id == null
     ? null
-    : { id: row.forked_from_id, version: Number(row.forked_from_version) }
+    : {
+        id: row.forked_from_id,
+        version: Number(row.forked_from_version),
+        name: row.forked_from_name ?? null,
+      }
 }
 
 function editorUrlForScene(id: string): string {
@@ -479,11 +484,11 @@ export class SqliteSceneStore implements SceneStore {
     const bindings: Array<string | number> = []
 
     if (opts.projectId !== undefined) {
-      clauses.push('project_id = ?')
+      clauses.push('s.project_id = ?')
       bindings.push(opts.projectId)
     }
     if (opts.ownerId !== undefined) {
-      clauses.push('owner_id = ?')
+      clauses.push('s.owner_id = ?')
       bindings.push(opts.ownerId)
     }
 
@@ -495,12 +500,13 @@ export class SqliteSceneStore implements SceneStore {
     const db = await this.database()
     const rows = db
       .query(
-        `SELECT id, name, project_id, owner_id, thumbnail_url, version,
-                created_at, updated_at, size_bytes, node_count, graph_json,
-                forked_from_id, forked_from_version
-           FROM scenes
+        `SELECT s.id, s.name, s.project_id, s.owner_id, s.thumbnail_url, s.version,
+                s.created_at, s.updated_at, s.size_bytes, s.node_count, s.graph_json,
+                s.forked_from_id, s.forked_from_version, src.name AS forked_from_name
+           FROM scenes s
+           LEFT JOIN scenes src ON src.id = s.forked_from_id
            ${where}
-          ORDER BY updated_at DESC, id ASC
+          ORDER BY s.updated_at DESC, s.id ASC
           LIMIT ?`,
       )
       .all(...bindings)
@@ -785,11 +791,12 @@ export class SqliteSceneStore implements SceneStore {
     return asSceneRow(
       db
         .query(
-          `SELECT id, name, project_id, owner_id, thumbnail_url, version,
-                  created_at, updated_at, size_bytes, node_count, graph_json,
-                  forked_from_id, forked_from_version
-             FROM scenes
-            WHERE id = ?`,
+          `SELECT s.id, s.name, s.project_id, s.owner_id, s.thumbnail_url, s.version,
+                  s.created_at, s.updated_at, s.size_bytes, s.node_count, s.graph_json,
+                  s.forked_from_id, s.forked_from_version, src.name AS forked_from_name
+             FROM scenes s
+             LEFT JOIN scenes src ON src.id = s.forked_from_id
+            WHERE s.id = ?`,
         )
         .get(id),
     )

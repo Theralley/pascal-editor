@@ -48,7 +48,7 @@ If the task is a furniture or clearance assessment and the `furniture-fit` skill
 - Existing project: call `list_scenes` when available, select by exact ID or unambiguous name, then call `load_scene`.
 - Room scan on the hosted server only: reach it with `list_captures`, then `get_capture`, then `open_capture_as_project` for a `processed` scan you have edit access to on the scan's own project; these tools do not exist on the local CLI, so never call them there.
 - New persistent project: call `create_project` before modeling.
-- Start from an existing project: call `duplicate_scene` (optionally with `name`), then `load_scene` the returned `id`. The copy is private and records `forkedFrom`; the source is not changed and the session stays bound to it until the copy is loaded. The tool is absent on a store that cannot copy.
+- Start from an existing project: call `duplicate_scene` (optionally with `name`), then `load_scene` the returned `id`. The copy is private and records `forkedFrom`; the source is not changed and the session stays bound to it until the copy is loaded. A store that cannot copy answers `duplicate_unavailable`.
 - Already active scene: call `get_project_status` and `get_scene` before editing.
 - If persistence tools are absent, explain that the connected server is an in-memory/custom runtime and do not promise a durable handoff.
 

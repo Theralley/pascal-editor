@@ -127,6 +127,8 @@ export function useAutoSave({
   const pendingSaveRef = useRef(false)
   const executeSaveRef = useRef<(() => Promise<void>) | null>(null)
   const hasDirtyChangesRef = useRef(false)
+  // Counts edits, so a write clears only the edits it had in its snapshot.
+  const editGenerationRef = useRef(0)
   const inFlightSaveRef = useRef<Promise<void> | null>(null)
 
   // Keep latest callback/value refs so the stable subscription always uses current values
@@ -212,6 +214,7 @@ export function useAutoSave({
 
       isSavingRef.current = true
       pendingSaveRef.current = false
+      const writtenGeneration = editGenerationRef.current
       setSaveStatus('saving')
 
       try {
@@ -220,7 +223,7 @@ export function useAutoSave({
         } else {
           saveSceneToLocalStorage(sceneGraph)
         }
-        hasDirtyChangesRef.current = false
+        hasDirtyChangesRef.current = editGenerationRef.current !== writtenGeneration
         setSaveStatus('saved')
       } catch {
         setSaveStatus('error')
@@ -281,6 +284,7 @@ export function useAutoSave({
       lastCollectionsRef = state.collections
       lastMaterialsRef = state.materials
       hasDirtyChangesRef.current = true
+      editGenerationRef.current++
       onDirtyRef.current?.()
       setSaveStatus('pending')
 
@@ -421,9 +425,12 @@ export function useAutoSave({
 
   // Awaitable `saveNow` for a host that must act on saved content (copying the project): writes
   // until nothing is left unsaved, `false` when it cannot (still loading, previewing a version, a
-  // blocked or failed write).
+  // blocked or failed write). Previewing a version writes nothing, so it is saved only if clean.
   const flush = useCallback(async () => {
-    if (isLoadingSceneRef.current || isVersionPreviewModeRef.current) return false
+    if (isLoadingSceneRef.current) return false
+    if (isVersionPreviewModeRef.current) {
+      return !(hasDirtyChangesRef.current || pendingSaveRef.current || inFlightSaveRef.current)
+    }
     endScenePreview()
 
     for (let attempt = 0; attempt < 5; attempt++) {

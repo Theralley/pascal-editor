@@ -290,7 +290,7 @@ describe('SqliteSceneStore', () => {
       version: 1,
       nodeCount: saved.nodeCount,
       graphHash: saved.graphHash,
-      forkedFrom: { id: 'src', version: 2 },
+      forkedFrom: { id: 'src', version: 2, name: 'Source' },
     })
     expect((await store.load(copy.id))?.graph).toEqual(makeGraph())
     expect(await store.load('src')).toMatchObject({
@@ -301,8 +301,12 @@ describe('SqliteSceneStore', () => {
     expect((await store.list()).find((meta) => meta.id === copy.id)?.forkedFrom).toEqual({
       id: 'src',
       version: 2,
+      name: 'Source',
     })
     expect(await store.duplicate('src', { name: 'Mine' })).toMatchObject({ name: 'Mine' })
+
+    await store.delete('src')
+    expect((await store.load(copy.id))?.forkedFrom).toEqual({ id: 'src', version: 2, name: null })
   })
 
   test('duplicate rejects a stale version or graph, a missing source and a bad name', async () => {
@@ -341,7 +345,7 @@ describe('SqliteSceneStore', () => {
     }
   })
 
-  test('opens a database made before scenes recorded their origin, even from two processes at once', async () => {
+  test('opens a database made before scenes recorded their origin, even when several processes open it at once', async () => {
     const dbPath = path.join(rootDir, 'legacy.db')
     const legacy = new Database(dbPath)
     legacy.exec(`
@@ -373,16 +377,35 @@ describe('SqliteSceneStore', () => {
       .run(JSON.stringify(makeGraph()))
     legacy.close()
 
-    const first = new SqliteSceneStore({ databasePath: dbPath })
-    const second = new SqliteSceneStore({ databasePath: dbPath })
+    // Each process migrates on its own connection, so the race is only real across processes.
+    const script = `
+      const { SqliteSceneStore } = await import(process.argv[1])
+      const store = new SqliteSceneStore({ databasePath: process.argv[2] })
+      const scene = await store.load('old')
+      const copy = await store.duplicate('old')
+      store.close()
+      console.log(JSON.stringify({ name: scene.name, version: scene.version, forkedFrom: copy.forkedFrom }))
+    `
+    const modulePath = path.join(import.meta.dir, 'sqlite-scene-store.ts')
+    const children = Array.from({ length: 4 }, () =>
+      Bun.spawn([process.execPath, '-e', script, modulePath, dbPath], {
+        stdout: 'pipe',
+        stderr: 'pipe',
+      }),
+    )
+    for (const child of children) {
+      expect(await child.exited).toBe(0)
+      expect(JSON.parse(await new Response(child.stdout).text())).toEqual({
+        name: 'Old',
+        version: 3,
+        forkedFrom: { id: 'old', version: 3, name: 'Old' },
+      })
+    }
+    const reopened = new SqliteSceneStore({ databasePath: dbPath })
     try {
-      const [a, b] = await Promise.all([first.load('old'), second.load('old')])
-      expect(a).toMatchObject({ name: 'Old', version: 3, forkedFrom: null })
-      expect(b?.graph).toEqual(makeGraph())
-      expect((await first.duplicate('old')).forkedFrom).toEqual({ id: 'old', version: 3 })
+      expect(await reopened.list()).toHaveLength(5)
     } finally {
-      first.close()
-      second.close()
+      reopened.close()
     }
   })
 

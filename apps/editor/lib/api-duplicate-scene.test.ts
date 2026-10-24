@@ -5,6 +5,9 @@ import { join } from 'node:path'
 import { NextRequest } from 'next/server'
 
 /**
+ * Store and operations come from relative source imports, as in api-put-empty-guard.test.ts:
+ * scene-store-server.test.ts leaves '@pascal-app/mcp/*' mocked for every file after it.
+ *
  * `POST /api/scenes/[id]/duplicate` against a real SQLite store in a temp directory. Sorts before
  * scene-store-server.test.ts for the same module-mock reason as api-put-empty-guard.test.ts.
  */
@@ -128,4 +131,24 @@ test('rejects a malformed body', async () => {
   const response = await POST(duplicateRequest(SOURCE_ID, { name: '' }), paramsFor(SOURCE_ID))
 
   expect(response.status).toBe(400)
+})
+
+test('answers 501 duplicate_unavailable when the store cannot copy', async () => {
+  const storeServer = await import('./scene-store-server')
+  const { createSceneOperations } = await import(
+    '../../../packages/mcp/src/operations/scene-operations'
+  )
+  const store = await storeServer.getSceneStore()
+  const operations = await storeServer.getSceneOperations()
+  const copyless = Object.create(store) as typeof store
+  copyless.duplicate = undefined
+  storeServer.__setSceneStoreForTests(copyless, createSceneOperations({ store: copyless }))
+  try {
+    const response = await POST(duplicateRequest(SOURCE_ID), paramsFor(SOURCE_ID))
+
+    expect(response.status).toBe(501)
+    expect(((await response.json()) as { error: string }).error).toBe('duplicate_unavailable')
+  } finally {
+    storeServer.__setSceneStoreForTests(store, operations)
+  }
 })
