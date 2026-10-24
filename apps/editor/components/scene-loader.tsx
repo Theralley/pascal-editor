@@ -476,7 +476,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         onLoad={handleLoad}
         onSave={handleSave}
         onThumbnailCapture={handleThumb}
-        projectId={meta.projectId ?? 'default'}
+        projectId={meta.projectId ?? meta.id}
         projectName={meta.name}
         settingsPanelProps={settingsPanelProps}
         sidebarTabs={SIDEBAR_TABS}

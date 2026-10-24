@@ -39,6 +39,19 @@ describe('measurement display preferences', () => {
     expect(useViewer.getState().showMeasurements).toBe(false)
   })
 
+  test('keeps per-project preferences separate between two scene ids', () => {
+    const store = useViewer.getState()
+    store.setProjectId('scene-1')
+    store.setShowMeasurements(false)
+    store.setEdges('strong')
+
+    useViewer.getState().setProjectId('scene-2')
+    expect(useViewer.getState()).toMatchObject({ showMeasurements: true, edges: 'soft' })
+
+    useViewer.getState().setProjectId('scene-1')
+    expect(useViewer.getState()).toMatchObject({ showMeasurements: false, edges: 'strong' })
+  })
+
   test('changes display units without changing measurement visibility preferences', () => {
     const viewer = useViewer.getState()
     viewer.setProjectId('project-a')
