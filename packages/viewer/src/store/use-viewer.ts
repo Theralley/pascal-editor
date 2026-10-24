@@ -28,6 +28,16 @@ export type RenderContext = 'editor' | 'viewer'
 export type MetricNotation = 'meters' | 'millimeters'
 export type WallMode = 'up' | 'cutaway' | 'down' | 'translucent'
 
+/** Where walls-down cuts the walls (m above the level), and the range the slider may take. */
+export const WALL_CUT_HEIGHT_DEFAULT = 0.25
+export const WALL_CUT_HEIGHT_MIN = 0.05
+export const WALL_CUT_HEIGHT_MAX = 1.5
+
+export function clampWallCutHeight(height: number): number {
+  if (!Number.isFinite(height)) return WALL_CUT_HEIGHT_DEFAULT
+  return Math.min(WALL_CUT_HEIGHT_MAX, Math.max(WALL_CUT_HEIGHT_MIN, height))
+}
+
 type SelectionPath = {
   buildingId: BuildingNode['id'] | null
   levelId: LevelNode['id'] | null
@@ -228,6 +238,9 @@ type ViewerState = {
 
   wallMode: WallMode
   setWallMode: (mode: WallMode) => void
+  /** The height (m) walls stand at in `down` mode. */
+  wallCutHeight: number
+  setWallCutHeight: (height: number) => void
 
   showScans: boolean
   setShowScans: (show: boolean) => void
@@ -327,6 +340,7 @@ type PersistedViewerState = Partial<
     | 'unitExplicit'
     | 'levelMode'
     | 'wallMode'
+    | 'wallCutHeight'
     | 'projectPreferences'
   >
 >
@@ -496,6 +510,9 @@ function normalizePersistedViewerState(value: unknown): PersistedViewerState {
     unitExplicit: UNITS.includes((state.unitDefault ?? state.unit) as ViewerState['unit']),
     levelMode: pickString<ViewerState['levelMode']>(state.levelMode, LEVEL_MODES, 'stacked'),
     wallMode: pickString<ViewerState['wallMode']>(state.wallMode, WALL_MODES, 'up'),
+    wallCutHeight: clampWallCutHeight(
+      typeof state.wallCutHeight === 'number' ? state.wallCutHeight : WALL_CUT_HEIGHT_DEFAULT,
+    ),
     projectPreferences: normalizeProjectPreferences(state.projectPreferences),
   }
 }
@@ -747,6 +764,8 @@ const useViewer = create<ViewerState>()(
 
       wallMode: 'up',
       setWallMode: (mode) => set({ wallMode: mode }),
+      wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
+      setWallCutHeight: (height) => set({ wallCutHeight: clampWallCutHeight(height) }),
 
       showScans: true,
       setShowScans: (show) =>
@@ -915,6 +934,7 @@ const useViewer = create<ViewerState>()(
           : {}),
         levelMode: state.levelMode,
         wallMode: state.wallMode,
+        wallCutHeight: state.wallCutHeight,
         projectPreferences: Object.fromEntries(
           Object.entries(state.projectPreferences).filter(([key]) => key !== ''),
         ),

@@ -11,6 +11,12 @@ import {
   type WallNode,
 } from '@pascal-app/core'
 import { type Camera, type Material, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
+import {
+  cutMaterials,
+  setDisplayCutHeight,
+  setDisplayCutRaycast,
+  setDisplayCutRoot,
+} from '../../lib/display-cut'
 import { getMaterialTextureVersion } from '../../lib/materials'
 import { hasMaterialsForGroups } from '../../lib/pointer-events'
 import useViewer, { type WallMode } from '../../store/use-viewer'
@@ -23,6 +29,8 @@ import {
   type WallMaterials,
   type WallMaterialsResolver,
 } from './wall-materials'
+
+const WALL_COLLISION_MESH = 'collision-mesh'
 
 export function sameMaterialArray(a: Material | Material[], b: Material[]): boolean {
   return Array.isArray(a) && a.length === b.length && a.every((material, i) => material === b[i])
@@ -67,7 +75,7 @@ type CachedWall = {
   geometry: Mesh['geometry']
   negativeFacing: boolean | undefined
   hidden: boolean | undefined
-  variantKey: WallMaterialVariant | undefined
+  variantKey: string | undefined
   assignedMaterials: Material | Material[] | undefined
   visibleVariant: Variant
   hiddenVariant: Variant
@@ -88,8 +96,7 @@ export function wallHiddenFromFacing(
   mode: WallMode,
   negativeFacing: boolean,
 ): boolean {
-  if (mode === 'up') return false
-  if (mode === 'down') return true
+  if (mode === 'up' || mode === 'down') return false
   if (node.frontSide === 'interior' && node.backSide === 'interior') return true
   return negativeFacing
     ? node.frontSide === 'exterior' && node.backSide !== 'exterior'
@@ -104,6 +111,7 @@ export function wallFacingNegative(dot: number, previous: boolean | undefined): 
 export type WallCutoutViewerState = Pick<
   ReturnType<typeof useViewer.getState>,
   | 'wallMode'
+  | 'wallCutHeight'
   | 'shading'
   | 'textures'
   | 'colorPreset'
@@ -207,6 +215,7 @@ export class WallCutoutCache {
     const libraryVersion = getLibraryMaterialsVersion()
     const textureVersion = getMaterialTextureVersion()
     const previous = this.viewer
+    setDisplayCutHeight(viewer.wallCutHeight)
     const overrides = useLiveNodeOverrides.getState().overrides
     const overridesChanged = this.overrides !== overrides
     const nodesChanged = this.nodes !== scene.nodes
@@ -460,7 +469,12 @@ export class WallCutoutCache {
     // false on stamp lift; translucent walls must continue receiving events.
     const stamp = mode !== 'translucent' && hidden
     if (wall.mesh.userData.wallHidden !== stamp) wall.mesh.userData.wallHidden = stamp
+    const cut = mode === 'down' && wall.node.wallType !== 'curtain'
+    this.setCut(wall, cut)
     const variant = hidden ? wall.hiddenVariant : wall.visibleVariant
+    // The cut wears a masked clone of the variant, so selection, hover and delete still show.
+    const materials = cut ? cutMaterials(variant.materials) : variant.materials
+    const variantKey = cut ? `${variant.key}:cut` : variant.key
     // Non-highlight hover (a paint preview) owns a temporary material until its
     // restore callback runs — unless the rebuilt geometry now draws a finish that
     // array has no entry for (a click just added one): then the new palette goes
@@ -475,22 +489,32 @@ export class WallCutoutCache {
       if (refresh) wall.variantKey = undefined
       return
     }
-    if (wall.variantKey !== variant.key || refresh) {
-      if (
-        wall.mesh.material !== variant.materials &&
-        !sameMaterialArray(wall.mesh.material, variant.materials)
-      ) {
-        if (!this.mayAssign(wall, variant.materials)) {
+    if (wall.variantKey !== variantKey || refresh) {
+      if (wall.mesh.material !== materials && !sameMaterialArray(wall.mesh.material, materials)) {
+        if (!this.mayAssign(wall, materials)) {
           wall.variantKey = undefined
           return
         }
-        wall.mesh.material = variant.materials
+        wall.mesh.material = materials
       }
-      wall.variantKey = variant.key
+      wall.variantKey = variantKey
       wall.assignedMaterials = wall.mesh.material
     } else if (wall.mesh.material !== wall.assignedMaterials) {
       if (!this.mayAssign(wall, wall.assignedMaterials!)) return
       wall.mesh.material = wall.assignedMaterials!
+    }
+  }
+
+  /** Puts the cut on how a wall is picked (its drawn mesh and its collision mesh), or takes it off. */
+  private setCut(wall: CachedWall, on: boolean): void {
+    const root = on
+      ? ((sceneRegistry.nodes.get(wall.node.parentId as AnyNodeId) as Object3D | undefined) ??
+        wall.mesh.parent)
+      : null
+    for (const mesh of [wall.mesh, wall.mesh.getObjectByName(WALL_COLLISION_MESH)]) {
+      if (!mesh) continue
+      setDisplayCutRoot(mesh, root)
+      setDisplayCutRaycast(mesh as Mesh, root !== null)
     }
   }
 

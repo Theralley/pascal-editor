@@ -16,8 +16,11 @@ describe('canBatchWalls', () => {
     expect(canBatchWalls('cutaway', false)).toBe(true)
   })
 
-  test('stands down in the modes that make walls see-through', () => {
-    expect(canBatchWalls('down', false)).toBe(false)
+  test('stays live in down: the cut is a mask the merged mesh wears', () => {
+    expect(canBatchWalls('down', false)).toBe(true)
+  })
+
+  test('stands down in the mode that makes walls see-through', () => {
     expect(canBatchWalls('translucent', false)).toBe(false)
   })
 

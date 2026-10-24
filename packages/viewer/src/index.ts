@@ -102,6 +102,12 @@ export {
   prepareBrushForCSG,
   SUBTRACTION,
 } from './lib/csg-utils'
+export {
+  cutMaterials,
+  displayCutLimitY,
+  setDisplayCutRoot,
+  uncutMaterials,
+} from './lib/display-cut'
 export type { DisplayState } from './lib/display-state'
 export { disposeObject3DResources } from './lib/dispose-object3d'
 export type { EdgeMode } from './lib/edge-style'
@@ -304,6 +310,7 @@ export { catalogLightSource, useItemLightPool } from './store/use-item-light-poo
 export {
   anyGroundVeiled,
   applyCountryUnitDefault,
+  clampWallCutHeight,
   DEFAULT_UNDERGROUND_LOOK,
   default as useViewer,
   type GroundMode,
@@ -313,6 +320,9 @@ export {
   type UndergroundEdge,
   type UndergroundLook,
   type UndergroundTransition,
+  WALL_CUT_HEIGHT_DEFAULT,
+  WALL_CUT_HEIGHT_MAX,
+  WALL_CUT_HEIGHT_MIN,
   type WallMode,
 } from './store/use-viewer'
 export {

@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { sceneRegistry, useScene } from '@pascal-app/core'
 import * as viewerExports from '@pascal-app/viewer'
-import { SCENE_LAYER, useViewer } from '@pascal-app/viewer'
+import { displayCutLimitY, SCENE_LAYER, useViewer, type WallMode } from '@pascal-app/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -29,7 +29,7 @@ const registeredIds: string[] = []
 const originalViewer = useViewer.getState()
 
 afterEach(() => {
-  useViewer.setState({ wallMode: 'down' } as never)
+  useViewer.setState({ wallMode: 'translucent' } as never)
   runFrame()
   for (const id of registeredIds.splice(0)) {
     const object = sceneRegistry.nodes.get(id)
@@ -57,7 +57,7 @@ function registerWall(id: string, material: Material = new MeshBasicMaterial()) 
   return mesh
 }
 
-function setupBatchedLevel(count = 8) {
+function setupBatchedLevel(count = 8, wallMode: WallMode = 'cutaway') {
   const root = new Object3D()
   const material = new MeshBasicMaterial()
   const wallIds = Array.from({ length: count }, (_, index) => `wall_${index}`)
@@ -79,7 +79,7 @@ function setupBatchedLevel(count = 8) {
   } as never)
   const selection = useViewer.getState().selection
   useViewer.setState({
-    wallMode: 'cutaway',
+    wallMode,
     selection: { ...selection, selectedIds: [] },
     previewSelectedIds: [],
     hoveredId: null,
@@ -158,6 +158,40 @@ describe('collectTintedWalls', () => {
     useViewer.setState({ hoverHighlightMode: 'default', hoveredId: 'slab_a' } as never)
 
     expect([...collectTintedWalls(wallIds)]).toEqual([])
+  })
+})
+
+describe('WallBatchSystem walls down', () => {
+  const masked = (materials: Material | Material[]) =>
+    (Array.isArray(materials) ? materials : [materials]).every(
+      (material) => (material as { maskNode?: unknown }).maskNode,
+    )
+
+  test('the merged mesh stays and wears masked clones in down, its own materials otherwise', () => {
+    const { batch, root, runFrame } = setupBatchedLevel()
+    const own = batch.material
+    expect(masked(own)).toBe(false)
+
+    useViewer.setState({ wallMode: 'down' } as never)
+    nowMs = 200
+    runFrame({} as never, 0)
+    nowMs = 500
+    runFrame({} as never, 0)
+    expect(root.children.find((child) => child.name === 'wall-batch')).toBe(batch)
+    expect(masked(batch.material)).toBe(true)
+    expect(displayCutLimitY(batch)).toBeLessThan(1e8)
+
+    useViewer.setState({ wallMode: 'up' } as never)
+    nowMs = 600
+    runFrame({} as never, 0)
+    expect(root.children.find((child) => child.name === 'wall-batch')).toBe(batch)
+    expect(batch.material).toEqual(own)
+    expect(masked(batch.material)).toBe(false)
+  })
+
+  test('a level merged while down is cut from the start', () => {
+    const { batch } = setupBatchedLevel(8, 'down')
+    expect(masked(batch.material)).toBe(true)
   })
 })
 
@@ -270,7 +304,7 @@ test('wall batches keep waiting for pending neighbours even after the dirty cens
   let pending = 1
   const queue = spyOn(viewerExports, 'getPendingWallRebuildCount').mockImplementation(() => pending)
   try {
-    useViewer.setState({ wallMode: 'down' })
+    useViewer.setState({ wallMode: 'translucent' })
     runFrame()
     useViewer.setState({ wallMode: 'up' })
     nowMs = 200

@@ -171,7 +171,7 @@ beforeAll(() => {
 })
 
 afterEach(() => {
-  useViewer.setState({ wallMode: 'down' } as never)
+  useViewer.setState({ wallMode: 'translucent' } as never)
   runBatchFrame(() => undefined, { current: null })
   for (const id of registered.splice(0)) {
     const object = sceneRegistry.nodes.get(id)
@@ -381,7 +381,7 @@ test('a late library finish replaces the materials drawn by an already sewn wall
     expect(builds.every(({ mesh }) => !mesh.layers.isEnabled(SCENE_LAYER))).toBe(true)
   } finally {
     unregisterLibraryMaterials([id])
-    useViewer.setState({ wallMode: 'down' })
+    useViewer.setState({ wallMode: 'translucent' })
     runBatchFrame(() => undefined, wake)
     if (wake.current) clearTimeout(wake.current)
   }
@@ -668,7 +668,7 @@ function expectSettledRevealBatch(fixture: RevealFixture) {
 
 async function disposeRevealFixture(fixture: RevealFixture) {
   await act(async () => fixture.driver?.stop())
-  useViewer.setState({ wallMode: 'down' })
+  useViewer.setState({ wallMode: 'translucent' })
   runBatchFrame(() => undefined, fixture.wake)
   if (fixture.wake.current) clearTimeout(fixture.wake.current)
   await fixture.renderer?.unmount()

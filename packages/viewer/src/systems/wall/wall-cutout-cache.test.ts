@@ -20,6 +20,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
+  Raycaster,
   Texture,
   TextureLoader,
   Vector3,
@@ -91,6 +92,7 @@ beforeEach(() => {
   useScene.setState({ nodes: {}, materials: {} })
   viewerStore = createStore<WallCutoutViewerState>(() => ({
     wallMode: 'cutaway',
+    wallCutHeight: 0.25,
     shading: 'solid',
     textures: false,
     colorPreset: 'clay',
@@ -152,11 +154,15 @@ describe('WallCutoutCache', () => {
     expect(other.mesh.userData.wallHidden).toBe(true)
   })
 
-  test('a wall in play stays down when the person has put the walls down', () => {
+  test('walls down stand cut, not hidden, whether or not they play', () => {
     const { node, mesh } = addWall()
-    viewerStore.setState({ wallMode: 'down', nodesRevealing: [node.id] })
+    viewerStore.setState({ wallMode: 'down' })
     cache.update(camera, 1)
-    expect(mesh.userData.wallHidden).toBe(true)
+    expect(mesh.userData.wallHidden).toBe(false)
+    viewerStore.setState({ nodesRevealing: [node.id] })
+    cache.update(camera, 1.01)
+    expect(mesh.userData.wallHidden).toBe(false)
+    expect(cache.walls.get(node.id)?.variantKey).toBe('visible:cut')
   })
 
   test('camera orbit in full height never iterates cached walls or reads camera direction', () => {
@@ -589,7 +595,7 @@ describe('WallCutoutCache', () => {
     cache.update(camera, 1)
     for (const [mode, hidden] of [
       ['up', false],
-      ['down', true],
+      ['down', false],
       ['translucent', false],
       ['cutaway', true],
     ] as const) {
@@ -597,7 +603,13 @@ describe('WallCutoutCache', () => {
       cache.update(camera, 1.01)
       expect(mesh.userData.wallHidden).toBe(hidden)
       expect(cache.walls.values().next().value!.variantKey).toBe(
-        mode === 'translucent' ? 'translucent' : hidden ? 'invisible' : 'visible',
+        mode === 'translucent'
+          ? 'translucent'
+          : mode === 'down'
+            ? 'visible:cut'
+            : hidden
+              ? 'invisible'
+              : 'visible',
       )
     }
   })
@@ -917,5 +929,100 @@ describe('walls for a capture', () => {
     expect(mesh.material).toBe(cutaway)
     restore()
     expect(mesh.material).toBe(cutaway)
+  })
+})
+
+describe('walls down', () => {
+  const LEVEL = 'level_walls_down'
+
+  /** A 4 m long, 2.5 m tall wall standing on a level root at y = 0 (the wall's base is its origin). */
+  function addStandingWall() {
+    const root = new Group()
+    sceneRegistry.nodes.set(LEVEL as never, root)
+    const { node, mesh } = addWall()
+    mesh.geometry = new BoxGeometry(4, 2.5, 0.1).translate(2, 1.25, 0)
+    mesh.geometry.clearGroups()
+    mesh.geometry.addGroup(0, mesh.geometry.getIndex()!.count, 0)
+    node.parentId = LEVEL as never
+    root.add(mesh)
+    root.updateMatrixWorld(true)
+    return { node, mesh, root }
+  }
+
+  const shoot = (root: Group, from: Vector3, direction: Vector3) =>
+    new Raycaster(from, direction.normalize()).intersectObject(root, true)
+
+  test('the wall wears masked clones, the scene materials stay as they are, and a hit above the cut is dropped', () => {
+    const { node, mesh, root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1)
+    const upMaterials = mesh.material as Material[]
+    viewerStore.setState({ wallMode: 'down' })
+    cache.update(camera, 1.01)
+    const cut = mesh.material as Material[]
+    expect(cut).not.toBe(upMaterials)
+    expect(cut.every((material) => (material as { maskNode?: unknown }).maskNode)).toBe(true)
+    expect(upMaterials.some((material) => (material as { maskNode?: unknown }).maskNode)).toBe(
+      false,
+    )
+    expect(cache.walls.get(node.id)?.variantKey).toBe('visible:cut')
+
+    // From above: the ray lands on the stub's top, at the cut, not on the wall's top at 2.5 m.
+    const down = new Vector3(0, -1, 0)
+    const top = shoot(root, new Vector3(1.5, 5, 0), down)[0]
+    expect(top?.point.y).toBeCloseTo(0.25, 5)
+    // From the side: under the cut it hits, above it it passes.
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 0.1, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1.02)
+    expect(mesh.material).toBe(upMaterials)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 5, 0), down)[0]?.point.y).toBeCloseTo(2.5, 5)
+  })
+
+  test('the cut height moves the cut and rebuilds no material', () => {
+    const { mesh, root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'down' })
+    cache.update(camera, 1)
+    const cut = mesh.material
+    const writes = trackWrites(mesh)
+    viewerStore.setState({ wallCutHeight: 0.8 })
+    cache.update(camera, 1.01)
+    expect(mesh.material).toBe(cut)
+    expect(writes).toEqual({ material: 0, stamp: 0 })
+    const top = shoot(root, new Vector3(1.5, 5, 0), new Vector3(0, -1, 0))[0]
+    expect(top?.point.y).toBeCloseTo(0.8, 5)
+  })
+
+  test('a lifted level cuts at its own height', () => {
+    const { mesh, root } = addStandingWall()
+    root.position.y = 3
+    root.updateMatrixWorld(true)
+    viewerStore.setState({ wallMode: 'down' })
+    cache.update(camera, 1)
+    const top = shoot(root, new Vector3(1.5, 9, 0), new Vector3(0, -1, 0))[0]
+    expect(top?.object).toBe(mesh)
+    expect(top?.point.y).toBeCloseTo(3.25, 5)
+  })
+
+  test('selection still shows on a cut wall', () => {
+    const { node, mesh } = addStandingWall()
+    viewerStore.setState({ wallMode: 'down' })
+    cache.update(camera, 1)
+    const plain = mesh.material
+    viewerStore.setState({
+      selection: { buildingId: null, levelId: null, zoneId: null, selectedIds: [node.id] },
+    })
+    cache.update(camera, 1.01)
+    expect(cache.walls.get(node.id)?.variantKey).toBe('selection-visible:cut')
+    expect(mesh.material).not.toBe(plain)
+    expect(
+      (mesh.material as Material[]).every(
+        (material) => (material as { maskNode?: unknown }).maskNode,
+      ),
+    ).toBe(true)
   })
 })

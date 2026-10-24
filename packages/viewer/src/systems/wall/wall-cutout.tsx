@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react'
 import type { Camera, Material } from 'three'
 import { type Mesh, Vector3 } from 'three/webgpu'
 import useViewer, { type WallMode } from '../../store/use-viewer'
+import { WallCutCaps } from './wall-cut-caps'
 import {
   sameMaterialArray,
   WallCutoutCache,
@@ -43,8 +44,7 @@ export function getWallHideState(
   wallMode: WallMode,
   cameraDir: Vector3,
 ): boolean {
-  if (wallMode === 'up') return false
-  if (wallMode === 'down') return true
+  if (wallMode === 'up' || wallMode === 'down') return false
   wallMesh.getWorldDirection(v)
   return wallHiddenFromFacing(wallNode, wallMode, v.dot(cameraDir) < 0)
 }
@@ -111,9 +111,16 @@ export const WallCutout = ({
 
   useEffect(() => cache.subscribeLiveTransforms(), [cache])
 
+  const caps = useMemo(() => new WallCutCaps(), [])
+  useEffect(() => () => caps.dispose(), [caps])
+
   // Camera changes reach PostProcessing (1) in this frame. WallSystem (4)
   // notifies the next frame; WallBatchSystem (5) reads this frame's stamps.
-  useFrame((state) => runWallCutoutFrame(cache, state), WALL_CUTOUT_FRAME_PRIORITY)
+  useFrame((state) => {
+    runWallCutoutFrame(cache, state)
+    const viewer = viewerStore.getState()
+    caps.update(viewer.wallMode === 'down', viewer.wallCutHeight, viewer.shading)
+  }, WALL_CUTOUT_FRAME_PRIORITY)
 
   useEffect(() => {
     let restore: (() => void) | null = null
