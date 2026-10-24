@@ -945,6 +945,15 @@ test('a block the wall mode restyles leaves the batch, and is re-offered when th
     },
   } as never)
   const { meshes } = setup('block', 4)
+  const nodes = useScene.getState().nodes
+  useScene.setState({
+    nodes: Object.fromEntries(
+      Object.entries(nodes).map(([id, node]) => [
+        id,
+        node.type === 'block' ? { ...node, followsWallMode: true } : node,
+      ]),
+    ),
+  } as never)
   const follow = new WallModeFollowCache()
   const camera = new PerspectiveCamera()
   settle()

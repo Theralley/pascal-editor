@@ -29,7 +29,13 @@ import {
   useScene,
   wallFaceScriptPaintRefusal,
 } from '@pascal-app/core'
-import { getRoofMaterialArray, registerMaterialCacheCleanup, useViewer } from '@pascal-app/viewer'
+import {
+  getRoofMaterialArray,
+  isWallModeAffected,
+  registerMaterialCacheCleanup,
+  subscribeWallModeAffected,
+  useViewer,
+} from '@pascal-app/viewer'
 import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'
 import { type BufferGeometry, Color, type Material, type Mesh, type Object3D, Vector3 } from 'three'
@@ -2302,6 +2308,11 @@ const SelectionMaterialSync = () => {
         continue
       }
 
+      // The wall mode owns the materials of a node it hides or fades, selection tint included.
+      if (isWallModeAffected(id)) {
+        continue
+      }
+
       const rootObject = sceneRegistry.nodes.get(id)
       if (!rootObject) {
         continue
@@ -2387,6 +2398,8 @@ const SelectionMaterialSync = () => {
       syncSelectionMaterials()
     })
   }, [syncSelectionMaterials])
+
+  useEffect(() => subscribeWallModeAffected(syncSelectionMaterials), [syncSelectionMaterials])
 
   useEffect(() => {
     const restoreForCapture = () => {

@@ -256,6 +256,7 @@ export const BlockNode = BaseNode.extend({
   topology: BlockTopology.default(createBoxBlockTopology),
   slots: z.record(z.string(), z.string()).default({}),
   slotNames: z.record(z.string(), z.string().min(1)).default({ body: 'Body' }),
+  followsWallMode: z.boolean().optional(),
 }).describe(dedent`
   block node - a topology-backed editable solid.
   - children: hosted node ids
@@ -264,6 +265,7 @@ export const BlockNode = BaseNode.extend({
   - supportSlabId: persisted placement surface that prevents later slabs from lifting the mesh
   - slots: material references (library:<id> / scene:<id>) or plain #rrggbb colours keyed by face materialSlot; an unbound body uses the wall-role default
   - slotNames: user-facing names for stable material slots; body is the permanent default slot
+  - followsWallMode: when true the block hides and fades with the viewer's wall mode like a wall (a gable); absent or false leaves it as an object
 `)
 
 export type BlockNode = z.infer<typeof BlockNode>

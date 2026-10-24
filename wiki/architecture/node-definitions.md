@@ -430,14 +430,22 @@ wall's hidden / translucent materials, so the look is the same.
 
 ```ts
 type FollowsWallModeConfig = {
+  appliesTo?: (node: AnyNode) => boolean
   facing?: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) => WallModeFacing | undefined
 }
 ```
 
-Without `facing`, the node counts as the building's exterior: its front faces away from the centre of
-its level's walls. Give a `facing` (`frontSide`, `backSide`, level-space `normal`) when the kind knows better.
-While the mode affects a node, the node batch releases it and draws its own meshes; the batch re-offers it
-when the mode no longer does. Block opts in; fence, column and chimney do not.
+- `appliesTo` picks the nodes of the kind that follow. Block uses it for its per-node
+  `followsWallMode` flag (off by default, so counters, plinths and pads stay objects and old scenes load
+  unchanged). The inspector's "Follows wall modes" toggle is one undo step; agents set the same flag
+  through the existing node update path, so no separate agent tool exists (no agent operation exposes wall mode itself).
+- Without `facing`, the node counts as the building's exterior: its front faces away from the centre
+  of its level's wall nodes, judged from the centre of its built meshes. Give a `facing` (`frontSide`,
+  `backSide`, level-space `normal`) when the kind knows better.
+- While the mode affects a node, the system alone writes its meshes' materials (built material, mode
+  variant and selection / hover / delete tint). The editor's selection tint and the node batch skip an
+  affected node (`isWallModeAffected`, `subscribeWallModeAffected`), and a hidden node yields pointer events
+  like a hidden wall (`hiddenFollowerPointerSuppressed`). Its variant materials are cached materials released with the material cache.
 
 ### `capabilities.roofAccessory`
 

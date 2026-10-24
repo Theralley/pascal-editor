@@ -1,9 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { nodeRegistry, sceneRegistry, useScene, WallNode } from '@pascal-app/core'
-import { Group, type Material, Mesh, MeshBasicMaterial, PerspectiveCamera } from 'three'
+import {
+  BoxGeometry,
+  Group,
+  type Material,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+} from 'three'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
   isWallModeAffected,
+  isWallModeHidden,
   subscribeWallModeAffected,
   WallModeFollowCache,
   type WallModeFollowViewerState,
@@ -26,12 +34,16 @@ function placeCamera(x: number) {
   camera.updateMatrixWorld()
 }
 
-/** One wall centred on (2, 0), a level group, and a node of `kind` at x = 10 (outside). */
-function addScene(kind: string) {
+/**
+ * One wall centred on (2, 0) under a level, and a node of `kind` built at x = 10 (outside). The
+ * node sits at the origin, as a block with world-space vertices does: only its mesh is out there.
+ */
+function addScene(kind: string, extra: Record<string, unknown> = {}) {
   const level = new Group()
   const wall = WallNode.parse({ start: [0, 0], end: [4, 0], parentId: 'level_a' })
   const material = new MeshBasicMaterial({ color: '#336699' })
-  const mesh = new Mesh(undefined, material)
+  const mesh = new Mesh(new BoxGeometry(1, 1, 1), material)
+  mesh.position.set(10, 0, 0)
   const group = new Group()
   group.add(mesh)
   level.add(group)
@@ -45,8 +57,9 @@ function addScene(kind: string) {
   sceneRegistry.byType[kind]!.add(id)
   useScene.setState({
     nodes: {
+      level_a: { id: 'level_a', type: 'level', children: [wall.id, id] },
       [wall.id]: wall,
-      [id]: { id, type: kind, parentId: 'level_a', position: [10, 0, 0], children: [] },
+      [id]: { id, type: kind, parentId: 'level_a', children: [], ...extra },
     },
   } as never)
   return { id, group, mesh, material }
@@ -66,7 +79,11 @@ beforeEach(() => {
   nodeRegistry._register({
     kind: 'gable',
     schemaVersion: 1,
-    capabilities: { followsWallMode: {} },
+    capabilities: {
+      followsWallMode: {
+        appliesTo: (node: { followsWallMode?: boolean }) => node.followsWallMode !== false,
+      },
+    },
   } as never)
   nodeRegistry._register({ kind: 'plain', schemaVersion: 1, capabilities: {} } as never)
   sceneRegistry.clear()
@@ -76,6 +93,10 @@ beforeEach(() => {
     shading: 'solid',
     textures: false,
     geometryRevision: 0,
+    selection: { buildingId: null, levelId: null, zoneId: null, selectedIds: [] },
+    previewSelectedIds: [],
+    hoveredId: null,
+    hoverHighlightMode: 'default',
   }))
   cache = new WallModeFollowCache(viewerStore)
   camera = new PerspectiveCamera()
@@ -170,5 +191,146 @@ describe('WallModeFollowCache', () => {
       [id, true],
       [id, false],
     ])
+  })
+
+  test('a node opted out per node is untouched', () => {
+    const { mesh, material } = addScene('gable', { followsWallMode: false })
+    setMode('down')
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(true)
+  })
+
+  test('a node that is opted out later gets its built material back', () => {
+    const { id, mesh, material } = addScene('gable')
+    setMode('down')
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(false)
+    useScene.setState({
+      nodes: {
+        ...useScene.getState().nodes,
+        [id]: { ...useScene.getState().nodes[id as never], followsWallMode: false },
+      },
+    } as never)
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(true)
+    expect(isWallModeAffected(id)).toBe(false)
+  })
+
+  test('the cutaway judges a node from where its meshes stand, not from its origin', () => {
+    const { mesh, material } = addScene('gable')
+    setMode('cutaway')
+    placeCamera(20)
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(false)
+    placeCamera(-20)
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(true)
+  })
+
+  test('the building centre comes from the scene, before any wall is mounted', () => {
+    const { mesh, material } = addScene('gable')
+    sceneRegistry.byType.wall!.clear()
+    setMode('cutaway')
+    cache.update(camera)
+    expect(isPlain(mesh, material)).toBe(false)
+  })
+
+  test('shares its variant materials as cached materials', () => {
+    const { mesh } = addScene('gable')
+    setMode('down')
+    cache.update(camera)
+    expect((mesh.material as Material).userData.__pascalCachedMaterial).toBe(true)
+  })
+
+  test('hides what the pointer should yield to, but not a see-through node', () => {
+    const { id } = addScene('gable')
+    setMode('down')
+    cache.update(camera)
+    expect(isWallModeHidden(id)).toBe(true)
+    setMode('translucent')
+    cache.update(camera)
+    expect(isWallModeHidden(id)).toBe(false)
+    expect(isWallModeAffected(id)).toBe(true)
+  })
+
+  describe('material ownership', () => {
+    const temp = () => new MeshBasicMaterial({ color: '#ff00ff' })
+
+    // The editor's selection tint, the delete tint and a paint preview swap a material and put the
+    // previous one back only if nobody changed it meanwhile.
+    test('a temporary material swapped in while affected never becomes the built material', () => {
+      const { mesh, material } = addScene('gable')
+      setMode('down')
+      cache.update(camera)
+      const preview = temp()
+      const stipple = mesh.material
+      mesh.material = preview
+      viewerStore.setState({ geometryRevision: 1 })
+      cache.update(camera)
+      expect(mesh.material).toBe(stipple)
+      // The owner of the preview restores only if the mesh still wears it: it does not.
+      setMode('up')
+      cache.update(camera)
+      expect(mesh.material).toBe(material)
+    })
+
+    test('a preview that ends while affected leaves the node in the mode, then walls up restores it', () => {
+      const { mesh, material } = addScene('gable')
+      setMode('down')
+      cache.update(camera)
+      const stipple = mesh.material
+      const preview = temp()
+      mesh.material = preview
+      // The preview owner restores what it saw before: the stipple.
+      if (mesh.material === preview) mesh.material = stipple
+      setMode('up')
+      cache.update(camera)
+      expect(mesh.material).toBe(material)
+    })
+
+    test('a node selected in a mode wears the selection tint, and is plain when deselected and walls up', () => {
+      const { id, mesh, material } = addScene('gable')
+      setMode('down')
+      cache.update(camera)
+      const plainStipple = mesh.material
+      viewerStore.setState({
+        selection: { buildingId: null, levelId: null, zoneId: null, selectedIds: [id] },
+      } as never)
+      cache.update(camera)
+      expect(mesh.material).not.toBe(plainStipple)
+      expect(isSeeThrough(mesh)).toBe(true)
+      viewerStore.setState({
+        selection: { buildingId: null, levelId: null, zoneId: null, selectedIds: [] },
+      } as never)
+      setMode('up')
+      cache.update(camera)
+      expect(mesh.material).toBe(material)
+    })
+
+    test('selecting before the mode changes hands the tint over without keeping it', () => {
+      const { id, mesh, material } = addScene('gable')
+      const tint = new MeshBasicMaterial({ color: '#8888ff' })
+      // The selection sync lets go of an affected node as soon as it is announced.
+      const unsubscribe = subscribeWallModeAffected((nodeId) => {
+        if (nodeId === id && isWallModeAffected(id)) mesh.material = material
+      })
+      mesh.material = tint
+      setMode('down')
+      cache.update(camera)
+      unsubscribe()
+      setMode('up')
+      cache.update(camera)
+      expect(mesh.material).toBe(material)
+    })
+
+    test('does no work on a static camera in the cutaway', () => {
+      const { mesh } = addScene('gable')
+      setMode('cutaway')
+      cache.update(camera)
+      const marker = temp()
+      mesh.material = marker
+      cache.update(camera)
+      expect(mesh.material).toBe(marker)
+    })
   })
 })

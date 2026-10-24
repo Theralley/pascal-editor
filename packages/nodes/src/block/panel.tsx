@@ -20,6 +20,7 @@ import {
   PanelSection,
   PanelWrapper,
   SliderControl,
+  ToggleControl,
   triggerSFX,
   useInteractionScope,
 } from '@pascal-app/editor'
@@ -289,6 +290,17 @@ export default function BlockPanel() {
             value={node.position[axis]}
           />
         ))}
+      </PanelSection>
+
+      <PanelSection title="Display">
+        <ToggleControl
+          checked={node.followsWallMode === true}
+          label="Follows wall modes"
+          onChange={(checked) => {
+            if (readOnly) return
+            useScene.getState().updateNode(node.id, { followsWallMode: checked || undefined })
+          }}
+        />
       </PanelSection>
 
       <PanelSection title="Slots">

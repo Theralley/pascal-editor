@@ -93,7 +93,7 @@ export const blockDefinition: NodeDefinition<typeof BlockNode> = {
 
   capabilities: {
     batchable: perNodeGeometryBatchable,
-    followsWallMode: {},
+    followsWallMode: { appliesTo: (node) => (node as BlockNodeType).followsWallMode === true },
     selectable: { hitVolume: 'bbox' },
     surfaces: {
       hosting: blockSurfaceProvider,

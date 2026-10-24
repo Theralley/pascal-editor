@@ -284,7 +284,10 @@ function getHighlightedColor(color: Color, kind: WallHighlightKind): Color {
   return color.clone().lerp(profile.color, profile.blend)
 }
 
-function createHighlightedWallMaterial(material: Material, kind: WallHighlightKind): Material {
+export function createHighlightedWallMaterial(
+  material: Material,
+  kind: WallHighlightKind,
+): Material {
   const highlightedMaterial = material.clone() as Material & {
     color?: Color
     emissive?: Color

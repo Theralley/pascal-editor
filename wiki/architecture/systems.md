@@ -29,11 +29,12 @@ Plain data: no Three.js, no `useFrame` (DECISIONS.md E-001). Pure helpers, plus 
 
 ### Viewer — `packages/viewer/src/systems/`
 
-Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts the framework systems directly: `FloorElevationSystem`, `GeometrySystem`, core's `StairOpeningSystem` and `RoofElevationSystem`, and `<RegisteredSystems>`, which mounts every registered kind's `def.system`. The per-kind implementations below are exported by `@pascal-app/viewer` and wrapped by the kinds' `def.system` modules in `packages/nodes`.
+Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts the framework systems directly: `FloorElevationSystem`, `GeometrySystem`, `WallModeFollowSystem`, core's `StairOpeningSystem` and `RoofElevationSystem`, and `<RegisteredSystems>`, which mounts every registered kind's `def.system`. The per-kind implementations below are exported by `@pascal-app/viewer` and wrapped by the kinds' `def.system` modules in `packages/nodes`.
 
 | Directory | Owns |
 |---|---|
 | `geometry/` | `GeometrySystem`: rebuilds `def.geometry` kinds on dirty |
+| `wall-mode/` | `WallModeFollowSystem`: wall mode (hide / fade / cutaway) for kinds with `capabilities.followsWallMode` |
 | `floor-elevation/` | `FloorElevationSystem`: lifts `floorPlaced` kinds over slabs |
 | `level/` | `LevelSystem`: stacked / exploded / solo / manual level positions |
 | `wall/` | `WallSystem` (dirty drain, miter cache, initial build) and `WallCutout` (opening holes) |
@@ -52,6 +53,9 @@ clears a mark before priority 2: `FloorElevationSystem` lifts at priority 1 but
 clears the marks it owns (floor-placed kinds with no `geometry` or `system`, such as
 columns and procedural items) at priority 2. A definition's
 `system.priority` orders mounted components; it does not set `useFrame` priority.
+
+`WallModeFollowSystem` (priority 3, after `GeometrySystem`, before the node batch) restyles nodes of kinds that
+declare `capabilities.followsWallMode` for the wall mode; see `node-definitions.md`. The batch releases a node while it is affected.
 
 A kind joins by declaring `capabilities.batchable` (`BatchableConfig`): its scope
 (`'level'` children, or `'wall'`-hosted openings that follow their wall), transient

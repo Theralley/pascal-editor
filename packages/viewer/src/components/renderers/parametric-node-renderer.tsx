@@ -11,6 +11,9 @@ import {
 import { useLayoutEffect, useRef } from 'react'
 import type { Group } from 'three'
 import { useNodeEvents } from '../../hooks/use-node-events'
+import { hiddenFollowerPointerSuppressed } from '../../lib/hidden-follower-pointer'
+import useViewer from '../../store/use-viewer'
+import { isWallModeHidden } from '../../systems/wall-mode/wall-mode-follow'
 import { NodeRenderer } from './node-renderer'
 
 /**
@@ -50,7 +53,25 @@ type RenderableNode = AnyNode & {
 export const ParametricNodeRenderer = ({ node }: { node: AnyNode }) => {
   const ref = useRef<Group>(null!)
   const n = node as RenderableNode
-  const handlers = useNodeEvents(node as any, node.type as any)
+  const rawHandlers = useNodeEvents(node as any, node.type as any)
+  // A node the wall mode hides yields pointer events to what outranks it, as a hidden wall does.
+  const handlers = {} as typeof rawHandlers
+  for (const key of Object.keys(rawHandlers) as (keyof typeof rawHandlers)[]) {
+    const fn = rawHandlers[key] as (e: unknown) => void
+    ;(handlers as Record<string, (e: unknown) => void>)[key] = (e: unknown) => {
+      if (
+        isWallModeHidden(node.id) &&
+        hiddenFollowerPointerSuppressed({
+          nodeId: node.id,
+          hidden: true,
+          hoverHighlightMode: useViewer.getState().hoverHighlightMode,
+          event: e,
+        })
+      )
+        return
+      fn(e)
+    }
+  }
   const liveTransform = useLiveTransforms((s) => s.get(node.id as AnyNodeId))
   // Registry arrow handles (rotation gizmo, position-affecting patches)
   // write to `useLiveNodeOverrides`. GeometrySystem already merges that

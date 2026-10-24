@@ -2603,6 +2603,8 @@ export type WallModeFacing = {
  * when the camera is on its exterior side.
  */
 export type FollowsWallModeConfig = {
+  /** Which nodes of the kind follow the mode. Without it, every node does. */
+  appliesTo?: (node: AnyNode) => boolean
   /**
    * The node's oriented front/back. Without it, the node counts as the exterior of the building: its
    * front faces away from the centre of the level's walls, so the cutaway hides it when the camera
