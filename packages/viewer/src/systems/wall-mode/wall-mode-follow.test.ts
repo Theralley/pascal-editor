@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { nodeRegistry, sceneRegistry, useScene, WallNode } from '@pascal-app/core'
+import {
+  nodeRegistry,
+  sceneRegistry,
+  useLiveTransforms,
+  useScene,
+  WallNode,
+} from '@pascal-app/core'
 import {
   BoxGeometry,
   Group,
@@ -258,9 +264,9 @@ describe('WallModeFollowCache', () => {
     const { mesh } = addScene('gable')
     setMode('down')
     cache.update(camera)
-    cache.beforeCapture(false)
+    cache.beforeCapture(undefined)
     expect(shown(mesh)).toBe(false)
-    cache.beforeCapture(true)
+    cache.beforeCapture({ wholeWalls: true })
     expect(shown(mesh)).toBe(true)
     cache.afterCapture()
     expect(shown(mesh)).toBe(false)
@@ -290,5 +296,44 @@ describe('WallModeFollowCache', () => {
     hideFromScene(mesh, 'isolated')
     cache.update(camera)
     expect(shown(mesh)).toBe(false)
+  })
+
+  test('an export sees the node, and a capture whose end is missed heals on the next pass', () => {
+    const { mesh } = addScene('gable')
+    setMode('down')
+    cache.update(camera)
+    cache.beforeCapture({ exporting: true })
+    expect(shown(mesh)).toBe(true)
+    cache.afterCapture()
+    expect(shown(mesh)).toBe(false)
+    cache.beforeCapture({ exporting: true })
+    viewerStore.setState({ geometryRevision: 1 })
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+  })
+
+  test('a block dragged across the building centre flips the cutaway decision', () => {
+    const { id, group, mesh } = addScene('gable')
+    setMode('cutaway')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    group.position.set(-20, 0, 0)
+    useLiveTransforms.getState().set(id, { position: [-20, 0, 0], rotation: 0 })
+    cache.update(camera)
+    expect(shown(mesh)).toBe(true)
+    useLiveTransforms.getState().clearAll()
+  })
+
+  test('a node turned by something above it is judged from where it ended up', () => {
+    const { id, group, mesh } = addScene('gable')
+    setMode('cutaway')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    group.rotation.y = Math.PI
+    group.updateMatrixWorld(true)
+    useLiveTransforms.getState().set(id, { position: [0, 0, 0], rotation: Math.PI })
+    cache.update(camera)
+    expect(shown(mesh)).toBe(true)
+    useLiveTransforms.getState().clearAll()
   })
 })

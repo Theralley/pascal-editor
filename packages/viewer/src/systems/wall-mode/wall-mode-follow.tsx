@@ -6,6 +6,8 @@ import {
   getRegistryVersion,
   nodeRegistry,
   sceneRegistry,
+  useLiveNodeOverrides,
+  useLiveTransforms,
   useScene,
 } from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
@@ -109,8 +111,15 @@ export class WallModeFollowCache {
   private readonly levelCentres = new Map<string, readonly [number, number]>()
   private readonly nodeCentres = new Map<
     string,
-    { node: AnyNode; revision: number; centre: readonly [number, number] | null }
+    {
+      node: AnyNode
+      revision: number
+      /** The group's matrix in the level's frame when the centre was taken. */
+      placement: Matrix4
+      centre: readonly [number, number] | null
+    }
   >()
+  private live: { transforms: unknown; overrides: unknown } | undefined
   /** Nodes a capture with whole walls has shown, to hide again after it. */
   private shownForCapture: string[] = []
 
@@ -129,13 +138,22 @@ export class WallModeFollowCache {
       previous.wallMode !== viewer.wallMode ||
       previous.geometryRevision !== viewer.geometryRevision
 
+    // A block dragged or turned live (itself or something above it) moves without a scene write.
+    const transforms = useLiveTransforms.getState().transforms
+    const overrides = useLiveNodeOverrides.getState().overrides
+    const liveChanged =
+      !!this.live && (this.live.transforms !== transforms || this.live.overrides !== overrides)
+    this.live = { transforms, overrides }
+    // A capture that never reported its end must not leave nodes shown.
+    if (this.shownForCapture.length > 0) this.afterCapture()
+
     camera.getWorldDirection(this.cameraDirection)
     const cutaway = viewer.wallMode === 'cutaway'
     const cameraChanged =
       cutaway &&
       (!(camera.position.distanceTo(this.lastCameraPosition) <= CAMERA_MOVE_DISTANCE) ||
         this.cameraDirection.dot(this.lastCameraDirection) < CAMERA_TURN_DOT)
-    if (!(inputsChanged || cameraChanged)) return
+    if (!(inputsChanged || cameraChanged || liveChanged)) return
     if (cameraChanged) {
       this.lastCameraPosition.copy(camera.position)
       this.lastCameraDirection.copy(this.cameraDirection)
@@ -145,8 +163,11 @@ export class WallModeFollowCache {
     this.nodes = scene.nodes
     this.viewer = viewer
     this.registryVersion = this.followersVersion
-    // Nothing is hidden in the other modes, and nothing needs undoing when nothing was.
-    if (viewer.wallMode !== 'down' && !cutaway && this.tracked.size === 0) return
+    // Nothing is hidden in the other modes: let go of what was, and keep no entries.
+    if (viewer.wallMode !== 'down' && !cutaway) {
+      for (const id of [...this.tracked.keys()]) this.release(id)
+      return
+    }
 
     const seen = new Set<string>()
     for (const [kind, config] of followers) {
@@ -166,7 +187,7 @@ export class WallModeFollowCache {
         )
         this.tracked.set(id, follower)
         // Holds are per mesh and a rebuild brings fresh meshes, so a pass that saw new inputs
-        // re-holds them (idempotent); a camera-only pass acts on a changed decision.
+        // re-holds them (idempotent); a camera or live-drag pass acts on a changed decision.
         if (!inputsChanged && previousFollower?.hidden === follower.hidden) continue
         setHidden(meshesOf(group, node), follower.hidden)
         setAffected(id, follower.hidden)
@@ -185,9 +206,9 @@ export class WallModeFollowCache {
     this.nodes = undefined
   }
 
-  /** A capture of whole walls sees every followed node, as it sees every wall. */
-  beforeCapture(wholeWalls: boolean): void {
-    if (!wholeWalls) return
+  /** A capture of whole walls, or an export, sees every followed node. */
+  beforeCapture(event: { wholeWalls?: boolean; exporting?: boolean } | undefined): void {
+    if (!(event?.wholeWalls || event?.exporting)) return
     for (const [id, follower] of this.tracked) {
       if (!follower.hidden) continue
       const group = sceneRegistry.nodes.get(id)
@@ -294,15 +315,24 @@ export class WallModeFollowCache {
   /** The centre of the node's built meshes in the level's frame, from their geometry. */
   private nodeCentre(node: AnyNode, group: Object3D, levelObject: Object3D, revision: number) {
     const cached = this.nodeCentres.get(node.id)
-    if (cached && cached.node === node && cached.revision === revision) return cached.centre
     levelObject.updateWorldMatrix(true, false)
     scratchInverse.copy(levelObject.matrixWorld).invert()
+    group.updateWorldMatrix(true, false)
+    const placement = new Matrix4().multiplyMatrices(scratchInverse, group.matrixWorld)
+    if (
+      cached &&
+      cached.node === node &&
+      cached.revision === revision &&
+      cached.placement.equals(placement)
+    ) {
+      return cached.centre
+    }
     group.updateWorldMatrix(true, true)
     scratchBox.makeEmpty()
     for (const mesh of meshesOf(group, node)) {
       const geometry = mesh.geometry
       if (!geometry) continue
-      geometry.boundingBox ??= (geometry.computeBoundingBox(), geometry.boundingBox)
+      if (!geometry.boundingBox) geometry.computeBoundingBox()
       if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) continue
       scratchMatrix.multiplyMatrices(scratchInverse, mesh.matrixWorld)
       scratchBox.union(geometry.boundingBox.clone().applyMatrix4(scratchMatrix))
@@ -313,7 +343,7 @@ export class WallModeFollowCache {
           (scratchBox.min.x + scratchBox.max.x) / 2,
           (scratchBox.min.z + scratchBox.max.z) / 2,
         ] as const)
-    this.nodeCentres.set(node.id, { node, revision, centre })
+    this.nodeCentres.set(node.id, { node, revision, placement, centre })
     return centre
   }
 
@@ -360,8 +390,8 @@ export const WallModeFollowSystem = ({
   useFrame((state) => cache.update(state.camera), WALL_MODE_FOLLOW_FRAME_PRIORITY)
 
   useEffect(() => {
-    const before = (event?: { wholeWalls?: boolean }) =>
-      cache.beforeCapture(event?.wholeWalls === true)
+    const before = (event?: { wholeWalls?: boolean; exporting?: boolean }) =>
+      cache.beforeCapture(event)
     const after = () => cache.afterCapture()
     emitter.on('thumbnail:before-capture', before)
     emitter.on('thumbnail:after-capture', after)

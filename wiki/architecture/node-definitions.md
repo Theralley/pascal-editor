@@ -430,7 +430,11 @@ a see-through look for followers comes with the display-cut work.
 
 Hiding goes through the one owner of visibility (`scene-visibility.ts`, reason `'wall-mode'`): the node's
 meshes leave the scene layer, so they are not drawn, not picked and not shadowed, and no material is
-ever written. A capture of whole walls shows the node, as it shows every wall.
+ever written, whatever other hold (solo, batching) the node has. A capture of whole walls and every model
+export (`thumbnail:before-capture` with `wholeWalls` or `exporting`) show the node, so exports hold the whole
+building. The system re-holds the node's meshes when the scene, the registry or `geometryRevision`
+changes and when a live drag or override moves something: a kind that remounts its meshes without
+`def.geometry` must bump `geometryRevision` (or mark the node dirty) or they stay visible.
 
 ```ts
 type FollowsWallModeConfig = {
@@ -446,6 +450,8 @@ type FollowsWallModeConfig = {
 - Without `facing`, the node counts as the building's exterior: its front faces away from the centre
   of its level's wall nodes, judged from the centre of its built meshes, both in the level's frame (moving
   the building changes no decision). Give a `facing` (`frontSide`, `backSide`, level-space `normal`) when the kind knows better.
+- Items hosted on a hidden node stay drawn, like items on a wall with walls down, and a hidden node
+  that is selected from the tree still shows its handles over empty space.
 - The node batch releases a node while it is hidden (`isWallModeAffected`, `subscribeWallModeAffected`)
   and re-offers it afterwards.
 

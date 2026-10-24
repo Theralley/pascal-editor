@@ -369,8 +369,12 @@ type WindowAnimationEvents = {
 }
 
 type ThumbnailEvents = {
-  /** `wholeWalls`: every wall drawn whole for the frame, whatever the wall mode (an authored pose, an interior view). */
-  'thumbnail:before-capture': { wholeWalls?: boolean } | undefined
+  /**
+   * `wholeWalls`: every wall drawn whole for the frame, whatever the wall mode (an authored pose, an
+   * interior view). `exporting`: the scene is cloned for a model export, which must hold the whole
+   * building, so nodes the wall mode hides (`followsWallMode`) are shown for the clone.
+   */
+  'thumbnail:before-capture': { wholeWalls?: boolean; exporting?: boolean } | undefined
   'thumbnail:after-capture': undefined
 }
 

@@ -359,7 +359,7 @@ export async function preparePortableSceneFromViewer(
   nodes: Record<string, AnyNode>,
   options: GlbExportOptions = {},
 ): Promise<GlbExport> {
-  emitter.emit('thumbnail:before-capture', undefined)
+  emitter.emit('thumbnail:before-capture', { exporting: true })
   const restoreLevels = snapLevelsToTruePositions()
   let preparation: SceneExportPreparation
   try {

@@ -105,7 +105,7 @@ export function ExportManager() {
         // ceiling/site brackets) and let wall-cutout reveal all walls — the same
         // synchronous capture path thumbnails use. We clone the scene inside the
         // window, so the export snapshots the clean building, then restore.
-        emitter.emit('thumbnail:before-capture', undefined)
+        emitter.emit('thumbnail:before-capture', { exporting: true })
         const restoreLevels = snapLevelsToTruePositions()
         let prepared: ReturnType<typeof prepareSceneForExport>
         try {

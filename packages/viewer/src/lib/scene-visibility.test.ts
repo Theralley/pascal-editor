@@ -248,3 +248,37 @@ describe('scene visibility', () => {
     expect(obj.layers.test(defaultLayers)).toBe(true)
   })
 })
+
+describe('wall-mode hold', () => {
+  test.each([
+    [[]],
+    [['shadow-only']],
+    [['batched']],
+    [['wall-batched']],
+    [['isolated']],
+    [['shadow-only', 'batched']],
+  ] as const)('with %p, a wall-mode hold leaves the object in no pass', (others) => {
+    const obj = sceneObject()
+    obj.layers.enable(OVERLAY_LAYER)
+    const original = obj.layers.mask
+    for (const reason of others) hideFromScene(obj, reason)
+    hideFromScene(obj, 'wall-mode')
+    expect(obj.layers.isEnabled(SCENE_LAYER)).toBe(false)
+    expect(obj.layers.isEnabled(SHADOW_ONLY_LAYER)).toBe(false)
+    expect(obj.layers.isEnabled(BATCHED_LAYER)).toBe(false)
+    expect(obj.layers.isEnabled(OVERLAY_LAYER)).toBe(true)
+
+    showInScene(obj, 'wall-mode')
+    for (const reason of others) showInScene(obj, reason)
+    expect(obj.layers.mask).toBe(original)
+  })
+
+  test('the other reasons take effect again when the wall-mode hold leaves first', () => {
+    const obj = sceneObject()
+    hideFromScene(obj, 'shadow-only')
+    hideFromScene(obj, 'wall-mode')
+    showInScene(obj, 'wall-mode')
+    expect(obj.layers.isEnabled(SHADOW_ONLY_LAYER)).toBe(true)
+    expect(obj.layers.isEnabled(SCENE_LAYER)).toBe(false)
+  })
+})

@@ -136,6 +136,14 @@ function applyHold(obj: Object3D, hold: Hold): void {
   obj.layers.mask = hold.original
   obj.layers.disable(SCENE_LAYER)
 
+  // Hidden by the wall mode, a node is gone from every pass in any combination: no shadow-only
+  // caster, no batched stand-in that stays pickable.
+  if (hold.reasons.has('wall-mode')) {
+    obj.layers.disable(SHADOW_ONLY_LAYER)
+    obj.layers.disable(BATCHED_LAYER)
+    return
+  }
+
   // A batched wall is both drawn and shadowed by the merged mesh, so it stays
   // out of the shadow pass too — enabling the shadow-only bit would submit its
   // triangles a second time, on top of the copy the batch already casts.
