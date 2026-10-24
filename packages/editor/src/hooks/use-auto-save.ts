@@ -113,6 +113,7 @@ export function useAutoSave({
   beginSceneLoad: () => void
   completeSceneLoad: () => void
   saveNow: () => void
+  flush: () => Promise<boolean>
 } {
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const isSavingRef = useRef(false)
@@ -126,6 +127,7 @@ export function useAutoSave({
   const pendingSaveRef = useRef(false)
   const executeSaveRef = useRef<(() => Promise<void>) | null>(null)
   const hasDirtyChangesRef = useRef(false)
+  const inFlightSaveRef = useRef<Promise<void> | null>(null)
 
   // Keep latest callback/value refs so the stable subscription always uses current values
   const onSaveRef = useRef(onSave)
@@ -168,7 +170,15 @@ export function useAutoSave({
     let lastMaterialsRef = useScene.getState().materials
     let lastInstalledPluginsRef = useScene.getState().installedPlugins
 
-    async function executeSave() {
+    function executeSave() {
+      const run = writeScene().finally(() => {
+        if (inFlightSaveRef.current === run) inFlightSaveRef.current = null
+      })
+      inFlightSaveRef.current = run
+      return run
+    }
+
+    async function writeScene() {
       // A held scene preview is on screen, not in the document: wait for it to end.
       if (isScenePreviewing()) {
         pendingSaveRef.current = true
@@ -409,6 +419,33 @@ export function useAutoSave({
     executeSaveRef.current?.()
   }, [])
 
+  // Awaitable `saveNow` for a host that must act on saved content (copying the project): writes
+  // until nothing is left unsaved, `false` when it cannot (still loading, previewing a version, a
+  // blocked or failed write).
+  const flush = useCallback(async () => {
+    if (isLoadingSceneRef.current || isVersionPreviewModeRef.current) return false
+    endScenePreview()
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const debounceArmed = saveTimeoutRef.current !== undefined
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        saveTimeoutRef.current = undefined
+      }
+      if (inFlightSaveRef.current) {
+        // Its snapshot may predate the latest edit: look again once it has landed.
+        await inFlightSaveRef.current
+        continue
+      }
+      if (!(hasDirtyChangesRef.current || pendingSaveRef.current || debounceArmed)) return true
+      await executeSaveRef.current?.()
+      if (hasDirtyChangesRef.current && !pendingSaveRef.current && !saveTimeoutRef.current) {
+        return false
+      }
+    }
+    return false
+  }, [])
+
   const beginSceneLoad = useCallback(() => {
     isLoadingSceneRef.current = true
   }, [])
@@ -427,5 +464,5 @@ export function useAutoSave({
     }
   }, [])
 
-  return { beginSceneLoad, completeSceneLoad, saveNow }
+  return { beginSceneLoad, completeSceneLoad, saveNow, flush }
 }

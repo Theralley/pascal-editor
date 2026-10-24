@@ -10,6 +10,7 @@ import {
   type ProjectCreateOptions,
   type ProjectStatus,
   type SceneDeleteResult,
+  type SceneDuplicateOptions,
   type SceneEvent,
   type SceneEventAppendOptions,
   type SceneEventListOptions,
@@ -51,6 +52,8 @@ interface SceneRow {
   size_bytes: number
   node_count: number
   graph_json: string
+  forked_from_id: string | null
+  forked_from_version: number | null
 }
 
 interface SceneEventRow {
@@ -153,7 +156,14 @@ function rowToMeta(row: SceneRow): SceneMeta {
     url: editorUrl,
     published: true,
     graphHash: hashGraphJson(row.graph_json),
+    forkedFrom: rowForkOrigin(row),
   }
+}
+
+function rowForkOrigin(row: SceneRow | null): SceneMeta['forkedFrom'] {
+  return row?.forked_from_id == null
+    ? null
+    : { id: row.forked_from_id, version: Number(row.forked_from_version) }
 }
 
 function editorUrlForScene(id: string): string {
@@ -449,6 +459,7 @@ export class SqliteSceneStore implements SceneStore {
         url: editorUrlForScene(id),
         published: true,
         graphHash: hashGraphJson(graphJson),
+        forkedFrom: rowForkOrigin(existing),
       }
     })
   }
@@ -485,7 +496,8 @@ export class SqliteSceneStore implements SceneStore {
     const rows = db
       .query(
         `SELECT id, name, project_id, owner_id, thumbnail_url, version,
-                created_at, updated_at, size_bytes, node_count, graph_json
+                created_at, updated_at, size_bytes, node_count, graph_json,
+                forked_from_id, forked_from_version
            FROM scenes
            ${where}
           ORDER BY updated_at DESC, id ASC
@@ -546,6 +558,58 @@ export class SqliteSceneStore implements SceneStore {
         version: nextVersion,
         updatedAt: now,
       }
+    })
+  }
+
+  async duplicate(id: string, opts: SceneDuplicateOptions = {}): Promise<SceneMeta> {
+    return this.withWriteTransaction((db) => {
+      const safeId = sanitizeSlug(id)
+      const source = this.getRow(db, safeId)
+      if (!source) {
+        throw new SceneNotFoundError(`Scene "${safeId}" not found`)
+      }
+      if (opts.expectedVersion !== undefined && source.version !== opts.expectedVersion) {
+        throw new SceneVersionConflictError(
+          `Scene "${safeId}" version mismatch: expected ${opts.expectedVersion}, got ${source.version}`,
+        )
+      }
+      if (
+        opts.expectedGraphHash != null &&
+        hashGraphJson(source.graph_json) !== opts.expectedGraphHash
+      ) {
+        throw new SceneVersionConflictError(`Scene "${safeId}" changed since it was read`)
+      }
+      if (source.size_bytes > this.maxSceneBytes) {
+        throw new SceneTooLargeError(
+          `Scene "${safeId}" is ${source.size_bytes} bytes, exceeds cap of ${this.maxSceneBytes} bytes`,
+        )
+      }
+
+      const name = opts.name ?? `Copy of ${source.name}`.slice(0, MAX_NAME_LENGTH)
+      assertValidName(name)
+      const copyId = this.generateUniqueId(db)
+      const now = new Date().toISOString()
+      const ownerId = opts.ownerId ?? null
+
+      // The graph is copied inside SQLite, never parsed: it is private (no project, no thumbnail,
+      // no share) and starts its own history at version 1.
+      db.query(
+        `INSERT INTO scenes (
+           id, name, project_id, owner_id, thumbnail_url, version,
+           created_at, updated_at, size_bytes, node_count, graph_json,
+           forked_from_id, forked_from_version
+         ) SELECT ?, ?, NULL, ?, NULL, 1, ?, ?, size_bytes, node_count, graph_json, id, version
+             FROM scenes WHERE id = ?`,
+      ).run(copyId, name, ownerId, now, now, safeId)
+      db.query(
+        `INSERT INTO scene_revisions (
+           scene_id, version, graph_json, author_kind, author_id, created_at
+         ) SELECT id, version, graph_json, 'mcp', owner_id, created_at FROM scenes WHERE id = ?`,
+      ).run(copyId)
+
+      const copy = this.getRow(db, copyId)
+      if (!copy) throw new SceneInvalidError(`Failed to read back copy "${copyId}"`)
+      return rowToMeta(copy)
     })
   }
 
@@ -666,6 +730,38 @@ export class SqliteSceneStore implements SceneStore {
       CREATE INDEX IF NOT EXISTS scene_events_scene_event_idx
         ON scene_events(scene_id, event_id);
     `)
+    this.addLineageColumns(db)
+  }
+
+  /**
+   * `CREATE TABLE IF NOT EXISTS` never adds a column to a database made before it existed. Every
+   * connection migrates on its own, so the check and the ALTERs share one write transaction: the
+   * second process waits for the first and then finds the columns.
+   */
+  private addLineageColumns(db: SqliteDatabase): void {
+    db.exec('BEGIN IMMEDIATE')
+    try {
+      const columns = new Set(
+        db
+          .query('PRAGMA table_info(scenes)')
+          .all()
+          .map((column) => (column as { name: string }).name),
+      )
+      if (!columns.has('forked_from_id')) {
+        db.exec('ALTER TABLE scenes ADD COLUMN forked_from_id TEXT')
+      }
+      if (!columns.has('forked_from_version')) {
+        db.exec('ALTER TABLE scenes ADD COLUMN forked_from_version INTEGER')
+      }
+      db.exec('COMMIT')
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK')
+      } catch {
+        // Ignore rollback errors so the original failure is preserved.
+      }
+      throw err
+    }
   }
 
   private async withWriteTransaction<T>(fn: (db: SqliteDatabase) => T | Promise<T>): Promise<T> {
@@ -690,7 +786,8 @@ export class SqliteSceneStore implements SceneStore {
       db
         .query(
           `SELECT id, name, project_id, owner_id, thumbnail_url, version,
-                  created_at, updated_at, size_bytes, node_count, graph_json
+                  created_at, updated_at, size_bytes, node_count, graph_json,
+                  forked_from_id, forked_from_version
              FROM scenes
             WHERE id = ?`,
         )

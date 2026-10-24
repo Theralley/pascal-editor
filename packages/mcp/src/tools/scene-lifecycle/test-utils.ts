@@ -4,6 +4,7 @@ import {
   type ProjectCreateOptions,
   type ProjectStatus,
   type SceneDeleteResult,
+  type SceneDuplicateOptions,
   type SceneEvent,
   type SceneEventAppendOptions,
   type SceneEventListOptions,
@@ -199,6 +200,36 @@ export class InMemorySceneStore implements SceneStore {
     return this.toMeta(updated)
   }
 
+  async duplicate(id: string, opts?: SceneDuplicateOptions): Promise<SceneMeta> {
+    const rec = this.data.get(id)
+    if (!rec) throw new SceneNotFoundError(`Scene ${id} not found`)
+    if (opts?.expectedVersion !== undefined && rec.version !== opts.expectedVersion) {
+      throw new SceneVersionConflictError(
+        `Expected version ${opts.expectedVersion}, have ${rec.version}`,
+      )
+    }
+    const copyId = `scene_${++this.idCounter}`
+    const now = new Date().toISOString()
+    const copy: SceneWithGraph = {
+      ...rec,
+      id: copyId,
+      name: opts?.name ?? `Copy of ${rec.name}`.slice(0, 200),
+      projectId: null,
+      thumbnailUrl: null,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      ownerId: opts?.ownerId ?? null,
+      editorUrl: `/editor/${copyId}`,
+      url: `/editor/${copyId}`,
+      forkedFrom: { id: rec.id, version: rec.version },
+      graph: JSON.parse(JSON.stringify(rec.graph)),
+    }
+    this.data.set(copyId, copy)
+    this.touchProject(copyId, copy.name, now)
+    return this.toMeta(copy)
+  }
+
   async appendSceneEvent(opts: SceneEventAppendOptions): Promise<SceneEvent> {
     const event: SceneEvent = {
       eventId: ++this.eventCounter,
@@ -256,6 +287,7 @@ export class InMemorySceneStore implements SceneStore {
       url: editorUrl,
       published: rec.published ?? true,
       graphHash: rec.graphHash ?? computeGraphHash(rec.graph),
+      forkedFrom: rec.forkedFrom ?? null,
     }
   }
 

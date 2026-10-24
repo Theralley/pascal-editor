@@ -16,6 +16,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PoolSectionBanner } from '@/components/pool-section-banner'
+import { requestDuplicate } from '@/lib/duplicate-scene'
 import { countGraphNodes, isEmptyGraphOverwrite } from '@/lib/empty-graph-guard'
 import { useLocalArtifactStore } from '@/lib/local-artifact-store'
 import {
@@ -42,6 +43,7 @@ export interface SceneMeta {
   ownerId: string | null
   sizeBytes: number
   nodeCount: number
+  forkedFrom?: { id: string; version: number } | null
 }
 
 // The open-source editor only ships the built-in catalog (no uploaded items),
@@ -137,6 +139,8 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
 interface SceneLoaderProps {
   initialScene: SceneGraph
   meta: SceneMeta
+  /** The project this one was copied from, while that still exists. */
+  copiedFrom: { id: string; name: string } | null
 }
 
 interface LiveSceneEvent {
@@ -174,7 +178,7 @@ export function SceneLoader(props: SceneLoaderProps) {
   )
 }
 
-function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
+function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoaderProps) {
   // A rename must reach the autosave body, which sends `meta.name`.
   const [renamedTo, setRenamedTo] = useState<string | null>(null)
   const meta = useMemo(
@@ -191,6 +195,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
   // autosave wipe class: a save fired from a not-yet-hydrated (empty) editor
   // store must never overwrite a populated server copy.
   const serverNodeCountRef = useRef(meta.nodeCount)
+  const flushSaveRef = useRef<(() => Promise<boolean>) | null>(null)
   const lastRemoteGraphJsonRef = useRef<string | null>(null)
   const pendingGraphSignaturesRef = useRef(new Set<string>())
   const suppressRemoteSaveUntilRef = useRef(0)
@@ -231,16 +236,18 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
     [meta.id],
   )
 
-  const handleSave = useCallback(
-    async (graph: SceneGraph, options?: { keepalive?: boolean }) => {
+  // Resolves false when the server does not hold the graph afterwards, true when it does or
+  // there was nothing to write.
+  const persistScene = useCallback(
+    async (graph: SceneGraph, options?: { keepalive?: boolean }): Promise<boolean> => {
       const graphJson = sceneGraphSignature(graph)
       const isRecentRemoteApply = Date.now() < suppressRemoteSaveUntilRef.current
       if (lastRemoteGraphJsonRef.current === graphJson) {
         lastRemoteGraphJsonRef.current = null
         suppressRemoteSaveUntilRef.current = 0
-        return
+        return true
       }
-      if (isRecentRemoteApply) return
+      if (isRecentRemoteApply) return true
 
       // Wipe guard: never PUT an empty graph over a populated server copy.
       // An empty serialization here means the editor store was not hydrated
@@ -252,7 +259,7 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
             `(${serverNodeCountRef.current} nodes on the server) with an empty graph.`,
         )
         setSaveError('Autosave blocked: the editor tried to save an empty scene')
-        return
+        return false
       }
 
       pendingGraphSignaturesRef.current.add(graphJson)
@@ -280,15 +287,15 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
               `[scene-loader] Server rejected an empty-graph save for scene ${meta.id}.`,
             )
             setSaveError('Autosave blocked: the editor tried to save an empty scene')
-            return
+            return false
           }
           setConflict(true)
-          return
+          return false
         }
 
         if (!response.ok) {
           setSaveError(`Save failed (${response.status})`)
-          return
+          return false
         }
 
         const next = (await response.json()) as SceneMeta
@@ -297,13 +304,38 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
           serverNodeCountRef.current = next.nodeCount
         }
         setSaveError(null)
+        return true
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Save failed')
+        return false
       } finally {
         pendingGraphSignaturesRef.current.delete(graphJson)
       }
     },
     [meta.id, meta.name],
+  )
+
+  // A save the server refused throws, so the autosave keeps the change unsaved (and a flush
+  // reports it) instead of showing it as saved.
+  const handleSave = useCallback(
+    async (graph: SceneGraph, options?: { keepalive?: boolean }) => {
+      if (!(await persistScene(graph, options))) throw new Error('Save failed')
+    },
+    [persistScene],
+  )
+
+  const handleDuplicate = useCallback(
+    async (name?: string): Promise<string | null> => {
+      // The copy is made from what the server holds, so the pending edit goes there first.
+      if (!(await flushSaveRef.current?.())) {
+        return 'Your latest changes could not be saved, so nothing was copied.'
+      }
+      const result = await requestDuplicate(meta.id, { name, version: versionRef.current })
+      if (!result.ok) return result.message
+      router.push(`/project/${result.id}`)
+      return null
+    },
+    [meta.id, router],
   )
 
   useEffect(() => {
@@ -353,6 +385,20 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
     [meta.id],
   )
 
+  const settingsPanelProps = useMemo(
+    () => ({
+      projectSection: copiedFrom ? (
+        <p className="text-muted-foreground text-xs">
+          Copied from{' '}
+          <a className="underline underline-offset-2" href={`/project/${copiedFrom.id}`}>
+            {copiedFrom.name}
+          </a>
+        </p>
+      ) : undefined,
+    }),
+    [copiedFrom],
+  )
+
   return (
     <div className="dark relative h-screen w-screen">
       {conflict && (
@@ -389,12 +435,22 @@ function SceneEditor({ initialScene, meta: initialMeta }: SceneLoaderProps) {
         disablePostFx={lightPreview}
         immersive={vr?.session ? vr.immersive : undefined}
         layoutVersion="v2"
-        navbarSlot={<EditorNavbar name={meta.name} onRename={handleRename} sceneId={meta.id} />}
+        flushSaveRef={flushSaveRef}
+        navbarSlot={
+          <EditorNavbar
+            copiedFrom={copiedFrom}
+            name={meta.name}
+            onDuplicate={handleDuplicate}
+            onRename={handleRename}
+            sceneId={meta.id}
+          />
+        }
         onLoad={handleLoad}
         onSave={handleSave}
         onThumbnailCapture={handleThumb}
         projectId={meta.projectId ?? 'default'}
         projectName={meta.name}
+        settingsPanelProps={settingsPanelProps}
         sidebarTabs={SIDEBAR_TABS}
         viewerBanner={<PoolSectionBanner />}
         viewerToolbarLeft={<EditorViewerToolbarLeft />}

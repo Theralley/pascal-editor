@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { resolveDefaultDatabasePath } from '@pascal-app/mcp/storage'
 
@@ -18,6 +18,18 @@ export async function readSceneThumbnail(id: string): Promise<Uint8Array | null>
     return await readFile(thumbnailFile(id))
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
+  }
+}
+
+/** Gives `toId` its own copy of the picture of `fromId`; a source with none leaves the copy with none. */
+export async function copySceneThumbnail(fromId: string, toId: string): Promise<void> {
+  const target = thumbnailFile(toId)
+  await mkdir(dirname(target), { recursive: true })
+  try {
+    await copyFile(thumbnailFile(fromId), target)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
     throw error
   }
 }

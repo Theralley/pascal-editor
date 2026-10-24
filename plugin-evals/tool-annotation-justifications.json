@@ -397,6 +397,19 @@
       }
     },
     {
+      "name": "duplicate_scene",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "justifications": {
+        "readOnlyHint": "It is not read-only because it creates a new stored scene from an existing one.",
+        "destructiveHint": "It only adds a new private scene and leaves the source scene and every other stored scene unchanged.",
+        "openWorldHint": "It operates on the connected Pascal scene or project service without accessing the public internet."
+      }
+    },
+    {
       "name": "duplicate_zone",
       "annotations": {
         "readOnlyHint": false,

@@ -385,6 +385,8 @@ export interface SettingsPanelProps {
    * InterfaceThemeRow).
    */
   preferences?: ReactNode
+  /** Rows a host adds to the Project section, such as where the project was copied from. */
+  projectSection?: ReactNode
 }
 
 function FloorSettingsSection() {
@@ -504,6 +506,7 @@ export function SettingsPanel({
   projectVisibility,
   onVisibilityChange,
   preferences,
+  projectSection,
 }: SettingsPanelProps = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyResetTimeoutRef = useRef<number | null>(null)
@@ -932,6 +935,7 @@ export function SettingsPanel({
                     : 'Copy'}
               </Button>
             </div>
+            {projectSection}
           </SettingsSection>
         )}
 

@@ -35,5 +35,15 @@ export default async function ScenePage({ params }: { params: Promise<{ id: stri
   }
 
   const { graph, ...meta } = scene
-  return <SceneLoader initialScene={graph} meta={meta} />
+  // The source is a project of its own that may be gone by now.
+  const source = meta.forkedFrom
+    ? await (await getSceneOperations()).getProjectStatus(meta.forkedFrom.id)
+    : null
+  return (
+    <SceneLoader
+      copiedFrom={source ? { id: source.id, name: source.name } : null}
+      initialScene={graph}
+      meta={meta}
+    />
+  )
 }

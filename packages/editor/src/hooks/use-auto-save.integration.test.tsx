@@ -196,6 +196,49 @@ test('a save that came due mid-load is written once the load completes', async (
   expect(statuses.at(-1)).toBe('saved')
 })
 
+test('flush writes a pending edit at once and reports it saved', async () => {
+  const { writes, controls } = await mount(12)
+  expect(await controls.flush()).toBe(true)
+  expect(writes).toEqual([])
+
+  agentAddsColumn()
+  expect(await controls.flush()).toBe(true)
+  expect(writes).toEqual([13])
+})
+
+test('flush waits for a write in flight and then writes the edit made meanwhile', async () => {
+  let release: () => void = () => {}
+  let held = true
+  const { writes, controls } = await mount(12, undefined, () =>
+    held ? new Promise<void>((resolve) => (release = resolve)) : Promise.resolve(),
+  )
+  agentAddsColumn()
+  const inFlight = controls.flush()
+  await Bun.sleep(0)
+  useScene.getState().updateNode('column_agent' as never, { visible: false } as never)
+  held = false
+  release()
+
+  expect(await inFlight).toBe(true)
+  expect(writes).toEqual([13, 13])
+})
+
+test('flush reports a write that failed', async () => {
+  const { controls } = await mount(12, undefined, () => Promise.reject(new Error('offline')))
+  agentAddsColumn()
+
+  expect(await controls.flush()).toBe(false)
+})
+
+test('flush refuses while a scene load is in flight', async () => {
+  const { writes, controls } = await mount(12)
+  agentAddsColumn()
+  controls.beginSceneLoad()
+
+  expect(await controls.flush()).toBe(false)
+  expect(writes).toEqual([])
+})
+
 test.each(['undo', 'redo', 'delete'] as const)(
   'autosave permits a 5 to 4 single-node %s',
   async (action) => {

@@ -66,6 +66,7 @@ const TOOL_POLICIES = [
       'add_window',
       'create_mezzanine',
       'create_project',
+      'duplicate_scene',
       'create_roof',
       'create_room',
       'create_stair',

@@ -16,6 +16,7 @@ import type {
   ProjectCreateOptions,
   ProjectStatus,
   SceneDeleteResult,
+  SceneDuplicateOptions,
   SceneEvent,
   SceneEventAppendOptions,
   SceneEventListOptions,
@@ -47,6 +48,8 @@ export interface SceneOperations {
   readonly canListSceneEvents: boolean
   readonly canCreateProject: boolean
   readonly canGetProjectStatus: boolean
+  /** Optional like the store's `duplicate`: a host that injects its own operations may not copy. */
+  readonly canDuplicateScene?: boolean
   readonly storeBackend: SceneStore['backend'] | null
   /** What the agent's session has kept (named moments, what it made); absent on a host with none. */
   readonly agentSession?: AgentSession
@@ -122,6 +125,7 @@ export interface SceneOperations {
   listScenes(options?: SceneListOptions): Promise<SceneMeta[]>
   deleteStoredScene(id: string, options?: SceneMutateOptions): Promise<SceneDeleteResult>
   renameStoredScene(id: string, newName: string, options?: SceneMutateOptions): Promise<SceneMeta>
+  duplicateStoredScene?(id: string, options?: SceneDuplicateOptions): Promise<SceneMeta>
   appendSceneEvent(options: SceneEventAppendOptions): Promise<SceneEvent | null>
   listSceneEvents(id: string, options?: SceneEventListOptions): Promise<SceneEvent[]>
 }
@@ -189,6 +193,10 @@ class SceneOperationsFacade implements SceneOperations {
 
   get canGetProjectStatus(): boolean {
     return typeof this.#store?.getProjectStatus === 'function'
+  }
+
+  get canDuplicateScene(): boolean {
+    return typeof this.#store?.duplicate === 'function'
   }
 
   get storeBackend(): SceneStore['backend'] | null {
@@ -404,6 +412,14 @@ class SceneOperationsFacade implements SceneOperations {
     options?: SceneMutateOptions,
   ): Promise<SceneMeta> {
     return this.requireStore().rename(id, newName, options)
+  }
+
+  async duplicateStoredScene(id: string, options?: SceneDuplicateOptions): Promise<SceneMeta> {
+    const store = this.requireStore()
+    if (!store.duplicate) {
+      throw new Error('duplicate_unavailable')
+    }
+    return store.duplicate(id, options)
   }
 
   async appendSceneEvent(options: SceneEventAppendOptions): Promise<SceneEvent | null> {

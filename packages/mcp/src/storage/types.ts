@@ -31,6 +31,13 @@ export interface SceneMeta {
   saveMode?: SceneSaveMode
   /** Stable hash of the graph payload used for save/load/status matching. */
   graphHash?: string
+  /** The scene this one was copied from, at the version it was copied. Null for an original. */
+  forkedFrom?: SceneForkOrigin | null
+}
+
+export interface SceneForkOrigin {
+  id: SceneId
+  version: number
 }
 
 export interface SceneWithGraph extends SceneMeta {
@@ -86,6 +93,17 @@ export interface SceneListOptions {
 
 export interface SceneMutateOptions {
   expectedVersion?: number
+}
+
+export interface SceneDuplicateOptions extends SceneMutateOptions {
+  /** Defaults to `Copy of <source name>`. */
+  name?: string
+  ownerId?: string | null
+  /**
+   * Fails with `SceneVersionConflictError` unless the stored graph still hashes to this: a hosted
+   * draft can change without a version bump.
+   */
+  expectedGraphHash?: string | null
 }
 
 /**
@@ -148,6 +166,8 @@ export interface SceneStore {
   list(opts?: SceneListOptions): Promise<SceneMeta[]>
   delete(id: SceneId, opts?: SceneMutateOptions): Promise<SceneDeleteResult>
   rename(id: SceneId, newName: string, opts?: SceneMutateOptions): Promise<SceneMeta>
+  /** Copies a scene into a new private one. Absent when the store cannot copy. */
+  duplicate?(id: SceneId, opts?: SceneDuplicateOptions): Promise<SceneMeta>
   appendSceneEvent?(opts: SceneEventAppendOptions): Promise<SceneEvent>
   listSceneEvents?(sceneId: SceneId, opts?: SceneEventListOptions): Promise<SceneEvent[]>
 }

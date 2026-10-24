@@ -9,7 +9,12 @@ import {
   SqliteSceneStore,
   type SqliteSceneStoreOptions,
 } from './sqlite-scene-store'
-import { SceneInvalidError, SceneTooLargeError, SceneVersionConflictError } from './types'
+import {
+  SceneInvalidError,
+  SceneNotFoundError,
+  SceneTooLargeError,
+  SceneVersionConflictError,
+} from './types'
 
 function makeGraph(overrides: Partial<SceneGraph> = {}): SceneGraph {
   return {
@@ -260,6 +265,124 @@ describe('SqliteSceneStore', () => {
       expect(afterDelete.count).toBe(0)
     } finally {
       reopened.close()
+    }
+  })
+
+  test('duplicate copies the graph into a private scene that records its origin', async () => {
+    await store.save({ id: 'src', name: 'Source', ownerId: 'alice', graph: makeGraph() })
+    const saved = await store.save({
+      id: 'src',
+      name: 'Source',
+      projectId: 'proj',
+      thumbnailUrl: 'https://example.test/t.webp',
+      graph: makeGraph(),
+      expectedVersion: 1,
+    })
+
+    const copy = await store.duplicate('src', { ownerId: 'bob', expectedVersion: 2 })
+
+    expect(copy.id).not.toBe('src')
+    expect(copy).toMatchObject({
+      name: 'Copy of Source',
+      projectId: null,
+      thumbnailUrl: null,
+      ownerId: 'bob',
+      version: 1,
+      nodeCount: saved.nodeCount,
+      graphHash: saved.graphHash,
+      forkedFrom: { id: 'src', version: 2 },
+    })
+    expect((await store.load(copy.id))?.graph).toEqual(makeGraph())
+    expect(await store.load('src')).toMatchObject({
+      version: 2,
+      forkedFrom: null,
+      projectId: 'proj',
+    })
+    expect((await store.list()).find((meta) => meta.id === copy.id)?.forkedFrom).toEqual({
+      id: 'src',
+      version: 2,
+    })
+    expect(await store.duplicate('src', { name: 'Mine' })).toMatchObject({ name: 'Mine' })
+  })
+
+  test('duplicate rejects a stale version or graph, a missing source and a bad name', async () => {
+    const saved = await store.save({ id: 'src', name: 'Source', graph: makeGraph() })
+
+    await expect(store.duplicate('src', { expectedVersion: 9 })).rejects.toBeInstanceOf(
+      SceneVersionConflictError,
+    )
+    await expect(store.duplicate('src', { expectedGraphHash: 'stale' })).rejects.toBeInstanceOf(
+      SceneVersionConflictError,
+    )
+    await expect(
+      store.duplicate('src', { expectedGraphHash: saved.graphHash }),
+    ).resolves.toBeDefined()
+    await expect(store.duplicate('ghost')).rejects.toBeInstanceOf(SceneNotFoundError)
+    await expect(store.duplicate('src', { name: ' ' })).rejects.toBeInstanceOf(SceneInvalidError)
+    expect(await store.list()).toHaveLength(2)
+  })
+
+  test('duplicate caps the default name and starts a history of its own', async () => {
+    const longName = 'x'.repeat(200)
+    await store.save({ id: 'src', name: longName, graph: makeGraph() })
+
+    const copy = await store.duplicate('src')
+
+    expect(copy.name).toHaveLength(200)
+    expect(copy.name.startsWith('Copy of ')).toBe(true)
+    const db = new Database(path.join(rootDir, 'pascal.db'))
+    try {
+      const revisions = db
+        .query('SELECT version FROM scene_revisions WHERE scene_id = ?')
+        .all(copy.id)
+      expect(revisions).toEqual([{ version: 1 }])
+    } finally {
+      db.close()
+    }
+  })
+
+  test('opens a database made before scenes recorded their origin, even from two processes at once', async () => {
+    const dbPath = path.join(rootDir, 'legacy.db')
+    const legacy = new Database(dbPath)
+    legacy.exec(`
+      CREATE TABLE scenes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        project_id TEXT,
+        owner_id TEXT,
+        thumbnail_url TEXT,
+        version INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        node_count INTEGER NOT NULL,
+        graph_json TEXT NOT NULL
+      );
+      CREATE TABLE scene_revisions (
+        scene_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        graph_json TEXT NOT NULL,
+        author_kind TEXT NOT NULL,
+        author_id TEXT,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (scene_id, version)
+      );
+    `)
+    legacy
+      .query(`INSERT INTO scenes VALUES ('old', 'Old', NULL, NULL, NULL, 3, 't', 't', 10, 2, ?)`)
+      .run(JSON.stringify(makeGraph()))
+    legacy.close()
+
+    const first = new SqliteSceneStore({ databasePath: dbPath })
+    const second = new SqliteSceneStore({ databasePath: dbPath })
+    try {
+      const [a, b] = await Promise.all([first.load('old'), second.load('old')])
+      expect(a).toMatchObject({ name: 'Old', version: 3, forkedFrom: null })
+      expect(b?.graph).toEqual(makeGraph())
+      expect((await first.duplicate('old')).forkedFrom).toEqual({ id: 'old', version: 3 })
+    } finally {
+      first.close()
+      second.close()
     }
   })
 

@@ -1,10 +1,11 @@
 'use client'
 
 import { useEditor } from '@pascal-app/editor'
-import { Eye, Pencil, Share2 } from 'lucide-react'
+import { ChevronDown, Copy, Eye, GitFork, Pencil, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { PascalMark } from './app-shell'
+import { MakeOwnVersionDialog } from './scene-card'
 import { SharePanel } from './share-panel'
 
 interface EditorNavbarProps {
@@ -12,10 +13,27 @@ interface EditorNavbarProps {
   name: string
   /** Persists a new project name; resolves once the server has answered. */
   onRename: (name: string) => Promise<void>
+  /**
+   * Saves, then copies the project (named `Copy of <name>` without `name`) and opens the copy.
+   * Resolves an error message, or null once the copy is opening.
+   */
+  onDuplicate: (name?: string) => Promise<string | null>
+  /** The project this one was copied from, while that still exists. */
+  copiedFrom: { id: string; name: string } | null
 }
 
-export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
+export function EditorNavbar({
+  sceneId,
+  name,
+  onRename,
+  onDuplicate,
+  copiedFrom,
+}: EditorNavbarProps) {
   const [editing, setEditing] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [forkOpen, setForkOpen] = useState(false)
+  const [duplicateError, setDuplicateError] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const shareAnchorRef = useRef<HTMLDivElement>(null)
   const closeShare = useCallback(() => setShareOpen(false), [])
@@ -23,6 +41,22 @@ export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   // Escape cancels; the blur it causes must not save.
   const cancelledRef = useRef(false)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false)
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [menuOpen])
 
   useEffect(() => {
     if (!editing) return
@@ -34,6 +68,13 @@ export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
     cancelledRef.current = false
     setDraft(name)
     setEditing(true)
+  }
+
+  const duplicate = async () => {
+    setMenuOpen(false)
+    setDuplicateError(null)
+    const message = await onDuplicate()
+    if (message !== null) setDuplicateError(message)
   }
 
   const commit = () => {
@@ -94,6 +135,77 @@ export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
             </button>
           )}
         </div>
+
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label="Project actions"
+            className="flex h-7 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            onClick={() => setMenuOpen((open) => !open)}
+            type="button"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          {menuOpen && (
+            <div
+              className="absolute top-9 left-0 z-50 min-w-48 rounded-xl border border-border bg-popover p-1 text-sm shadow-2xl"
+              role="menu"
+            >
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
+                onClick={() => {
+                  setMenuOpen(false)
+                  startEditing()
+                }}
+                role="menuitem"
+                type="button"
+              >
+                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                Rename
+              </button>
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
+                onClick={() => void duplicate()}
+                role="menuitem"
+                type="button"
+              >
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                Duplicate
+              </button>
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
+                onClick={() => {
+                  setMenuOpen(false)
+                  setForkOpen(true)
+                }}
+                role="menuitem"
+                type="button"
+              >
+                <GitFork className="h-3.5 w-3.5 text-muted-foreground" />
+                Make my own version…
+              </button>
+              {copiedFrom && (
+                <Link
+                  className="mt-1 block truncate border-border/50 border-t px-2.5 pt-2 pb-1.5 text-muted-foreground text-xs hover:text-foreground"
+                  href={`/project/${copiedFrom.id}`}
+                  role="menuitem"
+                >
+                  Copied from {copiedFrom.name}
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+        {duplicateError && (
+          <p
+            className="max-w-60 truncate text-destructive text-xs"
+            role="alert"
+            title={duplicateError}
+          >
+            {duplicateError}
+          </p>
+        )}
       </div>
 
       <div className="flex-1" />
@@ -121,6 +233,13 @@ export function EditorNavbar({ sceneId, name, onRename }: EditorNavbarProps) {
           <SharePanel anchorRef={shareAnchorRef} onClose={closeShare} sceneId={sceneId} />
         )}
       </div>
+      {forkOpen && (
+        <MakeOwnVersionDialog
+          initialName={`${name} (my version)`.slice(0, 200)}
+          onClose={() => setForkOpen(false)}
+          onSubmit={onDuplicate}
+        />
+      )}
     </nav>
   )
 }

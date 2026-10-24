@@ -1,9 +1,10 @@
 'use client'
 
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Copy, GitFork, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { CONFLICT_MESSAGE, requestDuplicate } from '@/lib/duplicate-scene'
 import { cn } from '@/lib/utils'
 import { PascalMark, PRIMARY_PILL, SECONDARY_PILL } from './app-shell'
 
@@ -17,12 +18,14 @@ export interface SceneCardData {
   updatedLabel: string
 }
 
-type Dialog = 'rename' | 'delete' | null
+type Dialog = 'rename' | 'fork' | 'delete' | null
 
 export function SceneCard({ scene }: { scene: SceneCardData }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const router = useRouter()
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -44,6 +47,14 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
   const openDialog = (next: Dialog) => {
     setMenuOpen(false)
     setDialog(next)
+  }
+
+  const handleDuplicate = async () => {
+    setMenuOpen(false)
+    setCopyError(null)
+    const result = await requestDuplicate(scene.id, { version: scene.version })
+    if (result.ok) router.refresh()
+    else setCopyError(result.message)
   }
 
   return (
@@ -70,6 +81,11 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
         </div>
         <div className="px-1.5 pt-2.5 pb-1">
           <h2 className="truncate pr-8 font-medium text-sm">{scene.name}</h2>
+          {copyError && (
+            <p className="mt-0.5 text-destructive text-xs" role="alert">
+              {copyError}
+            </p>
+          )}
           <p className="mt-0.5 text-muted-foreground text-xs">
             {scene.nodeCount} {scene.nodeCount === 1 ? 'node' : 'nodes'} · Updated{' '}
             <time dateTime={scene.updatedAt}>{scene.updatedLabel}</time>
@@ -106,6 +122,24 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               Rename
             </button>
             <button
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
+              onClick={() => void handleDuplicate()}
+              role="menuitem"
+              type="button"
+            >
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              Duplicate
+            </button>
+            <button
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
+              onClick={() => openDialog('fork')}
+              role="menuitem"
+              type="button"
+            >
+              <GitFork className="h-3.5 w-3.5 text-muted-foreground" />
+              Make my own version…
+            </button>
+            <button
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-destructive hover:bg-destructive/10"
               onClick={() => openDialog('delete')}
               role="menuitem"
@@ -119,15 +153,25 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
       </div>
 
       {dialog === 'rename' && <RenameDialog onClose={() => setDialog(null)} scene={scene} />}
+      {dialog === 'fork' && (
+        <MakeOwnVersionDialog
+          initialName={`${scene.name} (my version)`.slice(0, 200)}
+          onClose={() => setDialog(null)}
+          onSubmit={async (name) => {
+            const result = await requestDuplicate(scene.id, { name, version: scene.version })
+            if (!result.ok) return result.message
+            router.push(`/project/${result.id}`)
+            return null
+          }}
+        />
+      )}
       {dialog === 'delete' && <DeleteDialog onClose={() => setDialog(null)} scene={scene} />}
     </li>
   )
 }
 
-const CONFLICT_MESSAGE = 'This project changed since the page loaded. Reload and try again.'
-
 /** Opens a native modal dialog on mount; Escape, backdrop and Cancel all end in `onClose`. */
-function useModal(onClose: () => void) {
+export function useModal(onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -142,7 +186,7 @@ function useModal(onClose: () => void) {
   return ref
 }
 
-function ModalFrame({
+export function ModalFrame({
   children,
   dialogRef,
   title,
@@ -229,6 +273,68 @@ function RenameDialog({ scene, onClose }: { scene: SceneCardData; onClose: () =>
           </button>
           <button className={PRIMARY_PILL} disabled={pending || !name.trim()} type="submit">
             {pending ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </form>
+    </ModalFrame>
+  )
+}
+
+/** Names a copy before it is made. `onSubmit` answers an error message, or null once it is done. */
+export function MakeOwnVersionDialog({
+  initialName,
+  onClose,
+  onSubmit,
+}: {
+  initialName: string
+  onClose: () => void
+  onSubmit: (name: string) => Promise<string | null>
+}) {
+  const dialogRef = useModal(onClose)
+  const [name, setName] = useState(initialName)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setPending(true)
+    setError(null)
+    const message = await onSubmit(trimmed)
+    setPending(false)
+    if (message === null) dialogRef.current?.close()
+    else setError(message)
+  }
+
+  return (
+    <ModalFrame dialogRef={dialogRef} title="Make my own version">
+      <p className="mt-2 text-muted-foreground text-sm">
+        Starts a private copy you can change freely. The original stays as it is.
+      </p>
+      <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
+        <input
+          aria-label="Name of your version"
+          // biome-ignore lint/a11y/noAutofocus: the dialog exists to edit this field
+          autoFocus
+          className="rounded-lg border border-input bg-accent px-3 py-2 text-sm outline-none focus:border-ring"
+          maxLength={200}
+          onChange={(event) => setName(event.target.value)}
+          onFocus={(event) => event.currentTarget.select()}
+          required
+          value={name}
+        />
+        {error && <p className="text-destructive text-xs">{error}</p>}
+        <div className="mt-1 flex justify-end gap-2">
+          <button
+            className={SECONDARY_PILL}
+            onClick={() => dialogRef.current?.close()}
+            type="button"
+          >
+            Cancel
+          </button>
+          <button className={PRIMARY_PILL} disabled={pending || !name.trim()} type="submit">
+            {pending ? 'Copying…' : 'Make a copy'}
           </button>
         </div>
       </form>

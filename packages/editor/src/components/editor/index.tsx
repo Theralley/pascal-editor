@@ -25,6 +25,7 @@ import {
 } from '@pascal-app/viewer'
 import {
   type CSSProperties,
+  type MutableRefObject,
   memo,
   Profiler,
   type ProfilerOnRenderCallback,
@@ -261,6 +262,12 @@ export interface EditorProps {
    * so the chord still saves when the host's control isn't mounted.
    */
   onSaveShortcut?: () => boolean | undefined
+  /**
+   * Receives an awaitable flush of the autosave while the editor is mounted: it writes whatever is
+   * unsaved and resolves `true` once nothing is, `false` when it could not. For a host that acts on
+   * the saved content, such as copying the project.
+   */
+  flushSaveRef?: MutableRefObject<(() => Promise<boolean>) | null>
   onDirty?: () => void
   onSaveStatusChange?: (status: SaveStatus) => void
 
@@ -1437,6 +1444,7 @@ function EditorContent({
   onLoad,
   onSave,
   onSaveShortcut,
+  flushSaveRef,
   onDirty,
   onSaveStatusChange,
   previewScene,
@@ -1487,13 +1495,21 @@ function EditorContent({
   useKeyboard({ isVersionPreviewMode, disabled: isFirstPersonMode || isStudioMode })
   useGestureLifecycleOwner()
 
-  const { beginSceneLoad, completeSceneLoad, saveNow } = useAutoSave({
+  const { beginSceneLoad, completeSceneLoad, saveNow, flush } = useAutoSave({
     guardAgainstSceneWipe,
     onSave,
     onDirty,
     onSaveStatusChange,
     isVersionPreviewMode,
   })
+
+  useEffect(() => {
+    if (!flushSaveRef) return
+    flushSaveRef.current = flush
+    return () => {
+      flushSaveRef.current = null
+    }
+  }, [flush, flushSaveRef])
 
   const handleSaveShortcut = useCallback(() => {
     if (onSaveShortcut?.() === true) return

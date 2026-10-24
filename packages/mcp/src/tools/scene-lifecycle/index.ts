@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/server'
 import type { SceneOperations } from '../../operations'
 import { registerCreateProject } from './create-project'
 import { registerDeleteScene } from './delete-scene'
+import { registerDuplicateScene } from './duplicate-scene'
 import { registerGetProjectStatus } from './get-project-status'
 import { registerListScenes } from './list-scenes'
 import { registerLoadScene } from './load-scene'
@@ -10,7 +11,7 @@ import { registerSaveScene } from './save-scene'
 
 /**
  * Register the scene-lifecycle MCP tools (`save_scene`, `load_scene`,
- * `list_scenes`, `delete_scene`, `rename_scene`) against the given server.
+ * `list_scenes`, `delete_scene`, `rename_scene`, `duplicate_scene`) against the given server.
  * All tools operate against shared scene operations so MCP, REST, and future CLI
  * entry points share the same storage boundary.
  */
@@ -22,10 +23,16 @@ export function registerSceneLifecycleTools(server: McpServer, operations: Scene
   registerListScenes(server, operations)
   registerDeleteScene(server, operations)
   registerRenameScene(server, operations)
+  registerDuplicateScene(server, operations)
 }
 
 export { createProjectInput, createProjectOutput, registerCreateProject } from './create-project'
 export { deleteSceneInput, deleteSceneOutput, registerDeleteScene } from './delete-scene'
+export {
+  duplicateSceneInput,
+  duplicateSceneOutput,
+  registerDuplicateScene,
+} from './duplicate-scene'
 export {
   getProjectStatusInput,
   getProjectStatusOutput,
