@@ -3,6 +3,7 @@ import {
   type AnyNodeId,
   emitter,
   type FollowsWallModeConfig,
+  getEffectiveNode,
   getRegistryVersion,
   nodeRegistry,
   sceneRegistry,
@@ -159,7 +160,7 @@ export class WallModeFollowCache {
       this.lastCameraDirection.copy(this.cameraDirection)
     }
 
-    if (nodesChanged) this.levelCentres.clear()
+    if (nodesChanged || liveChanged) this.levelCentres.clear()
     this.nodes = scene.nodes
     this.viewer = viewer
     this.registryVersion = this.followersVersion
@@ -358,8 +359,10 @@ export class WallModeFollowCache {
     let minZ = Infinity
     let maxZ = -Infinity
     for (const childId of (level as { children?: readonly string[] }).children ?? []) {
-      const wall = nodes[childId]
-      if (wall?.type !== 'wall') continue
+      const declared = nodes[childId]
+      if (declared?.type !== 'wall') continue
+      // Walls moved live (a group move) count where they are, not where they were committed.
+      const wall = getEffectiveNode(declared)
       for (const [x, z] of [wall.start, wall.end]) {
         minX = Math.min(minX, x)
         maxX = Math.max(maxX, x)

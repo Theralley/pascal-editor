@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import {
   nodeRegistry,
   sceneRegistry,
+  useLiveNodeOverrides,
   useLiveTransforms,
   useScene,
   WallNode,
@@ -335,5 +336,21 @@ describe('WallModeFollowCache', () => {
     cache.update(camera)
     expect(shown(mesh)).toBe(true)
     useLiveTransforms.getState().clearAll()
+  })
+
+  test('moving the walls and the follower together live changes no decision', () => {
+    const { id, group, mesh } = addScene('gable')
+    const wallId = Object.keys(useScene.getState().nodes).find((key) => key.startsWith('wall_'))!
+    setMode('cutaway')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    group.position.set(20, 0, 0)
+    useLiveTransforms.getState().set(id, { position: [20, 0, 0], rotation: 0 })
+    useLiveNodeOverrides.getState().set(wallId as never, { start: [20, 0], end: [24, 0] } as never)
+    placeCamera(40, 20)
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    useLiveTransforms.getState().clearAll()
+    useLiveNodeOverrides.getState().clearAll()
   })
 })
