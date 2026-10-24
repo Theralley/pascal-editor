@@ -341,13 +341,15 @@ describe('WallModeFollowCache', () => {
   test('moving the walls and the follower together live changes no decision', () => {
     const { id, group, mesh } = addScene('gable')
     const wallId = Object.keys(useScene.getState().nodes).find((key) => key.startsWith('wall_'))!
+    mesh.position.set(-6, 0, 0)
     setMode('cutaway')
+    placeCamera(-20, 0)
     cache.update(camera)
     expect(shown(mesh)).toBe(false)
     group.position.set(20, 0, 0)
     useLiveTransforms.getState().set(id, { position: [20, 0, 0], rotation: 0 })
     useLiveNodeOverrides.getState().set(wallId as never, { start: [20, 0], end: [24, 0] } as never)
-    placeCamera(40, 20)
+    placeCamera(0, 40)
     cache.update(camera)
     expect(shown(mesh)).toBe(false)
     useLiveTransforms.getState().clearAll()
