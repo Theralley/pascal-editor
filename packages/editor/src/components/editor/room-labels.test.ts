@@ -28,6 +28,7 @@ import {
   roomLabelEntries,
   roomLabelsVisible,
   suppressedBy,
+  viewScaled,
 } from './room-labels'
 
 const resting: RoomLabelVisibilityState = {
@@ -310,12 +311,13 @@ describe('pill placement', () => {
     expect([tierIn(118), tierIn(118, full), tierIn(110, full)]).toEqual(['name', 'full', 'name'])
     // Name to full needs the full pill's width and 6 px a side to spare.
     expect([tierIn(124, name), tierIn(140, name), tierIn(124)]).toEqual(['name', 'full', 'full'])
-    // A hidden pill needs the same to come back; a dot (16 px) fits 24, not 20.
-    expect([tierIn(20, hidden), tierIn(30, hidden), tierIn(20)]).toEqual(['hidden', 'dot', 'dot'])
+    // A hidden pill needs 6 px a side to spare to come back: a dot (16 px) shows in 30, not 28.
+    expect([tierIn(28, hidden), tierIn(30, hidden), tierIn(20)]).toEqual(['hidden', 'dot', 'dot'])
   })
 
   test('a held tier never puts a pill within the gap of another', () => {
-    const bar = pill('bar', 100, 100, 30, [120, 8, 60])
+    // The bar's edge is 2 px from the held pill's: closer than the gap.
+    const bar = pill('bar', 222, 100, 30, [120, 8, 60])
     const moved = pill('moved', 100, 100, 10)
     const last = new Map<string, PillPlacement>([['moved', { tier: 'full', dy: 0 }]])
     const placements = placePills([bar, moved], pane, last)
@@ -324,6 +326,32 @@ describe('pill placement', () => {
     )
     expect(rects.every(Boolean)).toBe(true)
     expect(near(rects[0]!, rects[1]!)).toBe(false)
+  })
+
+  test('after a large zoom out and back, tiers equal a fresh layout', () => {
+    const rooms = (scale: number) =>
+      [0, 1, 2, 3].map((i) =>
+        pill(
+          `r${i}`,
+          100 + i * 130 * scale,
+          500,
+          10,
+          [120, 24, 70],
+          square(100 + i * 130 * scale, 500, (118 + i * 4) * scale),
+        ),
+      )
+    const settle = (
+      before: PillCandidate[],
+      candidates: PillCandidate[],
+      last: Map<string, PillPlacement>,
+    ) => placePills(candidates, pane, viewScaled(before, candidates) ? undefined : last)
+    const start = placePills(rooms(1), pane)
+    const out = settle(rooms(1), rooms(0.5), start)
+    const back = settle(rooms(0.5), rooms(1), out)
+    expect(back).toEqual(start)
+    // Jitter is not a zoom.
+    expect(viewScaled(rooms(1), rooms(1.02))).toBe(false)
+    expect(viewScaled(rooms(1), rooms(0.5))).toBe(true)
   })
 
   test('a pinned pill keeps its place; the larger room gives way', () => {
@@ -885,6 +913,15 @@ describe("a room's detail", () => {
     reveal.pick('bath')
     clock.advance(REVEAL_DWELL_MS)
     expect(changes).toEqual(['bath', null, 'closet', 'bath'])
+  })
+
+  test('the focused pill is remembered while the view moves, so it can stay placed', () => {
+    const { reveal } = setup()
+    reveal.focus('kitchen')
+    reveal.clear()
+    expect(reveal.focusedId).toBe('kitchen')
+    reveal.focus(null)
+    expect(reveal.focusedId).toBeNull()
   })
 
   test('a focused pill opens again once the view rests', () => {

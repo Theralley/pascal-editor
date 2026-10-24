@@ -365,6 +365,27 @@ export function placePills(
   return placements
 }
 
+/** How much a view may scale between placements and still count as the same one. */
+const SAME_VIEW_SCALE = 0.1
+
+/** Whether the rooms common to two placements changed size on screen by more than jitter. */
+export function viewScaled(before: readonly PillCandidate[], after: readonly PillCandidate[]) {
+  const span = ({ outline }: PillCandidate) => {
+    const box = ringBox(outline.outer)
+    return box.right - box.left + (box.bottom - box.top)
+  }
+  const earlier = new Map(before.map((candidate) => [candidate.id, span(candidate)]))
+  let was = 0
+  let now = 0
+  for (const candidate of after) {
+    const old = earlier.get(candidate.id)
+    if (old === undefined) continue
+    was += old
+    now += span(candidate)
+  }
+  return was === 0 || Math.abs(now / was - 1) > SAME_VIEW_SCALE
+}
+
 /** The placed pills whose rects come within the gap of `chip`. */
 export function suppressedBy(
   chip: LabelRect,
@@ -698,6 +719,11 @@ export class LabelReveal {
     private readonly cancel: (timer: Timer) => void = stopTimer,
   ) {}
 
+  /** The pill with keyboard focus, kept while the view moves and the detail is closed. */
+  get focusedId() {
+    return this.focused
+  }
+
   /** The pill under the pointer. */
   hover(id: string | null) {
     if (id !== null && id !== this.hovered) this.keyboardLast = false
@@ -870,10 +896,14 @@ class PillLayer {
   getDetail = () => this.detail
 
   place(candidates: PillCandidate[], bounds: PaneSize) {
-    // The open pill keeps its place; the others give way around it.
+    // The open and the focused pill keep their places; the others give way around them.
     const pinned = new Set<string>()
     if (this.detail?.open) pinned.add(this.detail.id)
-    const placements = placePills(candidates, bounds, this.placer.placements, pinned)
+    if (this.reveal.focusedId) pinned.add(this.reveal.focusedId)
+    // Hysteresis absorbs jitter, not a zoom: a view that scaled starts afresh.
+    const last = [...this.candidates.values()]
+    const previous = viewScaled(last, candidates) ? undefined : this.placer.placements
+    const placements = placePills(candidates, bounds, previous, pinned)
     this.placer.apply(placements)
     this.bounds = { width: bounds.width, height: bounds.height }
     this.candidates = new Map(candidates.map((candidate) => [candidate.id, candidate]))
@@ -1062,10 +1092,15 @@ function usePillLayer(
     }
     const focusIn = (event: FocusEvent) => {
       const id = labelAt(event.target)
-      if (id && shownRef.current && (event.target as Element).matches(':focus-visible'))
+      if (id && shownRef.current && (event.target as Element).matches(':focus-visible')) {
         reveal.focus(id)
+        layer.clock.invalidate()
+      }
     }
-    const focusOut = () => reveal.focus(null)
+    const focusOut = () => {
+      reveal.focus(null)
+      layer.clock.invalidate()
+    }
     // The canvas and the plan pan while Space is held; on a pill, Space presses it.
     const keepSpace = (event: KeyboardEvent) => {
       if (event.code === 'Space' && labelAt(event.target)) event.stopPropagation()

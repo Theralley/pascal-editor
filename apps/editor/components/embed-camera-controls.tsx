@@ -155,6 +155,9 @@ export function EmbedCameraControls({
     useViewer.getState().setCameraDragging(false)
   }, [])
 
+  // A flag left set would freeze the room labels.
+  useEffect(() => () => useViewer.getState().setCameraDragging(false), [])
+
   if (walkthroughMode) return null
 
   return (
