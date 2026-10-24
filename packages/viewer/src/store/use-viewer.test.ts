@@ -10,6 +10,12 @@ const resetMeasurementPreferences = () => {
     projectId: null,
     projectPreferences: {},
     showMeasurements: true,
+    wallMode: 'up',
+    wallModeDefault: 'up',
+    levelMode: 'stacked',
+    levelModeDefault: 'stacked',
+    showRoofs: true,
+    showRoofsDefault: true,
     projectPresentation: undefined,
     unit: 'metric',
     metricNotation: 'meters',
@@ -80,6 +86,61 @@ describe('measurement display preferences', () => {
       metricNotation: 'millimeters',
       unitExplicit: true,
     })
+  })
+})
+
+describe('view display preferences', () => {
+  test('wall mode, level mode and roofs are saved per project over the browser-wide default', () => {
+    const viewer = useViewer.getState()
+    viewer.setProjectId('view-a')
+    viewer.setWallMode('cutaway')
+    viewer.setLevelMode('solo')
+    viewer.setShowRoofs(false)
+
+    expect(useViewer.getState().projectPreferences['view-a']).toMatchObject({
+      wallMode: 'cutaway',
+      levelMode: 'solo',
+      showRoofs: false,
+    })
+
+    useViewer.getState().setProjectId('view-b')
+    useViewer.getState().setWallMode('down')
+    useViewer.getState().setProjectId('view-a')
+    expect(useViewer.getState()).toMatchObject({
+      wallMode: 'cutaway',
+      levelMode: 'solo',
+      showRoofs: false,
+    })
+
+    useViewer.getState().setProjectId('view-c')
+    expect(useViewer.getState()).toMatchObject({
+      wallMode: 'down',
+      levelMode: 'solo',
+      showRoofs: false,
+    })
+  })
+
+  test('an override changes the view without touching what was saved or the default', () => {
+    const viewer = useViewer.getState()
+    viewer.setProjectId('view-a')
+    viewer.setWallMode('cutaway')
+    viewer.setShowRoofs(false)
+
+    useViewer.getState().overrideView({ wallMode: 'up', levelMode: 'stacked', showRoofs: true })
+    expect(useViewer.getState()).toMatchObject({
+      wallMode: 'up',
+      showRoofs: true,
+      wallModeDefault: 'cutaway',
+      showRoofsDefault: false,
+    })
+    expect(useViewer.getState().projectPreferences['view-a']).toEqual({
+      wallMode: 'cutaway',
+      showRoofs: false,
+    })
+
+    useViewer.getState().setProjectId('view-b')
+    useViewer.getState().setProjectId('view-a')
+    expect(useViewer.getState()).toMatchObject({ wallMode: 'cutaway', showRoofs: false })
   })
 })
 

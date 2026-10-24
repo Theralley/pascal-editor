@@ -418,6 +418,7 @@ export {
 } from './lib/door-interaction'
 export { downloadProjectFile } from './lib/download-project-file'
 export { createEditorApi } from './lib/editor-api'
+export { useCanChooseLevelMode } from './lib/editor-level-display'
 export {
   type EditorHostView,
   editorHostViewRegistry,
@@ -856,6 +857,7 @@ export { useLinearDisplay } from './lib/use-linear-display'
 // nodes` so they don't need their own copy / their own tailwind-merge
 // dependency.
 export { cn } from './lib/utils'
+export { VIEW_SHORTCUT_KEYS } from './lib/view-shortcuts'
 export {
   applyViewerClick,
   applyViewerHover,

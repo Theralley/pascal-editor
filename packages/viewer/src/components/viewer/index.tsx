@@ -35,6 +35,7 @@ import { FloorElevationSystem } from '../../systems/floor-elevation/floor-elevat
 import { GeometrySystem } from '../../systems/geometry/geometry-system'
 import { PerfActionSettleSystem } from '../../systems/perf-action-settle/perf-action-settle-system'
 import { getPendingRoofMergeCount } from '../../systems/roof/roof-system'
+import { RoofVisibilitySystem } from '../../systems/roof/roof-visibility-system'
 import { subscribeWallBuildInteractions } from '../../systems/wall/wall-build-lifecycle'
 import { WallModeFollowSystem } from '../../systems/wall-mode/wall-mode-follow'
 import { ImmersiveXRPresentationProvider } from '../../xr/presentation-context'
@@ -822,6 +823,7 @@ function ViewerScene({
       <WallModeFollowSystem />
       <StairOpeningSystem />
       <RoofElevationSystem />
+      <RoofVisibilitySystem />
       <RegisteredSystems />
       {BATCH_SPIKE_ENABLED && <BatchedMeshSpike />}
       {children}

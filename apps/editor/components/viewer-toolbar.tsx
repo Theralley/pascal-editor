@@ -10,18 +10,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  SegmentedControl,
+  useCanChooseLevelMode,
   useEditor,
   useFloorplanAnnotationVisibility,
   useFloorplanMode,
   useSidebarStore,
+  VIEW_SHORTCUT_KEYS,
   visibleScene,
 } from '@pascal-app/editor'
 import {
   CLAY_PALETTE,
   type EdgeMode,
   getSceneTheme,
+  LEVEL_MODE_OPTIONS,
   SCENE_THEMES,
   useViewer,
+  WALL_MODE_OPTIONS,
 } from '@pascal-app/viewer'
 import {
   Box,
@@ -33,6 +38,7 @@ import {
   EyeOff,
   Footprints,
   Grid2X2,
+  House,
   Layers3,
   Magnet,
   PenLine,
@@ -44,7 +50,6 @@ import {
   SwatchBook,
   Tag,
 } from 'lucide-react'
-import Image from 'next/image'
 import { type ReactNode, useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import { cn } from '@/lib/utils'
@@ -81,22 +86,6 @@ function ToolbarTooltip({ children, label }: { children: ReactNode; label: strin
       <TooltipContent side="bottom">{label}</TooltipContent>
     </Tooltip>
   )
-}
-
-const levelModeOrder = ['stacked', 'exploded', 'solo'] as const
-const levelModeLabels: Record<string, string> = {
-  manual: 'Stack',
-  stacked: 'Stack',
-  exploded: 'Exploded',
-  solo: 'Solo',
-}
-
-const wallModeOrder = ['cutaway', 'up', 'down', 'translucent'] as const
-const wallModeConfig: Record<string, { icon: string; label: string }> = {
-  up: { icon: '/icons/room.webp', label: 'Full height' },
-  cutaway: { icon: '/icons/wallcut.webp', label: 'Cutaway' },
-  down: { icon: '/icons/walllow.webp', label: 'Low' },
-  translucent: { icon: '/icons/wall.webp', label: 'Translucent' },
 }
 
 const SHADING_OPTIONS = [
@@ -161,74 +150,58 @@ function CollapseSidebarButton() {
   )
 }
 
+const SEGMENTS = 'h-8 min-h-0 w-auto rounded-none border-0 bg-transparent p-1 [&>button]:min-h-0'
+
 function LevelModeToggle() {
   const levelMode = useViewer((state) => state.levelMode)
   const setLevelMode = useViewer((state) => state.setLevelMode)
-  const isDefault = levelMode === 'stacked' || levelMode === 'manual'
-
-  const cycle = () => {
-    if (levelMode === 'manual') {
-      setLevelMode('stacked')
-      return
-    }
-
-    const index = levelModeOrder.indexOf(levelMode as (typeof levelModeOrder)[number])
-    const next = levelModeOrder[(index + 1) % levelModeOrder.length]
-    if (next) setLevelMode(next)
-  }
-
-  const label = `Levels: ${levelMode === 'manual' ? 'Manual' : (levelModeLabels[levelMode] ?? 'Stack')}`
+  if (!useCanChooseLevelMode()) return null
 
   return (
-    <ToolbarTooltip label={label}>
-      <button
-        className={cn(
-          TOOLBAR_BTN,
-          'w-auto gap-1.5 px-2.5',
-          !isDefault && 'bg-white/10 text-foreground/90',
-        )}
-        onClick={cycle}
-        type="button"
-      >
-        {levelMode === 'solo' ? (
-          <IconifyIcon height={14} icon="lucide:diamond" width={14} />
-        ) : levelMode === 'exploded' ? (
-          <IconifyIcon height={14} icon="charm:stack-pop" width={14} />
-        ) : (
-          <IconifyIcon height={14} icon="charm:stack-push" width={14} />
-        )}
-        <span className="font-medium text-xs">{levelModeLabels[levelMode] ?? 'Stack'}</span>
-      </button>
-    </ToolbarTooltip>
+    <SegmentedControl
+      aria-label="Levels"
+      className={SEGMENTS}
+      mixed={levelMode === 'manual'}
+      onChange={setLevelMode}
+      options={[...LEVEL_MODE_OPTIONS]}
+      radio
+      value={levelMode}
+    />
   )
 }
 
 function WallModeToggle() {
   const wallMode = useViewer((state) => state.wallMode)
   const setWallMode = useViewer((state) => state.setWallMode)
-  const config = wallModeConfig[wallMode] ?? wallModeConfig.cutaway!
-
-  const cycle = () => {
-    const index = wallModeOrder.indexOf(wallMode as (typeof wallModeOrder)[number])
-    const next = wallModeOrder[(index + 1) % wallModeOrder.length]
-    if (next) setWallMode(next)
-  }
 
   return (
-    <ToolbarTooltip label={`Walls: ${config.label}`}>
+    <SegmentedControl
+      aria-label="Walls"
+      className={SEGMENTS}
+      onChange={setWallMode}
+      options={[...WALL_MODE_OPTIONS]}
+      radio
+      value={wallMode}
+    />
+  )
+}
+
+function RoofToggle() {
+  const showRoofs = useViewer((state) => state.showRoofs)
+  const setShowRoofs = useViewer((state) => state.setShowRoofs)
+
+  return (
+    <ToolbarTooltip
+      label={`${showRoofs ? 'Hide' : 'Show'} roofs (${VIEW_SHORTCUT_KEYS.roofs.toUpperCase()})`}
+    >
       <button
-        className={cn(
-          TOOLBAR_BTN,
-          'w-auto gap-1.5 px-2.5',
-          wallMode !== 'cutaway'
-            ? 'bg-white/10'
-            : 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0',
-        )}
-        onClick={cycle}
+        aria-label="Roofs"
+        aria-pressed={showRoofs}
+        className={cn(TOOLBAR_BTN, !showRoofs && 'bg-white/10 text-foreground/90')}
+        onClick={() => setShowRoofs(!showRoofs)}
         type="button"
       >
-        <Image alt="" className="h-4 w-4 object-contain" height={16} src={config.icon} width={16} />
-        <span className="font-medium text-xs">{config.label}</span>
+        <House className="h-4 w-4" />
       </button>
     </ToolbarTooltip>
   )
@@ -606,6 +579,8 @@ function WalkthroughButton() {
   return (
     <ToolbarTooltip label="Walkthrough">
       <button
+        aria-label="Walkthrough"
+        aria-pressed={isFirstPersonMode}
         className={cn(
           TOOLBAR_BTN,
           isFirstPersonMode && 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20',
@@ -689,6 +664,7 @@ export function EditorViewerToolbarRight({
     <div className={TOOLBAR_CONTAINER}>
       <LevelModeToggle />
       <WallModeToggle />
+      <RoofToggle />
       <div className="my-1.5 w-px bg-border/50" />
       <DisplayMenu />
       <div className="my-1.5 w-px bg-border/50" />

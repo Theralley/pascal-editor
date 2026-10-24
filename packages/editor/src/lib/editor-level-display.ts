@@ -20,6 +20,21 @@ export function showsWholeBuilding(state: {
 }
 
 /**
+ * Whether the person gets a say in the level display. While editing there is none: the display is
+ * the editor's one, below.
+ */
+export function useCanChooseLevelMode(): boolean {
+  return useEditor((state) =>
+    showsWholeBuilding({
+      isPreviewMode: state.isPreviewMode,
+      isFirstPersonMode: state.isFirstPersonMode,
+      captureMode: state.captureMode,
+      captureLevelId: state.captureLevelId,
+    }),
+  )
+}
+
+/**
  * The editor's one level display: stacked, with every level above the
  * selected one hidden — the selected level and the ones below stay, so the
  * storey being worked on is never covered. There is no Stack / Exploded /
@@ -40,7 +55,7 @@ export function useEditorLevelDisplay(showWholeBuilding: boolean) {
   useEffect(() => {
     if (showWholeBuilding) return
     const keepStacked = (mode: string) => {
-      if (mode !== 'stacked') useViewer.getState().setLevelMode('stacked')
+      if (mode !== 'stacked') useViewer.getState().overrideView({ levelMode: 'stacked' })
     }
     useViewer.setState({ hideLevelsAboveSelection: true })
     keepStacked(useViewer.getState().levelMode)

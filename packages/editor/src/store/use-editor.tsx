@@ -1429,8 +1429,7 @@ const useEditor = create<EditorState>()(
           viewer.setFocusedUnit(exists(before.focusedUnitId) ? before.focusedUnitId : null)
           viewer.setHoveredId(null)
           viewer.setCameraMode(before.cameraMode)
-          viewer.setLevelMode(before.levelMode)
-          viewer.setWallMode(before.wallMode)
+          viewer.overrideView({ levelMode: before.levelMode, wallMode: before.wallMode })
           useViewer.setState({
             hideLevelsAboveSelection: before.hideLevelsAboveSelection,
             showZones: before.showZones,

@@ -39,6 +39,13 @@ export const VIEW_LIGHTING = ['current', 'day', 'overcast', 'sunset', 'dusk', 'n
 /** The longest side of a view, in pixels: past it a vision model scales the picture down. */
 export const VIEW_MAX_PX = 1920
 
+const showRoofsField = z
+  .boolean()
+  .optional()
+  .describe(
+    'Roofs in the picture: false leaves them out, true shows them. Default: the roofs as the finished house has them.',
+  )
+
 export const viewSceneTool = {
   name: 'view_scene',
   title: 'Look at the scene',
@@ -62,13 +69,17 @@ export const viewSceneTool = {
       ),
     presentation: z
       .discriminatedUnion('mode', [
-        z.object({ mode: z.literal('stacked') }),
-        z.object({ mode: z.literal('exploded') }),
-        z.object({ mode: z.literal('solo'), levelId: z.string().min(1) }),
+        z.object({ mode: z.literal('stacked'), showRoofs: showRoofsField }),
+        z.object({ mode: z.literal('exploded'), showRoofs: showRoofsField }),
+        z.object({
+          mode: z.literal('solo'),
+          levelId: z.string().min(1),
+          showRoofs: showRoofsField,
+        }),
       ])
       .optional()
       .describe(
-        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. Does not change the live view. Do not combine with interior.',
+        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. showRoofs: false leaves the roofs out of the picture, true puts them in whatever the person has on. Does not change the live view. Do not combine with interior.',
       ),
     from: z
       .enum(VIEW_SIDES)

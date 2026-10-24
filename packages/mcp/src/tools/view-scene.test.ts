@@ -162,6 +162,7 @@ describe('view_scene over the MCP', () => {
         { mode: 'solo', levelId: view.levelId },
         { mode: 'exploded' },
         { mode: 'stacked' },
+        { mode: 'stacked', showRoofs: false },
       ]) {
         const result = await view.call({ presentation })
         expect(result.isError).toBe(false)
@@ -200,6 +201,27 @@ describe('view_scene over the MCP', () => {
       } finally {
         await view.close()
       }
+    }
+  })
+
+  test('a roof request the renderer did not honour is refused', async () => {
+    const view = await viewWith({
+      capture: async () => ({
+        image: new Uint8Array([1]),
+        mimeType: 'image/webp',
+        width: 640,
+        height: 400,
+        tab: 'tab_old',
+        capturedAt: '2026-10-18T18:00:00Z',
+        presentation: { mode: 'stacked' },
+      }),
+    })
+    try {
+      const result = await view.call({ presentation: { mode: 'stacked', showRoofs: false } })
+      expect(result.isError).toBe(true)
+      expect(json(result.content)).toMatchObject({ code: 'view_presentation_unconfirmed' })
+    } finally {
+      await view.close()
     }
   })
 

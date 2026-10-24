@@ -205,19 +205,27 @@ describe('a sheet capture session', () => {
     const viewer = useViewer.getState()
     viewer.setWallMode('down')
     viewer.setLevelMode('exploded')
+    viewer.setShowRoofs(false)
     viewer.setShading('solid')
     viewer.setTextures(false)
     viewer.setColorPreset('white')
     const view = () => {
-      const { wallMode, levelMode, shading, textures, colorPreset } = useViewer.getState()
-      return { wallMode, levelMode, shading, textures, colorPreset }
+      const { wallMode, levelMode, showRoofs, shading, textures, colorPreset } =
+        useViewer.getState()
+      return { wallMode, levelMode, showRoofs, shading, textures, colorPreset }
     }
+    const saved = () => {
+      const { wallModeDefault, levelModeDefault, showRoofsDefault } = useViewer.getState()
+      return { wallModeDefault, levelModeDefault, showRoofsDefault }
+    }
+    const savedBefore = saved()
     // the shading stays the user's: the capture brings its own AO
 
     const restore = presentFinished()
     expect(view()).toEqual({
       wallMode: 'up',
       levelMode: 'stacked',
+      showRoofs: true,
       shading: 'solid',
       textures: true,
       colorPreset: 'clay',
@@ -227,16 +235,19 @@ describe('a sheet capture session', () => {
     expect(view()).toEqual({
       wallMode: 'down',
       levelMode: 'exploded',
+      showRoofs: false,
       shading: 'solid',
       textures: false,
       colorPreset: 'white',
     })
+    expect(saved()).toEqual(savedBefore)
   })
 
   test('leaves a view already finished untouched', () => {
     const viewer = useViewer.getState()
     viewer.setWallMode('up')
     viewer.setLevelMode('stacked')
+    viewer.setShowRoofs(true)
     viewer.setTextures(true)
     viewer.setColorPreset('clay')
     let writes = 0

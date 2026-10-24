@@ -350,6 +350,43 @@ describe('snapLevelsToTruePositions', () => {
     expect(useViewer.getState()).toBe(preferences)
   })
 
+  test('captures roofs in or out whatever the roof toggle says, and gives the toggle back', () => {
+    setupLevels([0])
+    const roof = new Object3D()
+    roof.layers.set(SCENE_LAYER)
+    sceneRegistry.nodes.set('roof_capture', roof)
+    useScene.setState({
+      nodes: {
+        ...useScene.getState().nodes,
+        roof_capture: {
+          object: 'node',
+          id: 'roof_capture',
+          type: 'roof',
+          parentId: null,
+          visible: true,
+          metadata: {},
+          children: [],
+        } as unknown as AnyNode,
+      },
+    })
+    const shown = roof.layers.mask
+
+    let restore = presentLevelsForCapture({ mode: 'stacked', showRoofs: false })
+    expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(false)
+    restore()
+    expect(roof.layers.mask).toBe(shown)
+
+    hideFromScene(roof, 'roof-hidden')
+    const hidden = roof.layers.mask
+    restore = presentLevelsForCapture({ mode: 'stacked' })
+    expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(false)
+    restore()
+    restore = presentLevelsForCapture({ mode: 'stacked', showRoofs: true })
+    expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(true)
+    restore()
+    expect(roof.layers.mask).toBe(hidden)
+  })
+
   test('bakes offset-aware stacked positions and restores the prior presentation', () => {
     const { objects } = setupLevels([0.5, 1.25])
     objects[0]!.position.y = 10

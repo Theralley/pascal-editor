@@ -82,8 +82,8 @@ export type SceneViewInterior = { levelId: string; roomId?: string }
 export type SceneViewInteriorInput = { levelId?: string; zoneId?: string }
 
 export type SceneViewPresentation =
-  | { mode: 'stacked' | 'exploded' }
-  | { mode: 'solo'; levelId: string }
+  | { mode: 'stacked' | 'exploded'; showRoofs?: boolean }
+  | { mode: 'solo'; levelId: string; showRoofs?: boolean }
 
 /** Validate against the scene being rendered as well as the scene used to request the view. */
 export function sceneViewPresentationLevel(
@@ -111,12 +111,13 @@ export function confirmSceneViewPresentation(
   if (
     requested &&
     (applied?.mode !== requested.mode ||
+      applied?.showRoofs !== requested.showRoofs ||
       (requested.mode === 'solo' &&
         (applied?.mode !== 'solo' || applied.levelId !== requested.levelId)))
   )
     refuse(
       'view_presentation_unconfirmed',
-      'The renderer did not confirm the requested level view. Refresh the renderer and retry; this picture cannot verify Solo or Exploded behavior.',
+      'The renderer did not confirm the requested level view. Refresh the renderer and retry; this picture cannot verify Solo, Exploded or roof behavior.',
       { requested, applied: applied ?? null },
     )
 }

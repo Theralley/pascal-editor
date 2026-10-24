@@ -87,8 +87,8 @@ const viewPort: PresentationPort = {
       },
     }
   },
-  setWall: (mode) => useViewer.getState().setWallMode(mode),
-  setLevels: (mode) => useViewer.getState().setLevelMode(mode),
+  setWall: (mode) => useViewer.getState().overrideView({ wallMode: mode }),
+  setLevels: (mode) => useViewer.getState().overrideView({ levelMode: mode }),
   setHideAbove: (hide) => useViewer.setState({ hideLevelsAboveSelection: hide }),
   setFloor: ({ buildingId, levelId }) => {
     useViewer.getState().setSelection({

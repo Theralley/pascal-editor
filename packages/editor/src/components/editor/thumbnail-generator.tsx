@@ -435,13 +435,14 @@ const HOLD_MAX_MS = 300_000
 
 /**
  * What the sheets' pictures are drawn in, whatever the user's view: full-
- * height walls, the storeys stacked at their true heights, the materials'
+ * height walls, the storeys stacked at their true heights, the roofs on, the materials'
  * own textures and colours (a white or blueprint palette is a view, not the
  * house). The shading stays the user's: the capture brings its own AO.
  */
 const FINISHED_PRESENTATION = {
   wallMode: 'up',
   levelMode: 'stacked',
+  showRoofs: true,
   textures: true,
   colorPreset: 'clay',
 } as const
@@ -452,13 +453,18 @@ export function presentFinished(): () => void {
   const restores: (() => void)[] = []
   if (viewer.wallMode !== FINISHED_PRESENTATION.wallMode) {
     const wallMode = viewer.wallMode
-    viewer.setWallMode(FINISHED_PRESENTATION.wallMode)
-    restores.push(() => useViewer.getState().setWallMode(wallMode))
+    viewer.overrideView({ wallMode: FINISHED_PRESENTATION.wallMode })
+    restores.push(() => useViewer.getState().overrideView({ wallMode }))
   }
   if (viewer.levelMode !== FINISHED_PRESENTATION.levelMode) {
     const levelMode = viewer.levelMode
-    viewer.setLevelMode(FINISHED_PRESENTATION.levelMode)
-    restores.push(() => useViewer.getState().setLevelMode(levelMode))
+    viewer.overrideView({ levelMode: FINISHED_PRESENTATION.levelMode })
+    restores.push(() => useViewer.getState().overrideView({ levelMode }))
+  }
+  if (viewer.showRoofs !== FINISHED_PRESENTATION.showRoofs) {
+    const showRoofs = viewer.showRoofs
+    viewer.overrideView({ showRoofs: FINISHED_PRESENTATION.showRoofs })
+    restores.push(() => useViewer.getState().overrideView({ showRoofs }))
   }
   if (viewer.textures !== FINISHED_PRESENTATION.textures) {
     const textures = viewer.textures
@@ -920,8 +926,8 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               if (snapLevels) {
                 const prevMode = useViewer.getState().levelMode
                 if (prevMode !== 'stacked') {
-                  restore(() => useViewer.getState().setLevelMode(prevMode))
-                  useViewer.getState().setLevelMode('stacked')
+                  restore(() => useViewer.getState().overrideView({ levelMode: prevMode }))
+                  useViewer.getState().overrideView({ levelMode: 'stacked' })
                 }
                 restore(snapLevelsToTruePositions())
               }

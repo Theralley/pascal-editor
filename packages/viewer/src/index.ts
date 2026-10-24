@@ -298,6 +298,7 @@ export {
   UNDERGROUND_RING,
   undergroundAmbianceNode,
 } from './lib/underground-ambiance'
+export { LEVEL_MODE_OPTIONS, stepWallMode, WALL_MODE_OPTIONS } from './lib/view-modes'
 export { createZoneShape, createZoneWallGeometry } from './lib/zone-geometry'
 export type { LightSource } from './store/use-item-light-pool'
 export { catalogLightSource, useItemLightPool } from './store/use-item-light-pool'
@@ -308,6 +309,7 @@ export {
   default as useViewer,
   type GroundMode,
   groundVeiled,
+  type LevelMode,
   type MetricNotation,
   siteGroundShown,
   type UndergroundEdge,

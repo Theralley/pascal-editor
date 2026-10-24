@@ -27,6 +27,7 @@ import {
 export type RenderContext = 'editor' | 'viewer'
 export type MetricNotation = 'meters' | 'millimeters'
 export type WallMode = 'up' | 'cutaway' | 'down' | 'translucent'
+export type LevelMode = 'stacked' | 'exploded' | 'solo' | 'manual'
 
 type SelectionPath = {
   buildingId: BuildingNode['id'] | null
@@ -142,8 +143,11 @@ type ViewerState = {
    * keep tracking the browser locale across sessions. */
   unitExplicit: boolean
 
-  levelMode: 'stacked' | 'exploded' | 'solo' | 'manual'
-  setLevelMode: (mode: 'stacked' | 'exploded' | 'solo' | 'manual') => void
+  levelMode: LevelMode
+  /** The person's pick: saved for this project and kept as the browser-wide default. */
+  setLevelMode: (mode: LevelMode) => void
+  /** The browser-wide level mode a project without a saved pick starts from. */
+  levelModeDefault: LevelMode
   /**
    * The editor's level display: stacked, with every level above the selected
    * one hidden (the selected level and those below stay). Set by the host
@@ -227,7 +231,23 @@ type ViewerState = {
   setUndergroundLook: (look: Partial<UndergroundLook>) => void
 
   wallMode: WallMode
+  /** The person's pick: saved for this project and kept as the browser-wide default. */
   setWallMode: (mode: WallMode) => void
+  /** The browser-wide wall mode a project without a saved pick starts from. */
+  wallModeDefault: WallMode
+
+  showRoofs: boolean
+  /** The person's pick: saved for this project and kept as the browser-wide default. */
+  setShowRoofs: (show: boolean) => void
+  /** The browser-wide roof visibility a project without a saved pick starts from. */
+  showRoofsDefault: boolean
+
+  /**
+   * A view that holds only while something else is happening (walkthrough, preview, a capture):
+   * it changes what is shown without touching the person's saved picks, so the saved view
+   * survives and comes back when the override is lifted.
+   */
+  overrideView: (view: { wallMode?: WallMode; levelMode?: LevelMode; showRoofs?: boolean }) => void
 
   showScans: boolean
   setShowScans: (show: boolean) => void
@@ -267,6 +287,9 @@ type ViewerState = {
       showGuides?: boolean
       showGrid?: boolean
       showMeasurements?: boolean
+      wallMode?: WallMode
+      levelMode?: LevelMode
+      showRoofs?: boolean
     }
   >
 
@@ -327,6 +350,7 @@ type PersistedViewerState = Partial<
     | 'unitExplicit'
     | 'levelMode'
     | 'wallMode'
+    | 'showRoofs'
     | 'projectPreferences'
   >
 >
@@ -461,6 +485,14 @@ function normalizeProjectPreferences(value: unknown): ViewerState['projectPrefer
       ...(typeof record.showMeasurements === 'boolean'
         ? { showMeasurements: record.showMeasurements }
         : {}),
+      ...(typeof record.wallMode === 'string' && WALL_MODES.includes(record.wallMode as WallMode)
+        ? { wallMode: record.wallMode as WallMode }
+        : {}),
+      ...(typeof record.levelMode === 'string' &&
+      LEVEL_MODES.includes(record.levelMode as LevelMode)
+        ? { levelMode: record.levelMode as LevelMode }
+        : {}),
+      ...(typeof record.showRoofs === 'boolean' ? { showRoofs: record.showRoofs } : {}),
     }
   }
   return next
@@ -496,6 +528,7 @@ function normalizePersistedViewerState(value: unknown): PersistedViewerState {
     unitExplicit: UNITS.includes((state.unitDefault ?? state.unit) as ViewerState['unit']),
     levelMode: pickString<ViewerState['levelMode']>(state.levelMode, LEVEL_MODES, 'stacked'),
     wallMode: pickString<ViewerState['wallMode']>(state.wallMode, WALL_MODES, 'up'),
+    showRoofs: typeof state.showRoofs === 'boolean' ? state.showRoofs : true,
     projectPreferences: normalizeProjectPreferences(state.projectPreferences),
   }
 }
@@ -594,6 +627,18 @@ function chooseLook(state: ViewerState, look: LocalLook): Partial<ViewerState> {
     },
     ...('theme' in look ? { previewSceneTheme: null } : {}),
   })
+}
+
+/** This project's saved picks with `patch` merged in; a scene without a project id saves nothing. */
+function withProjectPreference(
+  state: ViewerState,
+  patch: ViewerState['projectPreferences'][string],
+): ViewerState['projectPreferences'] {
+  if (!state.projectId) return state.projectPreferences
+  return {
+    ...state.projectPreferences,
+    [state.projectId]: { ...state.projectPreferences[state.projectId], ...patch },
+  }
 }
 
 const useViewer = create<ViewerState>()(
@@ -726,7 +771,13 @@ const useViewer = create<ViewerState>()(
         set((state) => chooseUnits(state, { system: 'metric', metricNotation })),
 
       levelMode: 'stacked',
-      setLevelMode: (mode) => set({ levelMode: mode }),
+      levelModeDefault: 'stacked',
+      setLevelMode: (mode) =>
+        set((state) => ({
+          levelMode: mode,
+          levelModeDefault: mode,
+          projectPreferences: withProjectPreference(state, { levelMode: mode }),
+        })),
       hideLevelsAboveSelection: false,
       levelsRevealing: [],
       nodesRevealing: [],
@@ -746,7 +797,24 @@ const useViewer = create<ViewerState>()(
         set((state) => ({ undergroundLook: { ...state.undergroundLook, ...look } })),
 
       wallMode: 'up',
-      setWallMode: (mode) => set({ wallMode: mode }),
+      wallModeDefault: 'up',
+      setWallMode: (mode) =>
+        set((state) => ({
+          wallMode: mode,
+          wallModeDefault: mode,
+          projectPreferences: withProjectPreference(state, { wallMode: mode }),
+        })),
+
+      showRoofs: true,
+      showRoofsDefault: true,
+      setShowRoofs: (show) =>
+        set((state) => ({
+          showRoofs: show,
+          showRoofsDefault: show,
+          projectPreferences: withProjectPreference(state, { showRoofs: show }),
+        })),
+
+      overrideView: (view) => set(view),
 
       showScans: true,
       setShowScans: (show) =>
@@ -827,6 +895,9 @@ const useViewer = create<ViewerState>()(
             showGuides: prefs.showGuides ?? true,
             showGrid: prefs.showGrid ?? true,
             showMeasurements: prefs.showMeasurements ?? true,
+            wallMode: prefs.wallMode ?? state.wallModeDefault,
+            levelMode: prefs.levelMode ?? state.levelModeDefault,
+            showRoofs: prefs.showRoofs ?? state.showRoofsDefault,
           })
         }),
       projectPreferences: {},
@@ -892,6 +963,9 @@ const useViewer = create<ViewerState>()(
         return {
           ...currentState,
           ...persisted,
+          levelModeDefault: persisted.levelMode ?? currentState.levelModeDefault,
+          wallModeDefault: persisted.wallMode ?? currentState.wallModeDefault,
+          showRoofsDefault: persisted.showRoofs ?? currentState.showRoofsDefault,
           ...resolveLook(currentState, {
             ...persisted,
             lookDefaults: {
@@ -913,8 +987,9 @@ const useViewer = create<ViewerState>()(
         ...(state.unitExplicit
           ? { unitDefault: state.unitDefault, metricNotationDefault: state.metricNotationDefault }
           : {}),
-        levelMode: state.levelMode,
-        wallMode: state.wallMode,
+        levelMode: state.levelModeDefault,
+        wallMode: state.wallModeDefault,
+        showRoofs: state.showRoofsDefault,
         projectPreferences: Object.fromEntries(
           Object.entries(state.projectPreferences).filter(([key]) => key !== ''),
         ),

@@ -68,4 +68,22 @@ describe('stored viewer preferences', () => {
     useViewer.getState().setProjectId('scene-1')
     expect(useViewer.getState().edges).toBe('off')
   })
+
+  test('an override in effect is never what the browser stores', async () => {
+    useViewer.getState().setProjectId('scene-1')
+    useViewer.getState().setWallMode('cutaway')
+    useViewer.getState().overrideView({ wallMode: 'up', showRoofs: false })
+    useViewer.getState().setUnit('imperial')
+
+    const stored = JSON.parse(items.get('viewer-preferences') ?? '{}').state
+    expect(stored).toMatchObject({ wallMode: 'cutaway', showRoofs: true })
+    expect(stored.projectPreferences['scene-1']).toMatchObject({ wallMode: 'cutaway' })
+    expect(stored.projectPreferences['scene-1'].showRoofs).toBeUndefined()
+  })
+
+  test('a browser-wide wall mode and roofs choice becomes the default of a new project', async () => {
+    await rehydrateFrom({ wallMode: 'down', showRoofs: false })
+    useViewer.getState().setProjectId('scene-9')
+    expect(useViewer.getState()).toMatchObject({ wallMode: 'down', showRoofs: false })
+  })
 })

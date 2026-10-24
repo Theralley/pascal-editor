@@ -9,6 +9,7 @@ import {
   type SceneViewPresentation,
   sceneViewPresentationLevel,
 } from '@pascal-app/core/agent-operations'
+import { presentRoofsForCapture } from '../../lib/roof-visibility'
 import {
   temporarilyHideFromScene,
   temporarilyShowPresentation,
@@ -152,7 +153,7 @@ export function snapLevelsToTruePositions({
   }
 }
 
-/** The viewer's settled level presentation for one render, without changing saved preferences. */
+/** The viewer's settled level and roof presentation for one render, without changing saved preferences. */
 export function presentLevelsForCapture(presentation: SceneViewPresentation): () => void {
   const nodes = useScene.getState().nodes
   const selected = sceneViewPresentationLevel(nodes, presentation)
@@ -183,6 +184,8 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
     )
     if (shadowOnly) restores.push(temporarilyHideFromScene(obj, 'shadow-only'))
   }
+  if (presentation.showRoofs !== undefined)
+    restores.push(presentRoofsForCapture(presentation.showRoofs))
   return () => {
     for (const restore of restores.reverse()) restore()
   }

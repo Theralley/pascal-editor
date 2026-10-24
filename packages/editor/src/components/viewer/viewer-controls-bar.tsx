@@ -5,8 +5,10 @@ import {
   CLAY_PALETTE,
   type EdgeMode,
   getSceneTheme,
+  LEVEL_MODE_OPTIONS,
   SCENE_THEMES,
   useViewer,
+  WALL_MODE_OPTIONS,
 } from '@pascal-app/viewer'
 import {
   Box,
@@ -17,6 +19,7 @@ import {
   Eye,
   EyeOff,
   Footprints,
+  House,
   Layers,
   Layers2,
   Palette,
@@ -27,8 +30,10 @@ import {
   SwatchBook,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { VIEW_SHORTCUT_KEYS } from '../../lib/view-shortcuts'
 import { ActionButton } from '../ui/action-menu/action-button'
 import { FollowPascalToggle } from '../ui/action-menu/follow-pascal-toggle'
+import { SegmentedControl } from '../ui/controls/segmented-control'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,32 +46,20 @@ import {
 } from '../ui/primitives/dropdown-menu'
 import { TooltipProvider } from '../ui/primitives/tooltip'
 
-const levelModeLabels: Record<'stacked' | 'exploded' | 'solo', string> = {
-  stacked: 'Stacked',
-  exploded: 'Exploded',
-  solo: 'Solo',
+const levelModeIcons = {
+  stacked: Layers,
+  exploded: Layers2,
+  solo: Diamond,
 }
 
-const wallModeConfig = {
-  up: {
-    icon: (props: any) => (
-      <img alt="Full height" height={28} src="/icons/room.webp" width={28} {...props} />
-    ),
-    label: 'Full height',
-  },
-  cutaway: {
-    icon: (props: any) => (
-      <img alt="Cutaway" height={28} src="/icons/wallcut.webp" width={28} {...props} />
-    ),
-    label: 'Cutaway',
-  },
-  down: {
-    icon: (props: any) => (
-      <img alt="Low" height={28} src="/icons/walllow.webp" width={28} {...props} />
-    ),
-    label: 'Low',
-  },
+const wallModeIcons = {
+  up: '/icons/room.webp',
+  cutaway: '/icons/wallcut.webp',
+  down: '/icons/walllow.webp',
+  translucent: '/icons/wall.webp',
 }
+
+const SEGMENTS = 'h-10 min-h-0 w-auto sm:h-11'
 
 const SHADING_OPTIONS = [
   { id: 'solid', name: 'Solid', detail: 'Flat and fast — no ambient occlusion', icon: Box },
@@ -321,12 +314,7 @@ export const ViewerControlsBar = ({
 }: ViewerControlsBarProps) => {
   const levelMode = useViewer((s) => s.levelMode)
   const wallMode = useViewer((s) => s.wallMode)
-  // Sessions may carry a stale mode outside the cycle (e.g. the retired
-  // 'translucent'); render and cycle it as cutaway instead of crashing.
-  const safeWallMode = (
-    wallMode in wallModeConfig ? wallMode : 'cutaway'
-  ) as keyof typeof wallModeConfig
-  const WallModeIcon = wallModeConfig[safeWallMode].icon
+  const showRoofs = useViewer((s) => s.showRoofs)
 
   return (
     <div
@@ -349,51 +337,60 @@ export const ViewerControlsBar = ({
           )}
 
           {/* Level mode */}
+          <SegmentedControl
+            aria-label="Levels"
+            className={SEGMENTS}
+            mixed={levelMode === 'manual'}
+            onChange={(mode) => useViewer.getState().setLevelMode(mode)}
+            options={LEVEL_MODE_OPTIONS.map(({ value, label }) => {
+              const Icon = levelModeIcons[value]
+              return {
+                value,
+                label: (
+                  <>
+                    <Icon className="h-5 w-5" />
+                    <span className="sr-only">{label}</span>
+                  </>
+                ),
+              }
+            })}
+            radio
+            value={levelMode}
+          />
+
+          {/* Wall mode — parametric only; baked GLB walls are fixed-height. */}
+          {!glbActive && (
+            <SegmentedControl
+              aria-label="Walls"
+              className={SEGMENTS}
+              onChange={(mode) => useViewer.getState().setWallMode(mode)}
+              options={WALL_MODE_OPTIONS.map(({ value, label }) => ({
+                value,
+                label: (
+                  <>
+                    <img alt="" className="h-6 w-6 object-contain" src={wallModeIcons[value]} />
+                    <span className="sr-only">{label}</span>
+                  </>
+                ),
+              }))}
+              radio
+              value={wallMode}
+            />
+          )}
+
           <ActionButton
-            className={
-              levelMode === 'stacked'
-                ? 'hover:bg-white/5 hover:text-amber-400'
-                : 'bg-amber-500/20 text-amber-400'
-            }
-            label={`Levels: ${levelMode === 'manual' ? 'Manual' : levelModeLabels[levelMode as keyof typeof levelModeLabels]}`}
-            onClick={() => {
-              if (levelMode === 'manual') return useViewer.getState().setLevelMode('stacked')
-              const modes: ('stacked' | 'exploded' | 'solo')[] = ['stacked', 'exploded', 'solo']
-              const nextIndex = (modes.indexOf(levelMode as any) + 1) % modes.length
-              useViewer.getState().setLevelMode(modes[nextIndex] ?? 'stacked')
-            }}
+            aria-label="Roofs"
+            aria-pressed={showRoofs}
+            className={showRoofs ? 'hover:bg-white/5' : 'bg-white/10'}
+            label={`Roofs: ${showRoofs ? 'On' : 'Off'} (${VIEW_SHORTCUT_KEYS.roofs.toUpperCase()})`}
+            onClick={() => useViewer.getState().setShowRoofs(!showRoofs)}
             size="icon"
             tooltipClassName="dark"
             tooltipSide="top"
             variant="ghost"
           >
-            {levelMode === 'solo' && <Diamond className="h-6 w-6" />}
-            {levelMode === 'exploded' && <Layers2 className="h-6 w-6" />}
-            {(levelMode === 'stacked' || levelMode === 'manual') && <Layers className="h-6 w-6" />}
+            <House className="h-6 w-6" />
           </ActionButton>
-
-          {/* Wall mode — parametric only; baked GLB walls are fixed-height. */}
-          {!glbActive && (
-            <ActionButton
-              className={
-                safeWallMode === 'cutaway'
-                  ? 'opacity-60 grayscale hover:bg-white/5 hover:opacity-100 hover:grayscale-0'
-                  : 'bg-white/10'
-              }
-              label={`Walls: ${wallModeConfig[safeWallMode].label}`}
-              onClick={() => {
-                const modes: ('cutaway' | 'up' | 'down')[] = ['cutaway', 'up', 'down']
-                const nextIndex = (modes.indexOf(safeWallMode) + 1) % modes.length
-                useViewer.getState().setWallMode(modes[nextIndex] ?? 'cutaway')
-              }}
-              size="icon"
-              tooltipClassName="dark"
-              tooltipSide="top"
-              variant="ghost"
-            >
-              <WallModeIcon className="h-[28px] w-[28px]" />
-            </ActionButton>
-          )}
 
           <div className="mx-1 h-5 w-px bg-border/40" />
 
@@ -403,6 +400,8 @@ export const ViewerControlsBar = ({
 
           {/* Walkthrough */}
           <ActionButton
+            aria-label="Walkthrough"
+            aria-pressed={walkthroughActive}
             className={
               walkthroughActive
                 ? 'bg-emerald-500/20 text-emerald-400'

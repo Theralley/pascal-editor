@@ -2,7 +2,7 @@
 
 import type { AnyNodeId, LevelNode } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
-import { markPerfAction, useViewer } from '@pascal-app/viewer'
+import { markPerfAction, useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
 import { Command, defaultFilter, useCommandState } from 'cmdk'
 import { ChevronRight, Search } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
@@ -278,13 +278,6 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
     setOpen(false)
   }
 
-  const wallModeLabel: Record<'cutaway' | 'up' | 'down' | 'translucent', string> = {
-    cutaway: 'Cutaway',
-    up: 'Up',
-    down: 'Down',
-    translucent: 'Translucent',
-  }
-
   const confirmRename = () => {
     if (!(activeLevelId && inputValue.trim())) return
     run(() => {
@@ -398,12 +391,12 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
               {/* ── Wall Mode sub-page ────────────────────────────────────── */}
               {page === 'wall-mode' && (
                 <Command.Group heading="Wall Mode">
-                  {(['cutaway', 'up', 'down', 'translucent'] as const).map((mode) => (
+                  {WALL_MODE_OPTIONS.map(({ value, label }) => (
                     <OptionItem
-                      isActive={wallMode === mode}
-                      key={mode}
-                      label={wallModeLabel[mode]}
-                      onSelect={() => run(() => setWallMode(mode))}
+                      isActive={wallMode === value}
+                      key={value}
+                      label={label}
+                      onSelect={() => run(() => setWallMode(value))}
                     />
                   ))}
                 </Command.Group>

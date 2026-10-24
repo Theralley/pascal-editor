@@ -9,26 +9,9 @@
 // this file can collapse to an import.
 
 import { type AnyNode, type LevelNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { LEVEL_MODE_OPTIONS, useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
 import { Box, Grid2x2, Layers, Layers2, Maximize, ScanLine, Square } from 'lucide-react'
 import { type ReactNode, useMemo } from 'react'
-
-const levelModes = ['stacked', 'solo', 'exploded', 'manual'] as const
-const wallModes = ['up', 'cutaway', 'down', 'translucent'] as const
-
-const levelLabel: Record<(typeof levelModes)[number], string> = {
-  stacked: 'Stack',
-  solo: 'Solo',
-  exploded: 'Exploded',
-  manual: 'Manual',
-}
-
-const wallLabel: Record<(typeof wallModes)[number], string> = {
-  up: 'Full',
-  cutaway: 'Cutaway',
-  down: 'Down',
-  translucent: 'Translucent',
-}
 
 function cycle<T>(list: readonly T[], current: T): T {
   const i = list.indexOf(current)
@@ -72,6 +55,10 @@ export function PreviewToolbar() {
   const setLevelMode = useViewer((s) => s.setLevelMode)
   const wallMode = useViewer((s) => s.wallMode)
   const setWallMode = useViewer((s) => s.setWallMode)
+  const levelOption =
+    LEVEL_MODE_OPTIONS.find((o) => o.value === levelMode) ?? LEVEL_MODE_OPTIONS[0]!
+  const levelLabel = levelMode === 'manual' ? 'Manual' : levelOption.label
+  const wallOption = WALL_MODE_OPTIONS.find((o) => o.value === wallMode) ?? WALL_MODE_OPTIONS[0]!
 
   return (
     <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 p-1 shadow-lg backdrop-blur-md">
@@ -95,15 +82,15 @@ export function PreviewToolbar() {
         icon={
           levelMode === 'solo' ? <Layers2 className="size-3.5" /> : <Layers className="size-3.5" />
         }
-        label={`Levels: ${levelLabel[levelMode]}`}
-        onClick={() => setLevelMode(cycle(levelModes, levelMode))}
+        label={`Levels: ${levelLabel}`}
+        onClick={() => setLevelMode(cycle(LEVEL_MODE_OPTIONS, levelOption).value)}
       />
 
       <ToolButton
         active={wallMode !== 'up'}
         icon={<ScanLine className="size-3.5" />}
-        label={`Walls: ${wallLabel[wallMode]}`}
-        onClick={() => setWallMode(cycle(wallModes, wallMode))}
+        label={`Walls: ${wallOption.label}`}
+        onClick={() => setWallMode(cycle(WALL_MODE_OPTIONS, wallOption).value)}
       />
 
       <span aria-hidden className="mx-0.5 h-5 w-px bg-white/10" />

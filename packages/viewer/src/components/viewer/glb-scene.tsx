@@ -9,6 +9,7 @@ import {
   EXPLODED_GAP,
   itemInteraction,
   itemPrompt,
+  nodeRegistry,
   operateItem,
   polygonInteriorPoint,
   type SurfaceRole,
@@ -26,6 +27,7 @@ import { lerp } from 'three/src/math/MathUtils.js'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import { useGLTFKTX2 } from '../../hooks/use-gltf-ktx2'
 import { createSurfaceRoleMaterial } from '../../lib/materials'
+import { syncRoofVisibility } from '../../lib/roof-visibility'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import useViewer from '../../store/use-viewer'
 import { useClipActions } from '../../systems/interactive/scripted-clips'
@@ -411,69 +413,75 @@ export function GlbScene({
   // One pass over the artifact: identity objects (id → Object3D), ordered floors,
   // and zone polygons. Levels stay out of `sceneRegistry` so the parametric
   // LevelSystem never re-stacks them.
-  const { levels, identity, zoneEntries, occluders, rootNode, levelsWithZones } = useMemo(() => {
-    const objects = new Map<string, THREE.Object3D>()
-    const floors: GlbLevelEntry[] = []
-    const zoneList: GlbZoneEntry[] = []
-    // Ceilings + roof are hidden when a floor is focused (dollhouse view) so the
-    // camera sees the rooms and the pointer ray reaches their contents.
-    const occluderNodes: THREE.Object3D[] = []
-    // The building (or site) node anchors the building-view camera bookmark/fit.
-    let buildingNode: THREE.Object3D | null = null
-    let siteNode: THREE.Object3D | null = null
-    gltf.scene.traverse((object) => {
-      const extras = object.userData as PascalExtras
-      // The spawn marker is an authoring-only node (walkthrough start pose); it
-      // should never render in the viewer. Its transform still feeds the
-      // walkthrough controller — visibility doesn't affect that.
-      if (extras.kind === 'spawn') {
-        object.visible = false
-        return
+  const { levels, identity, zoneEntries, occluders, roofs, rootNode, levelsWithZones } =
+    useMemo(() => {
+      const objects = new Map<string, THREE.Object3D>()
+      const floors: GlbLevelEntry[] = []
+      const zoneList: GlbZoneEntry[] = []
+      // Ceilings + roof are hidden when a floor is focused (dollhouse view) so the
+      // camera sees the rooms and the pointer ray reaches their contents.
+      const occluderNodes: THREE.Object3D[] = []
+      const roofNodes: THREE.Object3D[] = []
+      // The building (or site) node anchors the building-view camera bookmark/fit.
+      let buildingNode: THREE.Object3D | null = null
+      let siteNode: THREE.Object3D | null = null
+      gltf.scene.traverse((object) => {
+        const extras = object.userData as PascalExtras
+        // The spawn marker is an authoring-only node (walkthrough start pose); it
+        // should never render in the viewer. Its transform still feeds the
+        // walkthrough controller — visibility doesn't affect that.
+        if (extras.kind === 'spawn') {
+          object.visible = false
+          return
+        }
+        if (!extras.pascalId) return
+        objects.set(extras.pascalId, object)
+        // `bake: 'replace'` kinds are baked as static geometry (portable), but a
+        // loaded plugin re-renders them live from the scene graph — hide the frozen
+        // baked mesh so only the live one shows. Gated on the registry, so with no
+        // plugin loaded the policy is `'static'` and the baked mesh stays.
+        if (bakePolicyOf(extras.kind ?? '') === 'replace') object.visible = false
+        if (extras.kind === 'building') buildingNode = object
+        else if (extras.kind === 'site') siteNode = object
+        if (extras.kind === 'ceiling' || extras.kind === 'roof') occluderNodes.push(object)
+        const kind = extras.kind ?? ''
+        if ((nodeRegistry.get(kind)?.surfaceRole ?? ROLE_BY_KIND[kind]) === 'roof')
+          roofNodes.push(object)
+        if (extras.kind === 'level') {
+          floors.push({
+            id: extras.pascalId,
+            node: object,
+            baseY: object.position.y,
+          })
+        }
+        if (extras.kind === 'zone' && extras.polygon && extras.polygon.length >= 3) {
+          const polygon = extras.polygon
+          const holes = extras.holes ?? []
+          const centroid = polygonInteriorPoint({ polygon, holes })
+          zoneList.push({
+            id: extras.pascalId,
+            node: object,
+            levelId: findAncestorLevelId(object),
+            polygon,
+            holes,
+            label: extras.label ?? extras.pascalId,
+            color: extras.color ?? '#3b82f6',
+            centroid,
+          })
+        }
+      })
+      floors.sort((a, b) => a.baseY - b.baseY)
+      return {
+        levels: floors,
+        identity: objects,
+        zoneEntries: zoneList,
+        occluders: occluderNodes,
+        roofs: roofNodes,
+        rootNode: (buildingNode ?? siteNode) as THREE.Object3D | null,
+        // Levels that have rooms — only these trigger the dollhouse occluder strip.
+        levelsWithZones: new Set(zoneList.map((zone) => zone.levelId)),
       }
-      if (!extras.pascalId) return
-      objects.set(extras.pascalId, object)
-      // `bake: 'replace'` kinds are baked as static geometry (portable), but a
-      // loaded plugin re-renders them live from the scene graph — hide the frozen
-      // baked mesh so only the live one shows. Gated on the registry, so with no
-      // plugin loaded the policy is `'static'` and the baked mesh stays.
-      if (bakePolicyOf(extras.kind ?? '') === 'replace') object.visible = false
-      if (extras.kind === 'building') buildingNode = object
-      else if (extras.kind === 'site') siteNode = object
-      if (extras.kind === 'ceiling' || extras.kind === 'roof') occluderNodes.push(object)
-      if (extras.kind === 'level') {
-        floors.push({
-          id: extras.pascalId,
-          node: object,
-          baseY: object.position.y,
-        })
-      }
-      if (extras.kind === 'zone' && extras.polygon && extras.polygon.length >= 3) {
-        const polygon = extras.polygon
-        const holes = extras.holes ?? []
-        const centroid = polygonInteriorPoint({ polygon, holes })
-        zoneList.push({
-          id: extras.pascalId,
-          node: object,
-          levelId: findAncestorLevelId(object),
-          polygon,
-          holes,
-          label: extras.label ?? extras.pascalId,
-          color: extras.color ?? '#3b82f6',
-          centroid,
-        })
-      }
-    })
-    floors.sort((a, b) => a.baseY - b.baseY)
-    return {
-      levels: floors,
-      identity: objects,
-      zoneEntries: zoneList,
-      occluders: occluderNodes,
-      rootNode: (buildingNode ?? siteNode) as THREE.Object3D | null,
-      // Levels that have rooms — only these trigger the dollhouse occluder strip.
-      levelsWithZones: new Set(zoneList.map((zone) => zone.levelId)),
-    }
-  }, [gltf.scene])
+    }, [gltf.scene])
   // Level pascalIds bottom-to-top, for the interactive light pool's level factor.
   const levelOrder = useMemo(() => levels.map((entry) => entry.id), [levels])
   // Loop clips no other controller plays (a plugin kind's mechanism) run on
@@ -509,6 +517,14 @@ export function GlbScene({
     }
     return meshes
   }, [occluders])
+
+  // The roof toggle holds the baked roofs off the scene layer, like the live scene's roofs.
+  const showRoofs = useViewer((state) => state.showRoofs)
+  const heldRoofs = useRef<ReadonlySet<THREE.Object3D>>(new Set())
+  useEffect(() => {
+    heldRoofs.current = syncRoofVisibility(roofs, showRoofs, heldRoofs.current)
+  }, [roofs, showRoofs])
+  useEffect(() => () => void syncRoofVisibility([], true, heldRoofs.current), [])
 
   // Open on the building: its saved view, else a fit of its bounds. Later moves
   // belong to the host's navigation (`camera-controls:frame`), never to a click.

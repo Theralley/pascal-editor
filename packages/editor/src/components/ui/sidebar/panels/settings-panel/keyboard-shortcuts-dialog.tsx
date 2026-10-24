@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './../../../../../components/ui/primitives/dialog'
+import { VIEW_SHORTCUT_KEYS } from './../../../../../lib/view-shortcuts'
 import {
   ShortcutToken,
   shortcutDisplayValue,
@@ -184,6 +185,14 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
         action: 'Temporarily bypass placement validation constraints',
         note: 'Hold while placing.',
       },
+    ],
+  },
+  {
+    title: 'View',
+    shortcuts: [
+      { keys: [VIEW_SHORTCUT_KEYS.wallsUp.toUpperCase()], action: 'Raise the walls a step' },
+      { keys: [VIEW_SHORTCUT_KEYS.wallsDown.toUpperCase()], action: 'Lower the walls a step' },
+      { keys: [VIEW_SHORTCUT_KEYS.roofs.toUpperCase()], action: 'Show or hide the roofs' },
     ],
   },
   {

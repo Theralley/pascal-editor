@@ -157,6 +157,7 @@ export function EmbedViewer({ id, name, graph, chrome = true }: EmbedViewerProps
  */
 function useWalkthroughViewerSync(isFirstPersonMode: boolean) {
   const previousLevelId = useRef<LevelId>(null)
+  const previousWallMode = useRef(useViewer.getState().wallMode)
   const wasFirstPerson = useRef(isFirstPersonMode)
 
   useEffect(() => {
@@ -166,14 +167,16 @@ function useWalkthroughViewerSync(isFirstPersonMode: boolean) {
 
     if (isFirstPersonMode && !was) {
       previousLevelId.current = viewer.selection.levelId
+      previousWallMode.current = viewer.wallMode
       viewer.setCameraMode('perspective')
-      viewer.setWallMode('up')
+      viewer.overrideView({ wallMode: 'up' })
       viewer.setWalkthroughMode(true)
       viewer.setSelection({ selectedIds: [], zoneId: null })
       return
     }
     if (!was || isFirstPersonMode) return
 
+    viewer.overrideView({ wallMode: previousWallMode.current })
     viewer.setWalkthroughMode(false)
     const levelId = previousLevelId.current
     previousLevelId.current = null

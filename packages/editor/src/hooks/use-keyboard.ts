@@ -39,6 +39,7 @@ import { openSidebarPanel } from '../lib/sidebar-panel'
 import { activeSiteNode, clampBrushRadius } from '../lib/terrain-sculpt'
 import { isTypingTarget } from '../lib/typing-target'
 import { leaveUnitFocus } from '../lib/units'
+import { runViewShortcut, viewShortcutOf } from '../lib/view-shortcuts'
 import { selectWallDrawVariant } from '../lib/wall-draw-variant'
 import useDeleteConfirmation from '../store/use-delete-confirmation'
 import useEditor, { getActiveContinuationContext, getActiveSnapContext } from '../store/use-editor'
@@ -465,6 +466,13 @@ export const useKeyboard = ({
           sfxEmitter.emit('sfx:grid-snap')
           return
         }
+      }
+
+      const viewShortcut = viewShortcutOf(e)
+      if (viewShortcut) {
+        e.preventDefault()
+        runViewShortcut(viewShortcut)
+        return
       }
 
       if (e.key === 'Escape') {

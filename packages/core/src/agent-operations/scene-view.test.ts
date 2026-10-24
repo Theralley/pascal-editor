@@ -106,6 +106,8 @@ test('level captures frame the settled Solo and Exploded geometry without changi
   expect(solo.presentation).toEqual({ mode: 'solo', levelId: 'level_1' })
   expect(solo).not.toHaveProperty('interior')
   expect(solo.pose.target[1]).toBe(4.5)
+  const noRoofs = sceneViewPlan(nodes, { presentation: { mode: 'stacked', showRoofs: false } })
+  expect(noRoofs.presentation).toEqual({ mode: 'stacked', showRoofs: false })
   const exploded = sceneViewPlan(nodes, { presentation: { mode: 'exploded' } })
   expect(framesBox(exploded.pose, { min: [0, 0, 0], max: [20, 11, 10] })).toBe(true)
   expect(exploded.pose.target[1]).toBe(5.5)

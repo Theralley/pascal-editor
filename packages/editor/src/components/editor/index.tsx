@@ -1691,6 +1691,7 @@ function EditorContent({
   }, [visibleLoader, onLoaderChange])
 
   const firstPersonPreviousLevelRef = useRef(useViewer.getState().selection.levelId)
+  const firstPersonPreviousWallModeRef = useRef(useViewer.getState().wallMode)
   const wasFirstPersonModeRef = useRef(isFirstPersonMode)
   const firstPersonWasPreviewRef = useRef(isPreviewMode)
 
@@ -1703,8 +1704,9 @@ function EditorContent({
     if (isFirstPersonMode && !wasFirstPersonMode) {
       const viewer = useViewer.getState()
       firstPersonPreviousLevelRef.current = viewer.selection.levelId
+      firstPersonPreviousWallModeRef.current = viewer.wallMode
       viewer.setCameraMode('perspective')
-      viewer.setWallMode('up')
+      viewer.overrideView({ wallMode: 'up' })
       viewer.setWalkthroughMode(true)
       viewer.setSelection({ selectedIds: [], zoneId: null })
       return
@@ -1715,6 +1717,7 @@ function EditorContent({
     const viewer = useViewer.getState()
     const previousLevelId = firstPersonPreviousLevelRef.current
     firstPersonPreviousLevelRef.current = null
+    viewer.overrideView({ wallMode: firstPersonPreviousWallModeRef.current })
     viewer.setWalkthroughMode(false)
 
     // Leaving Preview has already restored the editor's complete selection.

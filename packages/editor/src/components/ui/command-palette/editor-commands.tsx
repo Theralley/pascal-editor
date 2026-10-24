@@ -1,7 +1,7 @@
 'use client'
 
 import { type AnyNodeId, type LevelNode, type UnitNode, useScene } from '@pascal-app/core'
-import { useViewer } from '@pascal-app/viewer'
+import { useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
 import {
   AppWindow,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   Grid3X3,
   Group,
   Hexagon,
+  House,
   Layers,
   Map,
   Maximize2,
@@ -41,6 +42,7 @@ import { getHistoryCommandState, runRedo, runUndo } from '../../../lib/history'
 import { deleteLevelWithFallbackSelection } from '../../../lib/level-selection'
 import { getSavedSceneDocument } from '../../../lib/scene'
 import { createUnitInBuilding, enterUnitFocus, leaveUnitFocus } from '../../../lib/units'
+import { runViewShortcut, VIEW_SHORTCUT_KEYS } from '../../../lib/view-shortcuts'
 import { useCommandRegistry } from '../../../store/use-command-registry'
 import type { StructureTool } from '../../../store/use-editor'
 import useEditor from '../../../store/use-editor'
@@ -290,10 +292,19 @@ export function EditorCommands() {
         keywords: ['wall', 'cutaway', 'up', 'down', 'translucent', 'view'],
         badge: () => {
           const mode = useViewer.getState().wallMode
-          return { cutaway: 'Cutaway', up: 'Up', down: 'Down', translucent: 'Translucent' }[mode]
+          return WALL_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode
         },
         navigate: true,
         execute: () => navigateTo('wall-mode'),
+      },
+      {
+        id: 'editor.viewer.roofs',
+        label: () => `Roofs: ${useViewer.getState().showRoofs ? 'Hide' : 'Show'}`,
+        group: 'Viewer Controls',
+        icon: <House className="h-4 w-4" />,
+        keywords: ['roof', 'roofs', 'hide', 'show', 'view'],
+        shortcut: [VIEW_SHORTCUT_KEYS.roofs.toUpperCase()],
+        execute: () => run(() => runViewShortcut('roofs')),
       },
       {
         id: 'editor.viewer.camera-mode',
