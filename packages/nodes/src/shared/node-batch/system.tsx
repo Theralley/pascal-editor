@@ -15,6 +15,7 @@ import {
   isNodeRevealing,
   publishPerfBatchStats,
   registerMaterialCacheCleanup,
+  subscribeRoofHidden,
   subscribeWallModeAffected,
   useViewer,
 } from '@pascal-app/viewer'
@@ -196,6 +197,7 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
   const unsubscribeReleases = subscribeBatchReleases(changed)
   // Release when the wall mode starts restyling a member, re-offer when it stops.
   const unsubscribeWallMode = subscribeWallModeAffected(changed)
+  const unsubscribeRoofs = subscribeRoofHidden(changed)
   const unsubscribeMaterials = registerMaterialCacheCleanup(() => {
     releaseAll()
     for (const nodeId of getBatchableNodeIds()) changedNodes.add(nodeId)
@@ -206,6 +208,7 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
     unsubscribePreviews()
     unsubscribeReleases()
     unsubscribeWallMode()
+    unsubscribeRoofs()
     unsubscribeMaterials()
   }
 }

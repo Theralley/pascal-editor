@@ -23,6 +23,7 @@ import { evaluateRecipe } from '@pascal-app/core/procedural-items'
 import {
   decorateProceduralEmission,
   getPascalTextureRef,
+  isRoofNode,
   isViewerPresentationTextureBorrowed,
   poseDoorMovingParts,
   poseWindowMovingParts,
@@ -1835,6 +1836,9 @@ function stampIdentity(
     // Stamp a human label for every node (catalog name for items, a type label
     // otherwise) so the viewer breadcrumb/hover read names, not raw pascalIds.
     extras.label = nodeDisplayLabel(node)
+    // The viewer reads the roof toggle from this, so retained roof geometry (an item with a roof
+    // role) follows it like a roof node does.
+    if (isRoofNode(node)) extras.surfaceRole = 'roof'
     // Camera bookmarks ride on the identity node (any kind can carry one) so the
     // baked viewer flies to a saved pose on selection without a side file.
     if (node.camera) extras.camera = node.camera

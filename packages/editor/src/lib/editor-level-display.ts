@@ -65,6 +65,10 @@ export function useEditorLevelDisplay(showWholeBuilding: boolean) {
     return () => {
       unsubscribe()
       useViewer.setState({ hideLevelsAboveSelection: false })
+      // Preview shows the person's own level pick; the walkthrough and a capture show the whole
+      // building stacked.
+      const { isPreviewMode, isFirstPersonMode } = useEditor.getState()
+      if (isPreviewMode && !isFirstPersonMode) useViewer.getState().restoreView()
     }
   }, [showWholeBuilding])
 }

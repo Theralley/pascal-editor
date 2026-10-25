@@ -3,7 +3,7 @@
 import { describe, expect, test } from 'bun:test'
 import * as THREE from 'three'
 import { SCENE_LAYER } from './layers'
-import { syncRoofVisibility } from './roof-visibility'
+import { isBakedRoof, syncRoofVisibility } from './roof-visibility'
 import { hideFromScene, showInScene } from './scene-visibility'
 
 function sceneObject(): THREE.Object3D {
@@ -49,5 +49,16 @@ describe('roof visibility', () => {
 
     showInScene(roof, 'isolated')
     expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(true)
+  })
+
+  test.each([
+    [{ kind: 'roof' }, true],
+    [{ kind: 'roof-segment' }, true],
+    [{ kind: 'item', surfaceRole: 'roof' }, true],
+    [{ kind: 'item' }, false],
+    [{ kind: 'wall' }, false],
+    [{}, false],
+  ])('a baked %p is a roof: %p', (extras, expected) => {
+    expect(isBakedRoof(extras)).toBe(expected)
   })
 })

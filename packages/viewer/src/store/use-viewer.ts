@@ -248,6 +248,8 @@ type ViewerState = {
    * survives and comes back when the override is lifted.
    */
   overrideView: (view: { wallMode?: WallMode; levelMode?: LevelMode; showRoofs?: boolean }) => void
+  /** Lifts every override: the view goes back to this project's saved picks, else the browser-wide defaults. */
+  restoreView: () => void
 
   showScans: boolean
   setShowScans: (show: boolean) => void
@@ -815,6 +817,15 @@ const useViewer = create<ViewerState>()(
         })),
 
       overrideView: (view) => set(view),
+      restoreView: () =>
+        set((state) => {
+          const saved = state.projectId ? state.projectPreferences[state.projectId] : undefined
+          return {
+            wallMode: saved?.wallMode ?? state.wallModeDefault,
+            levelMode: saved?.levelMode ?? state.levelModeDefault,
+            showRoofs: saved?.showRoofs ?? state.showRoofsDefault,
+          }
+        }),
 
       showScans: true,
       setShowScans: (show) =>

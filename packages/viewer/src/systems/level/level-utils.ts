@@ -162,7 +162,14 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
     (!sceneRegistry.nodes.has(selected.id) || !sceneRegistry.byType.level?.has(selected.id))
   )
     throw new Error('The level to capture is not ready in this renderer. Try again.')
-  const restores = [snapLevelsToTruePositions({ readOnly: true })]
+  // Roofs first: the level masks below are laid over the reasons they leave, so a roof on a level
+  // that is left out stays left out, whatever the roof request.
+  const restores = [
+    ...(presentation.showRoofs === undefined
+      ? []
+      : [presentRoofsForCapture(presentation.showRoofs)]),
+    snapLevelsToTruePositions({ readOnly: true }),
+  ]
   for (const levelId of sceneRegistry.byType.level ?? []) {
     const obj = sceneRegistry.nodes.get(levelId)
     const level = nodes[levelId as LevelNode['id']]
@@ -184,8 +191,6 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
     )
     if (shadowOnly) restores.push(temporarilyHideFromScene(obj, 'shadow-only'))
   }
-  if (presentation.showRoofs !== undefined)
-    restores.push(presentRoofsForCapture(presentation.showRoofs))
   return () => {
     for (const restore of restores.reverse()) restore()
   }

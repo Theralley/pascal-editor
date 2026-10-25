@@ -1,4 +1,5 @@
 import {
+  type AnyNode,
   type AnyNodeId,
   isRoofGeometry,
   nodeRegistry,
@@ -6,24 +7,27 @@ import {
   useScene,
 } from '@pascal-app/core'
 import type { Object3D } from 'three'
-import {
-  hideFromScene,
-  showInScene,
-  temporarilyHideFromScene,
-  temporarilyShowRoofs,
-} from './scene-visibility'
+import { hideFromScene, showInScene, temporarilyHideFromScene } from './scene-visibility'
 
-/** The live scene's roof objects: nodes of a roof surface role or retained roof geometry, with what is hosted on them. */
-export function liveRoofObjects(): Object3D[] {
-  const nodes = useScene.getState().nodes
-  const roots: Object3D[] = []
-  for (const [id, object] of sceneRegistry.nodes) {
-    const node = nodes[id as AnyNodeId]
-    if (node && (isRoofGeometry(node) || nodeRegistry.get(node.type)?.surfaceRole === 'roof'))
-      roots.push(object)
-  }
-  return roots
+/** A roof surface role in the registry, or retained roof geometry. */
+export function isRoofNode(node: AnyNode): boolean {
+  return isRoofGeometry(node) || nodeRegistry.get(node.type)?.surfaceRole === 'roof'
 }
+
+/**
+ * Whether a baked object is a roof: the role the exporter stamped (retained roof geometry), else
+ * its kind's surface role in the registry, else the kinds every bake knows.
+ */
+export function isBakedRoof(extras: { kind?: string; surfaceRole?: string }): boolean {
+  const kind = extras.kind ?? ''
+  const role =
+    extras.surfaceRole ??
+    nodeRegistry.get(kind)?.surfaceRole ??
+    (kind === 'roof' || kind === 'roof-segment' ? 'roof' : undefined)
+  return role === 'roof'
+}
+
+type RoofRoot = { id: string; object: Object3D }
 
 /**
  * Holds `roots` (and everything under them) off the scene layer while roofs are off, and hands
@@ -48,15 +52,118 @@ export function syncRoofVisibility(
   return next
 }
 
+const hiddenIds = new Set<string>()
+const hiddenListeners = new Set<(nodeId: string) => void>()
+
+/** Whether the roof toggle currently hides this node (a roof, or something hosted on one). */
+export function isRoofHidden(nodeId: string): boolean {
+  return hiddenIds.has(nodeId)
+}
+
+/**
+ * Calls back whenever the roof toggle starts or stops hiding a node, so a system that caches the
+ * node's meshes (the node batch) can release or re-offer it.
+ */
+export function subscribeRoofHidden(listener: (nodeId: string) => void): () => void {
+  hiddenListeners.add(listener)
+  return () => {
+    hiddenListeners.delete(listener)
+  }
+}
+
+function setHiddenIds(next: ReadonlySet<string>): void {
+  const changed: string[] = []
+  for (const id of hiddenIds) if (!next.has(id)) changed.push(id)
+  for (const id of next) if (!hiddenIds.has(id)) changed.push(id)
+  hiddenIds.clear()
+  for (const id of next) hiddenIds.add(id)
+  for (const id of changed) for (const listener of hiddenListeners) listener(id)
+}
+
+function withDescendants(
+  rootId: string,
+  nodes: Readonly<Record<string, AnyNode>>,
+  out: Set<string>,
+) {
+  if (out.has(rootId)) return
+  out.add(rootId)
+  for (const childId of (nodes[rootId] as { children?: readonly string[] } | undefined)?.children ??
+    [])
+    withDescendants(childId, nodes, out)
+}
+
+/**
+ * The live scene's roof toggle. Roofs are held off the scene layer while `showRoofs` is false; a
+ * roof drawn or remounted meanwhile is held on the next update.
+ */
+class LiveRoofs {
+  private held = new Set<Object3D>()
+  private roots: RoofRoot[] = []
+  private ids = new Set<string>()
+  private rootsFor: { nodes: unknown; size: number } | undefined
+  private lifts = 0
+
+  /** Reconciles the holds with the toggle and the roofs the scene has now. */
+  update(showRoofs: boolean): void {
+    if (this.lifts > 0) return
+    if (showRoofs && this.held.size === 0 && hiddenIds.size === 0) return
+    const roots = this.currentRoots()
+    this.held = syncRoofVisibility(
+      roots.map((root) => root.object),
+      showRoofs,
+      this.held,
+    )
+    setHiddenIds(showRoofs ? new Set() : this.ids)
+  }
+
+  /** Roofs shown, whatever the toggle says, until the returned function gives the toggle back. */
+  lift(): () => void {
+    if (this.lifts++ === 0) for (const object of this.held) showInScene(object, 'roof-hidden')
+    let lifted = true
+    return () => {
+      if (!lifted) return
+      lifted = false
+      if (--this.lifts === 0) for (const object of this.held) hideFromScene(object, 'roof-hidden')
+    }
+  }
+
+  /** For one capture: the roofs left out of the picture, whatever the toggle says. */
+  hideForCapture(): () => void {
+    const restores = this.currentRoots().map((root) =>
+      temporarilyHideFromScene(root.object, 'roof-hidden'),
+    )
+    return () => {
+      for (const restore of restores.reverse()) restore()
+    }
+  }
+
+  private currentRoots(): RoofRoot[] {
+    const nodes = useScene.getState().nodes
+    const size = sceneRegistry.nodes.size
+    const unchanged =
+      this.rootsFor?.nodes === nodes &&
+      this.rootsFor.size === size &&
+      this.roots.every((root) => sceneRegistry.nodes.get(root.id) === root.object)
+    if (unchanged) return this.roots
+    this.rootsFor = { nodes, size }
+    this.roots = []
+    this.ids = new Set()
+    for (const [id, object] of sceneRegistry.nodes) {
+      const node = nodes[id as AnyNodeId]
+      if (!(node && isRoofNode(node))) continue
+      this.roots.push({ id, object })
+      withDescendants(id, nodes, this.ids)
+    }
+    return this.roots
+  }
+}
+
+export const liveRoofs = new LiveRoofs()
+
 /**
  * Roofs in or out of one capture, whatever the person's toggle says. The returned function gives
  * the person's view back; their saved choice is never written.
  */
 export function presentRoofsForCapture(showRoofs: boolean): () => void {
-  const restores = liveRoofObjects().map((root) =>
-    showRoofs ? temporarilyShowRoofs(root) : temporarilyHideFromScene(root, 'roof-hidden'),
-  )
-  return () => {
-    for (const restore of restores.reverse()) restore()
-  }
+  return showRoofs ? liveRoofs.lift() : liveRoofs.hideForCapture()
 }

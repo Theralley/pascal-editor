@@ -15,6 +15,7 @@ const press = (key: string, modifiers: Partial<KeyboardEvent> = {}) => ({
   altKey: false,
   shiftKey: false,
   repeat: false,
+  target: null,
   ...modifiers,
 })
 
@@ -22,6 +23,7 @@ const saved = useViewer.getState()
 afterEach(() => useViewer.setState(saved, true))
 
 describe('view shortcuts', () => {
+  // The table is hand-kept (see OTHER_LETTER_KEYS): this guards the view keys against what it lists.
   test('no view key is bound twice, nor bound by the editor or an armed tool', () => {
     const keys = Object.values(VIEW_SHORTCUT_KEYS)
     expect(new Set(keys).size).toBe(keys.length)
@@ -48,6 +50,8 @@ describe('view shortcuts', () => {
     ['Shift', press('u', { shiftKey: true })],
     ['a held key', press('n', { repeat: true })],
     ['another key', press('k')],
+    ['a text field', press('n', { target: { closest: () => ({}) } as never })],
+    ['an editable element', press('u', { target: { isContentEditable: true } as never })],
   ])('%s asks for nothing', (_, event) => {
     expect(viewShortcutOf(event)).toBeNull()
   })

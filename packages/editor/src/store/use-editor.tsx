@@ -1016,8 +1016,6 @@ let viewerBeforePreview: {
   toolMode: ToolMode
   cameraPose: CameraPose | null
   cameraMode: ReturnType<typeof useViewer.getState>['cameraMode']
-  levelMode: ReturnType<typeof useViewer.getState>['levelMode']
-  wallMode: ReturnType<typeof useViewer.getState>['wallMode']
   hideLevelsAboveSelection: boolean
   showZones: boolean
 } | null = null
@@ -1389,8 +1387,6 @@ const useEditor = create<EditorState>()(
             toolMode: get().toolMode,
             cameraPose: cameraPoseStore.getState().pose,
             cameraMode: viewer.cameraMode,
-            levelMode: viewer.levelMode,
-            wallMode: viewer.wallMode,
             hideLevelsAboveSelection: viewer.hideLevelsAboveSelection,
             showZones: viewer.showZones,
           }
@@ -1429,7 +1425,10 @@ const useEditor = create<EditorState>()(
           viewer.setFocusedUnit(exists(before.focusedUnitId) ? before.focusedUnitId : null)
           viewer.setHoveredId(null)
           viewer.setCameraMode(before.cameraMode)
-          viewer.overrideView({ levelMode: before.levelMode, wallMode: before.wallMode })
+          // Whatever the visitor changed in Preview is theirs alone; editing goes back to the saved
+          // picks, with the levels stacked as the editor always has them.
+          viewer.restoreView()
+          viewer.overrideView({ levelMode: 'stacked' })
           useViewer.setState({
             hideLevelsAboveSelection: before.hideLevelsAboveSelection,
             showZones: before.showZones,

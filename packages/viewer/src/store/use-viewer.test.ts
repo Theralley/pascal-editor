@@ -144,6 +144,25 @@ describe('view display preferences', () => {
   })
 })
 
+describe('restoring the view', () => {
+  test("lifts every override back to the project's picks, else the browser-wide default", () => {
+    const viewer = useViewer.getState()
+    viewer.setProjectId('view-a')
+    viewer.setWallMode('cutaway')
+    useViewer.getState().setProjectId('view-b')
+    useViewer.getState().setShowRoofs(false)
+    useViewer.getState().overrideView({ wallMode: 'down', levelMode: 'solo', showRoofs: true })
+
+    useViewer.getState().restoreView()
+    expect(useViewer.getState()).toMatchObject({
+      wallMode: 'cutaway',
+      levelMode: 'stacked',
+      showRoofs: false,
+    })
+    expect(useViewer.getState().projectPreferences['view-b']).toEqual({ showRoofs: false })
+  })
+})
+
 describe('external selection highlights', () => {
   test('tracks host-owned highlights without changing the local selection', () => {
     const localSelection = useViewer.getState().selection

@@ -231,6 +231,15 @@ export {
   revealTimingAt,
 } from './lib/reveal-schedule'
 export { planRevealWindows, type RevealWindow } from './lib/reveal-windows'
+export {
+  isBakedRoof,
+  isRoofHidden,
+  isRoofNode,
+  liveRoofs,
+  presentRoofsForCapture,
+  subscribeRoofHidden,
+  syncRoofVisibility,
+} from './lib/roof-visibility'
 export { createSceneSupportHeightSampler } from './lib/scene-support-height'
 export {
   getSceneTheme,

@@ -297,6 +297,11 @@ export type ViewerControlsBarProps = {
    *  itself carries none. */
   glbHasScans?: boolean
   glbHasGuides?: boolean
+  /**
+   * The bar of a visitor's view (Preview): its picks last until the view ends and are never
+   * saved as the project's.
+   */
+  transient?: boolean
   walkthroughActive?: boolean
   onWalkthroughToggle: () => void
   className?: string
@@ -308,6 +313,7 @@ export const ViewerControlsBar = ({
   glbActive = false,
   glbHasScans = false,
   glbHasGuides = false,
+  transient = false,
   walkthroughActive = false,
   onWalkthroughToggle,
   className,
@@ -341,7 +347,11 @@ export const ViewerControlsBar = ({
             aria-label="Levels"
             className={SEGMENTS}
             mixed={levelMode === 'manual'}
-            onChange={(mode) => useViewer.getState().setLevelMode(mode)}
+            onChange={(levelMode) =>
+              transient
+                ? useViewer.getState().overrideView({ levelMode })
+                : useViewer.getState().setLevelMode(levelMode)
+            }
             options={LEVEL_MODE_OPTIONS.map(({ value, label }) => {
               const Icon = levelModeIcons[value]
               return {
@@ -363,7 +373,11 @@ export const ViewerControlsBar = ({
             <SegmentedControl
               aria-label="Walls"
               className={SEGMENTS}
-              onChange={(mode) => useViewer.getState().setWallMode(mode)}
+              onChange={(wallMode) =>
+                transient
+                  ? useViewer.getState().overrideView({ wallMode })
+                  : useViewer.getState().setWallMode(wallMode)
+              }
               options={WALL_MODE_OPTIONS.map(({ value, label }) => ({
                 value,
                 label: (
@@ -383,7 +397,11 @@ export const ViewerControlsBar = ({
             aria-pressed={showRoofs}
             className={showRoofs ? 'hover:bg-white/5' : 'bg-white/10'}
             label={`Roofs: ${showRoofs ? 'On' : 'Off'} (${VIEW_SHORTCUT_KEYS.roofs.toUpperCase()})`}
-            onClick={() => useViewer.getState().setShowRoofs(!showRoofs)}
+            onClick={() =>
+              transient
+                ? useViewer.getState().overrideView({ showRoofs: !showRoofs })
+                : useViewer.getState().setShowRoofs(!showRoofs)
+            }
             size="icon"
             tooltipClassName="dark"
             tooltipSide="top"

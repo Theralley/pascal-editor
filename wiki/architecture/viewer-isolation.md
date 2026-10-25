@@ -57,11 +57,11 @@ The viewer store contains **only presentation state**:
 - `cameraMode` — perspective / orthographic
 - `levelMode` — stacked / exploded / solo / manual
 - `wallMode` — up / cutaway / down / translucent
-- `showRoofs` — roofs on or off, held off the scene layer by the `roof-hidden` reason
+- `showRoofs` — roofs on or off, held off the scene layer by the `roof-hidden` reason (still casting a shadow; lifted for captures and exports)
 - `theme` — light / dark
 - Display toggles: `showScans`, `showGuides`, `showGrid`
 
-`wallMode`, `levelMode` and `showRoofs` are the person's picks: `set…` saves them for the project (over a browser-wide default). A walkthrough, preview or capture changes them through `overrideView`, which never writes the saved value.
+`wallMode`, `levelMode` and `showRoofs` are the person's picks: `set…` saves them for the project (over a browser-wide default). A walkthrough, preview or capture changes them through `overrideView`, which never writes the saved value, and lifted with `restoreView`.
 
 If a piece of state is only meaningful inside the editor (e.g. active tool, phase, edit mode) — it belongs in `useEditor`, not `useViewer`.
 

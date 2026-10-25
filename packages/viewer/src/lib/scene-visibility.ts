@@ -11,7 +11,7 @@ import { BATCHED_LAYER, SCENE_LAYER, SHADOW_ONLY_LAYER } from './layers'
  *   and clicked, where the ground was.
  * - `wall-mode` — a node that follows the wall mode (`capabilities.followsWallMode`) while walls
  *   down or the cutaway hides it: not drawn, not picked and not casting a shadow.
- * - `roof-hidden` — the person turned roofs off.
+ * - `roof-hidden` — the person turned roofs off: not drawn or picked, still casting a shadow.
  */
 export type HiddenReason =
   | 'isolated'
@@ -75,11 +75,6 @@ export function temporarilyShowShadowOnly(root: Object3D): () => void {
  */
 export function temporarilyShowPresentation(root: Object3D): () => void {
   return temporarilyShowHeld(root, ['shadow-only', 'isolated'])
-}
-
-/** Lifts the person's roof toggle under `root` for one capture: the roofs are in the picture whether or not they are on screen. */
-export function temporarilyShowRoofs(root: Object3D): () => void {
-  return temporarilyShowHeld(root, ['roof-hidden'])
 }
 
 /**
@@ -155,6 +150,14 @@ function applyHold(obj: Object3D, hold: Hold): void {
   // out of the shadow pass too — enabling the shadow-only bit would submit its
   // triangles a second time, on top of the copy the batch already casts.
   if (hold.reasons.has('isolated')) obj.layers.disable(SHADOW_ONLY_LAYER)
+
+  // A roof the person turned off is not drawn or picked, not even through a batch, but still
+  // casts its shadow, as solo's hidden levels do.
+  if (hold.reasons.has('roof-hidden')) {
+    obj.layers.disable(BATCHED_LAYER)
+    if (!hold.reasons.has('isolated')) obj.layers.enable(SHADOW_ONLY_LAYER)
+    return
+  }
 
   if (hold.reasons.has('batched') || hold.reasons.has('wall-batched')) {
     obj.layers.enable(BATCHED_LAYER)

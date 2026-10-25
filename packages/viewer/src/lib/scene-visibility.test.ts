@@ -282,3 +282,39 @@ describe('wall-mode hold', () => {
     expect(obj.layers.isEnabled(SCENE_LAYER)).toBe(false)
   })
 })
+
+describe('roof-hidden hold', () => {
+  test.each([
+    [[], { shadow: true, batched: false }],
+    [['shadow-only'], { shadow: true, batched: false }],
+    [['batched'], { shadow: true, batched: false }],
+    [['wall-batched'], { shadow: true, batched: false }],
+    [['isolated'], { shadow: false, batched: false }],
+    [['isolated', 'batched'], { shadow: false, batched: false }],
+  ] as const)(
+    'with %p, a hidden roof is not drawn or picked, and casts a shadow: %p',
+    (others, expected) => {
+      const obj = sceneObject()
+      obj.layers.enable(OVERLAY_LAYER)
+      const original = obj.layers.mask
+      for (const reason of others) hideFromScene(obj, reason)
+      hideFromScene(obj, 'roof-hidden')
+      expect(obj.layers.isEnabled(SCENE_LAYER)).toBe(false)
+      expect(obj.layers.isEnabled(SHADOW_ONLY_LAYER)).toBe(expected.shadow)
+      expect(obj.layers.isEnabled(BATCHED_LAYER)).toBe(expected.batched)
+      expect(obj.layers.isEnabled(OVERLAY_LAYER)).toBe(true)
+
+      showInScene(obj, 'roof-hidden')
+      for (const reason of others) showInScene(obj, reason)
+      expect(obj.layers.mask).toBe(original)
+    },
+  )
+
+  test('the batch draws again, picked and drawn, when the roof comes back under it', () => {
+    const obj = sceneObject()
+    hideFromScene(obj, 'batched')
+    hideFromScene(obj, 'roof-hidden')
+    showInScene(obj, 'roof-hidden')
+    expect(obj.layers.isEnabled(BATCHED_LAYER)).toBe(true)
+  })
+})

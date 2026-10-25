@@ -1691,7 +1691,9 @@ function EditorContent({
   }, [visibleLoader, onLoaderChange])
 
   const firstPersonPreviousLevelRef = useRef(useViewer.getState().selection.levelId)
-  const firstPersonPreviousWallModeRef = useRef(useViewer.getState().wallMode)
+  const firstPersonPreviousViewRef = useRef<
+    Parameters<ReturnType<typeof useViewer.getState>['overrideView']>[0]
+  >({})
   const wasFirstPersonModeRef = useRef(isFirstPersonMode)
   const firstPersonWasPreviewRef = useRef(isPreviewMode)
 
@@ -1704,9 +1706,14 @@ function EditorContent({
     if (isFirstPersonMode && !wasFirstPersonMode) {
       const viewer = useViewer.getState()
       firstPersonPreviousLevelRef.current = viewer.selection.levelId
-      firstPersonPreviousWallModeRef.current = viewer.wallMode
+      firstPersonPreviousViewRef.current = {
+        wallMode: viewer.wallMode,
+        levelMode: viewer.levelMode,
+        showRoofs: viewer.showRoofs,
+      }
       viewer.setCameraMode('perspective')
-      viewer.overrideView({ wallMode: 'up' })
+      // The tour is of the building as built: full walls, every storey, roofs on.
+      viewer.overrideView({ wallMode: 'up', levelMode: 'stacked', showRoofs: true })
       viewer.setWalkthroughMode(true)
       viewer.setSelection({ selectedIds: [], zoneId: null })
       return
@@ -1717,7 +1724,7 @@ function EditorContent({
     const viewer = useViewer.getState()
     const previousLevelId = firstPersonPreviousLevelRef.current
     firstPersonPreviousLevelRef.current = null
-    viewer.overrideView({ wallMode: firstPersonPreviousWallModeRef.current })
+    viewer.overrideView(firstPersonPreviousViewRef.current)
     viewer.setWalkthroughMode(false)
 
     // Leaving Preview has already restored the editor's complete selection.

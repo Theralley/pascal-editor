@@ -12,7 +12,13 @@ import {
   useScene,
 } from '@pascal-app/core'
 import * as viewerExports from '@pascal-app/viewer'
-import { BATCHED_LAYER, SCENE_LAYER, useViewer, WallModeFollowCache } from '@pascal-app/viewer'
+import {
+  BATCHED_LAYER,
+  liveRoofs,
+  SCENE_LAYER,
+  useViewer,
+  WallModeFollowCache,
+} from '@pascal-app/viewer'
 import {
   BackSide,
   type BatchedMesh,
@@ -973,4 +979,31 @@ test('a block the wall mode hides leaves the batch, and is re-offered when the m
   settle()
   expect(batched(1)).toBe(true)
   follow.dispose()
+})
+
+test('a roof the toggle hides leaves the batch and stays out of every pass, and is re-offered when it returns', () => {
+  restoreRegistry ??= nodeRegistry._snapshot()
+  nodeRegistry._register({
+    kind: 'block',
+    schemaVersion: 1,
+    surfaceRole: 'roof',
+    capabilities: { batchable: blockDefinition.capabilities.batchable },
+  } as never)
+  const { meshes } = setup('block', 4)
+  settle()
+  const batched = (index: number) => meshes[index]!.layers.isEnabled(BATCHED_LAYER)
+  expect(batched(1)).toBe(true)
+
+  liveRoofs.update(false)
+  frame()
+  expect(batched(1)).toBe(false)
+  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(false)
+  // Still hidden: a settled wave must not take it back.
+  settle()
+  expect(batched(1)).toBe(false)
+  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(false)
+
+  liveRoofs.update(true)
+  settle()
+  expect(batched(1)).toBe(true)
 })

@@ -11,6 +11,7 @@ import {
 } from '@pascal-app/core'
 import {
   hideFromScene,
+  isRoofHidden,
   isWallModeAffected,
   SCENE_LAYER,
   showInScene,
@@ -116,11 +117,13 @@ export function collectBatchCandidate(nodeId: string): BatchCandidate | null {
 
   const levelId = resolveLevelId(node, batchable, nodes)
   if (!levelId) return null
-  // Hidden or see-through under the wall mode: the batch copy would keep the opaque material.
+  // Hidden or see-through under the wall mode, or hidden with the roofs: the batch copy would keep
+  // drawing, and answering picks.
   if (
     batchable.excluded?.(node) ||
     isSlotPaintPreviewActive(nodeId) ||
-    isWallModeAffected(nodeId)
+    isWallModeAffected(nodeId) ||
+    isRoofHidden(nodeId)
   ) {
     return null
   }

@@ -9,7 +9,6 @@ import {
   EXPLODED_GAP,
   itemInteraction,
   itemPrompt,
-  nodeRegistry,
   operateItem,
   polygonInteriorPoint,
   type SurfaceRole,
@@ -27,7 +26,7 @@ import { lerp } from 'three/src/math/MathUtils.js'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import { useGLTFKTX2 } from '../../hooks/use-gltf-ktx2'
 import { createSurfaceRoleMaterial } from '../../lib/materials'
-import { syncRoofVisibility } from '../../lib/roof-visibility'
+import { isBakedRoof, syncRoofVisibility } from '../../lib/roof-visibility'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import useViewer from '../../store/use-viewer'
 import { useClipActions } from '../../systems/interactive/scripted-clips'
@@ -89,6 +88,8 @@ type GlbZoneEntry = {
 type PascalExtras = {
   pascalId?: string
   kind?: string
+  /** Set to `roof` by the exporter for roof nodes and retained roof geometry. */
+  surfaceRole?: string
   label?: string
   openable?: boolean
   clips?: string[]
@@ -444,9 +445,7 @@ export function GlbScene({
         if (extras.kind === 'building') buildingNode = object
         else if (extras.kind === 'site') siteNode = object
         if (extras.kind === 'ceiling' || extras.kind === 'roof') occluderNodes.push(object)
-        const kind = extras.kind ?? ''
-        if ((nodeRegistry.get(kind)?.surfaceRole ?? ROLE_BY_KIND[kind]) === 'roof')
-          roofNodes.push(object)
+        if (isBakedRoof(extras)) roofNodes.push(object)
         if (extras.kind === 'level') {
           floors.push({
             id: extras.pascalId,

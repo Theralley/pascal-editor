@@ -36,6 +36,7 @@ export const ViewerOverlay = ({
       <ViewerControlsBar
         canShowGuides={canShowGuides}
         canShowScans={canShowScans}
+        transient
         onWalkthroughToggle={() => {
           flushSync(() => useEditor.getState().setFirstPersonMode(true))
           requestWalkthroughPointerLock()

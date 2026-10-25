@@ -4,6 +4,7 @@ import { sceneRegistry, useScene } from '@pascal-app/core'
 import {
   BATCHED_LAYER,
   hideFromScene,
+  liveRoofs,
   presentLevelsForCapture,
   SCENE_LAYER,
   SHADOW_ONLY_LAYER,
@@ -376,7 +377,7 @@ describe('snapLevelsToTruePositions', () => {
     restore()
     expect(roof.layers.mask).toBe(shown)
 
-    hideFromScene(roof, 'roof-hidden')
+    liveRoofs.update(false)
     const hidden = roof.layers.mask
     restore = presentLevelsForCapture({ mode: 'stacked' })
     expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(false)
@@ -385,6 +386,48 @@ describe('snapLevelsToTruePositions', () => {
     expect(roof.layers.isEnabled(SCENE_LAYER)).toBe(true)
     restore()
     expect(roof.layers.mask).toBe(hidden)
+  })
+
+  test('a Solo capture that puts the roofs in keeps the roofs of the levels it leaves out, out', () => {
+    const { levels, objects } = setupLevels([0, 0])
+    const roofs = objects.map((level, index) => {
+      const roof = new Object3D()
+      roof.layers.set(SCENE_LAYER)
+      level.add(roof)
+      sceneRegistry.nodes.set(`roof_${index}`, roof)
+      return roof
+    })
+    useScene.setState({
+      nodes: {
+        ...useScene.getState().nodes,
+        ...Object.fromEntries(
+          roofs.map((_, index) => [
+            `roof_${index}`,
+            {
+              object: 'node',
+              id: `roof_${index}`,
+              type: 'roof',
+              parentId: levels[index]!.id,
+              visible: true,
+              metadata: {},
+              children: [],
+            },
+          ]),
+        ),
+      } as unknown as Record<AnyNodeId, AnyNode>,
+    })
+    liveRoofs.update(false)
+    expect(roofs.map((roof) => roof.layers.isEnabled(SCENE_LAYER))).toEqual([false, false])
+
+    const restore = presentLevelsForCapture({
+      mode: 'solo',
+      levelId: levels[0]!.id,
+      showRoofs: true,
+    })
+    expect(roofs.map((roof) => roof.layers.isEnabled(SCENE_LAYER))).toEqual([true, false])
+    restore()
+    expect(roofs.map((roof) => roof.layers.isEnabled(SCENE_LAYER))).toEqual([false, false])
+    liveRoofs.update(true)
   })
 
   test('bakes offset-aware stacked positions and restores the prior presentation', () => {

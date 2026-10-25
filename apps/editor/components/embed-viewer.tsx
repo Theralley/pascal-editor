@@ -157,7 +157,9 @@ export function EmbedViewer({ id, name, graph, chrome = true }: EmbedViewerProps
  */
 function useWalkthroughViewerSync(isFirstPersonMode: boolean) {
   const previousLevelId = useRef<LevelId>(null)
-  const previousWallMode = useRef(useViewer.getState().wallMode)
+  const previousView = useRef<Parameters<ReturnType<typeof useViewer.getState>['overrideView']>[0]>(
+    {},
+  )
   const wasFirstPerson = useRef(isFirstPersonMode)
 
   useEffect(() => {
@@ -167,16 +169,20 @@ function useWalkthroughViewerSync(isFirstPersonMode: boolean) {
 
     if (isFirstPersonMode && !was) {
       previousLevelId.current = viewer.selection.levelId
-      previousWallMode.current = viewer.wallMode
+      previousView.current = {
+        wallMode: viewer.wallMode,
+        levelMode: viewer.levelMode,
+        showRoofs: viewer.showRoofs,
+      }
       viewer.setCameraMode('perspective')
-      viewer.overrideView({ wallMode: 'up' })
+      viewer.overrideView({ wallMode: 'up', levelMode: 'stacked', showRoofs: true })
       viewer.setWalkthroughMode(true)
       viewer.setSelection({ selectedIds: [], zoneId: null })
       return
     }
     if (!was || isFirstPersonMode) return
 
-    viewer.overrideView({ wallMode: previousWallMode.current })
+    viewer.overrideView(previousView.current)
     viewer.setWalkthroughMode(false)
     const levelId = previousLevelId.current
     previousLevelId.current = null
@@ -185,7 +191,17 @@ function useWalkthroughViewerSync(isFirstPersonMode: boolean) {
     }
   }, [isFirstPersonMode])
 
-  useEffect(() => () => useEditor.getState().setFirstPersonMode(false), [])
+  // Leaving the embed mid-walkthrough gives the view back too.
+  useEffect(
+    () => () => {
+      useEditor.getState().setFirstPersonMode(false)
+      if (!wasFirstPerson.current) return
+      const viewer = useViewer.getState()
+      viewer.overrideView(previousView.current)
+      viewer.setWalkthroughMode(false)
+    },
+    [],
+  )
 }
 
 function EmbedWalkthroughHud() {
