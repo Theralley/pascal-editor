@@ -148,13 +148,19 @@ function footprintSolids(
 }
 
 /** A wall's parts that are drawn: a hidden one (a stale curtain wall's glass) is no part of the cap. */
+/** Drawn: it and what it hangs from are visible, and its own layers draw it (layers are not inherited). */
 function partShown(part: Mesh, wall: Object3D): boolean {
+  if (!isDrawnInScene(part)) return false
   for (let object: Object3D | null = part; object && object !== wall; object = object.parent)
-    if (!object.visible || !isDrawnInScene(object)) return false
+    if (!object.visible) return false
   return true
 }
 
-const shownParts = (mesh: Mesh) => wallParts(mesh).filter((part) => partShown(part, mesh))
+/** A mesh that has something to section: an empty one is no part. */
+const hasShape = (part: Mesh) => Boolean(part.geometry?.getAttribute('position'))
+
+const shownParts = (mesh: Mesh) =>
+  wallParts(mesh).filter((part) => hasShape(part) && partShown(part, mesh))
 
 let geometriesSeen = 0
 const geometryIds = new WeakMap<object, number>()
@@ -167,44 +173,123 @@ const geometryId = (geometry: object): number => {
   return id
 }
 
-// A draw range that is all of it (Infinity) stays apart from none of it (0).
-const mix = (hash: number, value: number) =>
-  Math.imul(hash ^ (Number.isFinite(value) ? Math.round(value * 1e4) : -7919), 16777619) | 0
-
 const versionOf = (part: Mesh) => {
   const position = part.geometry.getAttribute('position')
   return !position ? 0 : 'version' in position ? position.version : position.data.version
 }
 
-const scratch = new Matrix4()
-let stamp = 0
+const keyInverse = new Matrix4()
+const keyRelative = new Matrix4()
+const keyParts: number[] = []
 
-/**
- * Mixes into `stamp` everything the cap of a wall takes from its parts: what each is made of
- * (geometry, attribute and index identity and versions, draw range), where it stands relative to the
- * wall, and whether it is drawn. Plain loops over the tree and numbers: it runs every frame.
- */
-function stampParts(object: Object3D, wall: Object3D): void {
+/** Appends what the cap takes from each part under `object` to `keyParts`, with no list made. */
+function pushPartKeys(object: Object3D, wall: Object3D): void {
   for (let i = 0; i < object.children.length; i++) {
     const child = object.children[i]!
     if (!isWallPartCandidate(child)) continue
     const part = child as Mesh
-    if (part.isMesh && part.material) {
-      const geometry = part.geometry
-      const index = geometry.getIndex()
-      const position = geometry.getAttribute('position')
-      stamp = mix(stamp, geometryId(geometry))
-      stamp = mix(stamp, position ? geometryId(position) : 0)
-      stamp = mix(stamp, versionOf(part))
-      stamp = mix(stamp, index ? geometryId(index) : 0)
-      stamp = mix(stamp, index ? index.version : 0)
-      stamp = mix(stamp, geometry.drawRange.start)
-      stamp = mix(stamp, geometry.drawRange.count)
-      stamp = mix(stamp, partShown(part, wall) ? 1 : 0)
-      scratch.copy(wall.matrixWorld).invert().multiply(part.matrixWorld)
-      for (let k = 0; k < 16; k++) stamp = mix(stamp, scratch.elements[k]!)
+    if (part.isMesh && part.material && hasShape(part) && partShown(part, wall)) {
+      const index = part.geometry.getIndex()
+      keyRelative.multiplyMatrices(keyInverse, part.matrixWorld)
+      keyParts.push(
+        geometryId(part.geometry),
+        geometryId(part.geometry.getAttribute('position')),
+        versionOf(part),
+        index ? geometryId(index) : 0,
+        index ? index.version : 0,
+        part.geometry.drawRange.start,
+        part.geometry.drawRange.count,
+      )
+      for (let k = 0; k < 16; k++) keyParts.push(keyRelative.elements[k]!)
     }
-    stampParts(child, wall)
+    pushPartKeys(child, wall)
+  }
+}
+
+/** What a wall's cap last took from its parts, as numbers: compared in place every frame. */
+type PartsRecord = { values: Float64Array; refs: unknown[] }
+
+let record: PartsRecord = { values: new Float64Array(32), refs: [] }
+let at = 0
+let refAt = 0
+let differs = false
+
+function putRef(object: unknown): void {
+  if (record.refs[refAt] !== object) {
+    record.refs[refAt] = object
+    differs = true
+  }
+  refAt++
+}
+
+/** Makes room for `n` more numbers; a record that had to grow is a change. */
+function reserve(n: number): void {
+  if (at + n <= record.values.length) return
+  const grown = new Float64Array(Math.max(at + n, record.values.length * 2))
+  grown.set(record.values)
+  record.values = grown
+  differs = true
+}
+
+/**
+ * Compares, part by part and number by number, what the cap of a wall takes from the parts it
+ * carries with what it last took: geometry, attribute and index identity and versions, draw range,
+ * whether the part is drawn, and the local transforms from the part up to the wall (a wall that
+ * moves as a whole changes none of them). Plain loops, nothing allocated once the record is big
+ * enough.
+ */
+function scanParts(object: Object3D, wall: Object3D): void {
+  for (let i = 0; i < object.children.length; i++) {
+    const child = object.children[i]!
+    if (!isWallPartCandidate(child)) continue
+    const part = child as Mesh
+    const geometry = part.isMesh && part.material ? part.geometry : undefined
+    const position = geometry?.getAttribute('position')
+    if (geometry && position) {
+      const index = geometry.getIndex()
+      putRef(geometry)
+      putRef(position)
+      putRef(index)
+      reserve(8)
+      let v = record.values
+      const version = 'version' in position ? position.version : position.data.version
+      const indexVersion = index ? index.version : 0
+      const shown = partShown(part, wall) ? 1 : 0
+      const { start, count } = geometry.drawRange
+      if (v[at] !== version) {
+        v[at] = version
+        differs = true
+      }
+      if (v[at + 1] !== indexVersion) {
+        v[at + 1] = indexVersion
+        differs = true
+      }
+      if (v[at + 2] !== start) {
+        v[at + 2] = start
+        differs = true
+      }
+      if (v[at + 3] !== count) {
+        v[at + 3] = count
+        differs = true
+      }
+      if (v[at + 4] !== shown) {
+        v[at + 4] = shown
+        differs = true
+      }
+      at += 5
+      for (let o: Object3D | null = part; o && o !== wall; o = o.parent) {
+        reserve(16)
+        v = record.values
+        const elements = o.matrix.elements
+        for (let k = 0; k < 16; k++)
+          if (v[at + k] !== elements[k]) {
+            v[at + k] = elements[k]!
+            differs = true
+          }
+        at += 16
+      }
+    }
+    scanParts(child, wall)
   }
 }
 
@@ -242,7 +327,9 @@ export class WallCutCaps {
   private material: Material | null = null
   /** The wall meshes whose parts are watched, as of one registry revision. */
   private watched: { revision: number; meshes: Mesh[] } | null = null
-  private partsSeen = 0
+  /** Each wall's key as the signature of its level took it, for the build that follows. */
+  private readonly keys = new Map<string, string | null>()
+  private readonly records = new WeakMap<Object3D, PartsRecord>()
   private shading: RenderShading | undefined
   /** What the caps were last made from; while it holds, an update does nothing. */
   private inputs: { nodes: unknown; revision: number; height: number } | null = null
@@ -287,11 +374,7 @@ export class WallCutCaps {
     }
     const { nodes } = useScene.getState()
     // A part loaded, moved or hidden announces nothing, so what the walls carry is read each frame.
-    const stamp = this.partsStamp()
-    if (stamp !== this.partsSeen) {
-      this.partsSeen = stamp
-      this.inputs = null
-    }
+    if (this.partsChanged()) this.inputs = null
     const last = this.inputs
     if (
       last &&
@@ -329,7 +412,7 @@ export class WallCutCaps {
   }
 
   /** A number that changes when a part a wall carries is added, moved, remade or shown or hidden. */
-  private partsStamp(): number {
+  private partsChanged(): boolean {
     if (this.watched?.revision !== sceneRegistry.revision) {
       const meshes: Mesh[] = []
       for (const id of sceneRegistry.byType.wall ?? []) {
@@ -338,10 +421,32 @@ export class WallCutCaps {
       }
       this.watched = { revision: sceneRegistry.revision, meshes }
     }
-    stamp = 0
+    let changed = false
     const { meshes } = this.watched
-    for (let i = 0; i < meshes.length; i++) stampParts(meshes[i]!, meshes[i]!)
-    return stamp
+    for (let i = 0; i < meshes.length; i++) {
+      const wall = meshes[i]!
+      let own = this.records.get(wall)
+      if (!own) {
+        own = { values: new Float64Array(32), refs: [] }
+        this.records.set(wall, own)
+      }
+      record = own
+      at = 1
+      refAt = 0
+      differs = false
+      scanParts(wall, wall)
+      // The count rides in the first slot, so a part that goes is a change too.
+      if (record.values[0] !== at) {
+        record.values[0] = at
+        differs = true
+      }
+      if (record.refs.length !== refAt) {
+        record.refs.length = refAt
+        differs = true
+      }
+      if (differs) changed = true
+    }
+    return changed
   }
 
   dispose(): void {
@@ -363,6 +468,7 @@ export class WallCutCaps {
       const wall = nodes[childId as AnyNodeId]
       if (wall?.type !== 'wall') continue
       const key = this.bodyKey(wall as WallNode, root)
+      this.keys.set(wall.id, key)
       // A wall drawn from its footprint depends on its openings, which the section does not see.
       const gaps =
         this.sections.get(wall.id)?.section.complete === false
@@ -382,29 +488,20 @@ export class WallCutCaps {
     if (!(mesh && geometry && position)) return null
     root.updateWorldMatrix(true, false)
     mesh.updateWorldMatrix(true, false)
-    const relative = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
-    // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
-    const parts = shownParts(mesh).flatMap((part) => {
-      const index = part.geometry.getIndex()
-      return [
-        geometryId(part.geometry),
-        geometryId(part.geometry.getAttribute('position')),
-        versionOf(part),
-        index ? geometryId(index) : 0,
-        index ? index.version : 0,
-        part.geometry.drawRange.start,
-        part.geometry.drawRange.count,
-        ...new Matrix4().copy(root.matrixWorld).invert().multiply(part.matrixWorld).elements,
-      ]
-    })
-    return [
-      geometry.uuid,
+    keyInverse.copy(root.matrixWorld).invert()
+    keyParts.length = 0
+    keyParts.push(
+      geometryId(geometry),
       'version' in position ? position.version : position.data.version,
       geometry.drawRange.start,
       geometry.drawRange.count,
-      ...relative.elements,
-      ...parts,
-    ].join(',')
+    )
+    keyInverse.multiply(mesh.matrixWorld)
+    for (let k = 0; k < 16; k++) keyParts.push(keyInverse.elements[k]!)
+    // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
+    keyInverse.copy(root.matrixWorld).invert()
+    pushPartKeys(mesh, mesh)
+    return keyParts.join(',')
   }
 
   /**
@@ -412,7 +509,7 @@ export class WallCutCaps {
    * the height moves. Null when the wall has nothing drawn or the cut leaves it whole.
    */
   private sectionOf(wall: WallNode, root: Object3D, height: number): Section | null {
-    const key = this.bodyKey(wall, root)
+    const key = this.keys.get(wall.id) ?? null
     const mesh = sceneRegistry.nodes.get(wall.id as AnyNodeId) as Mesh | undefined
     if (key === null || !mesh) {
       this.sections.delete(wall.id)

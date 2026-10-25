@@ -47,6 +47,9 @@ const REAL_LENGTH = 2e-3
  */
 const cellKey = (cx: number, cz: number) => cx * 67108864 + cz
 
+/** Point ids stay under this, so a piece's two ids pack into one number (`a * MAX_POINTS + b`). */
+const MAX_POINTS = 4194304
+
 /** A piece of the outline, directed so the solid is on its right (the outward normal on its left). */
 type Segment = readonly [from: number, to: number]
 
@@ -313,6 +316,8 @@ function closeOutlines(
   segments: Segment[],
   joinTolerance: number,
 ): { loops: SectionLoop[]; complete: boolean } {
+  // Past that many points a section is not a wall's: leave it to the caller's fallback.
+  if (points.length >= MAX_POINTS) return { loops: [], complete: false }
   let complete = true
   segments = splitAtPoints(points, segments)
   // Two faces back to back leave the same piece in both directions, which is no outline at all;
@@ -322,7 +327,9 @@ function closeOutlines(
   const net = new Map<number, { segment: Segment; count: number }>()
   for (const segment of segments) {
     const forward = segment[0] < segment[1]
-    const key = forward ? segment[0] * 4194304 + segment[1] : segment[1] * 4194304 + segment[0]
+    const key = forward
+      ? segment[0] * MAX_POINTS + segment[1]
+      : segment[1] * MAX_POINTS + segment[0]
     const entry = net.get(key) ?? {
       segment: forward ? segment : [segment[1], segment[0]],
       count: 0,
@@ -392,40 +399,44 @@ function closeOutlines(
     if (list) list.push(c)
     else starts.set(key, [c])
   })
-  const linked = new Int32Array(open.length).fill(-1)
-  const claimed = new Uint8Array(open.length)
+  // Every end-to-start pair within a seam, the shortest matched first, so a chain that closes on
+  // itself does not take the only start another chain could reach.
+  const pairs: { distance: number; tail: number; start: number }[] = []
   open.forEach((chain, c) => {
     const tail = points[chain[chain.length - 1]!]!
     const cx = Math.floor(tail.x / cell)
     const cz = Math.floor(tail.y / cell)
-    let best = -1
-    let bestDistance = Number.POSITIVE_INFINITY
     for (let dx = -1; dx <= 1; dx++)
       for (let dz = -1; dz <= 1; dz++)
         for (const other of starts.get(cellKey(cx + dx, cz + dz)) ?? []) {
-          if (claimed[other]) continue
           const distance = tail.distanceTo(points[open[other]![0]!]!)
-          if (distance <= joinTolerance && distance < bestDistance) {
-            best = other
-            bestDistance = distance
-          }
+          if (distance <= joinTolerance) pairs.push({ distance, tail: c, start: other })
         }
-    if (best >= 0) {
-      linked[c] = best
-      claimed[best] = 1
-    }
   })
+  pairs.sort((a, b) => a.distance - b.distance)
+  const linked = new Int32Array(open.length).fill(-1)
+  const claimed = new Uint8Array(open.length)
+  for (const { tail, start } of pairs) {
+    if (linked[tail]! >= 0 || claimed[start]) continue
+    linked[tail] = start
+    claimed[start] = 1
+  }
   const walked = new Uint8Array(open.length)
   const walk = (first: number) => {
     const chain: number[] = []
-    for (let c = first; c >= 0 && !walked[c]; c = linked[c]!) {
+    let ring = false
+    for (let c = first; c >= 0; c = linked[c]!) {
+      if (walked[c]) {
+        ring = c === first
+        break
+      }
       walked[c] = 1
       chain.push(...(chain.length ? open[c]!.slice(1) : open[c]!))
     }
-    if (near(chain[chain.length - 1]!, chain[0]!)) {
-      // A closed chain of two or three points is a sliver the size of a seam: nothing to cap.
-      if (chain.length >= 4) closed.push(chain.slice(1))
-    } else complete = false
+    // A run of chains that does not come back to its start has an end that matched nothing.
+    if (!ring) complete = false
+    else if (chain.length >= 4) closed.push(chain.slice(1))
+    // A ring of two or three points is a sliver the size of a seam: nothing to cap.
   }
   // Chains no other leads into begin a walk; what is left is a ring of chains.
   for (let c = 0; c < open.length; c++) if (!claimed[c]) walk(c)

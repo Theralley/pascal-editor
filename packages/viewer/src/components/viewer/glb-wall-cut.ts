@@ -48,7 +48,9 @@ const size = new Vector3()
  * attribute of the one with the largest extent in the world (a moulding scaled small is not it).
  * The rest are trims, which are cut and capped as solids of their own.
  */
-function splitBody(meshes: readonly Mesh[]): { body: Mesh[]; trims: Mesh[] } {
+function splitBody(all: readonly Mesh[]): { body: Mesh[]; trims: Mesh[] } {
+  // A mesh that is hidden is not drawn, so it takes no cap (as a hidden part of a live wall).
+  const meshes = all.filter((mesh) => mesh.visible)
   let widest: Mesh | undefined
   let most = -1
   for (const mesh of meshes) {

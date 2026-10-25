@@ -480,6 +480,7 @@ export { wallCutApplies } from './systems/wall/wall-cut-eligibility'
 export {
   getWallHideState,
   presentWallsLowForCapture,
+  refreshCaptureWallCaps,
   WallCutout,
 } from './systems/wall/wall-cutout'
 export {

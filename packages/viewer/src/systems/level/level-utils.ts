@@ -171,13 +171,6 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
       ? []
       : [presentRoofsForCapture(presentation.showRoofs)]),
     snapLevelsToTruePositions({ readOnly: true }),
-    ...(presentation.walls?.mode === 'low'
-      ? [
-          presentWallsLowForCapture(
-            presentation.walls.cutHeight ?? useViewer.getState().wallCutHeight,
-          ),
-        ]
-      : []),
   ]
   for (const levelId of sceneRegistry.byType.level ?? []) {
     const obj = sceneRegistry.nodes.get(levelId)
@@ -200,6 +193,12 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
     )
     if (shadowOnly) restores.push(temporarilyHideFromScene(obj, 'shadow-only'))
   }
+  // Last, so the caps are made from what the levels above leave drawn: a part an isolation held
+  // back is shown in this picture and is capped in it.
+  if (presentation.walls?.mode === 'low')
+    restores.push(
+      presentWallsLowForCapture(presentation.walls.cutHeight ?? useViewer.getState().wallCutHeight),
+    )
   return () => {
     for (const restore of restores.reverse()) restore()
   }

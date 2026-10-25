@@ -131,6 +131,18 @@ export function wallsForCapture(
  * capture renders inside one callback, so the cut is laid on the meshes themselves instead of
  * waiting on the wall mode and a frame, and what the live view cut stays out of the picture.
  */
+/** The caps of the capture now presenting walls low, if one is: what `refreshCaptureWallCaps` brings up to date. */
+let capturing: { caps: WallCutCaps; height: number } | null = null
+
+/**
+ * Brings the caps of a low-walls capture up to what is drawn now. A capture lifts holds in steps
+ * (levels, then an interior's floor), and the caps take what each leaves shown: call this after
+ * the last of them.
+ */
+export function refreshCaptureWallCaps(): void {
+  capturing?.caps.update(true, capturing.height, useViewer.getState().shading)
+}
+
 export function presentWallsLowForCapture(height: number): () => void {
   const restores: (() => void)[] = []
   const previousHeight = getDisplayCutHeight()
@@ -161,7 +173,11 @@ export function presentWallsLowForCapture(height: number): () => void {
   })
   const caps = new WallCutCaps()
   caps.update(true, height, useViewer.getState().shading)
-  restores.push(() => caps.dispose())
+  capturing = { caps, height }
+  restores.push(() => {
+    if (capturing?.caps === caps) capturing = null
+    caps.dispose()
+  })
   return () => {
     for (const restore of restores.reverse()) restore()
   }

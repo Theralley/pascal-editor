@@ -30,8 +30,9 @@ import {
   setDisplayCutRoot,
 } from '../../lib/display-cut'
 import { hideFromScene, showInScene, temporarilyShowPresentation } from '../../lib/scene-visibility'
+import { presentLevelsForCapture } from '../level/level-utils'
 import { WALL_CUT_CAPS_NAME, WallCutCaps } from './wall-cut-caps'
-import { presentWallsLowForCapture } from './wall-cutout'
+import { presentWallsLowForCapture, refreshCaptureWallCaps } from './wall-cutout'
 import { WallCutoutCache, type WallCutoutViewerState } from './wall-cutout-cache'
 import { generateExtrudedWall } from './wall-system'
 
@@ -485,6 +486,86 @@ describe('WallCutCaps', () => {
       caps.update(true, 0.25, 'solid')
       expect(shown(root)).toBe(false)
       caps.dispose()
+    })
+
+    test('two draw ranges that once hashed alike are told apart', () => {
+      const { root, mesh } = level()
+      const part = new Mesh(new BoxGeometry(4.4, 0.5, 0.6, 30, 1, 30).translate(2, 0.25, 0), [
+        new MeshBasicMaterial(),
+      ])
+      mesh.add(part)
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      part.geometry.setDrawRange(144, 2556)
+      caps.update(true, 0.25, 'solid')
+      const first = capsOf(root)!.geometry
+      part.geometry.setDrawRange(1044, 2088)
+      caps.update(true, 0.25, 'solid')
+      expect(capsOf(root)!.geometry).not.toBe(first)
+      caps.dispose()
+    })
+
+    test('an empty mesh among the parts is no part and breaks nothing', () => {
+      const { root, mesh } = level()
+      mesh.add(new Mesh())
+      mesh.add(casing())
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      caps.dispose()
+    })
+
+    test('layers are not inherited: a held group does not hide a child that is drawn', () => {
+      const { root, mesh } = level()
+      const group = new Group()
+      const part = casing()
+      group.add(part)
+      mesh.add(group)
+      hideFromScene(group, 'isolated')
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      caps.dispose()
+    })
+
+    test('a hold lifted after the low walls were presented (an interior floor) is taken up by the refresh', () => {
+      const { root, mesh } = level()
+      const part = casing()
+      mesh.add(part)
+      hideFromScene(part, 'isolated')
+      root.updateMatrixWorld(true)
+      const restoreWalls = presentWallsLowForCapture(0.25)
+      const visibleCaps = () =>
+        root.children.filter((child) => child.name === WALL_CUT_CAPS_NAME && child.visible)
+      expect(covers(visibleCaps()[0] as Mesh, 2, 0.25)).toBe(false)
+      const restoreFloor = temporarilyShowPresentation(root)
+      refreshCaptureWallCaps()
+      expect(covers(visibleCaps()[0] as Mesh, 2, 0.25)).toBe(true)
+      restoreFloor()
+      restoreWalls()
+      expect(capsOf(root)).toBeUndefined()
+    })
+
+    test('a real capture lifts the isolation first, and the cap it takes has the part in it', () => {
+      const { root, mesh, node } = level()
+      const part = casing()
+      mesh.add(part)
+      hideFromScene(part, 'isolated')
+      root.updateMatrixWorld(true)
+      const restore = presentLevelsForCapture({
+        mode: 'solo',
+        levelId: node.id,
+        walls: { mode: 'low', cutHeight: 0.25 },
+      })
+      const caps = root.children.filter(
+        (child) => child.name === WALL_CUT_CAPS_NAME && child.visible,
+      )
+      expect(caps).toHaveLength(1)
+      expect(covers(caps[0] as Mesh, 2, 0.25)).toBe(true)
+      restore()
+      expect(capsOf(root)).toBeUndefined()
     })
 
     test('a capture that shows a held part gets its cap, and the cap goes when the capture does', () => {

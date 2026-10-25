@@ -18,6 +18,7 @@ import {
   holdLiveFrame,
   pendingSceneBuildCount,
   presentLevelsForCapture,
+  refreshCaptureWallCaps,
   refreshIsolation,
   SNAPSHOT_MAX_EDGE,
   SNAPSHOT_MIME,
@@ -1037,6 +1038,8 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               } else if (snapLevels || pose || cameraPose) {
                 exteriorGroundForCapture(restore, Boolean(cameraPose || pose), thumbnailCamera)
               }
+              // The steps above lift holds the low walls' caps were made before: take them again.
+              refreshCaptureWallCaps()
             }
             // The scene pass is a FRAME-updated node: it renders once per node
             // frame, and only the animation loop advances that frame. With the
