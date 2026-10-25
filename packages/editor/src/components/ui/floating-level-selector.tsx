@@ -66,9 +66,11 @@ import { unitMemberLevels, leaveUnitFocus } from '../../lib/units'
 import { useLinearDisplay } from '../../lib/use-linear-display'
 import { cn } from '../../lib/utils'
 import { useIsMobile } from '../../hooks/use-mobile'
+import { useT } from '../../i18n'
 import { ActionButton } from './controls/action-button'
 import { SliderControl } from './controls/slider-control'
 import { LevelDuplicateDialog } from './level-duplicate-dialog'
+import { messages } from './messages'
 import {
   Dialog,
   DialogContent,
@@ -170,6 +172,7 @@ function LevelRow({
   /** This level is the ground floor, seated at grade: nothing left to set. */
   isGround: boolean
 }) {
+  const t = useT(messages)
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const updateNode = useScene((s) => s.updateNode)
@@ -219,7 +222,7 @@ function LevelRow({
         >
           <button
             {...dragHandleProps}
-            aria-label={`Reorder ${getLevelDisplayName(level)}`}
+            aria-label={t('levels.reorder', { name: getLevelDisplayName(level) })}
             className={cn(
               'ml-0.5 flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground/35 opacity-0 transition-colors hover:bg-black/4 dark:hover:bg-white/5 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 group-hover/level:opacity-100',
               isDragging && 'cursor-grabbing opacity-100',
@@ -229,7 +232,7 @@ function LevelRow({
               dragHandleProps?.onClick?.(e)
             }}
             ref={dragHandleRef}
-            title="Drag to reorder"
+            title={t('levels.dragToReorder')}
             type="button"
           >
             <GripVertical className="h-3.5 w-3.5" />
@@ -250,7 +253,7 @@ function LevelRow({
               <span
                 className="ml-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
                 style={{ backgroundColor: unitDotColor }}
-                title="Focused unit has zones here"
+                title={t('levels.unitHasZones')}
               />
             )}
           </button>
@@ -261,7 +264,7 @@ function LevelRow({
               <button
                 className="mr-0.5 shrink-0 whitespace-nowrap rounded px-1 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums transition-colors hover:bg-black/4 hover:text-foreground dark:text-muted-foreground/50 dark:hover:bg-white/5 dark:hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
-                title="Level height"
+                title={t('levels.height')}
                 type="button"
               >
                 {storeyHeightLabel}
@@ -275,7 +278,7 @@ function LevelRow({
               sideOffset={8}
             >
               <SliderControl
-                label="Level height"
+                label={t('levels.height')}
                 max={20}
                 min={1}
                 onChange={(v) => updateNode(level.id, { height: v })}
@@ -318,7 +321,7 @@ function LevelRow({
                 type="button"
               >
                 <Copy className="h-3 w-3" />
-                Duplicate level
+                {t('levels.duplicate')}
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-black/6 dark:hover:bg-white/10 hover:text-foreground"
@@ -329,7 +332,7 @@ function LevelRow({
                 type="button"
               >
                 <Copy className="h-3 w-3" />
-                Duplicate with options...
+                {t('levels.duplicateWithOptions')}
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground text-xs transition-colors enabled:hover:bg-black/6 dark:enabled:hover:bg-white/10 enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -339,14 +342,12 @@ function LevelRow({
                   onSetGround()
                 }}
                 title={
-                  isGround
-                    ? 'This floor stands at grade'
-                    : 'Seat the building so this floor stands at grade; the floors under it are below grade'
+                  isGround ? t('levels.atGrade') : t('levels.setGroundHint')
                 }
                 type="button"
               >
                 <ArrowDownToLine className="h-3 w-3" />
-                Set as ground floor
+                {t('levels.setGround')}
               </button>
               {onPaste && (
                 <button
@@ -358,7 +359,7 @@ function LevelRow({
                   type="button"
                 >
                   <ClipboardPaste className="h-3 w-3" />
-                  Paste copied selection
+                  {t('levels.paste')}
                 </button>
               )}
               <button
@@ -368,11 +369,11 @@ function LevelRow({
                   e.stopPropagation()
                   onRequestDelete()
                 }}
-                title={canDeleteLevel ? 'Delete level' : 'The ground level cannot be deleted'}
+                title={canDeleteLevel ? t('levels.delete') : t('levels.groundCannotDelete')}
                 type="button"
               >
                 <Trash2 className="h-3 w-3" />
-                Delete level
+                {t('levels.delete')}
               </button>
             </PopoverContent>
           </Popover>
@@ -466,9 +467,12 @@ type GroundLineState = {
  * a click seats the building.
  */
 function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () => void }) {
+  const t = useT(messages)
   const { toDisplay, displayUnit, precision } = useLinearDisplay('m', 2)
   const over = toDisplay(ground.offset)
-  const label = `Ground · ${over > 0 ? '+' : ''}${over.toFixed(precision)}`
+  const label = t('levels.groundLabel', {
+    value: `${over > 0 ? '+' : ''}${over.toFixed(precision)}`,
+  })
   return (
     <div
       className="relative flex items-center gap-1.5 px-2 py-0.5"
@@ -477,7 +481,7 @@ function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () =>
       {ground.seated ? (
         <span
           className="shrink-0 font-mono text-[10px] text-muted-foreground/70 tabular-nums"
-          title="Ground line: the levels under it are below grade"
+          title={t('levels.groundLineHint')}
         >
           {label}
         </span>
@@ -485,7 +489,10 @@ function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () =>
         <button
           className="shrink-0 rounded-full px-1.5 font-mono text-[10px] text-amber-400 tabular-nums transition-colors hover:bg-amber-400/10"
           onClick={onSeat}
-          title={`The ground floor stands ${Math.abs(toDisplay(ground.offset)).toFixed(precision)} ${displayUnit} ${ground.offset > 0 ? 'over' : 'under'} grade. Seat the ground floor 8 in over grade`}
+          title={t(ground.offset > 0 ? 'levels.groundOver' : 'levels.groundUnder', {
+            amount: Math.abs(toDisplay(ground.offset)).toFixed(precision),
+            unit: displayUnit,
+          })}
           type="button"
         >
           {label}
@@ -504,6 +511,7 @@ function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () =>
 // ── Unit focus chip: name + × to end focus, only while a unit is focused ────
 
 function UnitFocusChip() {
+  const t = useT(messages)
   const focusedUnitId = useViewer((s) => s.focusedUnitId)
   const focusedUnit = useScene((s) => {
     const unit = focusedUnitId ? s.nodes[focusedUnitId] : undefined
@@ -521,12 +529,12 @@ function UnitFocusChip() {
         className="h-2 w-2 shrink-0 rounded-full"
         style={{ backgroundColor: focusedUnit.color }}
       />
-      <span className="truncate">{focusedUnit.name || 'Unit'}</span>
+      <span className="truncate">{focusedUnit.name || t('levels.unit')}</span>
       <button
-        aria-label="Exit unit focus"
+        aria-label={t('levels.exitUnitFocus')}
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-black/6 dark:hover:bg-white/10 hover:text-foreground"
         onClick={() => leaveUnitFocus()}
-        title="Exit unit focus"
+        title={t('levels.exitUnitFocus')}
         type="button"
       >
         <X className="h-3 w-3" />
@@ -538,6 +546,7 @@ function UnitFocusChip() {
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function FloatingLevelSelector() {
+  const t = useT(messages)
   // Desktop's view bar is a row above the stage; mobile's floats over it.
   const isMobile = useIsMobile()
   const selectedBuildingId = useViewer((s) => s.selection.buildingId)
@@ -745,7 +754,7 @@ export function FloatingLevelSelector() {
               // read only from outside: nothing here depends on it.
               data-guide-target="level-add"
               onClick={handleAddAbove}
-              title={topIsRoofLevel ? 'Add a floor under the roof' : 'Add level above'}
+              title={topIsRoofLevel ? t('levels.addUnderRoof') : t('levels.addAbove')}
               type="button"
             >
               <Plus className="h-2.5 w-2.5" />
@@ -757,7 +766,7 @@ export function FloatingLevelSelector() {
             <button
               className={cn(addButtonClass, 'bottom-0 translate-y-1/2')}
               onClick={handleAddBelow}
-              title="Add level below"
+              title={t('levels.addBelow')}
               type="button"
             >
               <Plus className="h-2.5 w-2.5" />
@@ -816,7 +825,7 @@ export function FloatingLevelSelector() {
                         <button
                           className={cn(addButtonClass, 'bottom-0 translate-y-1/2')}
                           onClick={() => handleInsertBetween(sortedIndex - 1)}
-                          title="Insert level here"
+                          title={t('levels.insertHere')}
                           type="button"
                         >
                           <Plus className="h-2.5 w-2.5" />
@@ -840,11 +849,13 @@ export function FloatingLevelSelector() {
       <Dialog onOpenChange={(open) => !open && setDeletingLevel(null)} open={!!deletingLevel}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Delete level</DialogTitle>
+            <DialogTitle>{t('levels.delete')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{' '}
-              <strong>{deletingLevel ? getLevelDisplayName(deletingLevel) : ''}</strong>? All
-              walls, floors, and objects on this level will be permanently removed.
+              {t.rich(
+                'levels.deleteDescription',
+                { name: (text) => <strong>{text}</strong> },
+                { name: deletingLevel ? getLevelDisplayName(deletingLevel) : '' },
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -853,14 +864,14 @@ export function FloatingLevelSelector() {
               onClick={() => setDeletingLevel(null)}
               type="button"
             >
-              Cancel
+              {t('levels.cancel')}
             </button>
             <button
               className="rounded-full bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700"
               onClick={handleConfirmDelete}
               type="button"
             >
-              Delete
+              {t('levels.deleteConfirm')}
             </button>
           </DialogFooter>
         </DialogContent>

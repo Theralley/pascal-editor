@@ -1,7 +1,9 @@
 import type { AnyNode, AssetInput } from '@pascal-app/core'
 import { isProceduralItem } from '@pascal-app/core/procedural-items'
 import type { ReactNode } from 'react'
+import { type MessageKey, useT } from '../../i18n'
 import { cn } from '../../lib/utils'
+import { messages } from './messages'
 
 export type SnapTarget = 'wall' | 'ceiling' | 'roof'
 export type SnapTargetBadgeSize = 'tile' | 'tree'
@@ -12,10 +14,10 @@ const SNAP_TARGET_ICONS: Record<SnapTarget, string> = {
   roof: '/icons/roof.webp',
 }
 
-const SNAP_TARGET_LABELS: Record<SnapTarget, string> = {
-  wall: 'Wall attachment',
-  ceiling: 'Ceiling attachment',
-  roof: 'Roof attachment',
+const SNAP_TARGET_LABELS: Record<SnapTarget, MessageKey<typeof messages>> = {
+  wall: 'snap.wall',
+  ceiling: 'snap.ceiling',
+  roof: 'snap.roof',
 }
 
 const SNAP_TARGET_BADGE_SIZE_CLASSES: Record<SnapTargetBadgeSize, string> = {
@@ -53,6 +55,7 @@ export function SnapTargetBadge({
   size?: SnapTargetBadgeSize
   target: SnapTarget
 }) {
+  const t = useT(messages)
   return (
     <span
       className={cn(
@@ -62,7 +65,7 @@ export function SnapTargetBadge({
       )}
     >
       <img
-        alt={SNAP_TARGET_LABELS[target]}
+        alt={t(SNAP_TARGET_LABELS[target])}
         className={cn('object-contain', SNAP_TARGET_ICON_SIZE_CLASSES[size])}
         src={SNAP_TARGET_ICONS[target]}
       />

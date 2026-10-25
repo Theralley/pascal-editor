@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useT } from '../../i18n'
 import { cn } from '../../lib/utils'
+import { messages } from './messages'
 import { Button } from './primitives/button'
 
 const LOADERS = [
@@ -50,6 +52,7 @@ interface SceneLoadFailedProps {
  * project (prod scene-wipe class, 2026-09-02).
  */
 export function SceneLoadFailed({ className, onRetry }: SceneLoadFailedProps) {
+  const t = useT(messages)
   return (
     <div
       className={cn(
@@ -60,13 +63,13 @@ export function SceneLoadFailed({ className, onRetry }: SceneLoadFailedProps) {
       role="alert"
     >
       <div className="flex flex-col gap-1">
-        <p className="font-medium text-foreground text-sm">This project couldn't be loaded</p>
+        <p className="font-medium text-foreground text-sm">{t('loader.failedTitle')}</p>
         <p className="text-muted-foreground text-sm">
-          Nothing was changed. Check your connection and try again.
+          {t('loader.failedBody')}
         </p>
       </div>
       <Button className="rounded-full" onClick={onRetry} size="sm" type="button">
-        Try again
+        {t('loader.retry')}
       </Button>
     </div>
   )

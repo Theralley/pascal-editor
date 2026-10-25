@@ -1,0 +1,111 @@
+import { defineMessages } from '../../i18n'
+
+export const messages = defineMessages({
+  en: {
+    'levels.reorder': 'Reorder {name}',
+    'levels.dragToReorder': 'Drag to reorder',
+    'levels.unitHasZones': 'Focused unit has zones here',
+    'levels.height': 'Level height',
+    'levels.duplicate': 'Duplicate level',
+    'levels.duplicateWithOptions': 'Duplicate with options...',
+    'levels.atGrade': 'This floor stands at grade',
+    'levels.setGroundHint':
+      'Seat the building so this floor stands at grade; the floors under it are below grade',
+    'levels.setGround': 'Set as ground floor',
+    'levels.paste': 'Paste copied selection',
+    'levels.delete': 'Delete level',
+    'levels.groundCannotDelete': 'The ground level cannot be deleted',
+    'levels.groundLabel': 'Ground · {value}',
+    'levels.groundLineHint': 'Ground line: the levels under it are below grade',
+    'levels.groundOver':
+      'The ground floor stands {amount} {unit} over grade. Seat the ground floor 8 in over grade',
+    'levels.groundUnder':
+      'The ground floor stands {amount} {unit} under grade. Seat the ground floor 8 in over grade',
+    'levels.unit': 'Unit',
+    'levels.exitUnitFocus': 'Exit unit focus',
+    'levels.addUnderRoof': 'Add a floor under the roof',
+    'levels.addAbove': 'Add level above',
+    'levels.addBelow': 'Add level below',
+    'levels.insertHere': 'Insert level here',
+    'levels.deleteDescription':
+      'Are you sure you want to delete <name>{name}</name>? All walls, floors, and objects on this level will be permanently removed.',
+    'levels.cancel': 'Cancel',
+    'levels.deleteConfirm': 'Delete',
+
+    'duplicate.title': 'Duplicate Level',
+    'duplicate.description': 'Choose what to copy from {name}.',
+    'duplicate.thisLevel': 'this level',
+    'duplicate.everything': 'Everything',
+    'duplicate.everythingHint': 'Structure, materials, furniture, and references.',
+    'duplicate.structure': 'Structure only',
+    'duplicate.structureHint': 'Walls, slabs, roofs, stairs, windows, and doors without finishes.',
+    'duplicate.structureMaterials': 'Structure + materials',
+    'duplicate.structureMaterialsHint': 'Structure with the current material and finish assignments.',
+    'duplicate.structureFurniture': 'Structure + furniture',
+    'duplicate.structureFurnitureHint':
+      'Structure, finishes, and placed items, without guide references.',
+    'duplicate.cancel': 'Cancel',
+    'duplicate.confirm': 'Duplicate',
+
+    'loader.failedTitle': "This project couldn't be loaded",
+    'loader.failedBody': 'Nothing was changed. Check your connection and try again.',
+    'loader.retry': 'Try again',
+
+    'snap.wall': 'Wall attachment',
+    'snap.ceiling': 'Ceiling attachment',
+    'snap.roof': 'Roof attachment',
+  },
+  sv: {
+    'levels.reorder': 'Ändra ordning på {name}',
+    'levels.dragToReorder': 'Dra för att ändra ordning',
+    'levels.unitHasZones': 'Den fokuserade enheten har rum här',
+    'levels.height': 'Våningshöjd',
+    'levels.duplicate': 'Duplicera våning',
+    'levels.duplicateWithOptions': 'Duplicera med alternativ...',
+    'levels.atGrade': 'Den här våningen ligger på marknivå',
+    'levels.setGroundHint':
+      'Placera byggnaden så att den här våningen ligger på marknivå – våningarna under den hamnar under marken',
+    'levels.setGround': 'Gör till bottenvåning',
+    'levels.paste': 'Klistra in kopierad markering',
+    'levels.delete': 'Ta bort våning',
+    'levels.groundCannotDelete': 'Bottenvåningen kan inte tas bort',
+    'levels.groundLabel': 'Mark · {value}',
+    'levels.groundLineHint': 'Marklinje: våningarna under den ligger under marknivån',
+    'levels.groundOver':
+      'Bottenvåningen ligger {amount} {unit} över marknivån. Placera bottenvåningen 8 tum över marknivån',
+    'levels.groundUnder':
+      'Bottenvåningen ligger {amount} {unit} under marknivån. Placera bottenvåningen 8 tum över marknivån',
+    'levels.unit': 'Enhet',
+    'levels.exitUnitFocus': 'Lämna enhetsfokus',
+    'levels.addUnderRoof': 'Lägg till en våning under taket',
+    'levels.addAbove': 'Lägg till våning ovanför',
+    'levels.addBelow': 'Lägg till våning nedanför',
+    'levels.insertHere': 'Lägg in en våning här',
+    'levels.deleteDescription':
+      'Är du säker på att du vill ta bort <name>{name}</name>? Alla väggar, golv och objekt på den här våningen tas bort för alltid.',
+    'levels.cancel': 'Avbryt',
+    'levels.deleteConfirm': 'Ta bort',
+
+    'duplicate.title': 'Duplicera våning',
+    'duplicate.description': 'Välj vad som ska kopieras från {name}.',
+    'duplicate.thisLevel': 'den här våningen',
+    'duplicate.everything': 'Allt',
+    'duplicate.everythingHint': 'Konstruktion, material, möbler och underlag.',
+    'duplicate.structure': 'Bara konstruktion',
+    'duplicate.structureHint': 'Väggar, bjälklag, tak, trappor, fönster och dörrar utan ytskikt.',
+    'duplicate.structureMaterials': 'Konstruktion + material',
+    'duplicate.structureMaterialsHint': 'Konstruktionen med nuvarande material och ytskikt.',
+    'duplicate.structureFurniture': 'Konstruktion + möbler',
+    'duplicate.structureFurnitureHint': 'Konstruktion, ytskikt och placerade objekt, utan underlagsbilder.',
+    'duplicate.cancel': 'Avbryt',
+    'duplicate.confirm': 'Duplicera',
+
+    'loader.failedTitle': 'Projektet kunde inte laddas',
+    'loader.failedBody': 'Inget har ändrats. Kontrollera din anslutning och försök igen.',
+    'loader.retry': 'Försök igen',
+
+    'snap.wall': 'Fäst i vägg',
+    'snap.ceiling': 'Fäst i innertak',
+    'snap.roof': 'Fäst i tak',
+  },
+})
