@@ -50,7 +50,7 @@ import {
   SwatchBook,
   Tag,
 } from 'lucide-react'
-import { type ReactNode, useCallback } from 'react'
+import { type ReactNode, useCallback, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from './toolbar-tooltip'
@@ -153,7 +153,7 @@ function CollapseSidebarButton() {
 const SEGMENTS = 'h-8 min-h-0 w-auto rounded-none border-0 bg-transparent p-1 [&>button]:min-h-0'
 // Five wall modes: each segment is as wide as its word, with room around it, and the row scrolls
 // before it overflows the toolbar.
-const WALL_SEGMENTS = `${SEGMENTS} max-w-full overflow-x-auto [&>button]:flex-none [&>button]:px-2.5 [&>button]:whitespace-nowrap [&>button>span]:whitespace-nowrap`
+const WALL_SEGMENTS = `${SEGMENTS} max-w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:flex-none [&>button]:px-2.5 [&>button]:whitespace-nowrap [&>button>span]:whitespace-nowrap`
 
 function LevelModeToggle() {
   const levelMode = useViewer((state) => state.levelMode)
@@ -176,6 +176,13 @@ function LevelModeToggle() {
 function WallModeToggle() {
   const wallMode = useViewer((state) => state.wallMode)
   const setWallMode = useViewer((state) => state.setWallMode)
+
+  // A step with U or J can land on a segment the row has scrolled away from.
+  useEffect(() => {
+    document
+      .querySelector<HTMLElement>('[role="radiogroup"][aria-label="Walls"] [aria-checked="true"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [wallMode])
 
   return (
     <SegmentedControl

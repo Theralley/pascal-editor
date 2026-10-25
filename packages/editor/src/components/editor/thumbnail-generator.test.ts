@@ -671,15 +671,18 @@ describe('what a capture tells the scene before it draws', () => {
     [{ wholeWalls: true, finished: false, wallsLow: false }, { wholeWalls: true }],
     [{ wholeWalls: false, finished: true, wallsLow: false }, { finished: true }],
     [{ wholeWalls: true, finished: true, wallsLow: false }, { wholeWalls: true }],
-    // A pose-less picture of low walls still sets the batch aside.
-    [{ wholeWalls: false, finished: false, wallsLow: true }, { wallsLow: true }],
+    // A pose-less picture of low walls is cut from whole walls and sets the batch aside.
+    [
+      { wholeWalls: false, finished: false, wallsLow: true },
+      { wholeWalls: true, wallsLow: true },
+    ],
     [
       { wholeWalls: true, finished: false, wallsLow: true },
       { wholeWalls: true, wallsLow: true },
     ],
     [
       { wholeWalls: false, finished: true, wallsLow: true },
-      { finished: true, wallsLow: true },
+      { wholeWalls: true, wallsLow: true },
     ],
   ])('%j is %j', (input, expected) => {
     expect(captureLift(input)).toEqual(expected)

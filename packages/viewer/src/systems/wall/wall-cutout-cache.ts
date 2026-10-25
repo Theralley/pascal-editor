@@ -66,6 +66,12 @@ export function wallParts(wallMesh: Object3D): Mesh[] {
   return parts
 }
 
+function countDescendants(object: Object3D): number {
+  let count = object.children.length
+  for (const child of object.children) count += countDescendants(child)
+  return count
+}
+
 export function sameMaterialArray(a: Material | Material[], b: Material[]): boolean {
   return Array.isArray(a) && a.length === b.length && a.every((material, i) => material === b[i])
 }
@@ -587,8 +593,10 @@ export class WallCutoutCache {
     for (const wall of this.walls.values()) {
       const root = on && wallCutApplies(wall.node) ? this.cutRootOf(wall) : null
       let list = this.partLists.get(wall.mesh)
-      if (!list || list.revision !== revision || list.count !== wall.mesh.children.length) {
-        list = { revision, count: wall.mesh.children.length, parts: wallParts(wall.mesh) }
+      // A mesh that arrives later inside a child (a scripted finish loading) is counted too.
+      const count = countDescendants(wall.mesh)
+      if (!list || list.revision !== revision || list.count !== count) {
+        list = { revision, count, parts: wallParts(wall.mesh) }
         this.partLists.set(wall.mesh, list)
       }
       for (const part of list.parts) this.dressPart(part, root, force)

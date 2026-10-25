@@ -1049,6 +1049,19 @@ describe('walls low', () => {
     expect((moulding.material as Material[])[0]).toBe(original[0] as Material)
   })
 
+  test('a mesh that arrives later inside a part (a scripted finish loading) is cut too', () => {
+    const { mesh } = addStandingWall()
+    const script = new Group()
+    mesh.add(script)
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const model = new Mesh(new BoxGeometry(1, 1, 1), [new MeshBasicMaterial()])
+    script.add(model)
+    cache.update(camera, 2)
+    expect((model.material as { maskNode?: unknown }[])[0]?.maskNode).toBeDefined()
+    expect(getDisplayCutRoot(model)).not.toBeNull()
+  })
+
   test('a frame in low with nothing changed walks no part and remakes no clone', () => {
     const { mesh } = addStandingWall()
     mesh.add(new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()]))

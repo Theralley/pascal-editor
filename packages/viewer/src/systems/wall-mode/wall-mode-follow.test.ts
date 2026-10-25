@@ -288,6 +288,17 @@ describe('WallModeFollowCache', () => {
     expect(shown(mesh)).toBe(false)
   })
 
+  test('a capture of low walls from a live view that shows the node takes it down, then gives it back', () => {
+    const { mesh } = addScene('gable')
+    setMode('up')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(true)
+    cache.beforeCapture({ wholeWalls: true, wallsLow: true })
+    expect(shown(mesh)).toBe(false)
+    cache.afterCapture()
+    expect(shown(mesh)).toBe(true)
+  })
+
   test('announces when the mode starts and stops hiding a node', () => {
     const { id } = addScene('gable')
     const events: Array<[string, boolean]> = []

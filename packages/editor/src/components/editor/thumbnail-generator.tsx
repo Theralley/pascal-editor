@@ -447,11 +447,11 @@ const FINISHED_PRESENTATION = {
   colorPreset: 'clay',
 } as const
 
-/** The viewer switched to FINISHED_PRESENTATION; the returned function puts the user's view back. */
 /**
- * What a capture tells the scene before it draws: whole walls for an authored pose or an interior,
- * the finished house for a hero picture, and, whatever else, that the walls are low (the merged
- * batch is set aside, the followers stay down).
+ * What a capture tells the scene before it draws: whole walls for an authored pose, an interior or
+ * low walls (which are cut from whole walls, never from the live cutaway's variants), the finished
+ * house for a hero picture, and, for low walls, that the merged batch is set aside and the
+ * followers stay down.
  */
 export function captureLift({
   wholeWalls,
@@ -463,12 +463,13 @@ export function captureLift({
   wallsLow: boolean
 }): { wholeWalls?: boolean; finished?: boolean; wallsLow?: boolean } | undefined {
   const lift = {
-    ...(wholeWalls ? { wholeWalls: true } : finished ? { finished: true } : {}),
+    ...(wholeWalls || wallsLow ? { wholeWalls: true } : finished ? { finished: true } : {}),
     ...(wallsLow ? { wallsLow: true } : {}),
   }
   return Object.keys(lift).length > 0 ? lift : undefined
 }
 
+/** The viewer switched to FINISHED_PRESENTATION; the returned function puts the user's view back. */
 export function presentFinished(): () => void {
   const viewer = useViewer.getState()
   const restores: (() => void)[] = []

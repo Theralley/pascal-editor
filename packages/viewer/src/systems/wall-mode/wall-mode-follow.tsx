@@ -123,6 +123,7 @@ export class WallModeFollowCache {
   private live: { transforms: unknown; overrides: unknown } | undefined
   /** Nodes a capture with whole walls has shown, to hide again after it. */
   private shownForCapture: string[] = []
+  private hiddenForCapture: string[] = []
 
   constructor(private readonly viewerStore: WallModeFollowViewerStore = useViewer) {}
 
@@ -146,7 +147,7 @@ export class WallModeFollowCache {
       !!this.live && (this.live.transforms !== transforms || this.live.overrides !== overrides)
     this.live = { transforms, overrides }
     // A capture that never reported its end must not leave nodes shown.
-    if (this.shownForCapture.length > 0) this.afterCapture()
+    if (this.shownForCapture.length > 0 || this.hiddenForCapture.length > 0) this.afterCapture()
 
     camera.getWorldDirection(this.cameraDirection)
     const cutaway = viewer.wallMode === 'cutaway'
@@ -209,12 +210,16 @@ export class WallModeFollowCache {
 
   /**
    * A capture of whole walls, or an export, sees every followed node. A capture of low walls does
-   * not: its followers stay hidden as they are while the walls are low, until the cut reaches them.
+   * not: its followers are down, as they are while the walls are low, until the cut reaches them.
    */
   beforeCapture(
     event: { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean } | undefined,
   ): void {
-    if (!(event?.wholeWalls || event?.exporting) || (event.wallsLow && !event.exporting)) return
+    if (event?.wallsLow && !event.exporting) {
+      this.hideForCapture()
+      return
+    }
+    if (!(event?.wholeWalls || event?.exporting)) return
     for (const [id, follower] of this.tracked) {
       if (!follower.hidden) continue
       const group = sceneRegistry.nodes.get(id)
@@ -224,7 +229,28 @@ export class WallModeFollowCache {
     }
   }
 
+  /** Every follower the low walls would hide that the live view shows (walls up, translucent). */
+  private hideForCapture(): void {
+    const nodes = useScene.getState().nodes
+    for (const [kind, config] of this.followerKinds()) {
+      for (const id of sceneRegistry.byType[kind] ?? []) {
+        const node = nodes[id as AnyNodeId]
+        const group = sceneRegistry.nodes.get(id)
+        if (!(node && group) || config.appliesTo?.(node) === false) continue
+        if (this.tracked.get(id)?.hidden) continue
+        setHidden(meshesOf(group, node), true)
+        this.hiddenForCapture.push(id)
+      }
+    }
+  }
+
   afterCapture(): void {
+    for (const id of this.hiddenForCapture.splice(0)) {
+      const group = sceneRegistry.nodes.get(id)
+      if (group && !this.tracked.get(id)?.hidden) {
+        setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), false)
+      }
+    }
     for (const id of this.shownForCapture.splice(0)) {
       const group = sceneRegistry.nodes.get(id)
       if (group && this.tracked.get(id)?.hidden) {
