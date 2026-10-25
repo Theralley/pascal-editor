@@ -15,6 +15,8 @@ import {
 } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
 import { resolveTreeChildIds, treeContainsDescendant } from './tree-structure'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface RegistryTreeNodeProps {
   nodeId: AnyNodeId
@@ -34,6 +36,7 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
   depth,
   isLast,
 }: RegistryTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -72,7 +75,7 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
     )
   const snapTarget = resolveNodeSnapTarget(node)
   const defaultName =
-    node ? tree?.label?.(node, useScene.getState().nodes) || node.name || presentation?.label || 'Node' : 'Node'
+    node ? tree?.label?.(node, useScene.getState().nodes) || node.name || presentation?.label || t('node.generic') : t('node.generic')
   const hasChildren = children.length > 0 || hasHostChildren
 
   useEffect(() => {

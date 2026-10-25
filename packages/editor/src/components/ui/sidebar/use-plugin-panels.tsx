@@ -11,6 +11,7 @@ import {
   useEffect,
   useSyncExternalStore,
 } from 'react'
+import { useT } from '../../../i18n'
 import useEditor from '../../../store/use-editor'
 import { isViewVisible } from '../../../store/view-layout'
 import { PluginsView } from '../../editor/views/plugins-view'
@@ -24,13 +25,13 @@ import {
 import { IconRefImage } from '../icon-ref'
 import { ErrorBoundary } from '../primitives/error-boundary'
 import type { ExtraPanel } from './icon-rail'
+import { messages } from './messages'
 
 // The rail's "+" puts the plugin directory on the stage, as a view in the
 // focused pane, and stays lit while it is there instead of leaving an
 // unrelated panel open beside it. `component` serves the v1 sidebar.
-const pluginsManagerPanel: ExtraPanel = {
+const pluginsManagerPanel: Omit<ExtraPanel, 'label'> = {
   id: 'plugins',
-  label: 'Plugins',
   icon: <img alt="" className="size-8 object-contain" src="/icons/plugins.webp" />,
   component: PluginsView,
   noPanel: true,
@@ -63,15 +64,18 @@ function renderIconRef(ref: IconRef): ReactNode {
 }
 
 function PluginPanelCrashed({ label }: { label: string }) {
+  const t = useT(messages)
   return (
     <div className="flex flex-col gap-2 p-4 text-sm">
-      <p className="font-medium text-sidebar-foreground">"{label}" plugin crashed</p>
-      <p className="text-sidebar-foreground/50 text-xs">
-        This panel hit an error and was unloaded for this session. The rest of the editor is
-        unaffected — reload to try again.
-      </p>
+      <p className="font-medium text-sidebar-foreground">{t('crashed.title', { label })}</p>
+      <p className="text-sidebar-foreground/50 text-xs">{t('crashed.body')}</p>
     </div>
   )
+}
+
+function PanelLoading() {
+  const t = useT(messages)
+  return <div className="p-4 text-sidebar-foreground/50 text-sm">{t('loading')}</div>
 }
 
 // `React.lazy` must be called once per loader so the resolved component keeps a
@@ -85,7 +89,7 @@ function resolvePanelComponent(panel: EditorHostPanel): ComponentType {
   const Lazy = lazy(panel.component)
   const Wrapped: ComponentType = () => (
     <ErrorBoundary fallback={<PluginPanelCrashed label={panel.label} />}>
-      <Suspense fallback={<div className="p-4 text-sidebar-foreground/50 text-sm">Loading…</div>}>
+      <Suspense fallback={<PanelLoading />}>
         <Lazy />
       </Suspense>
     </ErrorBoundary>
@@ -116,6 +120,7 @@ export function useHostPanels(hostPanels?: ExtraPanel[]): ExtraPanel[] {
   const installedPlugins = useScene((s) => s.installedPlugins)
   const readOnly = useScene((s) => s.readOnly)
   const pluginsViewShown = useEditor((s) => isViewVisible(s, PLUGINS_VIEW_ID))
+  const t = useT(messages)
   const hostIds = new Set(hostPanels?.map((p) => p.id))
 
   useEffect(() => {
@@ -151,7 +156,7 @@ export function useHostPanels(hostPanels?: ExtraPanel[]): ExtraPanel[] {
       readOnly,
       workspaceMode,
     })
-      ? [{ ...pluginsManagerPanel, stageActive: pluginsViewShown }]
+      ? [{ ...pluginsManagerPanel, label: t('plugins'), stageActive: pluginsViewShown }]
       : []
   return [...(hostPanels ?? []), ...fromRegistry, ...manager]
 }

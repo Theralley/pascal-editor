@@ -11,6 +11,8 @@ import {
 } from './../../../../../components/ui/primitives/tooltip'
 import { focusTreeNode, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface BuildingTreeNodeProps {
   nodeId: BuildingNode['id']
@@ -23,6 +25,7 @@ export const BuildingTreeNode = memo(function BuildingTreeNode({
   depth,
   isLast,
 }: BuildingTreeNodeProps) {
+  const t = useT(messages)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
   const name = useScene((s) => s.nodes[nodeId]?.name)
@@ -63,7 +66,7 @@ export const BuildingTreeNode = memo(function BuildingTreeNode({
                 <Plus className="h-3 w-3" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Add new level</TooltipContent>
+            <TooltipContent side="right">{t('building.addLevel')}</TooltipContent>
           </Tooltip>
         </div>
       }
@@ -75,7 +78,7 @@ export const BuildingTreeNode = memo(function BuildingTreeNode({
       isLast={isLast}
       isSelected={isSelected}
       isVisible={isVisible}
-      label={name || 'Building'}
+      label={name || t('building.name')}
       onClick={handleClick}
       onDoubleClick={() => focusTreeNode(nodeId)}
       onToggle={() => setExpanded(!expanded)}

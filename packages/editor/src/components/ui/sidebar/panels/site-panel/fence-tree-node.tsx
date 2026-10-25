@@ -5,6 +5,8 @@ import { memo, useEffect, useState } from 'react'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface FenceTreeNodeProps {
   nodeId: AnyNodeId
@@ -17,6 +19,7 @@ export const FenceTreeNode = memo(function FenceTreeNode({
   depth,
   isLast,
 }: FenceTreeNodeProps) {
+  const t = useT(messages)
   const node = useScene((state) => state.nodes[nodeId]) as FenceNode | undefined
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
@@ -55,7 +58,7 @@ export const FenceTreeNode = memo(function FenceTreeNode({
       isVisible={node.visible !== false}
       label={
         <InlineRenameInput
-          defaultName="Fence"
+          defaultName={t('node.fence')}
           isEditing={isEditing}
           nodeId={node.id}
           onStartEditing={() => setIsEditing(true)}

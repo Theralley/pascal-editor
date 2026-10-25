@@ -8,6 +8,8 @@ import { resolveNodeSnapTarget, SnapTargetIcon } from '../../../snap-target-badg
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface WindowTreeNodeProps {
   nodeId: AnyNodeId
@@ -20,6 +22,7 @@ export const WindowTreeNode = memo(function WindowTreeNode({
   depth,
   isLast,
 }: WindowTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId as AnyNodeId]?.visible !== false)
   const node = useScene((s) => s.nodes[nodeId] as WindowNode | undefined)
@@ -62,7 +65,7 @@ export const WindowTreeNode = memo(function WindowTreeNode({
       isVisible={isVisible}
       label={
         <InlineRenameInput
-          defaultName="Window"
+          defaultName={t('node.window')}
           isEditing={isEditing}
           nodeId={nodeId as AnyNodeId}
           onStartEditing={handleStartEditing}

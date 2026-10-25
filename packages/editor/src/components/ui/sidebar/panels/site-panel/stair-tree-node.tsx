@@ -8,6 +8,9 @@ import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
 import { DropIndicatorLine, useTreeNodeDrag } from './tree-node-drag'
+import { formatDecimal } from '../../../../../lib/measurements'
+import { messages } from './messages'
+import { useLocale, useT } from '../../../../../i18n'
 
 interface StairTreeNodeProps {
   nodeId: AnyNodeId
@@ -20,6 +23,7 @@ export const StairTreeNode = memo(function StairTreeNode({
   depth,
   isLast,
 }: StairTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -79,7 +83,7 @@ export const StairTreeNode = memo(function StairTreeNode({
   }, [isDropTarget, expanded])
 
   const segmentCount = segments.length
-  const defaultName = `Staircase (${segmentCount} segment${segmentCount !== 1 ? 's' : ''})`
+  const defaultName = t('node.segmentCount', { name: t('node.stair'), count: segmentCount })
 
   // Hide the dragged segment from every stair while dragging
   const visibleSegments = drag ? segments.filter((seg) => seg.id !== drag.nodeId) : segments
@@ -158,6 +162,8 @@ function StairSegmentTreeNode({
   depth: number
   isLast?: boolean
 }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const [isEditing, setIsEditing] = useState(false)
   const isSelected = useViewer((state) => state.selection.selectedIds.includes(node.id))
   const isHovered = useViewer((state) => state.hoveredId === node.id)
@@ -174,21 +180,22 @@ function StairSegmentTreeNode({
     [node.id, isDragging, setSelection],
   )
 
+  const defaultName = t('node.sizeLabel', {
+    name: t(node.segmentType === 'stair' ? 'stairSegment.stair' : 'stairSegment.landing'),
+    width: formatDecimal(node.width, { minFractionDigits: 1, maxFractionDigits: 1 }, locale),
+    depth: formatDecimal(node.length, { minFractionDigits: 1, maxFractionDigits: 1 }, locale),
+  })
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button !== 0) return
-      const typeLabel = node.segmentType === 'stair' ? 'Flight' : 'Landing'
-      const label = `${typeLabel} (${node.width.toFixed(1)}×${node.length.toFixed(1)}m)`
-      startDrag(node.id, node.type, node.parentId as string, label, e.clientX, e.clientY)
+      startDrag(node.id, node.type, node.parentId as string, defaultName, e.clientX, e.clientY)
     },
-    [node.id, node.type, node.parentId, node.segmentType, node.width, node.length, startDrag],
+    [node.id, node.type, node.parentId, defaultName, startDrag],
   )
 
   const handleStartEditing = useCallback(() => setIsEditing(true), [])
   const handleStopEditing = useCallback(() => setIsEditing(false), [])
-
-  const typeLabel = node.segmentType === 'stair' ? 'Flight' : 'Landing'
-  const defaultName = `${typeLabel} (${node.width.toFixed(1)}×${node.length.toFixed(1)}m)`
 
   return (
     <div data-drop-child={node.id}>

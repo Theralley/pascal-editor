@@ -8,6 +8,8 @@ import { formatAreaLabel } from './../../../../../lib/measurements'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useLocale, useT } from '../../../../../i18n'
 
 interface CeilingTreeNodeProps {
   nodeId: AnyNodeId
@@ -20,6 +22,8 @@ export const CeilingTreeNode = memo(function CeilingTreeNode({
   depth,
   isLast,
 }: CeilingTreeNodeProps) {
+  const t = useT(messages)
+  const locale = useLocale()
   const [expanded, setExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId as AnyNodeId]?.visible !== false)
@@ -77,7 +81,10 @@ export const CeilingTreeNode = memo(function CeilingTreeNode({
   const handleStartEditing = useCallback(() => setIsEditing(true), [])
   const handleStopEditing = useCallback(() => setIsEditing(false), [])
 
-  const defaultName = `Ceiling (${formatAreaLabel(calculatePolygonArea(polygon), unit)})`
+  const defaultName = t('node.areaLabel', {
+    name: t('node.ceiling'),
+    area: formatAreaLabel(calculatePolygonArea(polygon), unit, 1, locale),
+  })
 
   return (
     <TreeNodeWrapper

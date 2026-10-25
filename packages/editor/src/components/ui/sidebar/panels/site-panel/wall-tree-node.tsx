@@ -6,6 +6,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface WallTreeNodeProps {
   nodeId: AnyNodeId
@@ -18,6 +20,7 @@ export const WallTreeNode = memo(function WallTreeNode({
   depth,
   isLast,
 }: WallTreeNodeProps) {
+  const t = useT(messages)
   const [expanded, setExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId as AnyNodeId]?.visible !== false)
@@ -83,7 +86,7 @@ export const WallTreeNode = memo(function WallTreeNode({
       isVisible={isVisible}
       label={
         <InlineRenameInput
-          defaultName="Wall"
+          defaultName={t('node.wall')}
           isEditing={isEditing}
           nodeId={nodeId as AnyNodeId}
           onStartEditing={handleStartEditing}

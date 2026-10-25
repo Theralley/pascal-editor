@@ -7,6 +7,8 @@ import { SnapTargetIcon } from '../../../snap-target-badge'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface DormerTreeNodeProps {
   nodeId: AnyNodeId
@@ -25,6 +27,7 @@ export const DormerTreeNode = memo(function DormerTreeNode({
   depth,
   isLast,
 }: DormerTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -50,7 +53,7 @@ export const DormerTreeNode = memo(function DormerTreeNode({
     [nodeId, setSelection],
   )
 
-  const defaultName = node?.name || 'Dormer'
+  const defaultName = node?.name || t('node.dormer')
 
   return (
     <TreeNodeWrapper

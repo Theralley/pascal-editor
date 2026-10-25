@@ -4,6 +4,7 @@ import type { AssetInput } from '@pascal-app/core'
 import { Root as TooltipRoot } from '@radix-ui/react-tooltip'
 import NextImage from 'next/image'
 import { useMemo, useState } from 'react'
+import { type MessageKey, useT } from '../../../../../i18n'
 import { triggerSFX } from '../../../../../lib/sfx-bus'
 import { cn } from '../../../../../lib/utils'
 import { ItemCatalog } from '../../../item-catalog/item-catalog'
@@ -12,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../../../../../components/ui/primitives/tooltip'
+import { messages } from './messages'
 
 /** A function-axis taxonomy node, assembled into a tree by the embedder. */
 export type FunctionTreeNode = {
@@ -21,10 +23,13 @@ export type FunctionTreeNode = {
   children: FunctionTreeNode[]
 }
 
-const SOURCE_CHIPS: Array<{ id: NonNullable<AssetInput['source']>; label: string }> = [
-  { id: 'library', label: 'Library' },
-  { id: 'community', label: 'Community' },
-  { id: 'mine', label: 'Mine' },
+const SOURCE_CHIPS: Array<{
+  id: NonNullable<AssetInput['source']>
+  labelKey: MessageKey<typeof messages>
+}> = [
+  { id: 'library', labelKey: 'source.library' },
+  { id: 'community', labelKey: 'source.community' },
+  { id: 'mine', labelKey: 'source.mine' },
 ]
 
 /** Every slug at or below `node`, so a non-leaf selection matches descendants. */
@@ -64,6 +69,7 @@ export function FunctionTreePanel({
   leadingTile?: React.ReactNode
   emptyState?: React.ReactNode
 }) {
+  const t = useT(messages)
   const [activeRootSlug, setActiveRootSlug] = useState<string | null>(
     functionTree[0]?.slug ?? null,
   )
@@ -178,7 +184,7 @@ export function FunctionTreePanel({
               setSearch(e.target.value)
               onSearchChange?.(e.target.value)
             }}
-            placeholder="Search..."
+            placeholder={t('search')}
             type="text"
             value={search}
           />
@@ -197,7 +203,7 @@ export function FunctionTreePanel({
                   onClick={() => setActiveSource(isActive ? null : chip.id)}
                   type="button"
                 >
-                  {chip.label}
+                  {t(chip.labelKey)}
                 </button>
               )
             })}
@@ -217,7 +223,7 @@ export function FunctionTreePanel({
               onClick={() => setActiveChildSlug(null)}
               type="button"
             >
-              All
+              {t('all')}
             </button>
             {activeRoot.children.map((child) => {
               const isActive = activeChildSlug === child.slug
@@ -250,7 +256,7 @@ export function FunctionTreePanel({
         ) : isServerSearch && search && searchResults?.length === 0 ? (
           (emptyState ?? (
             <div className="flex h-full items-center justify-center text-muted-foreground text-xs">
-              No results for &ldquo;{search}&rdquo;
+              {t('noResults', { query: search })}
             </div>
           ))
         ) : (

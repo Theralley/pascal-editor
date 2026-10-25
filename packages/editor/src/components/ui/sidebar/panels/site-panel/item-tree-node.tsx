@@ -12,6 +12,8 @@ import {
   TreeNodeWrapper,
 } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 const CATEGORY_ICONS: Record<string, string> = {
   door: '/icons/door.webp',
@@ -34,6 +36,7 @@ export const ItemTreeNode = memo(function ItemTreeNode({
   depth,
   isLast,
 }: ItemTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -83,7 +86,7 @@ export const ItemTreeNode = memo(function ItemTreeNode({
 
   const iconSrc = CATEGORY_ICONS[asset?.category ?? ''] || '/icons/couch.webp'
   const snapTarget = resolveNodeSnapTarget(node)
-  const defaultName = asset?.name || 'Item'
+  const defaultName = asset?.name || t('node.item')
   const hasChildren = children.length > 0
 
   return (

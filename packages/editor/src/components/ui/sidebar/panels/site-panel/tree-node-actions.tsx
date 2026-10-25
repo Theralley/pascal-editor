@@ -7,12 +7,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from './../../../../../components/ui/primitives/popover'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface TreeNodeActionsProps {
   nodeId: AnyNodeId
 }
 
 export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNodeActionsProps) {
+  const t = useT(messages)
   const [open, setOpen] = useState(false)
   const updateNode = useScene((state) => state.updateNode)
   const updateNodes = useScene((state) => state.updateNodes)
@@ -57,7 +60,7 @@ export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNod
       <button
         className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
         onClick={toggleVisibility}
-        title={isVisible ? 'Hide' : 'Show'}
+        title={isVisible ? t('action.hide') : t('action.show')}
       >
         {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 opacity-50" />}
       </button>
@@ -67,7 +70,7 @@ export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNod
           <button
             className="relative flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
             onClick={(e) => e.stopPropagation()}
-            title="Camera snapshot"
+            title={t('snapshot.title')}
           >
             <Camera className="h-3 w-3" />
             {hasCamera && (
@@ -88,7 +91,7 @@ export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNod
                 onClick={handleViewCamera}
               >
                 <Camera className="h-3.5 w-3.5" />
-                View snapshot
+                {t('snapshot.view')}
               </button>
             )}
             <button
@@ -96,7 +99,7 @@ export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNod
               onClick={handleCaptureCamera}
             >
               <Camera className="h-3.5 w-3.5" />
-              {hasCamera ? 'Update snapshot' : 'Take snapshot'}
+              {hasCamera ? t('snapshot.update') : t('snapshot.take')}
             </button>
             {hasCamera && (
               <button
@@ -104,7 +107,7 @@ export const TreeNodeActions = memo(function TreeNodeActions({ nodeId }: TreeNod
                 onClick={handleClearCamera}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Clear snapshot
+                {t('snapshot.clear')}
               </button>
             )}
           </div>

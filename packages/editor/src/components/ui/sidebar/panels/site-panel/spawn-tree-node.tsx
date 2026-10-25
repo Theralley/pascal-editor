@@ -7,6 +7,8 @@ import { memo, useCallback, useState } from 'react'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface SpawnTreeNodeProps {
   nodeId: SpawnNode['id']
@@ -19,6 +21,7 @@ export const SpawnTreeNode = memo(function SpawnTreeNode({
   depth,
   isLast,
 }: SpawnTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
   const isSelected = useViewer((state) => state.selection.selectedIds.includes(nodeId))
@@ -60,7 +63,7 @@ export const SpawnTreeNode = memo(function SpawnTreeNode({
       isVisible={isVisible}
       label={
         <InlineRenameInput
-          defaultName="Spawn Point"
+          defaultName={t('node.spawnPoint')}
           isEditing={isEditing}
           nodeId={nodeId}
           onStartEditing={() => setIsEditing(true)}

@@ -13,6 +13,8 @@ import {
   TreeNodeWrapper,
 } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface ShelfTreeNodeProps {
   nodeId: ShelfNode['id']
@@ -32,6 +34,7 @@ export const ShelfTreeNode = memo(function ShelfTreeNode({
   depth,
   isLast,
 }: ShelfTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -97,7 +100,7 @@ export const ShelfTreeNode = memo(function ShelfTreeNode({
       isVisible={isVisible}
       label={
         <InlineRenameInput
-          defaultName="Shelf"
+          defaultName={t('node.shelf')}
           isEditing={isEditing}
           nodeId={nodeId}
           onStartEditing={handleStartEditing}

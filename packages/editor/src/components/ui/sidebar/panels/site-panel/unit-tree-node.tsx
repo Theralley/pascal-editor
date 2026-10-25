@@ -15,13 +15,15 @@ import { ColorDot } from './../../../../../components/ui/primitives/color-dot'
 import { assignZoneToUnit, enterUnitFocus } from './../../../../../lib/units'
 import { InlineRenameInput } from './inline-rename-input'
 import { TreeNodeWrapper } from './tree-node'
+import { messages } from './messages'
+import { type MessageKey, useLocale, useT } from '../../../../../i18n'
 
 type UnitWarningCode = ReturnType<typeof unitWarnings>[number]['code']
 
-const WARNING_LABELS: Record<UnitWarningCode, string> = {
-  empty: 'No zones in this unit',
-  'non-adjacent-levels': 'Members sit on non-adjacent levels',
-}
+const WARNING_LABEL_KEYS = {
+  empty: 'unit.warning.empty',
+  'non-adjacent-levels': 'unit.warning.nonAdjacentLevels',
+} as const satisfies Record<UnitWarningCode, MessageKey<typeof messages>>
 
 const ACTION_BUTTON_CLASS =
   'flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10'
@@ -40,6 +42,7 @@ export const UnitZoneRow = memo(function UnitZoneRow({
   isLast,
   onRemove,
 }: UnitZoneRowProps) {
+  const t = useT(messages)
   const zone = useScene((s) => s.nodes[zoneId] as ZoneNode | undefined)
   const levelLabel = useScene((s) => {
     const level = zone?.parentId ? (s.nodes[zone.parentId as AnyNodeId] as LevelNode | undefined) : undefined
@@ -71,7 +74,7 @@ export const UnitZoneRow = memo(function UnitZoneRow({
               event.stopPropagation()
               onRemove(zoneId)
             }}
-            title="Remove from unit"
+            title={t('unit.removeMember')}
             type="button"
           >
             <X className="h-3 w-3" />
@@ -93,7 +96,7 @@ export const UnitZoneRow = memo(function UnitZoneRow({
       keepIconColor
       label={
         <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="truncate">{zone.name || (zone.spaceRole === 'room' ? 'Room' : 'Zone')}</span>
+          <span className="truncate">{zone.name || t(zone.spaceRole === 'room' ? 'zone.room' : 'zone.zone')}</span>
           {levelLabel && (
             <span className="shrink-0 text-muted-foreground text-xs">{levelLabel}</span>
           )}
@@ -119,6 +122,7 @@ export const UnitTreeNode = memo(function UnitTreeNode({
   depth,
   isLast,
 }: UnitTreeNodeProps) {
+  const t = useT(messages)
   const unitId = nodeId as UnitNode['id']
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -152,7 +156,7 @@ export const UnitTreeNode = memo(function UnitTreeNode({
     [],
   )
 
-  const warningTitle = [...new Set(warningCodes)].map((code) => WARNING_LABELS[code]).join('\n')
+  const warningTitle = [...new Set(warningCodes)].map((code) => t(WARNING_LABEL_KEYS[code])).join('\n')
 
   return (
     <TreeNodeWrapper
@@ -163,7 +167,7 @@ export const UnitTreeNode = memo(function UnitTreeNode({
             event.stopPropagation()
             deleteNode(unitId)
           }}
-          title="Delete unit"
+          title={t('unit.delete')}
           type="button"
         >
           <Trash2 className="h-3 w-3" />
@@ -185,7 +189,7 @@ export const UnitTreeNode = memo(function UnitTreeNode({
       label={
         <span className="flex min-w-0 items-center gap-1.5">
           <InlineRenameInput
-            defaultName="Unit"
+            defaultName={t('unit.name')}
             isEditing={isEditing}
             nodeId={nodeId}
             onStartEditing={() => setIsEditing(true)}
@@ -193,7 +197,7 @@ export const UnitTreeNode = memo(function UnitTreeNode({
           />
           {isFocused && (
             <span className="shrink-0 rounded-full bg-primary/15 px-1.5 text-[10px] text-primary leading-4">
-              Focused
+              {t('unit.focused')}
             </span>
           )}
           {warningCodes.length > 0 && (

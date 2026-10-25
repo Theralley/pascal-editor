@@ -6,6 +6,8 @@ import { SnapTargetIcon } from '../../../snap-target-badge'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface ChimneyTreeNodeProps {
   nodeId: AnyNodeId
@@ -18,6 +20,7 @@ export const ChimneyTreeNode = memo(function ChimneyTreeNode({
   depth,
   isLast,
 }: ChimneyTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
   const node = useScene((s) => s.nodes[nodeId] as ChimneyNode | undefined)
@@ -39,7 +42,7 @@ export const ChimneyTreeNode = memo(function ChimneyTreeNode({
     [nodeId, setSelection],
   )
 
-  const defaultName = node?.name || 'Chimney'
+  const defaultName = node?.name || t('node.chimney')
 
   return (
     <TreeNodeWrapper

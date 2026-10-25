@@ -5,6 +5,8 @@ import { memo, useCallback, useState } from 'react'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface ColumnTreeNodeProps {
   nodeId: AnyNodeId
@@ -17,6 +19,7 @@ export const ColumnTreeNode = memo(function ColumnTreeNode({
   depth,
   isLast,
 }: ColumnTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
   const node = useScene((s) => s.nodes[nodeId] as ColumnNode | undefined)
@@ -38,7 +41,7 @@ export const ColumnTreeNode = memo(function ColumnTreeNode({
     [nodeId, setSelection],
   )
 
-  const defaultName = node?.name || 'Column'
+  const defaultName = node?.name || t('node.column')
 
   return (
     <TreeNodeWrapper

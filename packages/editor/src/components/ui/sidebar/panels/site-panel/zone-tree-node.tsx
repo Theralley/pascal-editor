@@ -13,6 +13,8 @@ import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
 import { ZoneMembershipCheckbox } from './zone-membership-checkbox'
+import { messages } from './messages'
+import { useLocale, useT } from '../../../../../i18n'
 
 interface ZoneTreeNodeProps {
   nodeId: ZoneNode['id']
@@ -25,6 +27,8 @@ export const ZoneTreeNode = memo(function ZoneTreeNode({
   depth,
   isLast,
 }: ZoneTreeNodeProps) {
+  const t = useT(messages)
+  const locale = useLocale()
   const [isEditing, setIsEditing] = useState(false)
   const updateNode = useScene((state) => state.updateNode)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -48,7 +52,10 @@ export const ZoneTreeNode = memo(function ZoneTreeNode({
   const handleStartEditing = useCallback(() => setIsEditing(true), [])
   const handleStopEditing = useCallback(() => setIsEditing(false), [])
 
-  const defaultName = `${kind} (${formatAreaLabel(calculatePolygonArea(polygon), unit)})`
+  const defaultName = t('node.areaLabel', {
+    name: t(kind === 'Room' ? 'zone.room' : 'zone.zone'),
+    area: formatAreaLabel(calculatePolygonArea(polygon), unit, 1, locale),
+  })
 
   return (
     <TreeNodeWrapper
@@ -70,7 +77,7 @@ export const ZoneTreeNode = memo(function ZoneTreeNode({
             <ZoneMembershipCheckbox
               checked={focusedUnit.members.includes(nodeId)}
               onToggle={() => toggleZoneMembership(focusedUnit.id, nodeId)}
-              unitName={focusedUnit.name || 'Unit'}
+              unitName={focusedUnit.name || t('unit.name')}
             />
           )}
           <InlineRenameInput

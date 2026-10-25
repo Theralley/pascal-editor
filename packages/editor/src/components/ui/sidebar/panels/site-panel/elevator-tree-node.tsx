@@ -5,6 +5,8 @@ import { memo, useCallback, useState } from 'react'
 import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 interface ElevatorTreeNodeProps {
   nodeId: AnyNodeId
@@ -17,6 +19,7 @@ export const ElevatorTreeNode = memo(function ElevatorTreeNode({
   depth,
   isLast,
 }: ElevatorTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
   const node = useScene((s) => s.nodes[nodeId] as ElevatorNode | undefined)
@@ -53,7 +56,7 @@ export const ElevatorTreeNode = memo(function ElevatorTreeNode({
       isVisible={isVisible}
       label={
         <InlineRenameInput
-          defaultName={node?.name || 'Elevator'}
+          defaultName={node?.name || t('node.elevator')}
           isEditing={isEditing}
           nodeId={nodeId}
           onStartEditing={() => setIsEditing(true)}

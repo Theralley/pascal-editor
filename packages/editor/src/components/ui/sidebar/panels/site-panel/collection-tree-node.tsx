@@ -15,6 +15,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { ColorDot } from './../../../../../components/ui/primitives/color-dot'
 import { InlineRenameField } from './inline-rename-input'
 import { TreeNode, TreeNodeWrapper } from './tree-node'
+import { messages } from './messages'
+import { useT } from '../../../../../i18n'
 
 const ACTION_BUTTON_CLASS =
   'flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10'
@@ -44,6 +46,7 @@ function useLiveMembers(collectionId: CollectionId) {
 
 /** Collections, listed under the level tree. Absent when the scene has none. */
 export const CollectionsSection = memo(function CollectionsSection() {
+  const t = useT(messages)
   const collectionIds = useScene(useShallow((s) => Object.keys(s.collections) as CollectionId[]))
   const [expanded, setExpanded] = useState(true)
 
@@ -58,7 +61,7 @@ export const CollectionsSection = memo(function CollectionsSection() {
         icon={<Layers className="h-3.5 w-3.5" />}
         label={
           <span className="flex items-center gap-1.5">
-            Collections
+            {t('collections.title')}
             <span className="text-muted-foreground text-xs">{collectionIds.length}</span>
           </span>
         }
@@ -90,6 +93,7 @@ const CollectionTreeNode = memo(function CollectionTreeNode({
   depth,
   isLast,
 }: CollectionTreeNodeProps) {
+  const t = useT(messages)
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const name = useScene((s) => s.collections[collectionId]?.name)
@@ -147,7 +151,7 @@ const CollectionTreeNode = memo(function CollectionTreeNode({
             event.stopPropagation()
             deleteCollection(collectionId)
           }}
-          title="Delete collection"
+          title={t('collection.delete')}
           type="button"
         >
           <Trash2 className="h-3 w-3" />
@@ -159,7 +163,7 @@ const CollectionTreeNode = memo(function CollectionTreeNode({
       icon={
         <ColorDot
           color={color ?? '#6366f1'}
-          label="Collection colour"
+          label={t('collection.colour')}
           onChange={(next) => updateCollection(collectionId, { color: next })}
         />
       }
@@ -169,7 +173,7 @@ const CollectionTreeNode = memo(function CollectionTreeNode({
       label={
         <span className="flex min-w-0 items-center gap-1.5">
           <InlineRenameField
-            defaultName="Collection"
+            defaultName={t('collection.name')}
             isEditing={isEditing}
             name={name}
             onRename={handleRename}

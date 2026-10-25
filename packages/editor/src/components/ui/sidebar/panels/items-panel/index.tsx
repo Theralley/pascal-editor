@@ -3,6 +3,7 @@
 import type { AssetInput } from '@pascal-app/core'
 import NextImage from 'next/image'
 import { useEffect, useState } from 'react'
+import { type MessageKey, useT } from '../../../../../i18n'
 import { triggerSFX } from '../../../../../lib/sfx-bus'
 import { cn } from '../../../../../lib/utils'
 import type { CatalogCategory } from '../../../../../store/use-editor'
@@ -11,6 +12,7 @@ import { furnishTools } from '../../../action-menu/furnish-tools'
 import { CATALOG_ITEMS } from '../../../item-catalog/catalog-items'
 import { ItemCatalog } from '../../../item-catalog/item-catalog'
 import { type FunctionTreeNode, FunctionTreePanel } from './function-tree-panel'
+import { messages } from './messages'
 
 const PLACEMENT_TAGS = new Set(['floor', 'wall', 'ceiling', 'countertop'])
 
@@ -98,6 +100,7 @@ function LegacyItemsPanel({
   showSourceFilter?: boolean
   showTagFilters?: boolean
 }) {
+  const t = useT(messages)
   const mode = useEditor((s) => s.mode)
   const catalogCategory = useEditor((s) => s.catalogCategory)
   const setMode = useEditor((s) => s.setMode)
@@ -166,10 +169,10 @@ function LegacyItemsPanel({
   // The three source chips are always shown so users can discover the
   // filter even before they own any items. Selecting "Mine" with no
   // matching items falls through to the empty/no-results state.
-  const sourceChips: Array<{ id: AssetInput['source']; label: string }> = [
-    { id: 'library', label: 'Library' },
-    { id: 'community', label: 'Community' },
-    { id: 'mine', label: 'Mine' },
+  const sourceChips: Array<{ id: AssetInput['source']; labelKey: MessageKey<typeof messages> }> = [
+    { id: 'library', labelKey: 'source.library' },
+    { id: 'community', labelKey: 'source.community' },
+    { id: 'mine', labelKey: 'source.mine' },
   ]
   const allTags = Array.from(new Set(categoryItems.flatMap((item) => item.tags ?? [])))
   const placementTags = allTags.filter((t) => PLACEMENT_TAGS.has(t))
@@ -242,7 +245,7 @@ function LegacyItemsPanel({
               setSearch(e.target.value)
               onSearchChange?.(e.target.value)
             }}
-            placeholder="Search..."
+            placeholder={t('search')}
             type="text"
             value={search}
           />
@@ -262,7 +265,7 @@ function LegacyItemsPanel({
                     onClick={() => setActiveSource(isActive ? null : chip.id)}
                     type="button"
                   >
-                    {chip.label}
+                    {t(chip.labelKey)}
                   </button>
                 )
               })}
@@ -284,7 +287,7 @@ function LegacyItemsPanel({
                   onClick={() => setActivePlacementTag(null)}
                   type="button"
                 >
-                  All
+                  {t('all')}
                 </button>
                 {placementTags.map((tag) => {
                   const count = placementCount(tag)
@@ -376,7 +379,7 @@ function LegacyItemsPanel({
         ) : isServerSearch && search && searchResults?.length === 0 ? (
           (emptyState ?? (
             <div className="flex h-full items-center justify-center text-muted-foreground text-xs">
-              No results for &ldquo;{search}&rdquo;
+              {t('noResults', { query: search })}
             </div>
           ))
         ) : (
