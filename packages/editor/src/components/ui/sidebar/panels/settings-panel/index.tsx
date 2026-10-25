@@ -80,10 +80,9 @@ import {
   useT,
 } from './../../../../../i18n'
 import { cn } from './../../../../../lib/utils'
-import { refusedObjectsNotice } from './../../../../../components/editor/group-actions'
 import { addStoreyBelow, addStoreyOnTop } from './../../../../../lib/add-storey'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
-import { bringBuildArtifacts } from './../../../../../lib/scene-clipboard'
+import { bringBuildArtifacts, type PasteRefusal } from './../../../../../lib/scene-clipboard'
 import useEditor, { selectDefaultBuildingAndLevel } from './../../../../../store/use-editor'
 import useFloorplanMode from './../../../../../store/use-floorplan-mode'
 import { type SendToAppStep, useSendToApp } from './../../../../../store/use-send-to-app'
@@ -134,6 +133,12 @@ const SEND_TO_BLENDER_STEP_LABEL = {
   sending: 'blender.sending',
   importing: 'blender.importing',
 } as const satisfies Record<SendToAppStep, MessageKey<typeof messages>>
+
+const REFUSAL_REASON = {
+  'no-access': 'saveLoad.refused.no-access',
+  'no-copies': 'saveLoad.refused.no-copies',
+  failed: 'saveLoad.refused.failed',
+} as const satisfies Record<PasteRefusal, MessageKey<typeof messages>>
 
 const BLENDER_ADDON_URL = 'https://github.com/pascalorg/blender-addon#install'
 
@@ -789,7 +794,12 @@ export function SettingsPanel({
     if (refusal) {
       useFloorplanMode
         .getState()
-        .showNotice(refusedObjectsNotice(refusedIds.length, refusal, 'loaded'))
+        .showNotice(
+          t('saveLoad.refused', {
+            count: refusedIds.length,
+            reason: t(REFUSAL_REASON[refusal], { count: refusedIds.length }),
+          }),
+        )
     }
     const currentScene = useScene.getState()
     setScene(
@@ -1210,16 +1220,18 @@ export function SettingsPanel({
                   : t('blender.send')}
               </Button>
               <p className="text-muted-foreground text-xs">
-                {t('blender.needsBefore')}{' '}
-                <a
-                  className="underline underline-offset-2"
-                  href={BLENDER_ADDON_URL}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {t('blender.addon')}
-                </a>{' '}
-                {t('blender.needsAfter')}
+                {t.rich('blender.needs', {
+                  link: (text) => (
+                    <a
+                      className="underline underline-offset-2"
+                      href={BLENDER_ADDON_URL}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {text}
+                    </a>
+                  ),
+                })}
               </p>
             </div>
             {sendToBlenderMessage ? (

@@ -6,6 +6,7 @@ import { resolveAuthMode } from '@/lib/self-host-auth'
 import { SettingsView } from './settings-view'
 
 export const dynamic = 'force-dynamic'
+// i18n-ignore: server metadata cannot follow the language chosen in the browser
 export const metadata: Metadata = { title: 'Settings · Pascal' }
 
 /** Server components see headers, not a Request; the auth helpers want the latter. */

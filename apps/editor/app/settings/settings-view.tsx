@@ -46,7 +46,6 @@ export function SettingsView({
 
         <Section title={t('agent.title')}>
           <Row label={t('agent.sceneApi')}>
-            {/* i18n-ignore: an API path */}
             <code className="font-mono">{publicUrl}/api/scenes</code>
           </Row>
           <Row label={t('agent.token')}>
@@ -58,7 +57,7 @@ export function SettingsView({
         </Section>
 
         <Section title={t('preferences.title')}>
-          <div className="px-4 py-3">
+          <div className="@container px-4 py-3">
             <LanguageRow />
           </div>
         </Section>

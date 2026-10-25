@@ -59,10 +59,16 @@ export interface ParseMeasurementOptions {
   /** Disambiguates gal/ton/cup families; harmless for length/angle. */
   system?: 'metric' | 'us' | 'imperial'
   /**
-   * Whose decimal separator to read. Defaults to the active locale. Swedish reads `1,5` and `1,500`
-   * as one and a half; English keeps a comma between digits as a thousands separator.
+   * Whose decimal separator to read. Defaults to the active locale. Swedish reads a comma between
+   * digits as the decimal point (`1,5` and `1,500` are one and a half) unless the text also has a
+   * point (`1,234.5` keeps its English reading); English keeps the comma as a thousands separator.
    */
   locale?: Locale
+}
+
+/** Swedish text with a decimal comma and no point, as English text the parser reads. */
+export function normalizeDecimalComma(raw: string, locale: Locale = getLocale()): string {
+  return locale === 'sv' && !raw.includes('.') ? raw.replace(/(\d),(\d)/g, '$1.$2') : raw
 }
 
 /**
@@ -75,7 +81,7 @@ export function parseMeasurement(
   spec: LingoUnitSpec,
   options: ParseMeasurementOptions = {},
 ): number | null {
-  const text = (options.locale ?? getLocale()) === 'sv' ? raw.replace(/(\d),(\d)/g, '$1.$2') : raw
+  const text = normalizeDecimalComma(raw, options.locale)
   const result = parseQuantity(text, {
     kind: spec.kind,
     unit: options.bareUnit ?? spec.unitId,
@@ -100,6 +106,7 @@ export interface MeasurementHintOptions extends ParseMeasurementOptions {
 }
 
 const PLAIN_NUMBER = /^[+-]?\d*\.?\d*$/
+const PLAIN_NUMBER_COMMA = /^[+-]?\d*[.,]?\d*$/
 
 /**
  * A faint "= 1.83 m" preview of the value currently being typed, shown only
@@ -113,7 +120,8 @@ export function measurementHint(
   options: MeasurementHintOptions = {},
 ): string | null {
   const trimmed = raw.trim()
-  if (!trimmed || PLAIN_NUMBER.test(trimmed)) return null
+  const plain = (options.locale ?? getLocale()) === 'sv' ? PLAIN_NUMBER_COMMA : PLAIN_NUMBER
+  if (!trimmed || plain.test(trimmed)) return null
 
   const parsed = parseMeasurement(trimmed, spec, options)
   if (parsed === null) return null

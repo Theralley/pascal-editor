@@ -120,7 +120,7 @@ import {
   syncKeyboardPanMotion,
 } from '../../lib/keyboard-pan'
 import { measurementHint, parseMeasurement } from '../../lib/measurement-parser'
-import { formatDecimal, formatLinearMeasurement, linearUnitToMeters } from '../../lib/measurements'
+import { formatLinearMeasurement, linearUnitToMeters } from '../../lib/measurements'
 import { snapRegisteredDraftPoint } from '../../lib/registered-draft-snap'
 import { selectRoomFromHit } from '../../lib/room-selection-commands'
 import { enterBuildingFromPlanHit } from '../../lib/selection-routing'
@@ -2562,7 +2562,7 @@ function formatArea(
   }
   return (
     <>
-      {formatDecimal(scaledAreaSqM, { maxFractionDigits: 1 })}
+      {Number.parseFloat(scaledAreaSqM.toFixed(1))}
       <tspan dx="0.12em">m</tspan>
       <tspan baselineShift="super" fontSize="0.75em">
         2

@@ -23,6 +23,7 @@ import {
   measurementPolygonLabelAnchor,
   measurementPresentationColor,
   triangulateMeasurementPolygon,
+  useLocale,
 } from '@pascal-app/editor'
 import { OVERLAY_LAYER, useNodeEvents, useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
@@ -355,10 +356,11 @@ export const MeasurementRenderer = ({ node }: { node: MeasurementNode }) => {
     return liveOverride ? ({ ...referencedNode, ...liveOverride } as AnyNode) : referencedNode
   })
   const data = buildRenderData(resolved.payload)
+  const locale = useLocale()
   const label = useMemo(() => {
     const value = formatMeasurement(resolved.payload, unit, metricNotation)
     return resolved.dangling.length > 0 ? `Unlinked · ${value}` : value
-  }, [metricNotation, resolved, unit])
+  }, [locale, metricNotation, resolved, unit])
   const color = measurementPresentationColor(resolved.dangling.length > 0, active)
   const lineMaterial = useMemo(
     () =>

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { renderCurrentMarkup } from '../test-utils/render-current-markup'
 import {
   detectLocale,
   getLocale,
@@ -16,21 +16,26 @@ const messages = defineMessages({
     greeting: 'Hello {name}',
     floors: { one: '{count} floor', other: '{count} floors' },
     save: 'Save',
+    width: '{n} m',
+    needs: 'Needs <link>the add-on</link> now',
   },
   sv: {
     greeting: 'Hej {name}',
     floors: { one: '{count} våning', other: '{count} våningar' },
     save: 'Spara',
+    width: '{n} m',
+    needs: 'Kräver <link>tillägget</link> nu',
   },
 })
 
-const incomplete = defineMessages({
+// Compile-time fixtures: the type check is the test.
+export const incomplete = defineMessages({
   en: { save: 'Save', cancel: 'Cancel' },
   // @ts-expect-error `cancel` is missing from `sv`
   sv: { save: 'Spara' },
 })
 
-const surplus = defineMessages({
+export const surplus = defineMessages({
   en: { save: 'Save' },
   // @ts-expect-error `cancel` is not a key of `en`
   sv: { save: 'Spara', cancel: 'Avbryt' },
@@ -63,9 +68,15 @@ describe('translate', () => {
     expect(translate(messages, 'greeting', {})).toBe('Hello {name}')
   })
 
-  test('the type-completeness fixtures still define their English side', () => {
-    expect(incomplete.en.cancel).toBe('Cancel')
-    expect(surplus.en.save).toBe('Save')
+  test('formats a number in the active language', () => {
+    expect(translate(messages, 'width', { n: 1.5 })).toBe('1.5 m')
+    setLocale('sv')
+    expect(translate(messages, 'width', { n: 1.5 })).toBe('1,5 m')
+  })
+
+  test('accepts only catalogs made by defineMessages', () => {
+    // @ts-expect-error a hand-written catalog has no brand
+    translate({ en: { save: 'Save' }, sv: { cancel: 'Avbryt' } }, 'save')
   })
 })
 
@@ -76,9 +87,41 @@ describe('useT', () => {
   }
 
   test('renders the catalog in the active locale', () => {
-    expect(renderToStaticMarkup(<Label />)).toBe('<span>Save</span>')
+    expect(renderCurrentMarkup(<Label />)).toBe('<span>Save</span>')
     setLocale('sv')
-    expect(renderToStaticMarkup(<Label />)).toBe('<span>Spara</span>')
+    expect(renderCurrentMarkup(<Label />)).toBe('<span>Spara</span>')
+  })
+})
+
+describe('rich messages', () => {
+  function Rich() {
+    const t = useT(messages)
+    return <p>{t.rich('needs', { link: (text) => <a href="#add-on">{text}</a> })}</p>
+  }
+
+  test('puts elements inside the sentence', () => {
+    expect(renderCurrentMarkup(<Rich />)).toBe('<p>Needs <a href="#add-on">the add-on</a> now</p>')
+    setLocale('sv')
+    expect(renderCurrentMarkup(<Rich />)).toBe('<p>Kräver <a href="#add-on">tillägget</a> nu</p>')
+  })
+
+  test('leaves a tag without an entry as written', () => {
+    function Plain() {
+      const t = useT(messages)
+      return <p>{t.rich('needs', {})}</p>
+    }
+    expect(renderCurrentMarkup(<Plain />)).toContain('&lt;link&gt;the add-on&lt;/link&gt;')
+  })
+})
+
+describe('locale store', () => {
+  test('tells subscribers when the locale changes', () => {
+    const seen: string[] = []
+    const stop = localeStore.subscribe((state) => seen.push(state.locale))
+    setLocale('sv')
+    setLocale('en')
+    stop()
+    expect(seen).toEqual(['sv', 'en'])
   })
 })
 

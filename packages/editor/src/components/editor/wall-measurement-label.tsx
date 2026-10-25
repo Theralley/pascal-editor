@@ -24,6 +24,7 @@ import { Html } from '@react-three/drei'
 import { createPortal, useFrame } from '@react-three/fiber'
 import { useMemo, useState } from 'react'
 import * as THREE from 'three'
+import { useLocale } from '../../i18n'
 import { formatLinearMeasurement } from '../../lib/measurements'
 
 const GUIDE_Y_OFFSET = 0.08
@@ -508,6 +509,7 @@ function SelectedMeasurementAnnotation({ node }: { node: WallNode | ItemNode }) 
 }
 
 function WallMeasurementAnnotation({ wall }: { wall: WallNode }) {
+  useLocale()
   const nodes = useScene((state) => state.nodes)
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)

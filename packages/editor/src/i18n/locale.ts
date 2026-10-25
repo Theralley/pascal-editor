@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import React from 'react'
 import { createStore } from 'zustand/vanilla'
 import { LOCALES, type Locale } from './messages'
 
@@ -52,6 +52,7 @@ export function hydrateLocale() {
   if (locale !== getLocale()) localeStore.setState({ locale })
 }
 
+/** English on the server and during hydration, so a late-hydrating part still matches the markup. */
 export function useLocale(): Locale {
-  return useSyncExternalStore(localeStore.subscribe, getLocale, getLocale)
+  return React.useSyncExternalStore(localeStore.subscribe, getLocale, () => 'en')
 }

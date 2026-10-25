@@ -13,6 +13,7 @@ export {
   type Message,
   type MessageCatalog,
   type MessageKey,
+  type MessageTags,
   type MessageVars,
   type PluralMessage,
 } from './messages'

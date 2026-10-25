@@ -137,19 +137,20 @@ export function getLinearUnitLabel(unit: LinearUnit): string {
   return unit === 'imperial' ? 'ft' : 'm'
 }
 
-const INTL_LOCALE: Record<Locale, string> = { en: 'en-US', sv: 'sv-SE' }
-
-/** A decimal in the locale's own separator, never grouped, so a label stays as wide as its digits. */
+/**
+ * A decimal with the locale's separator, never grouped, so a label stays as wide as its digits.
+ * The digits are `toFixed`'s, as before; only the separator changes in Swedish. With equal minimum
+ * and maximum the fraction is fixed; otherwise trailing zeros are dropped.
+ */
 export function formatDecimal(
   value: number,
   options: { minFractionDigits?: number; maxFractionDigits: number },
   locale: Locale = getLocale(),
 ): string {
-  return new Intl.NumberFormat(INTL_LOCALE[locale], {
-    minimumFractionDigits: options.minFractionDigits ?? 0,
-    maximumFractionDigits: options.maxFractionDigits,
-    useGrouping: false,
-  }).format(value)
+  const fixed = value.toFixed(options.maxFractionDigits)
+  const text =
+    options.minFractionDigits === options.maxFractionDigits ? fixed : `${Number.parseFloat(fixed)}`
+  return locale === 'sv' ? text.replace('.', ',') : text
 }
 
 /** Swedish sets a space between a number and its unit; English keeps them together. */

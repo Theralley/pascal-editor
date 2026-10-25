@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { formatRoomArea } from '../components/editor/room-labels'
 import { setLocale } from '../i18n'
 import { measurementHint, parseMeasurement } from '../index'
+import { normalizeDecimalComma } from './measurement-parser'
 import {
   buildMeasurementAngleArcPoints,
   cubicMetersToVolumeUnit,
@@ -239,6 +240,25 @@ describe('measurements in the active language', () => {
     expect(formatLinearMeasurement(1.234, 'metric', 'millimeters', 'en')).toBe('1234mm')
   })
 
+  test('English digits are exactly the ones toFixed gives, where Intl would round half up', () => {
+    const cases = [
+      [formatAreaLabel(0.15, 'metric', 1, 'en'), '0.1m²'],
+      [formatAreaLabel(1.15, 'metric', 1, 'en'), '1.1m²'],
+      [formatAreaLabel(2.675, 'metric', 2, 'en'), '2.67m²'],
+      [formatAreaLabel(2.55, 'metric', 1, 'en'), '2.5m²'],
+      [formatVolumeLabel(1.005, 'metric', 2, 'en'), '1.00m³'],
+      [formatVolumeLabel(0.35, 'metric', 1, 'en'), '0.3m³'],
+      [formatRoomArea(0.15, 'metric'), '0.1 m²'],
+    ]
+    for (const [actual, expected] of cases) expect(actual).toBe(expected)
+  })
+
+  test('Swedish digits are the same ones with a comma, and a negative keeps the ASCII minus', () => {
+    expect(formatAreaLabel(0.15, 'metric', 1, 'sv')).toBe('0,1 m²')
+    expect(formatAreaLabel(-1, 'metric', 1, 'sv')).toBe('-1,0 m²')
+    expect(formatLinearMeasurement(-1.5, 'metric', 'meters', 'sv')).toBe('-1,5 m')
+  })
+
   test('feet and inches read the same in both languages', () => {
     expect(formatLinearMeasurement(5.8, 'imperial', 'meters', 'sv')).toBe(`19'0"`)
     expect(formatLinearMeasurement(5.8, 'imperial', 'meters', 'en')).toBe(`19'0"`)
@@ -260,5 +280,21 @@ describe('measurements in the active language', () => {
     expect(parseMeasurement('1.5', length, { locale: 'sv' })).toBeCloseTo(1.5)
     expect(parseMeasurement('1.5', length, { locale: 'en' })).toBeCloseTo(1.5)
     expect(parseMeasurement('1,500', length, { locale: 'en' })).toBeCloseTo(1500)
+  })
+
+  test('Swedish keeps the English reading when the text also has a point', () => {
+    const length = { kind: 'length', unitId: 'm' } as const
+    expect(parseMeasurement('1,234.5 m', length, { locale: 'sv' })).toBeCloseTo(1234.5)
+    expect(parseMeasurement('1,234.5 m', length, { locale: 'en' })).toBeCloseTo(1234.5)
+    expect(parseMeasurement(`5'11"`, length, { locale: 'sv' })).toBeCloseTo(1.8034)
+    expect(parseMeasurement(`5'11"`, length, { locale: 'en' })).toBeCloseTo(1.8034)
+  })
+
+  test('a plain Swedish decimal gets no hint; a unit still does', () => {
+    const length = { kind: 'length', unitId: 'm' } as const
+    expect(measurementHint('1,5', length, { locale: 'sv' })).toBeNull()
+    expect(measurementHint('1,5 cm', length, { locale: 'sv' })).toBe('= 0.02 m')
+    expect(normalizeDecimalComma('1,5', 'sv')).toBe('1.5')
+    expect(normalizeDecimalComma('1,5', 'en')).toBe('1,5')
   })
 })

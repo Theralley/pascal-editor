@@ -2,7 +2,12 @@
 
 import { useScene } from '@pascal-app/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { lingoUnitSpec, measurementHint, parseMeasurement } from '../../../lib/measurement-parser'
+import {
+  lingoUnitSpec,
+  measurementHint,
+  normalizeDecimalComma,
+  parseMeasurement,
+} from '../../../lib/measurement-parser'
 import { useLinearDisplay } from '../../../lib/use-linear-display'
 import { cn } from '../../../lib/utils'
 
@@ -237,7 +242,7 @@ export function MetricControl({
         })
       : null
     if (stored === null) {
-      const numValue = Number.parseFloat(inputValue)
+      const numValue = Number.parseFloat(normalizeDecimalComma(inputValue))
       stored = Number.isFinite(numValue) ? toStoredValue(numValue) : null
     }
     if (stored === null) {

@@ -45,6 +45,7 @@ import {
 } from 'three'
 import { useShallow } from 'zustand/react/shallow'
 import { useRoomRecords } from '../../hooks/use-selected-room'
+import { useLocale } from '../../i18n'
 import {
   formatDecimal,
   getAreaUnitLabel,
@@ -1265,11 +1266,12 @@ export function RoomPillChip({
   onLeave: () => void
 }) {
   const unit = useViewer((s) => s.unit)
+  const locale = useLocale()
   const areaLabel = formatRoomArea(areaM2, unit)
   // biome-ignore lint/correctness/useExhaustiveDependencies: A dot's border box does not resize when its hidden text changes.
   useLayoutEffect(() => {
     if (elements instanceof PillElements) elements.measure(zoneId)
-  }, [areaM2, elements, name, unit, zoneId])
+  }, [areaM2, elements, locale, name, unit, zoneId])
   const register = useCallback(
     (element: HTMLElement | null) => {
       if (element) elements.set(zoneId, element)
@@ -1323,6 +1325,7 @@ export function RoomPillDetail({
   areaM2: number
 }) {
   const unit = useViewer((s) => s.unit)
+  useLocale()
   return (
     <div
       aria-hidden

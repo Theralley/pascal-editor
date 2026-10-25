@@ -3,6 +3,7 @@
 import type { QuickMeasurementMetric, QuickMeasurementReport } from '@pascal-app/core'
 import { Crosshair, MapPin } from 'lucide-react'
 import { memo } from 'react'
+import { useLocale } from '../../i18n'
 import { formatAreaLabel, formatLinearMeasurement, formatVolumeLabel } from '../../lib/measurements'
 
 function formatMetric(
@@ -26,6 +27,7 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   metricNotation: 'meters' | 'millimeters'
   lensState: 'live' | 'pinned'
 }) {
+  useLocale()
   const pinned = lensState === 'pinned'
 
   return (

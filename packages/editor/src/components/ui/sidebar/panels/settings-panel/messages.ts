@@ -87,9 +87,7 @@ export const messages = defineMessages({
     'blender.exporting': 'Preparing the scene…',
     'blender.sending': 'Sending to Blender…',
     'blender.importing': 'Blender is importing…',
-    'blender.needsBefore': 'Needs the',
-    'blender.addon': 'Pascal add-on for Blender',
-    'blender.needsAfter': 'running in an open Blender.',
+    'blender.needs': 'Needs the <link>Pascal add-on for Blender</link> running in Blender.',
     'blender.unreachable':
       'Blender isn’t listening. Open Blender with the Pascal add-on installed and enabled, then try again.',
     'blender.refused':
@@ -125,6 +123,22 @@ export const messages = defineMessages({
     'saveLoad.saveFailed': 'Could not save the file',
     'saveLoad.sourceFailed': 'Could not save the source file',
     'saveLoad.invalidJson': 'File could not be parsed as JSON.',
+    'saveLoad.refused': {
+      one: '1 object wasn’t loaded: {reason}',
+      other: '{count} objects weren’t loaded: {reason}',
+    },
+    'saveLoad.refused.no-access': {
+      one: 'you no longer have access to the project it came from.',
+      other: 'you no longer have access to the project they came from.',
+    },
+    'saveLoad.refused.no-copies': {
+      one: 'this version is not available to copy from the source project.',
+      other: 'these versions are not available to copy from the source project.',
+    },
+    'saveLoad.refused.failed': {
+      one: 'it couldn’t be copied. Try again.',
+      other: 'they couldn’t be copied. Try again.',
+    },
 
     'preferences.title': 'Preferences',
     'preferences.description':
@@ -303,12 +317,12 @@ export const messages = defineMessages({
     'units.label': 'Enheter',
     'units.notSet': 'Inte angivet',
     'units.metric': 'Metriskt',
-    'units.imperial': 'Imperiskt',
+    'units.imperial': 'Imperialt',
     'units.differsFromProject':
       'Du visar andra enheter än projektet. Välj projektets enheter i visningsmenyn.',
     'units.fromProject': 'Alla som öppnar projektet ser dessa enheter.',
     'units.usingMetric': 'Inte angivet: använder metriska enheter (ditt standardval).',
-    'units.usingImperial': 'Inte angivet: använder imperiska enheter (ditt standardval).',
+    'units.usingImperial': 'Inte angivet: använder imperiala enheter (ditt standardval).',
 
     'floors.heading': 'Våningar',
     'floors.add': 'Lägg till våning',
@@ -336,12 +350,12 @@ export const messages = defineMessages({
     'sharing.publicHint': 'Alla med länken kan se det.',
     'sharing.scans': 'Visa 3D-skanningar',
     'sharing.floorPlans': 'Visa planritningar',
-    'sharing.publicViewerHint': 'Syns i den offentliga visaren.',
+    'sharing.publicViewerHint': 'Syns i den publika visningen.',
 
     'projectUnits.title': 'Projektets enheter',
     'projectUnits.description': 'Sparas i projektet för alla som öppnar det.',
 
-    'viewer.title': 'Visare',
+    'viewer.title': 'Visning',
     'viewer.description': 'Renderingsalternativ för den här redigeringssessionen.',
     'viewer.shadows': 'Skuggor',
     'viewer.shadowsHint': 'Låt ljuskällor kasta skuggor.',
@@ -360,8 +374,8 @@ export const messages = defineMessages({
     'export.includeAria': 'Ta med {label} i modellfilerna',
     'export.noOptional': 'Inget valfritt procedurellt innehåll finns.',
     'export.surroundingsExcluded':
-      'Visarens omgivningar tas inte med om du inte väljer dem separat nedan.',
-    'export.surroundings': 'Visarens omgivningar',
+      'Visningens omgivningar tas inte med om du inte väljer dem separat nedan.',
+    'export.surroundings': 'Visningens omgivningar',
     'export.surroundingsHint': 'Valfria statiska omgivningar tas bara med i GLB och USDZ.',
     'export.includeSurroundingAria': 'Ta med {label} i GLB och USDZ',
     'export.button': 'Exportera {format}',
@@ -376,13 +390,11 @@ export const messages = defineMessages({
     'blender.exporting': 'Förbereder scenen…',
     'blender.sending': 'Skickar till Blender…',
     'blender.importing': 'Blender importerar…',
-    'blender.needsBefore': 'Kräver',
-    'blender.addon': 'Pascal-tillägget för Blender',
-    'blender.needsAfter': 'som körs i en öppen Blender.',
+    'blender.needs': 'Kräver <link>Pascal-tillägget för Blender</link> som körs i Blender.',
     'blender.unreachable':
       'Blender svarar inte. Öppna Blender med Pascal-tillägget installerat och aktiverat och försök igen.',
     'blender.refused':
-      'Blender är öppet men har inte tillåtit {origin} än. Öppna fliken Pascal i 3D-vyns sidopanel (N) i Blender och klicka på Tillåt.',
+      'Blender körs men har inte tillåtit {origin} än. Öppna fliken Pascal i 3D-vyns sidopanel (N) i Blender och klicka på Tillåt.',
     'blender.sentWithSummary': 'Skickat till Blender. {summary}.',
     'blender.sent': 'Skickat till Blender.',
     'blender.failed': 'Det gick inte att skicka scenen till Blender. Försök igen.',
@@ -414,6 +426,22 @@ export const messages = defineMessages({
     'saveLoad.saveFailed': 'Det gick inte att spara filen',
     'saveLoad.sourceFailed': 'Det gick inte att spara källfilen',
     'saveLoad.invalidJson': 'Filen kunde inte tolkas som JSON.',
+    'saveLoad.refused': {
+      one: '1 objekt lästes inte in: {reason}',
+      other: '{count} objekt lästes inte in: {reason}',
+    },
+    'saveLoad.refused.no-access': {
+      one: 'du har inte längre åtkomst till projektet det kom från.',
+      other: 'du har inte längre åtkomst till projektet de kom från.',
+    },
+    'saveLoad.refused.no-copies': {
+      one: 'den här versionen kan inte kopieras från källprojektet.',
+      other: 'de här versionerna kan inte kopieras från källprojektet.',
+    },
+    'saveLoad.refused.failed': {
+      one: 'det gick inte att kopiera. Försök igen.',
+      other: 'det gick inte att kopiera dem. Försök igen.',
+    },
 
     'preferences.title': 'Inställningar',
     'preferences.description':
@@ -432,7 +460,7 @@ export const messages = defineMessages({
     'speed.offHint': 'Slå på byggnadsanimationen för att använda detta.',
     'speed.hint': 'Högre spelar upp ett bygge snabbare; det gäller nästa bygge.',
     'speed.normal': 'Den takt som byggena gjordes i.',
-    'speed.factor': 'Byggen spelas upp ×{speed} så snabbt.',
+    'speed.factor': 'Byggen spelas upp {speed} gånger så snabbt.',
 
     'construction.label': 'Byggnadsanimation',
     'construction.off': 'Av',
@@ -560,7 +588,7 @@ export const messages = defineMessages({
       'Tryck och släpp utan att trycka på något annat, medan en ritnings- eller flyttgest är tillgänglig.',
     'shortcut.cycleGrid': 'Växla rutnätssteg: 0,5 m → 0,25 m → 0,1 m → 0,05 m',
     'shortcut.cycleGrid.note':
-      'Tryck och släpp för sig själv. Använd det när standardrutnätet på en halv meter är för grovt, till exempel när du placerar ett fönster.',
+      'Tryck och släpp den ensam. Använd det när standardrutnätet på en halv meter är för grovt, till exempel när du placerar ett fönster.',
     'shortcut.bypassSnapping': 'Kringgå styrd snappning och vinkelbegränsningar',
     'shortcut.bypassSnapping.note':
       'Håll ned under den pågående gesten. Passiva hjälplinjer och måttvisning kan fortfarande synas.',
@@ -580,7 +608,7 @@ export const messages = defineMessages({
     'shortcut.pan.note': 'Rör sig i skärmplanet, ungefär som att dra kameravyn.',
     'shortcut.panMiddle.note':
       'Dra med mittknappen, eller håll ned mellanslag medan du drar med vänster musknapp.',
-    'shortcut.orbit': 'Orbitera kameran',
+    'shortcut.orbit': 'Kretsa med kameran',
     'shortcut.orbit.note': 'Dra med höger musknapp.',
   },
 })

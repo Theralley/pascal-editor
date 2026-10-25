@@ -58,6 +58,7 @@ import {
   selectionModifiersFromEvent,
   useRoomRecords,
 } from '../../../hooks/use-selected-room'
+import { getLocale, type Locale, useLocale } from '../../../i18n'
 import { useCeilingEditSession } from '../../../lib/ceiling-edit-session'
 import { ROTATE_HANDLE_DRAG_LABEL } from '../../../lib/contextual-help'
 import {
@@ -382,6 +383,8 @@ export type FloorplanUnitFocus = {
 }
 
 type NodeDeps = {
+  /** Labels carry the language's number format, so a language switch rebuilds them. */
+  locale: Locale
   automaticDimensions: boolean
   node: AnyNode
   live: LiveTransform | undefined
@@ -522,6 +525,7 @@ export const FloorplanRegistryLayer = memo(function FloorplanRegistryLayer() {
   const selectedBuildingId = useViewer((s) => s.selection.buildingId)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
+  useLocale()
   const setSelection = useViewer((s) => s.setSelection)
   const nodes = useScene((s) => s.nodes)
   const focusedUnitId = useViewer((s) => s.focusedUnitId)
@@ -2379,6 +2383,7 @@ export function buildFloorplanEntryGeometry({
     node,
     ctxOverrides,
     live,
+    locale: getLocale(),
     unit,
     metricNotation,
     wallDimensionReference,
@@ -3761,6 +3766,7 @@ function nodeDepsEqual(a: NodeDeps, b: NodeDeps): boolean {
     'automaticDimensions',
     'node',
     'live',
+    'locale',
     'unit',
     'metricNotation',
     'wallDimensionReference',

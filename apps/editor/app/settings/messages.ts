@@ -37,8 +37,8 @@ export const messages = defineMessages({
     'agent.title': 'Anslut en agent',
     'agent.sceneApi': 'Scen-API',
     'agent.token': 'Agentnyckel',
-    'agent.configured': 'Inställd',
-    'agent.notConfigured': 'Inte inställd',
+    'agent.configured': 'Konfigurerad',
+    'agent.notConfigured': 'Inte konfigurerad',
     'agent.hintConfigured':
       'Agenter och skript skickar värdet för PASCAL_SCENE_API_TOKEN i en Authorization: Bearer-header.',
     'agent.hintNotConfigured':
@@ -46,7 +46,7 @@ export const messages = defineMessages({
     'account.title': 'Konto',
     'account.signedIn': 'Inloggad som instansens administratör.',
     'account.signOut': 'Logga ut',
-    'preferences.title': 'Inställningar',
+    'preferences.title': 'Personliga inställningar',
     'about.title': 'Om',
     'about.source': 'Källkod',
     'about.documentation': 'Dokumentation',

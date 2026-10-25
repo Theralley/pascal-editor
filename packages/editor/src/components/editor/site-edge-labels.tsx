@@ -7,6 +7,7 @@ import { Html } from '@react-three/drei'
 import { createPortal, useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { type Camera, type Object3D, Vector3 } from 'three'
+import { useLocale } from '../../i18n'
 import { groundHeightAt } from '../../lib/ground-surface'
 import { formatLinearMeasurement } from '../../lib/measurements'
 import { SITE_BOUNDARY_DRAG_LABEL } from '../../lib/site-boundary'
@@ -49,6 +50,7 @@ export function SiteEdgeLabels() {
     return node?.type === 'site' ? (node as SiteNode) : null
   })
   const activeHandleDrag = useActiveHandleDrag()
+  useLocale()
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
   const cameraMode = useViewer((state) => state.cameraMode)

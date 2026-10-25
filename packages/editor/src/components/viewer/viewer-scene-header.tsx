@@ -5,6 +5,7 @@ import { markPerfAction, useViewer } from '@pascal-app/viewer'
 import { ArrowLeft, ChevronRight, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { type ReactNode, useMemo } from 'react'
+import { useLocale } from '../../i18n'
 import { cn } from '../../lib/utils'
 import {
   applyViewerClick,
@@ -67,6 +68,7 @@ export const ViewerSceneHeader = ({
   const selection = useViewer((s) => s.selection)
   const focusedUnitId = useViewer((s) => s.focusedUnitId)
   const unit = useViewer((s) => s.unit)
+  useLocale()
 
   const crumbs = useMemo(
     () =>
