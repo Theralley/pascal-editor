@@ -32,15 +32,16 @@ export type Section = { solids: Solid[]; complete: boolean }
 
 /** Endpoints this close are one point. */
 const WELD = 1e-5
-/** A vertex this close to the plane lies on it. */
+/** A vertex this close over the plane still counts as on it: kept, like the mask keeps it. */
 const ON_PLANE = 1e-6
 /** An end this close to the inside of another segment is a T-junction. */
 const ON_SEGMENT = 1e-4
-/** Past this many loose ends a section is not worth repairing. */
-const MAX_LOOSE_ENDS = 400
 /** How wide a seam the section closes by default. */
 const DEFAULT_JOIN = 1e-3
+/** A dropped loop longer than this is a piece of the section that is missing. */
+const REAL_LENGTH = 2e-3
 
+/** A piece of the outline, directed so the solid is on its right (the outward normal on its left). */
 type Segment = readonly [from: number, to: number]
 
 type Body = {
@@ -50,13 +51,13 @@ type Body = {
   corners: number[]
   min: number
   max: number
-  /** The distinct heights of the vertices, ascending: where a face can lie on the plane. */
-  heights: Float64Array
 }
 
 export type PreparedSection = {
   /** The section at `height` over the frame. Cheap enough to take every frame of a drag. */
   at: (height: number) => Section
+  /** The lowest and highest the meshes reach over the frame. */
+  bounds: { min: number; max: number }
 }
 
 /**
@@ -87,6 +88,10 @@ export function prepareSection(
   for (const known of instances.values())
     for (const group of known.values()) bodies.push(prepareBody(group, inverse))
   return {
+    bounds: {
+      min: Math.min(...bodies.map((body) => body.min)),
+      max: Math.max(...bodies.map((body) => body.max)),
+    },
     at: (height) => {
       const solids: Solid[] = []
       let complete = true
@@ -139,18 +144,16 @@ function prepareBody(meshes: readonly Mesh[], inverse: Matrix4): Body {
     for (let i = Math.max(0, start); i + 2 < end; i += 3)
       for (let k = 0; k < 3; k++) corners.push(index ? index.getX(i + k) : i + k)
   }
-  const heights = Float64Array.from(
-    new Set(Array.from({ length: position.count }, (_, i) => xyz[i * 3 + 1]!)),
-  ).sort()
-  return { xyz, corners, min, max, heights }
+  return { xyz, corners, min, max }
 }
 
+const NONE = { loops: [] as SectionLoop[], complete: true }
+
 /**
- * The section of one solid. A face lying on the plane is the question: material under it is cut
- * and drawn, material over it is not, so a cap belongs only where the solid is on both sides. The
- * two readings of the plane (a vertex on it counts as under, or as over) each reach past the part
- * they share, and where one holds the other the smaller is that part. Two features on the plane in
- * opposite senses at once are not nested, and then the smaller reading is still only an estimate.
+ * The section of one solid at the plane y = `height`, read as the cut reads it: what is at or under
+ * the height is kept (`display-cut.ts`), what is over it is not. A face lying on the plane is
+ * therefore under it. A sill, a step or a top exactly at the height has its own face as the top and
+ * no cap, and a head exactly there is bridged, as it is by a cut a hair above.
  */
 function sectionBody(
   body: Body,
@@ -158,32 +161,6 @@ function sectionBody(
   joinTolerance: number,
 ): { loops: SectionLoop[]; complete: boolean } {
   if (height < body.min - ON_PLANE || height >= body.max + ON_PLANE) return NONE
-  const strict = sectionBodyAs(body, height, false, joinTolerance)
-  if (!touchesPlane(body, height)) return strict
-  const inclusive = sectionBodyAs(body, height, true, joinTolerance)
-  return netArea(inclusive.loops) < netArea(strict.loops) ? inclusive : strict
-}
-
-const NONE = { loops: [] as SectionLoop[], complete: true }
-
-function touchesPlane(body: Body, height: number): boolean {
-  const { heights } = body
-  let low = 0
-  let high = heights.length
-  while (low < high) {
-    const mid = (low + high) >> 1
-    if (heights[mid]! < height - ON_PLANE) low = mid + 1
-    else high = mid
-  }
-  return low < heights.length && heights[low]! <= height + ON_PLANE
-}
-
-function sectionBodyAs(
-  body: Body,
-  height: number,
-  planeIsOver: boolean,
-  joinTolerance: number,
-): { loops: SectionLoop[]; complete: boolean } {
   const { xyz, corners } = body
   const ids = new Map<string, number>()
   const points: Vector2[] = []
@@ -198,10 +175,7 @@ function sectionBodyAs(
     }
     return id
   }
-  const isOver = (vertex: number) => {
-    const y = xyz[vertex * 3 + 1]!
-    return planeIsOver ? y >= height - ON_PLANE : y > height + ON_PLANE
-  }
+  const isOver = (vertex: number) => xyz[vertex * 3 + 1]! > height + ON_PLANE
   // Where the edge a-b crosses the plane; the same point whichever triangle asks, so the
   // outline of a closed mesh closes.
   const crossing = (a: number, b: number) => {
@@ -223,25 +197,51 @@ function sectionBodyAs(
       const b = corners[i + ((k + 1) % 3)]!
       if (isOver(a) !== isOver(b)) found.push(crossing(a, b))
     }
-    if (found.length === 2 && found[0] !== found[1]) segments.push([found[0]!, found[1]!])
+    if (found.length !== 2 || found[0] === found[1]) continue
+    // Directed with the triangle's outward side on the left, so the walk can tell two solids that
+    // touch at a point apart.
+    const [a, b, c] = [corners[i]! * 3, corners[i + 1]! * 3, corners[i + 2]! * 3]
+    const nx =
+      (xyz[b + 1]! - xyz[a + 1]!) * (xyz[c + 2]! - xyz[a + 2]!) -
+      (xyz[b + 2]! - xyz[a + 2]!) * (xyz[c + 1]! - xyz[a + 1]!)
+    const nz =
+      (xyz[b]! - xyz[a]!) * (xyz[c + 1]! - xyz[a + 1]!) -
+      (xyz[b + 1]! - xyz[a + 1]!) * (xyz[c]! - xyz[a]!)
+    const from = points[found[0]!]!
+    const to = points[found[1]!]!
+    const turn = (to.x - from.x) * nz - (to.y - from.y) * nx
+    segments.push(turn >= 0 ? [found[0]!, found[1]!] : [found[1]!, found[0]!])
   }
   return closeOutlines(points, segments, joinTolerance)
 }
 
-/** Splits every segment an odd-degree point lies inside of, so a T-junction becomes a vertex. */
-function splitTJunctions(points: Vector2[], segments: Segment[]): boolean {
-  const degree = new Map<number, number>()
-  for (const [from, to] of segments) {
-    degree.set(from, (degree.get(from) ?? 0) + 1)
-    degree.set(to, (degree.get(to) ?? 0) + 1)
-  }
-  const loose = [...degree].filter(([, count]) => count % 2 === 1).map(([id]) => id)
-  if (loose.length > MAX_LOOSE_ENDS) return false
+/**
+ * Splits every segment at the points that lie inside it, so a T-junction becomes a vertex and two
+ * faces that overlap in part share the same pieces (and cancel, or merge) instead of crossing.
+ */
+function splitAtPoints(points: Vector2[], segments: Segment[]): Segment[] {
+  const cell = 0.25
+  const grid = new Map<string, number[]>()
+  const key = (x: number, z: number) => `${Math.floor(x / cell)},${Math.floor(z / cell)}`
+  segments.forEach(([from, to], s) => {
+    const a = points[from]!
+    const b = points[to]!
+    const x0 = Math.floor((Math.min(a.x, b.x) - ON_SEGMENT) / cell)
+    const x1 = Math.floor((Math.max(a.x, b.x) + ON_SEGMENT) / cell)
+    const z0 = Math.floor((Math.min(a.y, b.y) - ON_SEGMENT) / cell)
+    const z1 = Math.floor((Math.max(a.y, b.y) + ON_SEGMENT) / cell)
+    for (let x = x0; x <= x1; x++)
+      for (let z = z0; z <= z1; z++) {
+        const list = grid.get(`${x},${z}`)
+        if (list) list.push(s)
+        else grid.set(`${x},${z}`, [s])
+      }
+  })
+  const splits = new Map<number, { along: number; id: number }[]>()
   const edge = new Vector2()
   const offset = new Vector2()
-  for (const id of loose) {
-    const point = points[id]!
-    for (let s = 0; s < segments.length; s++) {
+  points.forEach((point, id) => {
+    for (const s of grid.get(key(point.x, point.y)) ?? []) {
       const [from, to] = segments[s]!
       if (from === id || to === id) continue
       edge.subVectors(points[to]!, points[from]!)
@@ -251,92 +251,120 @@ function splitTJunctions(points: Vector2[], segments: Segment[]): boolean {
       const along = offset.dot(edge) / length
       if (along <= ON_SEGMENT || along >= length - ON_SEGMENT) continue
       if (Math.abs(offset.cross(edge)) / length > ON_SEGMENT) continue
-      segments.splice(s, 1, [from, id], [id, to])
-      break
+      const list = splits.get(s)
+      if (list) list.push({ along, id })
+      else splits.set(s, [{ along, id }])
     }
-  }
-  return true
+  })
+  if (splits.size === 0) return segments
+  return segments.flatMap((segment, s) => {
+    const cuts = splits.get(s)
+    if (!cuts) return [segment]
+    cuts.sort((a, b) => a.along - b.along)
+    const ids = [segment[0], ...cuts.map((cut) => cut.id), segment[1]]
+    return ids.slice(1).map((id, i): Segment => [ids[i]!, id])
+  })
 }
 
-/** Joins segments into closed outlines; false in `complete` when some end stays loose. */
+/** Joins directed segments into closed outlines; false in `complete` when a piece is missing. */
 function closeOutlines(
   points: Vector2[],
   segments: Segment[],
   joinTolerance: number,
 ): { loops: SectionLoop[]; complete: boolean } {
-  let complete = splitTJunctions(points, segments)
-  // A segment met twice (two faces back to back) is no outline at all.
-  const parity = new Map<string, Segment>()
+  let complete = true
+  segments = splitAtPoints(points, segments)
+  // Two faces back to back leave the same piece in both directions, which is no outline at all;
+  // the same piece twice the same way (overlapping solids) is one.
+  const seen = new Map<string, Segment>()
   for (const segment of segments) {
-    const key =
-      segment[0] < segment[1] ? `${segment[0]},${segment[1]}` : `${segment[1]},${segment[0]}`
-    if (parity.has(key)) parity.delete(key)
-    else parity.set(key, segment)
+    const forward = `${segment[0]},${segment[1]}`
+    const back = `${segment[1]},${segment[0]}`
+    if (seen.has(back)) seen.delete(back)
+    else seen.set(forward, segment)
   }
-  const kept = [...parity.values()]
-  const touching = new Map<number, number[]>()
-  kept.forEach(([from, to], s) => {
-    for (const id of [from, to]) {
-      const list = touching.get(id)
-      if (list) list.push(s)
-      else touching.set(id, [s])
-    }
+  const kept = [...seen.values()]
+  const leaving = new Map<number, number[]>()
+  kept.forEach(([from], s) => {
+    const list = leaving.get(from)
+    if (list) list.push(s)
+    else leaving.set(from, [s])
   })
   const used = new Uint8Array(kept.length)
-  const extend = (chain: number[]) => {
-    for (;;) {
-      const last = chain[chain.length - 1]!
-      const next = touching.get(last)?.find((s) => !used[s])
-      if (next === undefined) return
-      used[next] = 1
-      const [from, to] = kept[next]!
-      chain.push(from === last ? to : from)
+  const direction = (s: number) =>
+    new Vector2().subVectors(points[kept[s]![1]]!, points[kept[s]![0]]!).normalize()
+  // At a point several outlines leave from, the one that turns tightest toward the solid keeps
+  // each solid's outline its own.
+  const next = (s: number) => {
+    const here = direction(s)
+    let best: number | undefined
+    let bestTurn = Number.POSITIVE_INFINITY
+    for (const candidate of leaving.get(kept[s]![1]) ?? []) {
+      if (used[candidate]) continue
+      const there = direction(candidate)
+      const turn = Math.atan2(here.cross(there), here.dot(there))
+      if (turn < bestTurn) {
+        best = candidate
+        bestTurn = turn
+      }
     }
+    return best
   }
   const closed: number[][] = []
   const open: number[][] = []
-  for (let s = 0; s < kept.length; s++) {
-    if (used[s]) continue
-    used[s] = 1
-    const chain = [...kept[s]!]
-    extend(chain)
-    if (chain[0] !== chain[chain.length - 1]) {
-      chain.reverse()
-      extend(chain)
+  for (let start = 0; start < kept.length; start++) {
+    if (used[start]) continue
+    used[start] = 1
+    const chain = [kept[start]![0], kept[start]![1]]
+    let at = start
+    for (;;) {
+      const following = next(at)
+      if (following === undefined) break
+      used[following] = 1
+      chain.push(kept[following]![1])
+      at = following
+      if (chain[chain.length - 1] === chain[0]) break
     }
-    if (chain[0] === chain[chain.length - 1]) closed.push(chain.slice(1))
+    if (chain[chain.length - 1] === chain[0]) closed.push(chain.slice(1))
     else open.push(chain)
   }
   const near = (a: number, b: number) => points[a]!.distanceTo(points[b]!) <= joinTolerance
+  const length = (ids: number[]) =>
+    ids.reduce((sum, id, i) => sum + points[id]!.distanceTo(points[ids[(i + 1) % ids.length]!]!), 0)
+  // A chain ends where another begins when they are a seam apart.
   while (open.length > 0) {
     const chain = open.pop()!
-    for (let side = 0; side < 2; side++) {
-      for (let again = true; again; ) {
-        again = false
-        const tail = chain[chain.length - 1]!
-        for (let j = 0; j < open.length; j++) {
-          const other = open[j]!
-          const fits = near(tail, other[0]!)
-            ? other
-            : near(tail, other[other.length - 1]!)
-              ? other.reverse()
-              : null
-          if (!fits) continue
-          open.splice(j, 1)
-          chain.push(...fits.slice(1))
-          again = true
-          break
-        }
+    for (let again = true; again; ) {
+      again = false
+      for (let j = 0; j < open.length; j++) {
+        if (!near(chain[chain.length - 1]!, open[j]![0]!)) continue
+        chain.push(...open.splice(j, 1)[0]!.slice(1))
+        again = true
+        break
       }
-      chain.reverse()
     }
-    if (chain.length >= 4 && near(chain[0]!, chain[chain.length - 1]!)) closed.push(chain.slice(1))
-    else complete = false
+    for (let again = true; again; ) {
+      again = false
+      for (let j = 0; j < open.length; j++) {
+        const other = open[j]!
+        if (!near(other[other.length - 1]!, chain[0]!)) continue
+        chain.unshift(...open.splice(j, 1)[0]!.slice(0, -1))
+        again = true
+        break
+      }
+    }
+    if (near(chain[chain.length - 1]!, chain[0]!)) {
+      // A closed chain of two or three points is a sliver the size of a seam: nothing to cap.
+      if (chain.length >= 4) closed.push(chain.slice(1))
+    } else complete = false
   }
-  const loops = closed
-    .filter((ids) => ids.length >= 3)
-    .map((ids) => ids.map((id) => points[id]!.clone()))
-    .filter((loop) => Math.abs(ShapeUtils.area(loop)) > 1e-9)
+  const loops: SectionLoop[] = []
+  for (const ids of closed) {
+    const loop = ids.map((id) => points[id]!.clone())
+    if (ids.length >= 3 && Math.abs(ShapeUtils.area(loop)) > 1e-9) loops.push(loop)
+    // A loop of real length with no area folded onto itself: a piece is missing.
+    else if (length(ids) > REAL_LENGTH) complete = false
+  }
   return { loops, complete }
 }
 
@@ -379,11 +407,6 @@ function nesting(loops: Solid): { area: number[]; around: number[][] } {
       .sort((a, b) => area[b]! - area[a]!),
   )
   return { area, around }
-}
-
-function netArea(loops: Solid): number {
-  const { area, around } = nesting(loops)
-  return area.reduce((sum, a, i) => sum + (around[i]!.length % 2 === 0 ? a : -a), 0)
 }
 
 /**

@@ -146,6 +146,9 @@ function footprintSolids(
   ])
 }
 
+/** A wall's parts that are drawn: a hidden one (a stale curtain wall's glass) is no part of the cap. */
+const shownParts = (mesh: Mesh) => wallParts(mesh).filter((part) => part.visible)
+
 const EMPTY: Section = { solids: [], complete: true }
 
 type Cap = {
@@ -297,7 +300,7 @@ export class WallCutCaps {
     mesh.updateWorldMatrix(true, false)
     const relative = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
     // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
-    const parts = wallParts(mesh).map((part) => part.geometry.uuid)
+    const parts = shownParts(mesh).map((part) => part.geometry.uuid)
     return [
       geometry.uuid,
       'version' in position ? position.version : position.data.version,
@@ -328,7 +331,7 @@ export class WallCutCaps {
       kept = {
         key,
         body: prepareSection([mesh], root, seam),
-        parts: prepareSection(wallParts(mesh), root, seam),
+        parts: prepareSection(shownParts(mesh), root, seam),
         height,
         section: EMPTY,
       }

@@ -179,4 +179,38 @@ describe('cutBakedWalls caps', () => {
     expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
     cut.dispose()
   })
+
+  test('a body whose section will not close is capped from its base, where it stands across the cut', () => {
+    const { level, wall, body } = bakedLevel()
+    const open = new BoxGeometry(4, 2.5, 0.2).translate(2, 1.25, 0)
+    const index = open.getIndex()!
+    // Without its +x end the section is a U.
+    open.setIndex(Array.from({ length: index.count - 6 }, (_, i) => index.getX(i + 6)))
+    body.geometry = open
+    level.updateMatrixWorld(true)
+    const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+    expect(capArea(level)).toBeCloseTo(4 * 0.2, 4)
+    // Above the wall the base is not across the cut: no plate floats there.
+    cut.setHeight(2.8)
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+    cut.dispose()
+  })
+
+  test('a small scaled moulding does not stand in for the wall body, and is capped as a solid of its own', () => {
+    const { level, wall } = bakedLevel()
+    wall.clear()
+    const slim = new Mesh(
+      new BoxGeometry(1, 2.5, 0.1).translate(0.5, 1.25, 0),
+      new MeshBasicMaterial(),
+    )
+    // A unit box scaled to a skirting: its own box is bigger than the wall's, its world one is not.
+    const trim = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial())
+    trim.scale.set(1, 0.1, 0.15)
+    trim.position.set(0.5, 0.25, 0.2)
+    wall.add(slim, trim)
+    level.updateMatrixWorld(true)
+    const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+    expect(capArea(level)).toBeCloseTo(1 * 0.1 + 1 * 0.15, 4)
+    cut.dispose()
+  })
 })

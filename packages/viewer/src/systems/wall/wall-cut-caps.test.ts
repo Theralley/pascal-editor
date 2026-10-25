@@ -335,13 +335,14 @@ describe('WallCutCaps', () => {
     const children = [window]
     const { root } = level({ children, geometry: built(children) })
     const caps = new WallCutCaps()
-    // The sill is at 1.0 m, the head at 2.0 m, the wall's top at 2.5 m.
+    // The sill is at 1.0 m, the head at 2.0 m, the wall's top at 2.5 m. The cut keeps what is at or
+    // under it: a sill's own top is the stub's top and takes no cap, a head exactly there is bridged.
     const cases: [number, number][] = [
       [0.9999, 4],
       [1, 3],
       [1.0001, 3],
       [1.9999, 3],
-      [2, 3],
+      [2, 4],
       [2.0001, 4],
       [2.4999, 4],
       [2.5, 0],
@@ -357,7 +358,21 @@ describe('WallCutCaps', () => {
     caps.dispose()
   })
 
-  test('a step exactly at the cut caps only the part that stands on both sides of it', () => {
+  test("one window's head and another's sill at the same height: the first is bridged, the second open", () => {
+    const low = WindowNode.parse({ position: [1, 0.6, 0], width: 1, height: 0.8 })
+    const high = WindowNode.parse({ position: [3, 1.5, 0], width: 1, height: 1 })
+    const children = [low, high]
+    const { root } = level({ children, geometry: built(children) })
+    const caps = new WallCutCaps()
+    caps.update(true, 1, 'solid')
+    const cap = capsOf(root)!
+    expect(covers(cap, 1, 0)).toBe(true)
+    expect(covers(cap, 3, 0)).toBe(false)
+    expect(area(cap)).toBeCloseTo(3 * 0.2, 3)
+    caps.dispose()
+  })
+
+  test('a step exactly at the cut is capped like a cut a hair above it', () => {
     const { root } = level({
       base: 0.6,
       geometry: (wall) =>
@@ -369,7 +384,7 @@ describe('WallCutCaps', () => {
     const caps = new WallCutCaps()
     for (const [height, length] of [
       [0.5999, 2],
-      [0.6, 2],
+      [0.6, 4],
       [0.6001, 4],
     ] as const) {
       caps.update(true, height, 'solid')
@@ -413,6 +428,24 @@ describe('WallCutCaps', () => {
     expect(covers(cap, 2, 0)).toBe(true)
     expect(covers(cap, 2, 0.25)).toBe(true)
     expect(covers(cap, 2, 0.4)).toBe(false)
+    caps.dispose()
+  })
+
+  test('a hidden part of the wall takes no cap, and shows one when it is shown', () => {
+    const { root, mesh } = level()
+    const stale = new Mesh(new BoxGeometry(4.4, 0.5, 0.6).translate(2, 0.25, 0), [
+      new MeshBasicMaterial(),
+    ])
+    stale.visible = false
+    mesh.add(stale)
+    root.updateMatrixWorld(true)
+    const caps = new WallCutCaps()
+    caps.update(true, 0.25, 'solid')
+    expect(covers(capsOf(root), 2, 0.25)).toBe(false)
+    stale.visible = true
+    caps.markWall(Object.keys(useScene.getState().nodes).find((id) => id.startsWith('wall_'))!)
+    caps.update(true, 0.25, 'solid')
+    expect(covers(capsOf(root), 2, 0.25)).toBe(true)
     caps.dispose()
   })
 

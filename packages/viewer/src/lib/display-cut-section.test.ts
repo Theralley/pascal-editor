@@ -53,6 +53,29 @@ function slabWithHole(size = 4, hole = 1) {
   return geometry
 }
 
+/** Several indexed geometries as one mesh body, with separate vertices. */
+function joined(...parts: BufferGeometry[]): BufferGeometry {
+  const merged = new BufferGeometry()
+  const positions: number[] = []
+  const indices: number[] = []
+  for (const part of parts) {
+    const base = positions.length / 3
+    positions.push(...(part.getAttribute('position').array as Float32Array))
+    const index = part.getIndex()!
+    for (let i = 0; i < index.count; i++) indices.push(base + index.getX(i))
+  }
+  merged.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  merged.setIndex(indices)
+  return merged
+}
+
+const sectionOfBody = (geometry: BufferGeometry, height: number, join?: number) => {
+  const frame = new Group()
+  const mesh = new Mesh(geometry, material)
+  frame.add(mesh)
+  return sectionLoops([mesh], frame, height, join)
+}
+
 describe('sectionLoops', () => {
   test('an extrusion with a hole gives an outer loop and the hole, and a cap without it', () => {
     const frame = new Group()
@@ -99,23 +122,30 @@ describe('sectionLoops', () => {
     expect(sectionArea(loops)).toBeCloseTo(2, 5)
   })
 
-  test('corners that differ by float noise weld, and a seam a millimetre wide is closed', () => {
+  test('corners that differ by float noise weld', () => {
     const noisy = new BoxGeometry(2, 1, 1).translate(0, 0.5, 0)
     const position = noisy.getAttribute('position')
     for (let i = 0; i < position.count; i += 2) position.setX(i, position.getX(i) + 3e-6)
-    const seamed = new BoxGeometry(2, 1, 1).translate(0, 0.5, 0)
-    const front = seamed.getAttribute('position')
-    for (let i = 0; i < front.count; i++)
-      if (front.getZ(i) > 0.4) front.setX(i, front.getX(i) + 1e-3)
-    for (const geometry of [noisy, seamed]) {
-      const frame = new Group()
-      const mesh = new Mesh(geometry, material)
-      frame.add(mesh)
-      const loops = sectionLoops([mesh], frame, 0.5)
-      expect(loopCount(loops)).toBe(1)
-      expect(loops.complete).toBe(true)
-      expect(sectionArea(loops)).toBeCloseTo(2, 2)
+    const section = sectionOfBody(noisy, 0.5)
+    expect(section.complete).toBe(true)
+    expect(loopCount(section)).toBe(1)
+    expect(sectionArea(section)).toBeCloseTo(2, 4)
+  })
+
+  test('a seam of half a millimetre closes within the tolerance and not below it', () => {
+    // The +z face stands 0.5 mm proud of the sides it meets: their outlines stop short of its own.
+    const seamed = () => {
+      const box = new BoxGeometry(2, 1, 1).translate(0, 0.5, 0)
+      const position = box.getAttribute('position')
+      const normal = box.getAttribute('normal')
+      for (let i = 0; i < position.count; i++)
+        if (normal.getZ(i) === 1) position.setZ(i, position.getZ(i) + 5e-4)
+      return box
     }
+    const closes = sectionOfBody(seamed(), 0.5, 1e-3)
+    expect(closes.complete).toBe(true)
+    expect(sectionArea(closes)).toBeCloseTo(2, 2)
+    expect(sectionOfBody(seamed(), 0.5, 1e-4).complete).toBe(false)
   })
 
   test('an open mesh leaves no loop to cap', () => {
@@ -132,30 +162,32 @@ describe('sectionLoops', () => {
   })
 })
 
-/** An L-shaped wall body built as two boxes (a T-junction where their faces meet). */
 describe('repairs and the plane', () => {
-  test('a T-junction in the section is split, so two boxes laid against one wall close', () => {
-    const frame = new Group()
-    const long = new BoxGeometry(4, 1, 1).translate(0, 0.5, 0)
+  test('a box laid against a wall merges with it: the shared stretch is split at its ends and cancels', () => {
+    // The stub's two corners lie inside the long face's one segment: a T-junction at each.
+    const wall = new BoxGeometry(4, 1, 1).translate(0, 0.5, 0)
     const stub = new BoxGeometry(1, 1, 1).translate(0, 0.5, 1)
-    const merged = new BufferGeometry()
-    const parts = [long, stub]
-    const positions: number[] = []
-    const indices: number[] = []
-    for (const part of parts) {
-      const base = positions.length / 3
-      positions.push(...(part.getAttribute('position').array as Float32Array))
-      const index = part.getIndex()!
-      for (let i = 0; i < index.count; i++) indices.push(base + index.getX(i))
-    }
-    merged.setAttribute('position', new Float32BufferAttribute(positions, 3))
-    merged.setIndex(indices)
-    const mesh = new Mesh(merged, material)
-    frame.add(mesh)
-    const section = sectionLoops([mesh], frame, 0.5)
-    // The two sections touch along an edge: the shared stretch is one segment each way and cancels.
+    const section = sectionOfBody(joined(wall, stub), 0.5)
     expect(section.complete).toBe(true)
+    expect(loopCount(section)).toBe(1)
     expect(sectionArea(section)).toBeCloseTo(4 + 1, 4)
+  })
+
+  test('two boxes back to back leave one outline, not a figure-8 of nothing', () => {
+    const left = new BoxGeometry(1, 1, 0.2).translate(0, 0.5, 0)
+    const right = new BoxGeometry(1, 1, 0.2).translate(1, 0.5, 0)
+    const section = sectionOfBody(joined(left, right), 0.37)
+    expect(section.complete).toBe(true)
+    expect(loopCount(section)).toBe(1)
+    expect(sectionArea(section)).toBeCloseTo(2 * 0.2, 4)
+  })
+
+  test('two boxes that meet at one corner stay two outlines and both are capped', () => {
+    const a = new BoxGeometry(1, 1, 1).translate(0.5, 0.5, 0.5)
+    const b = new BoxGeometry(1, 1, 1).translate(1.5, 0.5, 1.5)
+    const section = sectionOfBody(joined(a, b), 0.5)
+    expect(section.complete).toBe(true)
+    expect(sectionArea(section)).toBeCloseTo(2, 4)
   })
 
   // A 1 m box stood on a 0.5 m plinth, so the heights 0, 0.5 and 1.5 each lie on a face.
@@ -199,10 +231,11 @@ describe('buildCutCapGeometry', () => {
     expect(buildCutCapGeometry([{ owner: 'a', solids: [] }])).toBeNull()
   })
 
-  test('an island inside a hole is solid again, and each triangle names its owner', () => {
+  test('an island inside a hole is solid again, the hole round it open, and each triangle names its owner', () => {
     const frame = new Group()
     const ring = new Mesh(slabWithHole(6, 4), material)
-    const island = new Mesh(new BoxGeometry(2, 1, 2).translate(3, 0.5, 3), material)
+    // The ring stands on x, -z in 0..6 (extruded then turned); its hole is the middle 4 x 4.
+    const island = new Mesh(new BoxGeometry(2, 1, 2).translate(3, 0.5, -3), material)
     const beside = new Mesh(new BoxGeometry(1, 1, 1).translate(10, 0.5, 0), material)
     frame.add(ring, island, beside)
     const built = buildCutCapGeometry([
@@ -212,5 +245,21 @@ describe('buildCutCapGeometry', () => {
     expect(built.triangleOwners).toHaveLength(built.geometry.getIndex()!.count / 3)
     expect(new Set(built.triangleOwners)).toEqual(new Set(['a', 'b']))
     expect(capArea(built.geometry)).toBeCloseTo(36 - 16 + 4 + 1, 3)
+    const covers = (x: number, z: number) => {
+      const position = built.geometry.getAttribute('position')
+      const index = built.geometry.getIndex()!
+      for (let i = 0; i < index.count; i += 3) {
+        const [p, q, r] = [0, 1, 2].map((k) => index.getX(i + k) as number)
+        const side = (u: number, v: number) =>
+          (position.getX(v) - position.getX(u)) * (z - position.getZ(u)) -
+          (position.getZ(v) - position.getZ(u)) * (x - position.getX(u))
+        const signs = [side(p!, q!), side(q!, r!), side(r!, p!)]
+        if (signs.every((v) => v >= 0) || signs.every((v) => v <= 0)) return true
+      }
+      return false
+    }
+    expect(covers(3, -3)).toBe(true)
+    expect(covers(1.5, -3)).toBe(false)
+    expect(covers(0.5, -3)).toBe(true)
   })
 })
