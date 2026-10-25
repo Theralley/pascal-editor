@@ -2,8 +2,10 @@
 
 import { type MaterialTarget, toLibraryMaterialRef } from '@pascal-app/core'
 import { Plus } from 'lucide-react'
+import { type MessageKey, useT } from '../../../i18n'
 import { useMaterialCatalogModel, type MaterialSourceFilter } from '../../../lib/material-catalog-model'
 import { triggerSFX } from '../../../lib/sfx-bus'
+import { messages } from './messages'
 
 export type { MaterialSourceFilter } from '../../../lib/material-catalog-model'
 
@@ -18,8 +20,11 @@ export type MaterialPickerProps = {
   selectOnCategoryChange?: boolean
 }
 
-function getCategoryLabel(category: string) {
-  return category.charAt(0).toUpperCase() + category.slice(1)
+const SOURCE_KEYS: Record<MaterialSourceFilter, MessageKey<typeof messages>> = {
+  pascal: 'source.pascal',
+  mine: 'source.mine',
+  workspace: 'source.workspace',
+  community: 'source.community',
 }
 
 /**
@@ -35,6 +40,7 @@ export function MaterialPicker({
   onCreateMaterialRequest,
   selectOnCategoryChange = true,
 }: MaterialPickerProps) {
+  const t = useT(messages)
   const { selectedCategory, setSelectedCategory, sourceFilter, setSourceFilter, visibleSourceFilters, availableCategories, catalogItems, select: handleCatalogSelect } = useMaterialCatalogModel(selectedMaterialPreset, onSelectMaterialPreset, disabled, selectOnCategoryChange)
 
   return (
@@ -56,7 +62,7 @@ export function MaterialPicker({
             }}
             type="button"
           >
-            {getCategoryLabel(category)}
+            {t(`category.${category}`)}
           </button>
         ))}
       </div>
@@ -79,7 +85,7 @@ export function MaterialPicker({
             onMouseEnter={() => triggerSFX('sfx:menu-hover')}
             type="button"
           >
-            {filter.label}
+            {t(SOURCE_KEYS[filter.id])}
           </button>
         ))}
       </div>
@@ -102,7 +108,7 @@ export function MaterialPicker({
               <Plus className="size-5 text-muted-foreground group-hover:text-foreground" />
             </div>
             <span className="truncate px-0.5 text-left font-medium text-[11px] text-muted-foreground group-hover:text-foreground">
-              New material
+              {t('picker.newMaterial')}
             </span>
           </button>
         ) : null}

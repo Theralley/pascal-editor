@@ -3,9 +3,11 @@
 import { useViewer, WALL_CUT_HEIGHT_MAX, WALL_CUT_HEIGHT_MIN } from '@pascal-app/viewer'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createCutHeightGesture, cutHeightKeyTarget } from '../../../lib/cut-height-gesture'
+import { useT } from '../../../i18n'
 import { formatLinearMeasurement } from '../../../lib/measurements'
 import { cn } from '../../../lib/utils'
 import { DropdownMenuItem } from '../primitives/dropdown-menu'
+import { messages } from './messages'
 
 const ROW_CLASS = 'flex items-center gap-2 px-2 py-1.5 text-xs'
 
@@ -14,6 +16,7 @@ const ROW_CLASS = 'flex items-center gap-2 px-2 py-1.5 text-xs'
  * and the pick is saved once, when the gesture ends.
  */
 export function CutHeightControl({ className }: { className?: string }) {
+  const t = useT(messages)
   const saved = useViewer((state) => state.wallCutHeight)
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
@@ -40,7 +43,7 @@ export function CutHeightControl({ className }: { className?: string }) {
   return (
     <div className={cn(ROW_CLASS, 'w-full', className)}>
       <label className="shrink-0 text-muted-foreground" htmlFor={id}>
-        Cut height
+        {t('cutHeight.label')}
       </label>
       <input
         aria-valuetext={text}

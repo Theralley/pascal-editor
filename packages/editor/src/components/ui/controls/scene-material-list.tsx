@@ -10,12 +10,14 @@ import {
 } from '@pascal-app/core'
 import { Copy, Paintbrush, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useT } from '../../../i18n'
 import { sceneMaterialUsageCounts } from '../../../lib/scene-material-refs'
 import useEditor from '../../../store/use-editor'
 import { Button } from '../primitives/button'
 import { Input } from '../primitives/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip'
 import { MaterialPropertiesEditor } from './material-properties-editor'
+import { messages } from './messages'
 
 export function SceneMaterialList({ autoEditId }: { autoEditId?: SceneMaterialId | null }) {
   const materials = useScene((state) => state.materials)
@@ -80,6 +82,7 @@ function SceneMaterialRow({
   removeSceneMaterial: ReturnType<typeof useScene.getState>['removeSceneMaterial']
   armMaterialPaint: ReturnType<typeof useEditor.getState>['armMaterialPaint']
 }) {
+  const t = useT(messages)
   // A freshly-created material (via "+ Custom") mounts with its editor open.
   const [isEditingMaterial, setIsEditingMaterial] = useState(autoEdit)
   const [draftName, setDraftName] = useState(sceneMaterial.name)
@@ -103,7 +106,7 @@ function SceneMaterialRow({
   const duplicateMaterial = () => {
     addSceneMaterial({
       id: generateSceneMaterialId(),
-      name: `${sceneMaterial.name} copy`,
+      name: t('sceneMaterial.copyName', { name: sceneMaterial.name }),
       material: structuredClone(sceneMaterial.material) as MaterialSchema,
     })
   }
@@ -139,13 +142,13 @@ function SceneMaterialRow({
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-muted-foreground text-xs">
-          Used by {usageCount} {usageCount === 1 ? 'part' : 'parts'}
+          {t('sceneMaterial.usedBy', { count: usageCount })}
         </span>
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Paint with"
+                aria-label={t('sceneMaterial.paintWith')}
                 onClick={() =>
                   armMaterialPaint({
                     materialPreset: toSceneMaterialRef(id),
@@ -159,12 +162,12 @@ function SceneMaterialRow({
                 <Paintbrush />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Paint with</TooltipContent>
+            <TooltipContent>{t('sceneMaterial.paintWith')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Edit"
+                aria-label={t('sceneMaterial.edit')}
                 aria-pressed={isEditingMaterial}
                 onClick={() => setIsEditingMaterial((value) => !value)}
                 size="icon-sm"
@@ -174,12 +177,12 @@ function SceneMaterialRow({
                 <Pencil />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Edit</TooltipContent>
+            <TooltipContent>{t('sceneMaterial.edit')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Duplicate"
+                aria-label={t('sceneMaterial.duplicate')}
                 onClick={duplicateMaterial}
                 size="icon-sm"
                 type="button"
@@ -188,12 +191,12 @@ function SceneMaterialRow({
                 <Copy />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Duplicate</TooltipContent>
+            <TooltipContent>{t('sceneMaterial.duplicate')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Delete"
+                aria-label={t('sceneMaterial.delete')}
                 onClick={() => removeSceneMaterial(id)}
                 size="icon-sm"
                 type="button"
@@ -202,7 +205,7 @@ function SceneMaterialRow({
                 <Trash2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Delete</TooltipContent>
+            <TooltipContent>{t('sceneMaterial.delete')}</TooltipContent>
           </Tooltip>
         </div>
       </div>

@@ -9,19 +9,26 @@ import {
   useScene,
 } from '@pascal-app/core'
 import { useState } from 'react'
+import { useT } from '../../../i18n'
 import { Popover, PopoverContent, PopoverTrigger } from '../primitives/popover'
 import { MaterialPicker } from './material-picker'
+import { messages } from './messages'
 
 type Swatch = { label: string; color: string | null; image: string | null }
 
 /** How a finish reference reads in a panel: its catalog tile, its colour, or its scene material. */
 function useFinishSwatch(ref: string | undefined, fallback: string): Swatch {
+  const t = useT(messages)
   const materials = useScene((state) => state.materials)
-  if (!ref) return { ...describe(fallback, materials), label: 'Default' }
-  return describe(ref, materials)
+  if (!ref) return { ...describe(fallback, materials, t('finish.default')), label: t('finish.default') }
+  return describe(ref, materials, t('finish.default'))
 }
 
-function describe(ref: string, materials: ReturnType<typeof useScene.getState>['materials']) {
+function describe(
+  ref: string,
+  materials: ReturnType<typeof useScene.getState>['materials'],
+  defaultLabel: string,
+) {
   const library = getCatalogMaterialById(getLibraryMaterialIdFromRef(ref) ?? undefined)
   if (library)
     return {
@@ -33,7 +40,7 @@ function describe(ref: string, materials: ReturnType<typeof useScene.getState>['
   const scene = sceneId ? materials[sceneId as keyof typeof materials] : undefined
   if (scene) return { label: scene.name, color: scene.material.properties?.color ?? null, image: null }
   if (ref.startsWith('#')) return { label: ref.toUpperCase(), color: ref, image: null }
-  return { label: 'Default', color: null, image: null }
+  return { label: defaultLabel, color: null, image: null }
 }
 
 /**

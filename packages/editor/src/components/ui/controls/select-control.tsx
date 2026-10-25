@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
+import { useT } from '../../../i18n'
 import { cn } from '../../../lib/utils'
 import {
   DropdownMenu,
@@ -9,6 +10,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '../primitives/dropdown-menu'
+import { messages } from './messages'
 
 interface SelectControlProps<T extends string> {
   label: string
@@ -27,7 +29,8 @@ export function SelectControl<T extends string>({
   className,
   mixed = false,
 }: SelectControlProps<T>) {
-  const current = mixed ? 'Mixed' : options.find((option) => option.value === value)?.label
+  const t = useT(messages)
+  const current = mixed ? t('mixed') : options.find((option) => option.value === value)?.label
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

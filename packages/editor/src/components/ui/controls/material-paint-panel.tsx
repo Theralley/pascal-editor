@@ -3,12 +3,14 @@
 import { type SceneMaterialId } from '@pascal-app/core'
 import { Eraser, PaintBucket, Pentagon, Pipette, Plus, Square } from 'lucide-react'
 import { useState } from 'react'
+import { type MessageKey, useT } from '../../../i18n'
 import { useMaterialPaintPanelModel } from '../../../lib/material-paint-panel-model'
 import { type PaintMode, usePaintRegionMode } from '../../../lib/paint-region-mode'
 import useEditor, { armMaterialPaint } from '../../../store/use-editor'
 import { Button } from '../primitives/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip'
 import { MaterialPicker } from './material-picker'
+import { messages } from './messages'
 import { SceneMaterialList } from './scene-material-list'
 import { SegmentedControl } from './segmented-control'
 
@@ -24,26 +26,30 @@ export type MaterialPaintPanelProps = {
   onCreateMaterialRequest?: () => void
 }
 
-const PAINT_MODE_OPTIONS: { value: PaintMode; label: string; icon: typeof PaintBucket }[] = [
-  { value: 'surface', label: 'Whole surface: a click paints the surface under it', icon: PaintBucket },
+const PAINT_MODE_OPTIONS: {
+  value: PaintMode
+  labelKey: MessageKey<typeof messages>
+  icon: typeof PaintBucket
+}[] = [
+  { value: 'surface', labelKey: 'paint.surface', icon: PaintBucket },
   {
     value: 'rectangle',
-    label: 'Rectangle: press anywhere on a wall, floor or ceiling, drag to the opposite corner',
+    labelKey: 'paint.rectangle',
     icon: Square,
   },
   {
     value: 'polygon',
-    label: 'Polygon: click the points of a shape on a floor or ceiling',
+    labelKey: 'paint.polygon',
     icon: Pentagon,
   },
   {
     value: 'erase',
-    label: 'Erase: click a painted part to remove it, or a painted surface to reset it',
+    labelKey: 'paint.erase',
     icon: Eraser,
   },
   {
     value: 'pick',
-    label: 'Pick: click a surface to paint with its material (or hold Alt / Option)',
+    labelKey: 'paint.pick',
     icon: Pipette,
   },
 ]
@@ -57,6 +63,7 @@ const PAINT_MODE_OPTIONS: { value: PaintMode; label: string; icon: typeof PaintB
  * on, so nothing here needs a colour first.
  */
 function PaintModeControl() {
+  const t = useT(messages)
   const painting = useEditor((s) => s.mode === 'material-paint')
   const mode = usePaintRegionMode((s) => s.mode)
   const select = (next: PaintMode) => {
@@ -72,21 +79,25 @@ function PaintModeControl() {
       onPointerUp={(event) => (event.target as HTMLElement).closest('button')?.blur()}
     >
       <div className="px-0.5 font-medium text-muted-foreground text-xs">
-        {painting && mode === 'erase' ? 'Erase' : painting && mode === 'pick' ? 'Pick material' : 'Paint'}
+        {painting && mode === 'erase'
+          ? t('paint.titleErase')
+          : painting && mode === 'pick'
+            ? t('paint.titlePick')
+            : t('paint.title')}
       </div>
       <SegmentedControl
         mixed={!painting}
         onChange={select}
-        options={PAINT_MODE_OPTIONS.map(({ value, label, icon: Icon }) => ({
+        options={PAINT_MODE_OPTIONS.map(({ value, labelKey, icon: Icon }) => ({
           value,
           label: (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span aria-label={label} className="flex items-center justify-center">
+                <span aria-label={t(labelKey)} className="flex items-center justify-center">
                   <Icon className="h-3.5 w-3.5" />
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{label}</TooltipContent>
+              <TooltipContent>{t(labelKey)}</TooltipContent>
             </Tooltip>
           ),
         }))}
@@ -97,6 +108,7 @@ function PaintModeControl() {
 }
 
 export function MaterialPaintPanel({ onCreateMaterialRequest }: MaterialPaintPanelProps) {
+  const t = useT(messages)
   const painting = useEditor((s) => s.mode === 'material-paint')
   const erasing = usePaintRegionMode((s) => s.mode) === 'erase' && painting
   const {
@@ -116,8 +128,7 @@ export function MaterialPaintPanel({ onCreateMaterialRequest }: MaterialPaintPan
       {/* Erasing paints nothing: no swatches to pick from, just what a click does. */}
       {erasing ? (
         <p className="px-0.5 py-1 text-muted-foreground text-xs" data-paint-erase-note>
-          Click a painted part of a wall, floor or ceiling to remove it, or a painted surface to reset it to
-          its default.
+          {t('paint.eraseNote')}
         </p>
       ) : (
         <>
@@ -136,12 +147,12 @@ export function MaterialPaintPanel({ onCreateMaterialRequest }: MaterialPaintPan
       <div className="mt-2 shrink-0 space-y-1.5 border-border/60 border-t pt-2">
         <div className="flex items-center justify-between">
           <span className="font-medium text-muted-foreground text-xs uppercase tracking-[0.12em]">
-            Scene materials
+            {t('paint.sceneMaterials')}
           </span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Add material"
+                aria-label={t('paint.addMaterial')}
                 onClick={createCustomMaterial}
                 size="icon-sm"
                 type="button"
@@ -150,7 +161,7 @@ export function MaterialPaintPanel({ onCreateMaterialRequest }: MaterialPaintPan
                 <Plus />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Add material</TooltipContent>
+            <TooltipContent>{t('paint.addMaterial')}</TooltipContent>
           </Tooltip>
         </div>
         <div className="subtle-scrollbar max-h-56 overflow-y-auto">
@@ -158,7 +169,7 @@ export function MaterialPaintPanel({ onCreateMaterialRequest }: MaterialPaintPan
             <SceneMaterialList autoEditId={autoEditMaterialId} />
           ) : (
             <p className="px-0.5 py-1 text-muted-foreground text-xs">
-              No custom materials yet — add one with +.
+              {t('paint.noMaterials')}
             </p>
           )}
         </div>

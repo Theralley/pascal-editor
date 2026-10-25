@@ -8,8 +8,10 @@ import {
   normalizeDecimalComma,
   parseMeasurement,
 } from '../../../lib/measurement-parser'
+import { useT } from '../../../i18n'
 import { useLinearDisplay } from '../../../lib/use-linear-display'
 import { cn } from '../../../lib/utils'
+import { messages } from './messages'
 
 interface SliderControlProps {
   label: React.ReactNode
@@ -72,6 +74,7 @@ export function SliderControl({
   restoreOnCommit = true,
   mixed = false,
 }: SliderControlProps) {
+  const t = useT(messages)
   // Values and bounds stay in meters; gestures and input use the displayed unit.
   const { isImperial, displayUnit, parseUnit, precision, step, toDisplay, toStored } =
     useLinearDisplay(unit, storedPrecision, storedStep)
@@ -411,7 +414,7 @@ export function SliderControl({
             className="flex cursor-text items-center text-muted-foreground transition-colors hover:text-foreground"
             onClick={handleValueClick}
           >
-            <span className="font-mono tracking-tight">Mixed</span>
+            <span className="font-mono tracking-tight">{t('mixed')}</span>
           </div>
         ) : (
           <div
