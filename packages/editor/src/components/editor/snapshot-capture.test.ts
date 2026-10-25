@@ -470,11 +470,11 @@ describe('an ephemeral capture', () => {
       await deliverSnapshot(
         { requestId: 'view-2', ephemeral: true },
         new Blob(['frame']),
-        { ...cameraData, resolution: { w: 640, h: 400 }, walls: { mode: 'down', cutHeight: 0.4 } },
+        { ...cameraData, resolution: { w: 640, h: 400 }, walls: { mode: 'low', cutHeight: 0.4 } },
         () => {},
       )
       expect(received).toMatchObject([
-        { requestId: 'view-2', walls: { mode: 'down', cutHeight: 0.4 } },
+        { requestId: 'view-2', walls: { mode: 'low', cutHeight: 0.4 } },
       ])
     } finally {
       emitter.off('snapshot:captured', onCaptured)

@@ -174,7 +174,7 @@ describe('view_scene over the MCP', () => {
     }
   })
 
-  test('walls down reach the editor tab, and a tab that did not apply them is refused', async () => {
+  test('walls low reach the editor tab, and a tab that did not apply them is refused', async () => {
     const asked: Parameters<SceneViewHost['capture']>[0][] = []
     const view = await viewWith({
       capture: async (request) => {
@@ -187,16 +187,16 @@ describe('view_scene over the MCP', () => {
           tab: 'tab_1',
           capturedAt: '2026-10-24T09:00:00.000Z',
           walls: request.walls
-            ? { mode: 'down', cutHeight: request.walls.cutHeight ?? 0.25 }
+            ? { mode: 'low', cutHeight: request.walls.cutHeight ?? 0.25 }
             : undefined,
         }
       },
     })
     try {
-      const result = await view.call({ walls: { mode: 'down', cutHeight: 0.4 } })
+      const result = await view.call({ walls: { mode: 'low', cutHeight: 0.4 } })
       expect(result.isError).toBe(false)
-      expect(asked.at(-1)?.walls).toEqual({ mode: 'down', cutHeight: 0.4 })
-      expect(json(result.content).walls).toEqual({ mode: 'down', cutHeight: 0.4 })
+      expect(asked.at(-1)?.walls).toEqual({ mode: 'low', cutHeight: 0.4 })
+      expect(json(result.content).walls).toEqual({ mode: 'low', cutHeight: 0.4 })
       expect((await view.call({})).isError).toBe(false)
       expect(asked.at(-1)).not.toHaveProperty('walls')
     } finally {
@@ -213,7 +213,7 @@ describe('view_scene over the MCP', () => {
       }),
     })
     try {
-      const refused = await old.call({ walls: { mode: 'down' } })
+      const refused = await old.call({ walls: { mode: 'low' } })
       expect(refused.isError).toBe(true)
       expect(json(refused.content)).toMatchObject({ code: 'view_walls_unconfirmed' })
     } finally {

@@ -207,14 +207,14 @@ function toCandidate(
  * re-reads it, so batching is only sound while every batched wall's materials
  * hold still. That is true in `up`; in `cutaway`, walls stamped `wallHidden`
  * are released per wall in the same frame because WallCutout runs at priority
- * 0 and this system at 5. `down` keeps the batch too: the cut is a mask on the
+ * 0 and this system at 5. `low` keeps the batch too: the cut is a mask on the
  * materials, which the merged mesh wears as masked clones (see `swapBatchCut`).
  * `translucent` makes every wall see-through.
  * Isolation is the other stand-down: it hides the level root the merged mesh
  * hangs off, which would leave a focused batched wall drawn by nobody.
  */
 export function canBatchWalls(wallMode: WallMode, isolationActive: boolean): boolean {
-  return !isolationActive && (wallMode === 'up' || wallMode === 'cutaway' || wallMode === 'down')
+  return !isolationActive && (wallMode === 'up' || wallMode === 'cutaway' || wallMode === 'low')
 }
 
 /**
@@ -346,7 +346,7 @@ function unbatchedWallCount(
 }
 
 /**
- * Entering or leaving `down` hands every merged mesh the other set of materials: the walls that
+ * Entering or leaving `low` hands every merged mesh the other set of materials: the walls that
  * draw themselves are re-dressed by WallCutout, but a merged mesh keeps what it was sewn with.
  */
 function swapBatchCut(cut: boolean) {
@@ -604,7 +604,7 @@ export function runBatchFrame(
     }
   }
 
-  const cut = useViewer.getState().wallMode === 'down'
+  const cut = useViewer.getState().wallMode === 'low'
   if (cut !== batchesCut) {
     batchesCut = cut
     swapBatchCut(cut)

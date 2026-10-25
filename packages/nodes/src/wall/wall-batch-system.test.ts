@@ -29,7 +29,7 @@ const registeredIds: string[] = []
 const originalViewer = useViewer.getState()
 
 afterEach(() => {
-  useViewer.setState({ wallMode: 'translucent' } as never)
+  useViewer.setState({ wallMode: 'down' } as never)
   runFrame()
   for (const id of registeredIds.splice(0)) {
     const object = sceneRegistry.nodes.get(id)
@@ -161,18 +161,18 @@ describe('collectTintedWalls', () => {
   })
 })
 
-describe('WallBatchSystem walls down', () => {
+describe('WallBatchSystem walls low', () => {
   const masked = (materials: Material | Material[]) =>
     (Array.isArray(materials) ? materials : [materials]).every(
       (material) => (material as { maskNode?: unknown }).maskNode,
     )
 
-  test('the merged mesh stays and wears masked clones in down, its own materials otherwise', () => {
+  test('the merged mesh stays and wears masked clones in low, its own materials otherwise', () => {
     const { batch, root, runFrame } = setupBatchedLevel()
     const own = batch.material
     expect(masked(own)).toBe(false)
 
-    useViewer.setState({ wallMode: 'down' } as never)
+    useViewer.setState({ wallMode: 'low' } as never)
     nowMs = 200
     runFrame({} as never, 0)
     nowMs = 500
@@ -189,8 +189,8 @@ describe('WallBatchSystem walls down', () => {
     expect(masked(batch.material)).toBe(false)
   })
 
-  test('a level merged while down is cut from the start', () => {
-    const { batch } = setupBatchedLevel(8, 'down')
+  test('a level merged while low is cut from the start', () => {
+    const { batch } = setupBatchedLevel(8, 'low')
     expect(masked(batch.material)).toBe(true)
   })
 })
@@ -304,7 +304,7 @@ test('wall batches keep waiting for pending neighbours even after the dirty cens
   let pending = 1
   const queue = spyOn(viewerExports, 'getPendingWallRebuildCount').mockImplementation(() => pending)
   try {
-    useViewer.setState({ wallMode: 'translucent' })
+    useViewer.setState({ wallMode: 'down' })
     runFrame()
     useViewer.setState({ wallMode: 'up' })
     nowMs = 200

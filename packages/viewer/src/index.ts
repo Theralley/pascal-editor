@@ -444,7 +444,7 @@ export {
 } from './systems/wall/opening-cutout-geometry'
 export {
   getWallHideState,
-  presentWallsDownForCapture,
+  presentWallsLowForCapture,
   WallCutout,
 } from './systems/wall/wall-cutout'
 export {

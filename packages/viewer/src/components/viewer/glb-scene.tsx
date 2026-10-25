@@ -349,7 +349,7 @@ export function GlbScene({
   const walkthroughMode = useViewer((s) => s.walkthroughMode)
   const textures = useViewer((s) => s.textures)
   const sceneTheme = useViewer((s) => s.sceneTheme)
-  const wallsDown = useViewer((s) => s.wallMode === 'down')
+  const wallsDown = useViewer((s) => s.wallMode === 'low')
   const wallCutHeight = useViewer((s) => s.wallCutHeight)
   const wallCut = useRef<BakedWallCut | null>(null)
 
@@ -478,7 +478,7 @@ export function GlbScene({
       levelsWithZones: new Set(zoneList.map((zone) => zone.levelId)),
     }
   }, [gltf.scene])
-  // Walls down: the baked walls stand as stubs with a cap at the cut, like the live viewer's.
+  // Walls low: the baked walls stand as stubs with a cap at the cut, like the live viewer's.
   // Dressed after the monochrome pass above, so a theme or texture switch re-cuts what it set.
   // biome-ignore lint/correctness/useExhaustiveDependencies: textures and sceneTheme re-dress the walls this cuts
   useEffect(() => {

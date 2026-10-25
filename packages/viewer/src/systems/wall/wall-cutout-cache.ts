@@ -96,7 +96,8 @@ export function wallHiddenFromFacing(
   mode: WallMode,
   negativeFacing: boolean,
 ): boolean {
-  if (mode === 'up' || mode === 'down') return false
+  if (mode === 'up' || mode === 'low') return false
+  if (mode === 'down') return true
   if (node.frontSide === 'interior' && node.backSide === 'interior') return true
   return negativeFacing
     ? node.frontSide === 'exterior' && node.backSide !== 'exterior'
@@ -468,7 +469,7 @@ export class WallCutoutCache {
     // false on stamp lift; translucent walls must continue receiving events.
     const stamp = mode !== 'translucent' && hidden
     if (wall.mesh.userData.wallHidden !== stamp) wall.mesh.userData.wallHidden = stamp
-    const cut = mode === 'down' && wall.node.wallType !== 'curtain'
+    const cut = mode === 'low' && wall.node.wallType !== 'curtain'
     this.setCut(wall, cut)
     const variant = hidden ? wall.hiddenVariant : wall.visibleVariant
     // The cut wears a masked clone of the variant, so selection, hover and delete still show.

@@ -14,7 +14,7 @@ import { Box, Grid2x2, Layers, Layers2, Maximize, ScanLine, Square } from 'lucid
 import { type ReactNode, useMemo } from 'react'
 
 const levelModes = ['stacked', 'solo', 'exploded', 'manual'] as const
-const wallModes = ['up', 'cutaway', 'down', 'translucent'] as const
+const wallModes = ['up', 'cutaway', 'low', 'down', 'translucent'] as const
 
 const levelLabel: Record<(typeof levelModes)[number], string> = {
   stacked: 'Stack',
@@ -26,7 +26,8 @@ const levelLabel: Record<(typeof levelModes)[number], string> = {
 const wallLabel: Record<(typeof wallModes)[number], string> = {
   up: 'Full',
   cutaway: 'Cutaway',
-  down: 'Down',
+  low: 'Low',
+  down: 'Hidden',
   translucent: 'Translucent',
 }
 

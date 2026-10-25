@@ -53,8 +53,8 @@ export const shouldIgnoreWallEventForOpeningMove = ({
 
 /**
  * Live hide state of a wall's registered mesh. `WallCutout` stamps
- * `userData.wallHidden` on the wall's scene-registry mesh every pass
- * (cutaway-hidden faces, auto-mode interior partitions; walls down cuts, it does not hide); the
+ * `userData.wallHidden` on the wall's scene-registry mesh every pass (X-ray
+ * 'down' mode, cutaway-hidden faces, auto-mode interior partitions); the
  * wall renderer's pointer gate reads the same stamp. Unregistered walls
  * (not mounted yet) count as visible — there is nothing to fall through to.
  */

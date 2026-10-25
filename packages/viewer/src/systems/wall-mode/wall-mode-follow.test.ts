@@ -113,6 +113,7 @@ describe('WallModeFollowCache', () => {
     ['up', 20, true],
     ['down', 20, false],
     ['down', -20, false],
+    ['low', 20, false],
     ['translucent', 20, true],
     ['cutaway', 20, false],
     ['cutaway', -20, true],

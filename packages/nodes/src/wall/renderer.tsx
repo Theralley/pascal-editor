@@ -122,7 +122,8 @@ const WallRenderer = ({ node }: { node: WallNode }) => {
   const rawHandlers = useNodeEvents(node, 'wall')
   // Hidden walls participate in hover/selection NEAREST-FIRST: when the
   // wall-mode pass hides this wall (`WallCutout` stamps `userData.wallHidden`
-  // — cutaway-hidden faces, auto-mode interior partitions), its invisible full-height collision mesh handles the event
+  // — X-ray 'down' mode, cutaway-hidden faces, auto-mode interior
+  // partitions), its invisible full-height collision mesh handles the event
   // only when no hit that OWNS selection semantics outranks it — its own
   // hosted doors / windows / wall-mounted children, any selectable at
   // ~equal-or-nearer depth (device boxes at the face), or wall-mounted gear

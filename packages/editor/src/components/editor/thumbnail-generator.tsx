@@ -18,7 +18,7 @@ import {
   holdLiveFrame,
   pendingSceneBuildCount,
   presentLevelsForCapture,
-  presentWallsDownForCapture,
+  presentWallsLowForCapture,
   refreshIsolation,
   SNAPSHOT_MAX_EDGE,
   SNAPSHOT_MIME,
@@ -975,7 +975,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               // authored pose is not the user's view, an interior is cut below.
               emitter.emit(
                 'thumbnail:before-capture',
-                cameraPose || interior ? { wholeWalls: event.walls?.mode !== 'down' } : undefined,
+                cameraPose || interior ? { wholeWalls: true } : undefined,
               )
               if (cameraPose) {
                 restore(snapLevelsToTruePositions())
@@ -992,10 +992,10 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
                 cameraData.presentation = event.presentation
               }
               if (event.walls) {
-                if (event.walls.mode === 'down') {
+                if (event.walls.mode === 'low') {
                   const cutHeight = event.walls.cutHeight ?? useViewer.getState().wallCutHeight
-                  restore(presentWallsDownForCapture(cutHeight))
-                  cameraData.walls = { mode: 'down', cutHeight }
+                  restore(presentWallsLowForCapture(cutHeight))
+                  cameraData.walls = { mode: 'low', cutHeight }
                 } else cameraData.walls = { mode: 'up' }
               }
               if (interior) {

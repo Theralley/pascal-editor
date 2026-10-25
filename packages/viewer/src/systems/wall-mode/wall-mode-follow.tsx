@@ -19,8 +19,8 @@ import useViewer from '../../store/use-viewer'
 import { wallFacingNegative, wallHiddenFromFacing } from '../wall/wall-cutout-cache'
 
 /**
- * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls down and the
- * cutaway hide the node through the scene-visibility owner (`'wall-mode'` hold): off the scene
+ * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls hidden (`down`), low (until the
+ * display cut reaches followers) and the cutaway hide the node through the scene-visibility owner (`'wall-mode'` hold): off the scene
  * layer it is neither drawn, picked nor shadowed, and no material is ever touched. Walls up shows
  * it. Translucent leaves it shown as built until the display cut gives followers a see-through look.
  * The cutaway decision is `wallHiddenFromFacing`, the one walls use. Walls keep their own `WallCutout`.
@@ -165,7 +165,7 @@ export class WallModeFollowCache {
     this.viewer = viewer
     this.registryVersion = this.followersVersion
     // Nothing is hidden in the other modes: let go of what was, and keep no entries.
-    if (viewer.wallMode !== 'down' && !cutaway) {
+    if (viewer.wallMode !== 'down' && viewer.wallMode !== 'low' && !cutaway) {
       for (const id of [...this.tracked.keys()]) this.release(id)
       return
     }
@@ -259,7 +259,8 @@ export class WallModeFollowCache {
     nodes: Readonly<Record<string, AnyNode>>,
   ): Follower {
     const mode = viewer.wallMode
-    if (mode === 'down') return { hidden: true, negativeFacing: undefined }
+    // Until the stubs cut them, a follower of a low wall is hidden like one of a hidden wall.
+    if (mode === 'down' || mode === 'low') return { hidden: true, negativeFacing: undefined }
     if (mode !== 'cutaway') return { hidden: false, negativeFacing: undefined }
     const facing = config.facing
       ? this.declaredFacing(config.facing(node, nodes), group)

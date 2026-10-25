@@ -42,7 +42,7 @@ type StreetSide = (typeof STREET_SIDES)[number]
 export type SceneViewLighting = Exclude<(typeof VIEW_LIGHTING)[number], 'current'>
 
 /** How the walls stand in a picture: whole, or cut down to stubs at `cutHeight` metres (default per host). */
-export type SceneViewWalls = { mode: 'up' | 'down'; cutHeight?: number }
+export type SceneViewWalls = { mode: 'up' | 'low'; cutHeight?: number }
 
 export type SceneViewInput = {
   target?: string
@@ -134,12 +134,12 @@ export function confirmSceneViewWalls(
     requested &&
     (applied?.mode !== requested.mode ||
       (requested.cutHeight !== undefined &&
-        requested.mode === 'down' &&
+        requested.mode === 'low' &&
         applied.cutHeight !== requested.cutHeight))
   )
     refuse(
       'view_walls_unconfirmed',
-      'The renderer did not confirm the requested wall view. Refresh the renderer and retry; this picture cannot verify walls down.',
+      'The renderer did not confirm the requested wall view. Refresh the renderer and retry; this picture cannot verify walls low.',
       { requested, applied: applied ?? null },
     )
 }
@@ -1137,10 +1137,10 @@ export function sceneViewPlan(
   const { camera } = input
   const presentation = input.presentation
   const walls = input.walls
-  if (walls?.mode === 'down' && input.interior)
+  if (walls?.mode === 'low' && input.interior)
     refuse(
       'walls_and_interior',
-      'Choose walls down or a clipped interior view: an interior cuts the walls itself.',
+      'Choose walls low or a clipped interior view: an interior cuts the walls itself.',
     )
   if (presentation && input.interior)
     refuse('presentation_and_interior', 'Choose a level presentation or a clipped interior view.')

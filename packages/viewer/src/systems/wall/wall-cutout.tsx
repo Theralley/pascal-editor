@@ -50,7 +50,8 @@ export function getWallHideState(
   wallMode: WallMode,
   cameraDir: Vector3,
 ): boolean {
-  if (wallMode === 'up' || wallMode === 'down') return false
+  if (wallMode === 'up' || wallMode === 'low') return false
+  if (wallMode === 'down') return true
   wallMesh.getWorldDirection(v)
   return wallHiddenFromFacing(wallNode, wallMode, v.dot(cameraDir) < 0)
 }
@@ -102,11 +103,11 @@ export function wallsForCapture(
 }
 
 /**
- * The walls as one picture draws them down: each cut at `height` over its level, with the caps, until
+ * The walls as one picture draws them low: each cut at `height` over its level, with the caps, until
  * the returned function puts them back. A capture renders inside one callback, so the cut is laid on
  * the meshes themselves instead of waiting on the wall mode and a frame.
  */
-export function presentWallsDownForCapture(height: number): () => void {
+export function presentWallsLowForCapture(height: number): () => void {
   setDisplayCutHeight(height)
   const worn = new Map<Mesh, Material | Material[]>()
   const nodes = useScene.getState().nodes
@@ -156,7 +157,7 @@ export const WallCutout = ({
   useFrame((state) => {
     runWallCutoutFrame(cache, state)
     const viewer = viewerStore.getState()
-    caps.update(viewer.wallMode === 'down', viewer.wallCutHeight, viewer.shading)
+    caps.update(viewer.wallMode === 'low', viewer.wallCutHeight, viewer.shading)
   }, WALL_CUTOUT_FRAME_PRIORITY)
 
   useEffect(() => {

@@ -154,9 +154,16 @@ describe('WallCutoutCache', () => {
     expect(other.mesh.userData.wallHidden).toBe(true)
   })
 
-  test('walls down stand cut, not hidden, whether or not they play', () => {
+  test('a wall in play stays down when the person has put the walls down', () => {
     const { node, mesh } = addWall()
-    viewerStore.setState({ wallMode: 'down' })
+    viewerStore.setState({ wallMode: 'down', nodesRevealing: [node.id] })
+    cache.update(camera, 1)
+    expect(mesh.userData.wallHidden).toBe(true)
+  })
+
+  test('low stands the walls cut, not hidden, whether or not they play', () => {
+    const { node, mesh } = addWall()
+    viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1)
     expect(mesh.userData.wallHidden).toBe(false)
     viewerStore.setState({ nodesRevealing: [node.id] })
@@ -595,7 +602,8 @@ describe('WallCutoutCache', () => {
     cache.update(camera, 1)
     for (const [mode, hidden] of [
       ['up', false],
-      ['down', false],
+      ['down', true],
+      ['low', false],
       ['translucent', false],
       ['cutaway', true],
     ] as const) {
@@ -605,7 +613,7 @@ describe('WallCutoutCache', () => {
       expect(cache.walls.values().next().value!.variantKey).toBe(
         mode === 'translucent'
           ? 'translucent'
-          : mode === 'down'
+          : mode === 'low'
             ? 'visible:cut'
             : hidden
               ? 'invisible'
@@ -854,7 +862,7 @@ describe('WallCutoutCache', () => {
     for (const front of ['interior', 'exterior'])
       for (const back of ['interior', 'exterior']) {
         const { node, mesh } = addWall(front, back)
-        for (const mode of ['up', 'cutaway', 'down', 'translucent'] as const) {
+        for (const mode of ['up', 'cutaway', 'down', 'low', 'translucent'] as const) {
           viewerStore.setState({ wallMode: mode })
           for (const angle of [0, Math.PI]) {
             camera.rotation.y = angle
@@ -932,7 +940,7 @@ describe('walls for a capture', () => {
   })
 })
 
-describe('walls down', () => {
+describe('walls low', () => {
   const LEVEL = 'level_walls_down'
 
   /** A 4 m long, 2.5 m tall wall standing on a level root at y = 0 (the wall's base is its origin). */
@@ -957,7 +965,7 @@ describe('walls down', () => {
     viewerStore.setState({ wallMode: 'up' })
     cache.update(camera, 1)
     const upMaterials = mesh.material as Material[]
-    viewerStore.setState({ wallMode: 'down' })
+    viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1.01)
     const cut = mesh.material as Material[]
     expect(cut).not.toBe(upMaterials)
@@ -985,7 +993,7 @@ describe('walls down', () => {
 
   test('the cut height moves the cut and rebuilds no material', () => {
     const { mesh, root } = addStandingWall()
-    viewerStore.setState({ wallMode: 'down' })
+    viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1)
     const cut = mesh.material
     const writes = trackWrites(mesh)
@@ -1001,7 +1009,7 @@ describe('walls down', () => {
     const { mesh, root } = addStandingWall()
     root.position.y = 3
     root.updateMatrixWorld(true)
-    viewerStore.setState({ wallMode: 'down' })
+    viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1)
     const top = shoot(root, new Vector3(1.5, 9, 0), new Vector3(0, -1, 0))[0]
     expect(top?.object).toBe(mesh)
@@ -1010,7 +1018,7 @@ describe('walls down', () => {
 
   test('selection still shows on a cut wall', () => {
     const { node, mesh } = addStandingWall()
-    viewerStore.setState({ wallMode: 'down' })
+    viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1)
     const plain = mesh.material
     viewerStore.setState({

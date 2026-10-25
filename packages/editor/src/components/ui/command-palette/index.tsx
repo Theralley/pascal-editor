@@ -278,10 +278,11 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
     setOpen(false)
   }
 
-  const wallModeLabel: Record<'cutaway' | 'up' | 'down' | 'translucent', string> = {
+  const wallModeLabel: Record<'cutaway' | 'up' | 'low' | 'down' | 'translucent', string> = {
     cutaway: 'Cutaway',
     up: 'Up',
-    down: 'Down',
+    low: 'Low',
+    down: 'Hidden',
     translucent: 'Translucent',
   }
 
@@ -398,7 +399,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
               {/* ── Wall Mode sub-page ────────────────────────────────────── */}
               {page === 'wall-mode' && (
                 <Command.Group heading="Wall Mode">
-                  {(['cutaway', 'up', 'down', 'translucent'] as const).map((mode) => (
+                  {(['cutaway', 'up', 'low', 'down', 'translucent'] as const).map((mode) => (
                     <OptionItem
                       isActive={wallMode === mode}
                       key={mode}

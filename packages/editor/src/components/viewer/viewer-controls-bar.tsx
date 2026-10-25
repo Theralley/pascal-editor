@@ -60,11 +60,17 @@ const wallModeConfig = {
     ),
     label: 'Cutaway',
   },
-  down: {
+  low: {
     icon: (props: any) => (
       <img alt="Low" height={28} src="/icons/walllow.webp" width={28} {...props} />
     ),
     label: 'Low',
+  },
+  down: {
+    icon: (props: any) => (
+      <img alt="Hidden" height={28} src="/icons/walllow.webp" width={28} {...props} />
+    ),
+    label: 'Hidden',
   },
 }
 
@@ -382,7 +388,12 @@ export const ViewerControlsBar = ({
               }
               label={`Walls: ${wallModeConfig[safeWallMode].label}`}
               onClick={() => {
-                const modes: ('cutaway' | 'up' | 'down')[] = ['cutaway', 'up', 'down']
+                const modes: ('cutaway' | 'up' | 'low' | 'down')[] = [
+                  'cutaway',
+                  'up',
+                  'low',
+                  'down',
+                ]
                 const nextIndex = (modes.indexOf(safeWallMode) + 1) % modes.length
                 useViewer.getState().setWallMode(modes[nextIndex] ?? 'cutaway')
               }}

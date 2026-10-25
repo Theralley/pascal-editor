@@ -21,12 +21,15 @@ describe('getWallHideState', () => {
     ).toBe(false)
   })
 
-  test("'down' stands the wall as a stub, so it is never hidden", () => {
+  test("'down' always hides the wall, even when both sides are exterior", () => {
     expect(
       getWallHideState(wall('exterior', 'exterior'), facingPositiveZ(), 'down', towardsPositiveZ),
-    ).toBe(false)
+    ).toBe(true)
+  })
+
+  test("'low' stands the wall as a stub, so it is never hidden", () => {
     expect(
-      getWallHideState(wall('interior', 'interior'), facingPositiveZ(), 'down', towardsPositiveZ),
+      getWallHideState(wall('interior', 'interior'), facingPositiveZ(), 'low', towardsPositiveZ),
     ).toBe(false)
   })
 
