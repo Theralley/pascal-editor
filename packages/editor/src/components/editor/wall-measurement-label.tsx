@@ -509,7 +509,7 @@ function SelectedMeasurementAnnotation({ node }: { node: WallNode | ItemNode }) 
 }
 
 function WallMeasurementAnnotation({ wall }: { wall: WallNode }) {
-  useLocale()
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
@@ -531,9 +531,9 @@ function WallMeasurementAnnotation({ wall }: { wall: WallNode }) {
     }
     return total
   }, [guide, wall])
-  const label = formatLinearMeasurement(length, unit, metricNotation)
+  const label = formatLinearMeasurement(length, unit, metricNotation, locale)
   const height = useMemo(() => getWallEffectiveHeightForNodes(wall, nodes), [nodes, wall])
-  const heightLabel = `H ${formatLinearMeasurement(height, unit, metricNotation)}`
+  const heightLabel = `H ${formatLinearMeasurement(height, unit, metricNotation, locale)}`
 
   if (!(guide && Number.isFinite(length) && length >= 0.01)) return null
 

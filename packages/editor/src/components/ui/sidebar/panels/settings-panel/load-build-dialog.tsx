@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../../../components/ui/primitives/dialog'
-import { type MessageKey, useT } from '../../../../../i18n'
+import { type Locale, type MessageKey, useLocale, useT } from '../../../../../i18n'
 import {
   formatDecimal,
   getAreaUnitLabel,
@@ -83,24 +83,25 @@ function groupSchemaIssuesByType(
   return Array.from(groups, ([type, list]) => ({ type, issues: list }))
 }
 
-function formatFileSize(bytes: number): string {
+function formatFileSize(bytes: number, locale: Locale): string {
   if (bytes < 1024) return `${bytes} B`
   const oneDecimal = { minFractionDigits: 1, maxFractionDigits: 1 }
-  if (bytes < 1024 * 1024) return `${formatDecimal(bytes / 1024, oneDecimal)} KB`
-  return `${formatDecimal(bytes / (1024 * 1024), oneDecimal)} MB`
+  if (bytes < 1024 * 1024) return `${formatDecimal(bytes / 1024, oneDecimal, locale)} KB`
+  return `${formatDecimal(bytes / (1024 * 1024), oneDecimal, locale)} MB`
 }
 
-function formatFloorArea(m2: number, unit: LinearUnit): string {
+function formatFloorArea(m2: number, unit: LinearUnit, locale: Locale): string {
   if (m2 === 0) return '—'
   const value = squareMetersToAreaUnit(m2, unit)
   const label = getAreaUnitLabel(unit)
   const digits = value < 10 ? 2 : 1
-  const text = formatDecimal(value, { minFractionDigits: digits, maxFractionDigits: digits })
+  const text = formatDecimal(value, { minFractionDigits: digits, maxFractionDigits: digits }, locale)
   return `${text} ${label}`
 }
 
 export function LoadBuildDialog({ pending, onCancel, onConfirm }: Props) {
   const t = useT(messages)
+  const locale = useLocale()
   const [showAllWarnings, setShowAllWarnings] = useState(false)
   const [showSchemaIssues, setShowSchemaIssues] = useState(false)
   const unit = useViewer((state) => state.unit)
@@ -132,7 +133,7 @@ export function LoadBuildDialog({ pending, onCancel, onConfirm }: Props) {
             {ok ? t('loadBuild.ready') : t('loadBuild.cannot')}
           </DialogTitle>
           <DialogDescription>
-            {fileName} · {formatFileSize(fileSizeBytes)} ·{' '}
+            {fileName} · {formatFileSize(fileSizeBytes, locale)} ·{' '}
             {t('loadBuild.nodeCount', { count: stats.total })}
           </DialogDescription>
         </DialogHeader>
@@ -180,7 +181,7 @@ export function LoadBuildDialog({ pending, onCancel, onConfirm }: Props) {
                     <div className="flex items-center justify-between border-t px-3 py-2">
                       <span className="text-muted-foreground text-sm">{t('loadBuild.floorArea')}</span>
                       <span className="font-medium text-sm">
-                        {formatFloorArea(stats.floorAreaM2, unit)}
+                        {formatFloorArea(stats.floorAreaM2, unit, locale)}
                       </span>
                     </div>
                   )}

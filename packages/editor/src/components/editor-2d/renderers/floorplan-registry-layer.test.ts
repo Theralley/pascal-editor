@@ -160,6 +160,7 @@ describe('site-scoped floorplan discovery', () => {
       palette: undefined,
       selected: false,
       siblingEpoch: 0,
+      locale: 'en' as const,
       unit: 'metric' as const,
       metricNotation: 'meters' as const,
       wallDimensionReference: 'finished-faces' as const,

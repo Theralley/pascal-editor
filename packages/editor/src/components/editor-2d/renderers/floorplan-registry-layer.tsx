@@ -58,7 +58,7 @@ import {
   selectionModifiersFromEvent,
   useRoomRecords,
 } from '../../../hooks/use-selected-room'
-import { getLocale, type Locale, useLocale } from '../../../i18n'
+import { type Locale, useLocale } from '../../../i18n'
 import { useCeilingEditSession } from '../../../lib/ceiling-edit-session'
 import { ROTATE_HANDLE_DRAG_LABEL } from '../../../lib/contextual-help'
 import {
@@ -525,7 +525,7 @@ export const FloorplanRegistryLayer = memo(function FloorplanRegistryLayer() {
   const selectedBuildingId = useViewer((s) => s.selection.buildingId)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
-  useLocale()
+  const locale = useLocale()
   const setSelection = useViewer((s) => s.setSelection)
   const nodes = useScene((s) => s.nodes)
   const focusedUnitId = useViewer((s) => s.focusedUnitId)
@@ -1621,6 +1621,7 @@ export const FloorplanRegistryLayer = memo(function FloorplanRegistryLayer() {
         setMovingNode={setMovingNode}
         setMovingNodeOrigin={setMovingNodeOrigin}
         siblingEpoch={entry.dependsOnSiblingInputs ? (siblingEpochs.get(entry.id) ?? 0) : 0}
+        locale={locale}
         unit={unit}
         metricNotation={metricNotation}
         wallDimensionReference={effectiveWallDimensionReference}
@@ -1998,6 +1999,7 @@ type FloorplanRegistryEntryProps = {
   setMovingNode: ReturnType<typeof useEditor.getState>['setMovingNode']
   setMovingNodeOrigin: ReturnType<typeof useEditor.getState>['setMovingNodeOrigin']
   siblingEpoch: number
+  locale: Locale
   unit: 'metric' | 'imperial'
   metricNotation: 'meters' | 'millimeters'
   wallDimensionReference: FloorplanWallDimensionReference
@@ -2034,6 +2036,7 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
   setMovingNode,
   setMovingNodeOrigin,
   siblingEpoch,
+  locale,
   unit,
   metricNotation,
   wallDimensionReference,
@@ -2222,6 +2225,7 @@ const FloorplanRegistryEntry = memo(function FloorplanRegistryEntry({
     unitFocus,
     selected,
     siblingEpoch,
+    locale,
     unit,
     metricNotation,
     wallDimensionReference,
@@ -2295,6 +2299,7 @@ type BuildFloorplanEntryGeometryArgs = {
   unitFocus?: FloorplanUnitFocus
   selected: boolean
   siblingEpoch: number
+  locale: Locale
   unit: 'metric' | 'imperial'
   metricNotation: 'meters' | 'millimeters'
   wallDimensionReference: FloorplanWallDimensionReference
@@ -2355,6 +2360,7 @@ export function buildFloorplanEntryGeometry({
   unitFocus,
   selected,
   siblingEpoch,
+  locale,
   unit,
   metricNotation,
   wallDimensionReference,
@@ -2383,7 +2389,7 @@ export function buildFloorplanEntryGeometry({
     node,
     ctxOverrides,
     live,
-    locale: getLocale(),
+    locale,
     unit,
     metricNotation,
     wallDimensionReference,

@@ -1,7 +1,7 @@
 'use client'
 
 import { ANIMATION_SPEEDS, normalizeAnimationSpeed } from '@pascal-app/viewer'
-import { useT } from '../../../../../i18n'
+import { useLocale, useT } from '../../../../../i18n'
 import { formatDecimal } from '../../../../../lib/measurements'
 import useConstructionReveal from '../../../../../store/use-construction-reveal'
 import { SegmentedControl } from '../../../controls/segmented-control'
@@ -10,13 +10,14 @@ import { messages } from './messages'
 /** How fast what the AI builds plays: ×0.5 to ×2, for the Full and Framing animations and their undo. */
 export function AnimationSpeedSetting() {
   const t = useT(messages)
+  const locale = useLocale()
   const level = useConstructionReveal((state) => state.level)
   const speed = useConstructionReveal((state) => state.speed)
   const setSpeed = useConstructionReveal((state) => state.setSpeed)
   const off = level === 'off'
   // The control's values are strings; a step is its number as text.
   const options = ANIMATION_SPEEDS.map((step) => {
-    const factor = formatDecimal(step, { maxFractionDigits: 2 })
+    const factor = formatDecimal(step, { maxFractionDigits: 2 }, locale)
     return {
       label: `×${factor}`,
       value: String(step),

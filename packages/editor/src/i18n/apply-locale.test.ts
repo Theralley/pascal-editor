@@ -18,6 +18,18 @@ describe('a Swedish interface and units', () => {
     expect(useViewer.getState().unit).toBe('imperial')
   })
 
+  test('leaves an explicit project choice alone', () => {
+    useViewer.setState({
+      projectId: 'p1',
+      projectPresentation: { units: { system: 'imperial' } },
+      unit: 'imperial',
+      unitDefault: 'imperial',
+      unitExplicit: false,
+    } as never)
+    applyLocale('sv')
+    expect(useViewer.getState()).toMatchObject({ unit: 'imperial', unitSource: 'project' })
+  })
+
   test('English changes nothing', () => {
     useViewer.setState({ unitDefault: 'imperial', unitExplicit: false })
     applyLocale('en')

@@ -71,6 +71,14 @@ export function normalizeDecimalComma(raw: string, locale: Locale = getLocale())
   return locale === 'sv' && !raw.includes('.') ? raw.replace(/(\d),(\d)/g, '$1.$2') : raw
 }
 
+const COMPLETE_NUMBER = /^\s*[+-]?(?:\d+\.?\d*|\.\d+)\s*$/
+
+/** A whole number as typed (a Swedish comma allowed), or `null`: `1,5 cm garbage` is not 1.5. */
+export function parsePlainNumber(raw: string, locale?: Locale): number | null {
+  const text = normalizeDecimalComma(raw, locale)
+  return COMPLETE_NUMBER.test(text) ? Number.parseFloat(text) : null
+}
+
 /**
  * Parse typed field text into the field's stored numeric unit. Returns `null`
  * when the text can't be read as a quantity, so the caller can fall back to a
@@ -120,7 +128,8 @@ export function measurementHint(
   options: MeasurementHintOptions = {},
 ): string | null {
   const trimmed = raw.trim()
-  const plain = (options.locale ?? getLocale()) === 'sv' ? PLAIN_NUMBER_COMMA : PLAIN_NUMBER
+  const locale = options.locale ?? getLocale()
+  const plain = locale === 'sv' ? PLAIN_NUMBER_COMMA : PLAIN_NUMBER
   if (!trimmed || plain.test(trimmed)) return null
 
   const parsed = parseMeasurement(trimmed, spec, options)
@@ -131,5 +140,6 @@ export function measurementHint(
   const precision = options.precision ?? 2
   const q = quantity(stored, spec.unitId)
   const shown = displayUnit === spec.unitId ? q : q.to(displayUnit)
-  return `= ${shown.format({ precision })}`
+  const text = shown.format({ precision })
+  return `= ${locale === 'sv' ? text.replace(/(\d)\.(\d)/, '$1,$2') : text}`
 }

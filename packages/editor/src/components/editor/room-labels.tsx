@@ -45,7 +45,7 @@ import {
 } from 'three'
 import { useShallow } from 'zustand/react/shallow'
 import { useRoomRecords } from '../../hooks/use-selected-room'
-import { useLocale } from '../../i18n'
+import { getLocale, type Locale, useLocale } from '../../i18n'
 import {
   formatDecimal,
   getAreaUnitLabel,
@@ -98,11 +98,16 @@ export function roomLabelsVisible(state: RoomLabelVisibilityState): boolean {
   )
 }
 
-export function formatRoomArea(squareMeters: number, unit: LinearUnit): string {
-  const area = formatDecimal(squareMetersToAreaUnit(squareMeters, unit), {
-    minFractionDigits: 1,
-    maxFractionDigits: 1,
-  })
+export function formatRoomArea(
+  squareMeters: number,
+  unit: LinearUnit,
+  locale: Locale = getLocale(),
+): string {
+  const area = formatDecimal(
+    squareMetersToAreaUnit(squareMeters, unit),
+    { minFractionDigits: 1, maxFractionDigits: 1 },
+    locale,
+  )
   return `${area} ${getAreaUnitLabel(unit)}`
 }
 
@@ -1267,7 +1272,7 @@ export function RoomPillChip({
 }) {
   const unit = useViewer((s) => s.unit)
   const locale = useLocale()
-  const areaLabel = formatRoomArea(areaM2, unit)
+  const areaLabel = formatRoomArea(areaM2, unit, locale)
   // biome-ignore lint/correctness/useExhaustiveDependencies: A dot's border box does not resize when its hidden text changes.
   useLayoutEffect(() => {
     if (elements instanceof PillElements) elements.measure(zoneId)
@@ -1325,7 +1330,7 @@ export function RoomPillDetail({
   areaM2: number
 }) {
   const unit = useViewer((s) => s.unit)
-  useLocale()
+  const locale = useLocale()
   return (
     <div
       aria-hidden
@@ -1333,7 +1338,7 @@ export function RoomPillDetail({
       data-room-label-detail={zoneId}
       data-room-label-view={view}
     >
-      <LabelParts areaLabel={formatRoomArea(areaM2, unit)} color={color} full name={name} />
+      <LabelParts areaLabel={formatRoomArea(areaM2, unit, locale)} color={color} full name={name} />
     </div>
   )
 }

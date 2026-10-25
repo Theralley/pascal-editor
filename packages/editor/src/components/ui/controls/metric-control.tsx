@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   lingoUnitSpec,
   measurementHint,
-  normalizeDecimalComma,
   parseMeasurement,
+  parsePlainNumber,
 } from '../../../lib/measurement-parser'
 import { useLinearDisplay } from '../../../lib/use-linear-display'
 import { cn } from '../../../lib/utils'
@@ -242,8 +242,8 @@ export function MetricControl({
         })
       : null
     if (stored === null) {
-      const numValue = Number.parseFloat(normalizeDecimalComma(inputValue))
-      stored = Number.isFinite(numValue) ? toStoredValue(numValue) : null
+      const numValue = parsePlainNumber(inputValue)
+      stored = numValue === null ? null : toStoredValue(numValue)
     }
     if (stored === null) {
       setInputValue(toDisplayValue(value).toFixed(precision))

@@ -33,7 +33,14 @@ const VISIBLE_PROPS = new Set([
   'disabledReason',
   'text',
   'emptyText',
+  'detail',
+  'group',
+  'empty',
+  'subtitle',
 ])
+// `vrLabel`, `helpTitle`, `emptyText`: a prop that says it is a label, title or text is one.
+const VISIBLE_NAME_SUFFIX = /(?:Label|Title|Text)$/
+const isVisibleName = (name: string) => VISIBLE_PROPS.has(name) || VISIBLE_NAME_SUFFIX.test(name)
 const TOAST_METHODS = new Set([
   'error',
   'success',
@@ -49,18 +56,34 @@ const DIALOG_FUNCTIONS = new Set(['alert', 'confirm', 'prompt', 'showNotice'])
 const ESCAPE = 'i18n-ignore'
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist', '.next', '.turbo', '.git'])
 
-// What may be printed without a catalog: product names, unit symbols and key names.
+// What may be printed without a catalog: product names, unit symbols and axis letters.
 const ALLOWED_WORDS =
-  /\b(?:Pascal|MCP|Preview|IFC|GLB|USDZ|STL|OBJ|SVG|PNG|JSON|PDF|Pro|mm|cm|km|ft|m|Ctrl|Control|Shift|Alt|Option|Cmd|Command|Esc|Enter|Return|Tab|Space|Delete|Backspace)\b/g
+  /\b(?:Pascal|MCP|Preview|IFC|GLB|USDZ|STL|OBJ|SVG|PNG|JSON|PDF|Pro|mm|cm|km|ft|m|X|Y|Z)\b/g
+// Key names are allowed only where a key is shown: `keys` arrays, `<kbd>` and shortcut tables.
+// Elsewhere a lone "Delete" or "Enter" is a button label.
+const KEY_NAMES =
+  /\b(?:Ctrl|Control|Shift|Alt|Option|Cmd|Command|Esc|Enter|Return|Tab|Space|Delete|Backspace)\b/g
+const KEY_ELEMENTS = new Set(['kbd', 'Kbd', 'ShortcutToken', 'ShortcutKeys'])
 // A catalog key such as `floors.add`, held in a table until it is rendered through `t`.
 const CATALOG_KEY = /^[a-z][\w-]*(?:\.[\w-]+)+$/
 const PATH_OR_URL = /^(?:\/|[a-z][a-z0-9+.-]*:\/\/)\S*$/i
 
-export function isVisibleText(text: string): boolean {
+export function isVisibleText(text: string, keyContext = false): boolean {
   const trimmed = text.trim()
   if (PATH_OR_URL.test(trimmed) || CATALOG_KEY.test(trimmed)) return false
-  const stripped = trimmed.replace(/&#?\w+;/g, ' ').replace(ALLOWED_WORDS, ' ')
+  let stripped = trimmed.replace(/&#?\w+;/g, ' ').replace(ALLOWED_WORDS, ' ')
+  if (keyContext) stripped = stripped.replace(KEY_NAMES, ' ')
   return /\p{L}/u.test(stripped)
+}
+
+function isStringArray(node: ts.Expression): boolean {
+  if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node))
+    return isStringArray(node.expression)
+  return (
+    ts.isArrayLiteralExpression(node) &&
+    node.elements.length > 0 &&
+    node.elements.every(ts.isStringLiteralLike)
+  )
 }
 
 type Literal = ts.StringLiteralLike | ts.TemplateHead | ts.TemplateMiddle | ts.TemplateTail
@@ -68,7 +91,11 @@ type Literal = ts.StringLiteralLike | ts.TemplateHead | ts.TemplateMiddle | ts.T
 /** The string literals an expression would print: through `?:`, `&&`, `||`, `??`, `+`, templates and `.map`. */
 function literalsOf(node: ts.Expression): Literal[] {
   if (ts.isStringLiteralLike(node)) return [node]
-  if (ts.isTemplateExpression(node)) return [node.head, ...node.templateSpans.map((s) => s.literal)]
+  if (ts.isTemplateExpression(node))
+    return [
+      node.head,
+      ...node.templateSpans.flatMap((span) => [...literalsOf(span.expression), span.literal]),
+    ]
   if (ts.isArrayLiteralExpression(node)) return node.elements.flatMap(literalsOf)
   if (
     ts.isParenthesizedExpression(node) ||
@@ -90,19 +117,34 @@ function literalsOf(node: ts.Expression): Literal[] {
       return [...literalsOf(node.left), ...literalsOf(node.right)]
     return []
   }
+  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    if (!ts.isBlock(node.body)) return literalsOf(node.body)
+    const returned: Literal[] = []
+    const walk = (child: ts.Node) => {
+      if (ts.isFunctionLike(child)) return
+      if (ts.isReturnStatement(child) && child.expression)
+        returned.push(...literalsOf(child.expression))
+      ts.forEachChild(child, walk)
+    }
+    ts.forEachChild(node.body, walk)
+    return returned
+  }
   if (
     ts.isCallExpression(node) &&
     ts.isPropertyAccessExpression(node.expression) &&
     node.expression.name.text === 'map'
   ) {
     const callback = node.arguments[0]
-    if (callback && (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback))) {
-      if (ts.isBlock(callback.body)) return []
-      return literalsOf(callback.body)
-    }
+    const printed = callback ? literalsOf(callback) : []
+    const receiver = node.expression.expression
+    // An inline list of strings, mapped into elements, prints each one unless the callback translates it.
+    const translates = callback ? TRANSLATES.test(callback.getText()) : false
+    return translates ? [] : [...literalsOf(receiver), ...printed]
   }
   return []
 }
+
+const TRANSLATES = /\b(?:t|translate)\(/
 
 const propertyName = (name: ts.PropertyName, file: ts.SourceFile) =>
   ts.isStringLiteralLike(name) ? name.text : name.getText(file)
@@ -130,17 +172,24 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
   const lines = source.split('\n')
   const findings: Finding[] = []
 
-  const jsxTextRanges: [number, number][] = []
+  // Where a `//` or `/*` is text, not a comment: the marker only counts outside these.
+  const textRanges: [number, number][] = []
   const stringArrays = new Set<string>()
   const collect = (node: ts.Node) => {
-    if (ts.isJsxText(node)) jsxTextRanges.push([node.getStart(file), node.end])
-    else if (
+    if (
+      ts.isJsxText(node) ||
+      ts.isStringLiteralLike(node) ||
+      ts.isTemplateHead(node) ||
+      ts.isTemplateMiddle(node) ||
+      ts.isTemplateTail(node)
+    )
+      textRanges.push([node.getStart(file), node.end])
+    if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       node.initializer &&
-      ts.isArrayLiteralExpression(node.initializer) &&
-      node.initializer.elements.length > 0 &&
-      node.initializer.elements.every(ts.isStringLiteralLike)
+      !/Keys?$/.test(node.name.text) &&
+      isStringArray(node.initializer)
     )
       stringArrays.add(node.name.text)
     ts.forEachChild(node, collect)
@@ -149,24 +198,59 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
 
   const lineStarts = [0]
   for (let i = 0; i < source.length; i++) if (source[i] === '\n') lineStarts.push(i + 1)
-  const hasEscape = (line: number) => {
+  const inText = (position: number) =>
+    textRanges.some(([start, end]) => position >= start && position < end)
+  /** A real comment with the marker on `line`: `//` or `/*` before it, and neither inside text. */
+  const markerOn = (line: number): boolean => {
     const text = lines[line]
     if (!text) return false
+    const base = lineStarts[line] ?? 0
     let at = text.indexOf(ESCAPE)
     while (at !== -1) {
-      const position = (lineStarts[line] ?? 0) + at
-      if (!jsxTextRanges.some(([start, end]) => position >= start && position < end)) return true
+      if (!inText(base + at)) {
+        const opener = Math.max(text.lastIndexOf('//', at), text.lastIndexOf('/*', at))
+        if (opener !== -1 && !inText(base + opener)) return true
+      }
       at = text.indexOf(ESCAPE, at + 1)
     }
     return false
   }
+  /** On the line itself, or alone on the line above. */
+  const hasEscape = (line: number) => {
+    if (markerOn(line)) return true
+    const above = lines[line - 1]?.trim() ?? ''
+    return markerOn(line - 1) && (above.startsWith('//') || above.startsWith('{/*'))
+  }
+
+  const insideNamed = (node: ts.Node, names: ReadonlySet<string>) => {
+    for (let parent = node.parent; parent; parent = parent.parent) {
+      if (ts.isJsxElement(parent) && names.has(parent.openingElement.tagName.getText(file)))
+        return true
+      if (ts.isJsxSelfClosingElement(parent) && names.has(parent.tagName.getText(file))) return true
+    }
+    return false
+  }
+  const insideKeys = (node: ts.Node) => {
+    for (let parent = node.parent; parent; parent = parent.parent) {
+      if (ts.isPropertyAssignment(parent) && propertyName(parent.name, file) === 'keys') return true
+      if (
+        ts.isVariableDeclaration(parent) &&
+        ts.isIdentifier(parent.name) &&
+        /shortcut|keys/i.test(parent.name.text)
+      )
+        return true
+    }
+    return false
+  }
+  const STYLE = new Set(['style'])
 
   const report = (node: ts.Node, text: string) => {
-    if (!isVisibleText(text)) return
+    if (insideNamed(node, STYLE)) return
+    if (!isVisibleText(text, insideNamed(node, KEY_ELEMENTS) || insideKeys(node))) return
     const raw = node.getText(file)
     const start = node.getStart(file) + (raw.length - raw.trimStart().length)
     const line = file.getLineAndCharacterOfPosition(start).line
-    if (hasEscape(line) || hasEscape(line - 1)) return
+    if (hasEscape(line)) return
     findings.push({ line: line + 1, text: text.trim().replace(/\s+/g, ' ') })
   }
   const reportLiterals = (expression: ts.Expression) => {
@@ -177,7 +261,11 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
       ts.isCallExpression(expression) && ts.isPropertyAccessExpression(expression.expression)
         ? expression.expression.expression
         : expression
-    return ts.isIdentifier(target) && stringArrays.has(target.text)
+    return (
+      ts.isIdentifier(target) &&
+      stringArrays.has(target.text) &&
+      !TRANSLATES.test(expression.getText())
+    )
   }
   const reportStringArray = (name: string) => {
     for (const declaration of findDeclarations(file, name))
@@ -196,12 +284,12 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
             : expression
         if (ts.isIdentifier(target)) reportStringArray(target.text)
       }
-    } else if (ts.isJsxAttribute(node) && VISIBLE_PROPS.has(node.name.getText(file))) {
+    } else if (ts.isJsxAttribute(node) && isVisibleName(node.name.getText(file))) {
       const value = node.initializer
       if (value && ts.isStringLiteral(value)) report(value, value.text)
       else if (value && ts.isJsxExpression(value) && value.expression)
         reportLiterals(value.expression)
-    } else if (ts.isPropertyAssignment(node) && VISIBLE_PROPS.has(propertyName(node.name, file))) {
+    } else if (ts.isPropertyAssignment(node) && isVisibleName(propertyName(node.name, file))) {
       reportLiterals(node.initializer)
     } else if (ts.isCallExpression(node)) {
       const callee = calleeName(node)
@@ -221,8 +309,9 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
                   TOAST_PROMISE_KEYS.has(propertyName(property.name, file))
                 )
                   reportLiterals(property.initializer)
-        } else if ((DIALOG_FUNCTIONS.has(callee.name) || NOTICE_SETTER.test(callee.name)) && first)
-          reportLiterals(first)
+        } else if (NOTICE_SETTER.test(callee.name)) {
+          for (const argument of node.arguments) reportLiterals(argument)
+        } else if (DIALOG_FUNCTIONS.has(callee.name) && first) reportLiterals(first)
       }
     }
     ts.forEachChild(node, visit)

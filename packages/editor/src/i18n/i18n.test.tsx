@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { renderCurrentMarkup } from '../test-utils/render-current-markup'
 import {
   detectLocale,
@@ -18,6 +19,7 @@ const messages = defineMessages({
     save: 'Save',
     width: '{n} m',
     needs: 'Needs <link>the add-on</link> now',
+    wrapped: 'Hi {name}, <link>{name}</link>',
   },
   sv: {
     greeting: 'Hej {name}',
@@ -25,6 +27,7 @@ const messages = defineMessages({
     save: 'Spara',
     width: '{n} m',
     needs: 'Kräver <link>tillägget</link> nu',
+    wrapped: 'Hej {name}, <link>{name}</link>',
   },
 })
 
@@ -105,12 +108,47 @@ describe('rich messages', () => {
     expect(renderCurrentMarkup(<Rich />)).toBe('<p>Kräver <a href="#add-on">tillägget</a> nu</p>')
   })
 
-  test('leaves a tag without an entry as written', () => {
-    function Plain() {
+  test('an unknown or misspelt tag shows its inner text', () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+    function Misspelt() {
       const t = useT(messages)
-      return <p>{t.rich('needs', {})}</p>
+      return <p>{t.rich('needs', { lnk: (text) => <a href="#x">{text}</a> })}</p>
     }
-    expect(renderCurrentMarkup(<Plain />)).toContain('&lt;link&gt;the add-on&lt;/link&gt;')
+    try {
+      expect(renderCurrentMarkup(<Misspelt />)).toBe('<p>Needs the add-on now</p>')
+      expect(warn).toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  test('a value that looks like a tag is text, and cannot reach a handler', () => {
+    function Hostile() {
+      const t = useT(messages)
+      return (
+        <p>
+          {t.rich(
+            'wrapped',
+            { link: (text) => <a href="#x">{text}</a> },
+            { name: '<__proto__>x</__proto__><link>y</link>' },
+          )}
+        </p>
+      )
+    }
+    const html = renderCurrentMarkup(<Hostile />)
+    expect(html).toContain('&lt;__proto__&gt;x&lt;/__proto__&gt;&lt;link&gt;y&lt;/link&gt;')
+    expect(html.match(/<a /g)).toHaveLength(1)
+  })
+})
+
+describe('server render', () => {
+  test('renders English whatever the stored locale, so hydration matches', () => {
+    function Label() {
+      const t = useT(messages)
+      return <span>{t('save')}</span>
+    }
+    setLocale('sv')
+    expect(renderToStaticMarkup(<Label />)).toBe('<span>Save</span>')
   })
 })
 

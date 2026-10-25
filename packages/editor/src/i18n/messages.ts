@@ -51,6 +51,20 @@ function pluralCategory(locale: Locale, count: number): Intl.LDMLPluralRule {
   return rules.select(count)
 }
 
+function templateOf(catalog: MessageCatalog, locale: Locale, key: string, vars?: MessageVars) {
+  const message = catalog[locale][key] as Message
+  return typeof message === 'string'
+    ? message
+    : (message[pluralCategory(locale, Number(vars?.count))] ?? message.other)
+}
+
+function interpolate(template: string, locale: Locale, vars?: MessageVars): string {
+  if (!vars) return template
+  return template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(vars, name) ? formatVar(vars[name] as string | number, locale) : placeholder,
+  )
+}
+
 /** One message of `catalog` in `locale`, with its placeholders filled. */
 export function formatMessage(
   catalog: MessageCatalog,
@@ -58,15 +72,7 @@ export function formatMessage(
   key: string,
   vars?: MessageVars,
 ): string {
-  const message = catalog[locale][key] as Message
-  const template =
-    typeof message === 'string'
-      ? message
-      : (message[pluralCategory(locale, Number(vars?.count))] ?? message.other)
-  if (!vars) return template
-  return template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
-    name in vars ? formatVar(vars[name] as string | number, locale) : placeholder,
-  )
+  return interpolate(templateOf(catalog, locale, key, vars), locale, vars)
 }
 
 /** A number takes the locale's decimal separator, as in the measurement labels. */
@@ -80,7 +86,9 @@ export type MessageTags = Record<string, (text: string) => ReactNode>
 
 /**
  * A message with elements inside it: `Needs the <link>Pascal add-on</link> in Blender.` with
- * `{ link: (text) => <a href="…">{text}</a> }`. A tag with no entry stays as written.
+ * `{ link: (text) => <a href="…">{text}</a> }`. Tags are read from the catalog's own text, and
+ * `vars` fill text only, so a value can never add a tag. A tag with no handler shows its inner
+ * text (and warns in development), which is also what a misspelt handler name looks like.
  */
 export function formatRichMessage(
   catalog: MessageCatalog,
@@ -89,15 +97,21 @@ export function formatRichMessage(
   tags: MessageTags,
   vars?: MessageVars,
 ): ReactNode {
-  const text = formatMessage(catalog, locale, key, vars)
+  const template = templateOf(catalog, locale, key, vars)
   const parts: ReactNode[] = []
   let last = 0
-  for (const match of text.matchAll(/<(\w+)>(.*?)<\/\1>/gs)) {
-    const render = tags[match[1] as string]
-    if (!render) continue
-    parts.push(text.slice(last, match.index), render(match[2] as string))
+  for (const match of template.matchAll(/<(\w+)>(.*?)<\/\1>/gs)) {
+    const name = match[1] as string
+    const handler = Object.hasOwn(tags, name) ? tags[name] : undefined
+    const inner = interpolate(match[2] as string, locale, vars)
+    if (typeof handler !== 'function' && process.env.NODE_ENV !== 'production')
+      console.warn(`Message "${key}" has a <${name}> tag but no handler for it.`)
+    parts.push(
+      interpolate(template.slice(last, match.index), locale, vars),
+      typeof handler === 'function' ? handler(inner) : inner,
+    )
     last = match.index + match[0].length
   }
-  parts.push(text.slice(last))
+  parts.push(interpolate(template.slice(last), locale, vars))
   return createElement(Fragment, null, ...parts)
 }

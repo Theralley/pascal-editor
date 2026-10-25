@@ -50,7 +50,7 @@ export function SiteEdgeLabels() {
     return node?.type === 'site' ? (node as SiteNode) : null
   })
   const activeHandleDrag = useActiveHandleDrag()
-  useLocale()
+  const locale = useLocale()
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
   const cameraMode = useViewer((state) => state.cameraMode)
@@ -135,7 +135,7 @@ export function SiteEdgeLabels() {
               textShadow: `-1.5px -1.5px 0 ${shadowColor}, 1.5px -1.5px 0 ${shadowColor}, -1.5px 1.5px 0 ${shadowColor}, 1.5px 1.5px 0 ${shadowColor}, 0 0 4px ${shadowColor}, 0 0 4px ${shadowColor}`,
             }}
           >
-            {formatLinearMeasurement(edge.dist, unit, metricNotation)}
+            {formatLinearMeasurement(edge.dist, unit, metricNotation, locale)}
           </div>
         </Html>
       ))}

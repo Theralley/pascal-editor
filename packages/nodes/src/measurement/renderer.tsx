@@ -20,6 +20,7 @@ import {
   formatAreaLabel,
   formatLinearMeasurement,
   formatVolumeLabel,
+  type Locale,
   measurementPolygonLabelAnchor,
   measurementPresentationColor,
   triangulateMeasurementPolygon,
@@ -293,24 +294,31 @@ function formatMeasurement(
   measurement: ResolvedMeasurementPayload,
   unit: 'metric' | 'imperial',
   metricNotation: 'meters' | 'millimeters',
+  locale: Locale,
 ): string {
   if (measurement.kind === 'distance') {
-    return formatLinearMeasurement(measurementDistance(...measurement.points), unit, metricNotation)
+    return formatLinearMeasurement(
+      measurementDistance(...measurement.points),
+      unit,
+      metricNotation,
+      locale,
+    )
   }
   if (measurement.kind === 'angle') {
     return formatAngleRadians(measurementAngle(...measurement.points))
   }
   if (measurement.kind === 'area') {
-    return `A ${formatAreaLabel(measurementArea(measurement.base), unit)}`
+    return `A ${formatAreaLabel(measurementArea(measurement.base), unit, 1, locale)}`
   }
   if (measurement.kind === 'perimeter') {
     return `P ${formatLinearMeasurement(
       measurementPerimeter(measurement.base),
       unit,
       metricNotation,
+      locale,
     )}`
   }
-  return `V ${formatVolumeLabel(measurementPrismVolume(measurement.base, measurement.extrusion), unit)}`
+  return `V ${formatVolumeLabel(measurementPrismVolume(measurement.base, measurement.extrusion), unit, 1, locale)}`
 }
 
 export function areMeasurementAncestorsVisible(object: Object3D | null): boolean {
@@ -358,7 +366,7 @@ export const MeasurementRenderer = ({ node }: { node: MeasurementNode }) => {
   const data = buildRenderData(resolved.payload)
   const locale = useLocale()
   const label = useMemo(() => {
-    const value = formatMeasurement(resolved.payload, unit, metricNotation)
+    const value = formatMeasurement(resolved.payload, unit, metricNotation, locale)
     return resolved.dangling.length > 0 ? `Unlinked · ${value}` : value
   }, [locale, metricNotation, resolved, unit])
   const color = measurementPresentationColor(resolved.dangling.length > 0, active)

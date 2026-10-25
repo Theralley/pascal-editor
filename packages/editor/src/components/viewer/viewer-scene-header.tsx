@@ -68,7 +68,7 @@ export const ViewerSceneHeader = ({
   const selection = useViewer((s) => s.selection)
   const focusedUnitId = useViewer((s) => s.focusedUnitId)
   const unit = useViewer((s) => s.unit)
-  useLocale()
+  const locale = useLocale()
 
   const crumbs = useMemo(
     () =>
@@ -259,7 +259,7 @@ export const ViewerSceneHeader = ({
                               />
                               <span className="min-w-0 flex-1 truncate">{row.label}</span>
                               <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
-                                {formatRoomArea(row.areaM2, unit)}
+                                {formatRoomArea(row.areaM2, unit, locale)}
                               </span>
                             </button>
                           )

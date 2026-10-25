@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { formatRoomArea } from '../components/editor/room-labels'
 import { setLocale } from '../i18n'
 import { measurementHint, parseMeasurement } from '../index'
-import { normalizeDecimalComma } from './measurement-parser'
+import { normalizeDecimalComma, parsePlainNumber } from './measurement-parser'
 import {
   buildMeasurementAngleArcPoints,
   cubicMetersToVolumeUnit,
@@ -290,10 +290,27 @@ describe('measurements in the active language', () => {
     expect(parseMeasurement(`5'11"`, length, { locale: 'en' })).toBeCloseTo(1.8034)
   })
 
+  test('a typed number commits only when it is whole', () => {
+    const cases = [
+      ['1,5', 'sv', 1.5],
+      ['1.5', 'sv', 1.5],
+      ['-2,25', 'sv', -2.25],
+      ['1.5', 'en', 1.5],
+      ['1,5 cm garbage', 'sv', null],
+      ['1.5 cm garbage', 'en', null],
+      ['1.5abc', 'en', null],
+      ['', 'en', null],
+    ] as const
+    for (const [text, locale, expected] of cases)
+      expect(parsePlainNumber(text, locale)).toBe(expected)
+  })
+
   test('a plain Swedish decimal gets no hint; a unit still does', () => {
     const length = { kind: 'length', unitId: 'm' } as const
     expect(measurementHint('1,5', length, { locale: 'sv' })).toBeNull()
-    expect(measurementHint('1,5 cm', length, { locale: 'sv' })).toBe('= 0.02 m')
+    expect(measurementHint('1,5 cm', length, { locale: 'sv' })).toBe('= 0,02 m')
+    expect(measurementHint('1,234.5 m', length, { locale: 'sv' })).toBe('= 1234,50 m')
+    expect(measurementHint('1,234.5 m', length, { locale: 'en' })).toBe('= 1234.50 m')
     expect(normalizeDecimalComma('1,5', 'sv')).toBe('1.5')
     expect(normalizeDecimalComma('1,5', 'en')).toBe('1,5')
   })
