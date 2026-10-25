@@ -4,10 +4,12 @@ import {
   Float32BufferAttribute,
   Mesh,
   MeshBasicMaterial,
+  type Object3D,
   PlaneGeometry,
 } from 'three'
-import { hideFromScene } from './scene-visibility'
 
+/** The `userData` key an opening's system leaves its {@link FloorMarkSpec} under. */
+export const FLOOR_MARK_SPEC_KEY = 'floorMark'
 export const FLOOR_MARK_NAME = 'floor-mark'
 export const FLOOR_MARK_HIT_NAME = 'floor-mark-hit'
 
@@ -71,33 +73,61 @@ export function floorMarkGeometry(
 }
 
 /**
- * The two meshes of an opening's floor mark, `y` above the opening's own origin: the drawn lines
- * and a flat hit plane `hitWidth` by `hitDepth` that a pointer ray can reach (a click on it
- * reaches the opening's own handlers, which are on the opening's group). Both start held off the
- * scene layer: the Low wall mode lets them through (`OpeningDisplaySystem`).
+ * What an opening's system leaves on its mesh for the Low wall mode to draw: plain data in the
+ * opening's own frame (`y` above its origin), so a door that is not shown as a mark pays nothing
+ * and keeps its bounds. `hit` is the flat pick plane, centred at `center`.
  */
-export function createFloorMark({
-  polylines,
-  hitWidth,
-  hitDepth,
-  y,
-}: {
+export type FloorMarkSpec = {
   polylines: readonly (readonly (readonly [number, number])[])[]
-  hitWidth: number
-  hitDepth: number
+  hit: { center: readonly [number, number]; width: number; depth: number }
   y: number
-}): Mesh[] {
-  const lines = new Mesh(floorMarkGeometry(polylines), markMaterial)
+}
+
+/** A spec whose pick plane covers everything the polylines draw, with a floor of `minDepth` across. */
+export function floorMarkSpec(
+  polylines: FloorMarkSpec['polylines'],
+  y: number,
+  minDepth = 0.3,
+): FloorMarkSpec {
+  let minX = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let minZ = Number.POSITIVE_INFINITY
+  let maxZ = Number.NEGATIVE_INFINITY
+  for (const line of polylines) {
+    for (const [x, z] of line) {
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minZ = Math.min(minZ, z)
+      maxZ = Math.max(maxZ, z)
+    }
+  }
+  const centerZ = (minZ + maxZ) / 2
+  const depth = Math.max(maxZ - minZ, minDepth)
+  return {
+    polylines,
+    hit: { center: [(minX + maxX) / 2, centerZ], width: maxX - minX, depth },
+    y,
+  }
+}
+
+export function floorMarkSpecOf(object: Object3D): FloorMarkSpec | undefined {
+  return object.userData[FLOOR_MARK_SPEC_KEY] as FloorMarkSpec | undefined
+}
+
+/**
+ * The two meshes of an opening's floor mark: the drawn lines and a flat plane a pointer ray can
+ * reach (a click on it reaches the opening's own handlers, which are on the opening's group).
+ */
+export function createFloorMark(spec: FloorMarkSpec): Mesh[] {
+  const lines = new Mesh(floorMarkGeometry(spec.polylines), markMaterial)
   lines.name = FLOOR_MARK_NAME
-  lines.position.y = y
+  lines.position.y = spec.y
   lines.raycast = noRaycast
   lines.renderOrder = 1
 
-  const hit = new Mesh(new PlaneGeometry(hitWidth, hitDepth), hitMaterial)
+  const hit = new Mesh(new PlaneGeometry(spec.hit.width, spec.hit.depth), hitMaterial)
   hit.name = FLOOR_MARK_HIT_NAME
   hit.rotation.x = -Math.PI / 2
-  hit.position.y = y
-
-  for (const mesh of [lines, hit]) hideFromScene(mesh, 'floor-mark-off')
+  hit.position.set(spec.hit.center[0], spec.y, spec.hit.center[1])
   return [lines, hit]
 }

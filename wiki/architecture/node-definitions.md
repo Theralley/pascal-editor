@@ -430,14 +430,21 @@ of whole walls and the finished-house picture show the opening as built; a captu
 person's setting, or the `openings` the agent asked for in `view_scene`'s `presentation`. The node batch releases a
 hidden opening and re-offers it when it returns.
 
-`{ floorMark: true }` kinds build their own flat mark as children of the opening's group, named `floor-mark`
-(the drawn lines) and `floor-mark-hit` (an invisible pick plane), with `createFloorMark` from the viewer. The system
-that builds the opening owns them (a rebuild removes every child but `cutout`), they are held off the scene layer
-from the moment they are built (reason `'floor-mark-off'`), and `marks` lets them through. A click on the plane
-reaches the opening's own handlers, since they sit on the group. Hidden openings stay selectable from the scene
-tree. Door draws its footprint and swing leaves from `doorSwingLeaves`, the helper the plan symbol uses too; a window
-has no floor mark and is left out in `marks` as in `hidden`. `down` (walls hidden) keeps openings as built:
-it is the X-ray mode in which they stay pointer-targetable.
+`{ floorMark: true }` kinds leave a `FloorMarkSpec` (plain data: polylines in the opening's frame, a pick plane,
+the mark's height) on their mesh's `userData` under `FLOOR_MARK_SPEC_KEY`, built with `floorMarkSpec` from the viewer.
+`OpeningDisplaySystem` adds the mesh pair (`createFloorMark`: children `floor-mark` and `floor-mark-hit`) only while
+`marks` shows them and removes it otherwise, so an opening keeps its own bounds, children and batching in every
+other view. A rebuild that removes the opening's children needs nothing else. A click on the pick plane, which covers
+the footprint and the swing, reaches the opening's own handlers, since they sit on the group. Hidden openings stay
+selectable from the scene tree. Left as built: drafts a tool places or moves (`metadata.isTransient` or `isNew`),
+openings on a roof face, and openings on a wall the cut leaves whole (a curtain wall). Scripted openings are held again
+when their model loads and get a footprint-only mark.
+
+Door draws its leaves from `doorSwingLeaves`, the helper the plan symbol uses too. Parity differences with the plan: the 3D
+footprint is the frame's depth where the plan uses the wall's thickness, and sliding, pocket, barn, folding and
+garage doors have a footprint only. A window has no mark and is left out in `marks` as in `hidden`. `down` (walls
+hidden) keeps openings as built: it is the X-ray mode in which they stay pointer-targetable. Baked (GLB) scenes do not
+read `openingDisplay` yet: their doors and windows stay whole in `low` (follow-up).
 
 ### `capabilities.followsWallMode`
 

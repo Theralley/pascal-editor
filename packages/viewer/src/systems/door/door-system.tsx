@@ -24,7 +24,12 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { applyWorldScaleBoxUVs } from '../../lib/box-uv'
-import { createFloorMark, FLOOR_MARK_LIFT } from '../../lib/floor-mark'
+import {
+  FLOOR_MARK_LIFT,
+  FLOOR_MARK_SPEC_KEY,
+  type FloorMarkSpec,
+  floorMarkSpec,
+} from '../../lib/floor-mark'
 import {
   type ColorPreset,
   createDefaultMaterial,
@@ -2340,6 +2345,7 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh): boolean {
   if (node.source) {
     mesh.geometry.dispose()
     mesh.geometry = new THREE.BoxGeometry(...scriptedSize(node.source.manifest))
+    syncDoorFloorMark(node, mesh)
     return settleScriptedOpening(mesh)
   }
 
@@ -2726,15 +2732,22 @@ function hideEmptyGeometryMeshes(root: THREE.Object3D) {
 }
 
 /**
- * The door's plan mark on the floor, for the Low wall mode (`OpeningDisplaySystem` lets it through):
- * the footprint and, for a swing door, the leaf and its swing arc, drawn from the same leaves the
- * plan draws. The mark is built with the door and held off the scene layer; a click on its hit
- * plane reaches the door's own handlers.
+ * The door's plan mark for the Low wall mode: the footprint and, for a swing door, the leaf and
+ * its swing arc, drawn from the same leaves the plan draws. The floor sits `position[1]` below the
+ * opening's centre whatever datum the wall resolves it to, so a raised floor needs no correction.
+ * The plan's footprint is the wall thickness deep; this one is the frame's, and the plan's other
+ * door types (sliding, pocket, barn, folding, garage) have a footprint only here.
  */
-function syncDoorFloorMark(node: DoorNode, mesh: THREE.Mesh) {
-  if (node.roofSegmentId) return
-  const halfWidth = node.width / 2
-  const halfDepth = node.frameDepth / 2
+export function doorFloorMarkSpec(
+  node: DoorNode,
+  size: { width: number; depth: number; swings: boolean } = {
+    width: node.width,
+    depth: node.frameDepth,
+    swings: true,
+  },
+): FloorMarkSpec {
+  const halfWidth = size.width / 2
+  const halfDepth = size.depth / 2
   const polylines: [number, number][][] = [
     [
       [-halfWidth, -halfDepth],
@@ -2746,11 +2759,11 @@ function syncDoorFloorMark(node: DoorNode, mesh: THREE.Mesh) {
   ]
   const doorType = node.doorType ?? 'hinged'
   const isDoubleLeaf = doorType === 'double' || doorType === 'french'
-  if (node.openingKind !== 'opening' && (doorType === 'hinged' || isDoubleLeaf)) {
+  if (size.swings && node.openingKind !== 'opening' && (doorType === 'hinged' || isDoubleLeaf)) {
     for (const leaf of doorSwingLeaves({
       center: [0, 0],
       dir: [1, 0],
-      width: node.width,
+      width: size.width,
       doubleLeaf: isDoubleLeaf,
       hingesSide: node.hingesSide ?? 'left',
       swingSign: (node.swingDirection ?? 'inward') === 'inward' ? 1 : -1,
@@ -2766,14 +2779,21 @@ function syncDoorFloorMark(node: DoorNode, mesh: THREE.Mesh) {
       )
     }
   }
-  mesh.add(
-    ...createFloorMark({
-      polylines,
-      hitWidth: node.width,
-      hitDepth: Math.max(node.frameDepth, 0.3),
-      y: FLOOR_MARK_LIFT - mesh.position.y,
-    }),
-  )
+  return floorMarkSpec(polylines, FLOOR_MARK_LIFT - node.position[1], size.depth)
+}
+
+/** Leaves the door's mark where the Low wall mode finds it; nothing is added to the door itself. */
+function syncDoorFloorMark(node: DoorNode, mesh: THREE.Mesh) {
+  if (node.roofSegmentId) {
+    delete mesh.userData[FLOOR_MARK_SPEC_KEY]
+    return
+  }
+  if (node.source) {
+    const [width, , depth] = scriptedSize(node.source.manifest)
+    mesh.userData[FLOOR_MARK_SPEC_KEY] = doorFloorMarkSpec(node, { width, depth, swings: false })
+    return
+  }
+  mesh.userData[FLOOR_MARK_SPEC_KEY] = doorFloorMarkSpec(node)
 }
 
 function syncDoorCutout(node: DoorNode, mesh: THREE.Mesh) {

@@ -113,7 +113,15 @@ export {
 export type { DisplayState } from './lib/display-state'
 export { disposeObject3DResources } from './lib/dispose-object3d'
 export type { EdgeMode } from './lib/edge-style'
-export { FLOOR_MARK_HIT_NAME, FLOOR_MARK_NAME } from './lib/floor-mark'
+export {
+  createFloorMark,
+  FLOOR_MARK_HIT_NAME,
+  FLOOR_MARK_LIFT,
+  FLOOR_MARK_NAME,
+  FLOOR_MARK_SPEC_KEY,
+  type FloorMarkSpec,
+  floorMarkSpec,
+} from './lib/floor-mark'
 export {
   BLOCK_MASONRY,
   concreteMaterial,

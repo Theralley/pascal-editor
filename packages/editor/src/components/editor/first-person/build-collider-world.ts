@@ -13,6 +13,7 @@ import {
   useInteractive,
   useScene,
 } from '@pascal-app/core'
+import { FLOOR_MARK_HIT_NAME, FLOOR_MARK_NAME } from '@pascal-app/viewer'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
@@ -20,7 +21,12 @@ import { computeSceneBoundsXZ } from '../../../lib/scene-bounds'
 import { cutGroundCollider } from './ground-holes'
 import { createTerrainColliderGeometry } from './terrain-collider'
 
-const SKIPPED_MESH_NAMES = new Set(['cutout', 'collision-mesh', 'floor-mark', 'floor-mark-hit'])
+const SKIPPED_MESH_NAMES = new Set([
+  'cutout',
+  'collision-mesh',
+  FLOOR_MARK_NAME,
+  FLOOR_MARK_HIT_NAME,
+])
 const COLLIDER_NODE_CATEGORIES = new Set(['structure', 'furnish'])
 const DEDICATED_COLLIDER_NODE_TYPES = new Set<AnyNode['type']>(['elevator'])
 const COLLIDER_MATERIAL = new THREE.MeshBasicMaterial()

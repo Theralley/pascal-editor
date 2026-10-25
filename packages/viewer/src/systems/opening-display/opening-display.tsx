@@ -1,18 +1,34 @@
-import { emitter, nodeRegistry, sceneRegistry } from '@pascal-app/core'
+import {
+  type AnyNode,
+  type AnyNodeId,
+  emitter,
+  nodeRegistry,
+  sceneRegistry,
+  useScene,
+  type WallNode,
+} from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import type { Mesh, Object3D } from 'three'
-import { FLOOR_MARK_HIT_NAME, FLOOR_MARK_NAME } from '../../lib/floor-mark'
+import {
+  createFloorMark,
+  FLOOR_MARK_HIT_NAME,
+  FLOOR_MARK_NAME,
+  floorMarkSpecOf,
+} from '../../lib/floor-mark'
 import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import useViewer, { type OpeningDisplay } from '../../store/use-viewer'
+import { wallCutApplies } from '../wall/wall-cut-eligibility'
 
 /**
  * Doors and windows in the Low wall mode (`capabilities.lowWallOpening`). With the person's
  * `openingDisplay` on `hidden` or `marks`, an opening's meshes are held off the scene layer through
  * the scene-visibility owner (`'opening-low'`): not drawn, not picked, not shadowed, and no material
- * touched. A kind with `floorMark` builds its own flat mark (children named {@link FLOOR_MARK_NAME}
- * and {@link FLOOR_MARK_HIT_NAME}, held off from the moment they are built); `marks` lets it
- * through, and a click on it reaches the opening's own handlers. Every other wall mode shows the
+ * touched. A kind with `floorMark` leaves a `FloorMarkSpec` on its mesh; `marks` adds the flat mark
+ * it describes (children named {@link FLOOR_MARK_NAME} and {@link FLOOR_MARK_HIT_NAME}) for as long
+ * as it shows, so an opening keeps its bounds in every other view, and a click on the mark reaches
+ * the opening's own handlers. Drafts the tools place or move, openings on a roof face and those on
+ * a wall the cut leaves whole (a curtain wall) are left as built. Every other wall mode shows the
  * opening as built, and so do exports, whole-wall captures and the finished-house picture; a
  * capture of low walls follows the Low setting.
  */
@@ -53,22 +69,49 @@ function setAffected(nodeId: string, affected: boolean): void {
 const isFloorMark = (object: Object3D) =>
   object.name === FLOOR_MARK_NAME || object.name === FLOOR_MARK_HIT_NAME
 
-/** The opening's drawn and pickable meshes, and its floor marks, apart. */
-function partsOf(group: Object3D): { parts: Mesh[]; marks: Mesh[] } {
-  const parts: Mesh[] = []
-  const marks: Mesh[] = []
-  group.traverse((object) => {
-    const mesh = object as Mesh
-    if (!mesh.isMesh) return
-    if (isFloorMark(mesh)) marks.push(mesh)
-    else parts.push(mesh)
-  })
-  return { parts, marks }
+/** Takes the floor mark off an opening, so its bounds and children are as its system built them. */
+function removeMarks(group: Object3D): void {
+  for (const child of [...group.children]) {
+    if (!isFloorMark(child)) continue
+    group.remove(child)
+    ;(child as Mesh).geometry?.dispose()
+  }
 }
 
-/** A rebuild swaps an opening's children for new objects; the last child's id says it happened. */
-function signatureOf(group: Object3D): string {
-  return `${group.children.length}:${group.children[group.children.length - 1]?.id ?? 0}`
+/** The opening's drawn and pickable meshes. */
+function partsOf(group: Object3D): Mesh[] {
+  const parts: Mesh[] = []
+  group.traverse((object) => {
+    const mesh = object as Mesh
+    if (mesh.isMesh) parts.push(mesh)
+  })
+  return parts
+}
+
+/**
+ * A rebuild swaps an opening's children for new objects, so the last child's id says it happened.
+ * A scripted opening's model loads into a group below them, so it counts everything under it.
+ */
+function signatureOf(group: Object3D, deep: boolean): string {
+  const shallow = `${group.children.length}:${group.children[group.children.length - 1]?.id ?? 0}`
+  if (!deep) return shallow
+  let count = 0
+  let last = 0
+  group.traverse((object) => {
+    count++
+    last = Math.max(last, object.id)
+  })
+  return `${shallow}:${count}:${last}`
+}
+
+/** Whether the Low display applies to this opening: not a draft, and on a wall the cut reaches. */
+function applies(node: AnyNode | undefined, nodes: Readonly<Record<string, AnyNode>>): boolean {
+  if (!node) return false
+  const metadata = node.metadata as Record<string, unknown> | null | undefined
+  if (metadata?.isTransient || metadata?.isNew) return false
+  if ((node as { roofSegmentId?: string }).roofSegmentId) return false
+  const host = node.parentId ? nodes[node.parentId] : undefined
+  return host?.type === 'wall' && wallCutApplies(host as WallNode)
 }
 
 type Tracked = { signature: string; display: OpeningDisplay }
@@ -143,24 +186,27 @@ export class OpeningDisplayCache {
       return
     }
 
+    const nodes = useScene.getState().nodes
     const seen = new Set<string>()
     for (const [kind, definition] of nodeRegistry.entries()) {
       const config = definition.capabilities?.lowWallOpening
       if (!config) continue
       for (const id of sceneRegistry.byType[kind] ?? []) {
         const group = sceneRegistry.nodes.get(id)
-        if (!group) continue
+        const node = nodes[id as AnyNodeId]
+        if (!group || !applies(node, nodes)) continue
         seen.add(id)
-        const signature = signatureOf(group)
+        const signature = signatureOf(group, Boolean((node as { source?: unknown }).source))
         const previous = this.tracked.get(id)
         if (previous?.signature === signature && previous.display === display) continue
-        const { parts, marks } = partsOf(group)
-        for (const part of parts) hideFromScene(part, 'opening-low')
-        for (const mark of marks) {
-          if (display === 'marks' && config.floorMark) showInScene(mark, 'floor-mark-off')
-          else hideFromScene(mark, 'floor-mark-off')
-        }
-        this.tracked.set(id, { signature, display })
+        removeMarks(group)
+        for (const part of partsOf(group)) hideFromScene(part, 'opening-low')
+        const spec = display === 'marks' && config.floorMark ? floorMarkSpecOf(group) : undefined
+        if (spec) group.add(...createFloorMark(spec))
+        this.tracked.set(id, {
+          signature: signatureOf(group, Boolean((node as { source?: unknown }).source)),
+          display,
+        })
         if (live) setAffected(id, true)
       }
     }
@@ -177,9 +223,8 @@ export class OpeningDisplayCache {
     this.tracked.delete(id)
     const group = sceneRegistry.nodes.get(id)
     if (group) {
-      const { parts, marks } = partsOf(group)
-      for (const part of parts) showInScene(part, 'opening-low')
-      for (const mark of marks) hideFromScene(mark, 'floor-mark-off')
+      removeMarks(group)
+      for (const part of partsOf(group)) showInScene(part, 'opening-low')
     }
     if (live) setAffected(id, false)
   }

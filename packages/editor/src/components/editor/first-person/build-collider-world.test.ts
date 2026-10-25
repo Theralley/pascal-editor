@@ -23,7 +23,13 @@ import {
   useInteractive,
   useScene,
 } from '@pascal-app/core'
-import { hideFromScene, STAND_CLEARANCE, showInScene } from '@pascal-app/viewer'
+import {
+  FLOOR_MARK_HIT_NAME,
+  FLOOR_MARK_NAME,
+  hideFromScene,
+  STAND_CLEARANCE,
+  showInScene,
+} from '@pascal-app/viewer'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { buildFirstPersonColliderWorldFromRegistry } from './build-collider-world'
 
@@ -95,6 +101,25 @@ describe('buildFirstPersonColliderWorldFromRegistry', () => {
     expect(world?.bounds?.min.x).toBeCloseTo(-0.5)
     expect(world?.bounds?.max.x).toBeCloseTo(4)
     world?.dispose()
+  })
+
+  test("an opening's floor mark and its pick plane are not walls to collide with", () => {
+    registerColliderDefinition('shelf', ShelfNode, 'furnish')
+    const shelf = ShelfNode.parse({ id: 'shelf_mark_test' })
+    setSceneNodes([shelf])
+    mountNode(shelf, [1, 1, 1], [0, 0.5, 0])
+    const root = sceneRegistry.nodes.get(shelf.id)!
+    for (const name of [FLOOR_MARK_NAME, FLOOR_MARK_HIT_NAME]) {
+      const mark = new Mesh(new BoxGeometry(1, 0.1, 1), new MeshBasicMaterial())
+      mark.name = name
+      mark.position.set(9, 0.05, 0)
+      root.add(mark)
+    }
+    root.updateMatrixWorld(true)
+
+    const world = buildFirstPersonColliderWorldFromRegistry()!
+    expect(world.bounds?.max.x).toBeCloseTo(0.5)
+    world.dispose()
   })
 
   test('keeps a procedural static body but excludes moving groups', () => {
