@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
+import { setLocale } from '../../../i18n'
 import { formatSelectionBreakdown } from './selection-breakdown'
 
 describe('formatSelectionBreakdown', () => {
@@ -20,5 +21,18 @@ describe('formatSelectionBreakdown', () => {
 
   test('empty selection formats to an empty string', () => {
     expect(formatSelectionBreakdown([])).toBe('')
+  })
+
+  describe('in Swedish', () => {
+    afterEach(() => setLocale('en'))
+
+    test.each([
+      [['slab', 'stair', 'fence', 'fence'], '1 bjälklag · 1 trappa · 2 staket'],
+      [['door', 'door', 'window', 'window'], '2 dörrar · 2 fönster'],
+      [['roof-segment', 'stair', 'stair'], '1 takdel · 2 trappor'],
+    ])('names %j', (types, expected) => {
+      setLocale('sv')
+      expect(formatSelectionBreakdown(types)).toBe(expected)
+    })
   })
 })

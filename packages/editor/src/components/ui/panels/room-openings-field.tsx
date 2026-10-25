@@ -14,8 +14,8 @@ import { type OpeningSurface, startOpeningDraft } from '../../../lib/floor-openi
 import { formatAreaLabel } from '../../../lib/measurements'
 import { pill } from './room-construction-rows'
 import { ShapeChoice } from './shape-choice'
-
-const count = (n: number) => `${n} ${n === 1 ? 'opening' : 'openings'}`
+import { useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 /**
  * A room's openings through its floor (or its ceiling), inside the row's
@@ -31,6 +31,8 @@ export function RoomOpeningsField({
   zoneId: string
   surface: OpeningSurface
 }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((scene) => scene.nodes)
   const unit = useViewer((s) => s.unit)
   const readOnly = useScene((scene) => scene.readOnly)
@@ -43,35 +45,35 @@ export function RoomOpeningsField({
     <ShapeChoice
       data={`cut-opening-${surface}`}
       disabled={readOnly}
-      label="Cut opening"
+      label={t('opening.cut')}
       onPick={(shape) => startOpeningDraft(zoneId, surface, shape)}
     />
   )
   if (surface === 'ceiling')
     return (
       <div className="flex flex-col gap-1" data-room-openings={surface}>
-        {openings.length > 0 && <span>{count(openings.length)}</span>}
+        {openings.length > 0 && <span>{t('opening.count', { count: openings.length })}</span>}
         {cut}
       </div>
     )
   if (!editing)
     return (
       <div className="flex min-h-7 items-center justify-between gap-3" data-room-openings={surface}>
-        <span>{openings.length ? count(openings.length) : 'No openings'}</span>
+        <span>{openings.length ? t('opening.count', { count: openings.length }) : t('opening.none')}</span>
         <button
           className={pill}
           data-edit-floor
           onClick={() => startFloorEdit(zoneId)}
           type="button"
         >
-          Edit floor
+          {t('opening.editFloor')}
         </button>
       </div>
     )
   return (
     <div className="flex flex-col gap-1.5" data-room-openings={surface} data-editing-floor>
       {openings.length === 0 ? (
-        <p>No openings yet. Cut one for a stair void or a hatch.</p>
+        <p>{t('opening.noneYet')}</p>
       ) : (
         openings.map((opening, index) => (
           <button
@@ -83,13 +85,13 @@ export function RoomOpeningsField({
           >
             <span className="text-foreground">
               {opening.source === 'stair'
-                ? 'Stair opening'
+                ? t('opening.title.stair')
                 : opening.source === 'elevator'
-                  ? 'Elevator opening'
-                  : `Opening ${index + 1}`}
+                  ? t('opening.title.elevator')
+                  : t('opening.numbered', { number: index + 1 })}
             </span>
             <span className="font-mono tabular-nums">
-              {formatAreaLabel(area([{ outer: opening.polygon, holes: [] }]), unit, 2)}
+              {formatAreaLabel(area([{ outer: opening.polygon, holes: [] }]), unit, 2, locale)}
             </span>
           </button>
         ))
@@ -102,7 +104,7 @@ export function RoomOpeningsField({
           onClick={() => (finishFloorEdit() ? undefined : endFloorEdit())}
           type="button"
         >
-          Done
+          {t('done')}
         </button>
       </div>
     </div>

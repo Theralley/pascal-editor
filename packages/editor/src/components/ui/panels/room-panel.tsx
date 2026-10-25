@@ -13,6 +13,7 @@ import { setRoomFloorScript } from '@pascal-app/core/agent-operations'
 import { useViewer } from '@pascal-app/viewer'
 import { Check, ChevronDown, Plus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { startCeilingEdit } from '../../../lib/ceiling-edit-session'
 import { resolveOverlayPolicy } from '../../../lib/interaction/overlay-policy'
 import { finishScriptCode } from '../../../lib/geometry-script/finish-scripts'
@@ -54,6 +55,8 @@ import {
   roomInsideHeight,
 } from './room-construction-rows'
 import { type RoomNameOption, roomNameOptions } from './room-name-options'
+import { translate, useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 /** "Room · Ground floor", "Mezzanine · in Kitchen", "Room · not enclosed". */
 export function roomKicker(
@@ -65,11 +68,15 @@ export function roomKicker(
   if (options.mezzanine && zone?.type === 'zone') {
     const host = zone.hostZoneId ? nodes[zone.hostZoneId] : undefined
     const hostName = host?.type === 'zone' ? host.name?.trim() : ''
-    return hostName ? `Mezzanine · in ${hostName}` : 'Mezzanine'
+    return hostName
+      ? translate(messages, 'room.kicker.mezzanineIn', { host: hostName })
+      : translate(messages, 'mezzanine')
   }
-  if (options.open) return 'Room · not enclosed'
+  if (options.open) return translate(messages, 'room.kicker.notEnclosed')
   const level = zone?.parentId ? nodes[zone.parentId] : undefined
-  return level?.type === 'level' ? `Room · ${getLevelDisplayName(level)}` : 'Room'
+  return level?.type === 'level'
+    ? translate(messages, 'room.kicker.roomLevel', { level: getLevelDisplayName(level) })
+    : translate(messages, 'room')
 }
 
 export function RoomPanel({
@@ -79,6 +86,7 @@ export function RoomPanel({
   room: RoomSelectionRecord
   onClose?: () => void
 }) {
+  const t = useT(messages)
   const nodes = useScene((state) => state.nodes)
   const sections = useMemo(() => roomNameSections(nodes, room.zoneId), [nodes, room.zoneId])
   const name = useScene((state) => state.nodes[room.zoneId as AnyNodeId]?.name ?? '')
@@ -91,7 +99,7 @@ export function RoomPanel({
     <PanelWrapper
       kicker={roomKicker(nodes, room.zoneId, { mezzanine })}
       onClose={onClose}
-      title={name.trim() || (mezzanine ? 'Mezzanine' : 'Room')}
+      title={name.trim() || (mezzanine ? t('mezzanine') : t('room'))}
       titleContent={
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <RoomColorDot zoneId={room.zoneId} />
@@ -125,6 +133,8 @@ export function RoomPanel({
  * needs no closed outline — its name, its unit, deleting it.
  */
 export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: () => void }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
   const sections = useMemo(() => roomNameSections(nodes, zoneId), [nodes, zoneId])
   const name = useScene((state) => state.nodes[zoneId as AnyNodeId]?.name ?? '')
@@ -135,7 +145,7 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
     <PanelWrapper
       kicker={roomKicker(nodes, zoneId, { open: true })}
       onClose={onClose}
-      title={name.trim() || 'Room'}
+      title={name.trim() || t('room')}
       titleContent={
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <RoomColorDot zoneId={zoneId} />
@@ -151,8 +161,8 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
     >
       <div className="flex flex-col px-4 pt-3 pb-4 text-sm" data-open-room-panel={zoneId}>
         <p className="text-muted-foreground text-xs">
-          {formatAreaLabel(area([{ outer: zone.polygon, holes: zone.holes }]), unit, 2)} · Close
-          its walls to build its floor and ceiling.
+          {formatAreaLabel(area([{ outer: zone.polygon, holes: zone.holes }]), unit, 2, locale)} ·{' '}
+          {t('room.closeWalls')}
         </p>
         <RoomUnitRow zoneId={zoneId} />
         <button
@@ -161,7 +171,7 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
           onClick={() => requestRoomDeletion(zoneId)}
           type="button"
         >
-          Delete room
+          {t('room.deleteRoom')}
         </button>
       </div>
     </PanelWrapper>
@@ -170,16 +180,17 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
 
 /** "Unit: Flat A ›" — which unit the room belongs to; change it, add it to one, or take it out. */
 export function RoomUnitRow({ zoneId }: { zoneId: string }) {
+  const t = useT(messages)
   const nodes = useScene((scene) => scene.nodes)
   const { buildingId, units, current } = useMemo(() => zoneUnits(nodes, zoneId), [nodes, zoneId])
   if (!buildingId) return null
   return (
     <div className="mt-3 flex min-h-8 items-center justify-between gap-3" data-room-unit={zoneId}>
-      <span className="text-muted-foreground text-xs">Unit</span>
+      <span className="text-muted-foreground text-xs">{t('unit')}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            aria-label="Unit"
+            aria-label={t('unit')}
             className="flex min-w-0 items-center gap-1.5 rounded-full border border-border/50 px-2.5 py-0.5 text-xs transition-colors hover:bg-accent"
             type="button"
           >
@@ -191,7 +202,11 @@ export function RoomUnitRow({ zoneId }: { zoneId: string }) {
               />
             )}
             <span className="truncate">
-              {current ? current.name || 'Unit' : units.length ? 'None' : 'Add to a unit'}
+              {current
+                ? current.name || t('unit')
+                : units.length
+                  ? t('room.unitNone')
+                  : t('room.unitAdd')}
             </span>
             <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
           </button>
@@ -207,17 +222,17 @@ export function RoomUnitRow({ zoneId }: { zoneId: string }) {
                 className="size-2 shrink-0 rounded-full"
                 style={{ backgroundColor: unit.color }}
               />
-              <span className="flex-1 truncate">{unit.name || 'Unit'}</span>
+              <span className="flex-1 truncate">{unit.name || t('unit')}</span>
               {unit.id === current?.id && <Check className="size-3.5" />}
             </DropdownMenuItem>
           ))}
           {units.length > 0 && <DropdownMenuSeparator />}
           <DropdownMenuItem onSelect={() => addZoneToNewUnit(zoneId as ZoneNode['id'])}>
-            New unit
+            {t('newUnit')}
           </DropdownMenuItem>
           {current && (
             <DropdownMenuItem onSelect={() => assignZoneToUnit(zoneId as ZoneNode['id'], null)}>
-              Remove from {current.name || 'unit'}
+              {t('room.removeFromUnit', { name: current.name || t('unitLower') })}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -231,6 +246,7 @@ export function RoomUnitRow({ zoneId }: { zoneId: string }) {
  * with its code to read and a way to take it off, back to the floor's own finish.
  */
 function RoomFloorScriptRow({ zoneId }: { zoneId: string }) {
+  const t = useT(messages)
   const sha = useScene((scene) => {
     const zone = scene.nodes[zoneId as AnyNodeId]
     return zone?.type === 'zone' ? zone.floor?.script?.script : undefined
@@ -242,8 +258,8 @@ function RoomFloorScriptRow({ zoneId }: { zoneId: string }) {
     setOpen((shown) => !shown)
     if (code?.sha === sha) return
     finishScriptCode(sha).then(
-      (text) => setCode({ sha, text: text ?? 'The script could not be read.' }),
-      () => setCode({ sha, text: 'The script could not be read.' }),
+      (text) => setCode({ sha, text: text ?? t('room.scriptUnreadable') }),
+      () => setCode({ sha, text: t('room.scriptUnreadable') }),
     )
   }
   const remove = () => {
@@ -260,38 +276,37 @@ function RoomFloorScriptRow({ zoneId }: { zoneId: string }) {
   return (
     <div className="mt-3 flex flex-col gap-2" data-room-floor-script={zoneId}>
       <div className="flex min-h-8 items-center justify-between gap-3">
-        <span className="text-muted-foreground text-xs">Scripted finish</span>
+        <span className="text-muted-foreground text-xs">{t('room.scriptedFinish')}</span>
         <div className="flex items-center gap-1.5">
           <button
             className="rounded-full border border-border/50 px-2.5 py-0.5 text-xs transition-colors hover:bg-accent"
             onClick={toggleCode}
             type="button"
           >
-            {open ? 'Hide code' : 'View code'}
+            {open ? t('room.hideCode') : t('room.viewCode')}
           </button>
           <button
             className="rounded-full border border-border/50 px-2.5 py-0.5 text-xs transition-colors hover:bg-accent"
             onClick={remove}
             type="button"
           >
-            Remove
+            {t('remove')}
           </button>
         </div>
       </div>
       {open && (
         <pre className="max-h-60 overflow-auto whitespace-pre rounded-lg border border-border/50 p-2 font-mono text-[11px] text-foreground">
-          {code?.sha === sha ? code.text : 'Loading…'}
+          {code?.sha === sha ? code.text : t('loading')}
         </pre>
       )}
     </div>
   )
 }
 
-const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-
 /** "2 doors · 3 windows" (the level is in the kicker). */
 function RoomSubline({ room }: { room: RoomSelectionRecord }) {
-  const text = useScene((scene) => {
+  const t = useT(messages)
+  const counts = useScene(useShallow((scene) => {
     const walls = new Set(room.boundaryWallIds)
     let doors = 0
     let windows = 0
@@ -302,11 +317,11 @@ function RoomSubline({ room }: { room: RoomSelectionRecord }) {
       if (node.type === 'door') doors++
       else windows++
     }
-    return `${count(doors, 'door')} · ${count(windows, 'window')}`
-  })
+    return { doors, windows }
+  }))
   return (
     <p className="text-muted-foreground text-xs" data-room-subline>
-      {text}
+      {t('room.doors', { count: counts.doors })} · {t('room.windows', { count: counts.windows })}
     </p>
   )
 }
@@ -323,6 +338,8 @@ function ringPerimeter(ring: readonly (readonly [number, number])[]) {
 
 /** Area, perimeter and inside height, in the user's units. */
 function RoomStats({ room }: { room: RoomSelectionRecord }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const unit = useViewer((s) => s.unit)
   const setUnit = useViewer((s) => s.setUnit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -335,15 +352,15 @@ function RoomStats({ room }: { room: RoomSelectionRecord }) {
   const { height } = roomInsideHeight(room, nodes)
   const stats = [
     {
-      label: 'Area',
-      value: formatAreaLabel(room.area, unit, 2),
+      label: t('room.stats.area'),
+      value: formatAreaLabel(room.area, unit, 2, locale),
       toggle: () => setUnit(unit === 'imperial' ? 'metric' : 'imperial'),
-      toggleTitle: unit === 'imperial' ? 'Show in m²' : 'Show in ft²',
+      toggleTitle: unit === 'imperial' ? t('room.stats.showInM2') : t('room.stats.showInFt2'),
     },
-    { label: 'Perimeter', value: formatLinearMeasurement(perimeter, unit, metricNotation) },
+    { label: t('room.stats.perimeter'), value: formatLinearMeasurement(perimeter, unit, metricNotation, locale) },
     {
-      label: 'Height',
-      value: height === null ? '—' : formatLinearMeasurement(height, unit, metricNotation),
+      label: t('height'),
+      value: height === null ? '—' : formatLinearMeasurement(height, unit, metricNotation, locale),
     },
   ]
   return (
@@ -380,13 +397,15 @@ function RoomStats({ room }: { room: RoomSelectionRecord }) {
  * it when there is headroom. No walls of its own, so no walls row.
  */
 function MezzanineRows({ room }: { room: RoomSelectionRecord }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const zoneId = room.zoneId
   const nodes = useScene((scene) => scene.nodes)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const [expanded, setExpanded] = useState<'floor' | 'ceiling' | null>(null)
   const [stairMessage, setStairMessage] = useState<string | null>(null)
-  const length = (meters: number) => formatLinearMeasurement(meters, unit, metricNotation)
+  const length = (meters: number) => formatLinearMeasurement(meters, unit, metricNotation, locale)
   const elevation = roomRelativeFloorHeight(nodes, zoneId)
   const base = roomFloorBase(nodes, zoneId)
   const absoluteBounds = mezzanineElevationBounds(nodes, zoneId)
@@ -402,13 +421,13 @@ function MezzanineRows({ room }: { room: RoomSelectionRecord }) {
     setExpanded((current) => (current === part ? null : part))
   return (
     <div className="flex flex-col" data-mezzanine-rows={zoneId}>
-      <h3 className="mt-4 mb-1.5 font-medium text-muted-foreground text-xs">Built with</h3>
+      <h3 className="mt-4 mb-1.5 font-medium text-muted-foreground text-xs">{t('room.builtWith')}</h3>
       <div className="flex flex-col gap-1">
         <ConstructionPart
           expanded={expanded === 'floor'}
           icon="/icons/floor.webp"
-          label="Floor"
-          meta={`${length(elevation)} up`}
+          label={t('floor')}
+          meta={t('room.up', { height: length(elevation) })}
           on
           onToggleExpanded={toggle('floor')}
           part="floor"
@@ -427,13 +446,13 @@ function MezzanineRows({ room }: { room: RoomSelectionRecord }) {
               }}
               type="button"
             >
-              Add stairs
+              {t('room.addStairs')}
             </button>
           }
           expanded={false}
           icon="/icons/stairs.webp"
-          label="Stairs"
-          meta="Up from the floor below"
+          label={t('room.stairs')}
+          meta={t('room.stairsMeta')}
           on
           onToggleExpanded={() => {}}
           part="stairs"
@@ -441,22 +460,22 @@ function MezzanineRows({ room }: { room: RoomSelectionRecord }) {
         <ConstructionPart
           expanded={expanded === 'ceiling'}
           icon="/icons/ceiling.webp"
-          label="Ceiling"
+          label={t('ceiling')}
           meta={
             hasCeiling
               ? ceiling === null
-                ? 'Over the mezzanine'
-                : `${length(ceiling)} headroom`
-              : 'Not enough headroom'
+                ? t('room.overMezzanine')
+                : t('room.headroom', { height: length(ceiling) })
+              : t('room.notEnoughHeadroom')
           }
           on
           onToggleExpanded={toggle('ceiling')}
           part="ceiling"
         >
           {hasCeiling ? (
-            <PartField label="Shape">
+            <PartField label={t('shape')}>
               <button className={pill} onClick={() => startCeilingEdit(zoneId)} type="button">
-                Edit shape
+                {t('editShape')}
               </button>
             </PartField>
           ) : undefined}
@@ -476,6 +495,7 @@ function MezzanineRows({ room }: { room: RoomSelectionRecord }) {
  * the label tint, never a finish (finishes are painted).
  */
 function RoomColorDot({ zoneId }: { zoneId: string }) {
+  const t = useT(messages)
   const color = useScene((state) => {
     const zone = state.nodes[zoneId as AnyNodeId]
     return zone?.type === 'zone' ? zone.color : undefined
@@ -483,7 +503,7 @@ function RoomColorDot({ zoneId }: { zoneId: string }) {
   return (
     <ColorDot
       color={color ?? '#3b82f6'}
-      label="Room colour — used in the plan and labels"
+      label={t('room.colourLabel')}
       onChange={(next) => useScene.getState().updateNode(zoneId as AnyNodeId, { color: next })}
       side="bottom"
     />
@@ -509,6 +529,7 @@ function RoomName({
   sections: readonly RoomNameSection[]
   mezzanine: boolean
 }) {
+  const t = useT(messages)
   const nodes = useScene((state) => state.nodes)
   const [value, setValue] = useState(name)
   const [open, setOpen] = useState(false)
@@ -641,9 +662,9 @@ function RoomName({
         ) : used > 0 ? (
           <span
             className="shrink-0 whitespace-nowrap font-mono text-[11px] text-muted-foreground"
-            title="Picking it adds a number"
+            title={t('room.addsNumber')}
           >
-            {used} on this level
+            {t('room.usedOnLevel', { count: used })}
           </span>
         ) : null}
       </div>
@@ -662,19 +683,19 @@ function RoomName({
           )}
           data-guide-target="room-name"
           data-room-name-combobox
-          title={name.trim() ? `${name.trim()} · Rename` : 'Rename'}
+          title={name.trim() ? t('room.renameTitle', { name: name.trim() }) : t('rename')}
         >
           <input
             aria-activedescendant={activeId}
             aria-autocomplete="list"
             aria-controls={expanded ? listId : undefined}
             aria-expanded={expanded}
-            aria-label={mezzanine ? 'Mezzanine name' : 'Room name'}
+            aria-label={mezzanine ? t('room.mezzanineNameLabel') : t('room.nameLabel')}
             autoComplete="off"
             className="min-w-0 flex-1 text-ellipsis bg-transparent p-0 font-semibold text-foreground text-sm leading-snug tracking-tight outline-none placeholder:text-foreground"
             data-room-name
             maxLength={40}
-            placeholder={mezzanine ? 'Mezzanine' : 'Room'}
+            placeholder={mezzanine ? t('mezzanine') : t('room')}
             ref={inputRef}
             role="combobox"
             spellCheck={false}
@@ -706,7 +727,7 @@ function RoomName({
             }}
           />
           <button
-            aria-label={mezzanine ? 'Show mezzanine names' : 'Show room names'}
+            aria-label={mezzanine ? t('room.showMezzanineNames') : t('room.showNames')}
             className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             data-room-name-open
             tabIndex={-1}
@@ -729,7 +750,7 @@ function RoomName({
       </PopoverAnchor>
       <PopoverContent
         align="start"
-        aria-label={mezzanine ? 'Mezzanine names' : 'Room names'}
+        aria-label={mezzanine ? t('room.mezzanineNamesList') : t('room.namesList')}
         className="flex max-h-85 w-(--radix-popover-trigger-width) min-w-60 flex-col overflow-hidden p-0"
         id={listId}
         role="listbox"
@@ -769,16 +790,16 @@ function RoomName({
         <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-border border-t px-3 py-2 text-[11px] text-muted-foreground">
           {(
             [
-              [['↑', '↓'], 'Browse'],
-              [['Enter'], 'Pick'],
-              [['Esc'], 'Revert'],
+              { keys: ['↑', '↓'], actionKey: 'room.hint.browse' },
+              { keys: ['Enter'], actionKey: 'room.hint.pick' },
+              { keys: ['Esc'], actionKey: 'room.hint.revert' },
             ] as const
-          ).map(([keys, action]) => (
-            <span className="flex items-center gap-1" key={action}>
+          ).map(({ keys, actionKey }) => (
+            <span className="flex items-center gap-1" key={actionKey}>
               {keys.map((key) => (
                 <ShortcutToken className="h-4 min-w-4 justify-center px-1 text-[9.5px]" key={key} value={key} />
               ))}
-              {action}
+              {t(actionKey)}
             </span>
           ))}
         </div>
@@ -788,10 +809,11 @@ function RoomName({
 }
 
 function RoomNameOptionLabel({ option }: { option: RoomNameOption }) {
+  const t = useT(messages)
   if (option.kind === 'typed') {
     return (
       <span className="min-w-0 flex-1 truncate">
-        <span className="text-muted-foreground">Use </span>“{option.value}”
+        <span className="text-muted-foreground">{t('room.use')} </span>“{option.value}”
       </span>
     )
   }

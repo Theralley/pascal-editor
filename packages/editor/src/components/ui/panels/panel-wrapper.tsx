@@ -40,6 +40,8 @@ import { PanelSection } from '../controls/panel-section'
 import { ErrorBoundary } from '../primitives/error-boundary'
 import { useInRightStack } from '../right-stack'
 import { CollectionsPopover } from './collections/collections-popover'
+import { useT } from '../../../i18n'
+import { messages } from './messages'
 
 const DRAG_MARGIN = 8
 // Pointer travel (px) below which a header press is treated as a click
@@ -119,6 +121,7 @@ export function PanelWrapper({
   className,
   width = 320, // default width
 }: PanelWrapperProps) {
+  const t = useT(messages)
   const isMobile = useIsMobile()
   const inStack = useInRightStack()
   const contextFooter = useContext(InspectorFooterContext)
@@ -404,7 +407,11 @@ export function PanelWrapper({
               const isActive = !collapsed && activeExtensionId === extension.id
               return (
                 <button
-                  aria-label={isActive ? `Close ${extension.title}` : `Open ${extension.title}`}
+                  aria-label={
+                    isActive
+                      ? t('panel.close', { title: extension.title })
+                      : t('panel.open', { title: extension.title })
+                  }
                   aria-pressed={isActive}
                   className={cn(
                     'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
@@ -425,7 +432,7 @@ export function PanelWrapper({
             })}
             <button
               aria-expanded={!collapsed}
-              aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
+              aria-label={collapsed ? t('panel.expand') : t('panel.collapse')}
               className="flex h-7 w-7 items-center justify-center rounded-md bg-black/4 dark:bg-[#2C2C2E] text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground"
               onClick={handleCardToggle}
               type="button"
@@ -473,10 +480,10 @@ export function PanelWrapper({
               )}
               {children}
               {inspectedIds.length > 0 && (
-                <PanelSection title="Collections">
+                <PanelSection title={t('collections')}>
                   <ActionGroup>
                     <CollectionsPopover nodeIds={inspectedIds}>
-                      <ActionButton label="Manage collections…" />
+                      <ActionButton label={t('panel.manageCollections')} />
                     </CollectionsPopover>
                   </ActionGroup>
                 </PanelSection>
@@ -582,13 +589,14 @@ function InspectorExtensionContent({
   extension: InspectorExtension
   nodeId: AnyNodeId
 }) {
+  const t = useT(messages)
   const node = useScene((s) => s.nodes[nodeId])
   if (!node) return null
   const Extension = resolveExtensionComponent(extension)
   return (
     <ErrorBoundary fallback={
       <p className="p-1 text-muted-foreground text-xs">
-        “{extension.title}” hit an error and was unloaded for this session.
+        {t('panel.extensionCrashed', { title: extension.title })}
       </p>
     }>
       <Suspense fallback={null}>

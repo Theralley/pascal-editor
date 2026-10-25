@@ -43,6 +43,8 @@ import { InspectedNodesContext } from './panel-wrapper'
 import { ParametricInspector } from './parametric-inspector'
 import { ReferencePanel } from './reference-panel'
 import { formatSelectionBreakdown } from './selection-breakdown'
+import { useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 type MovableNode =
   | ItemNode
@@ -107,6 +109,7 @@ function MobilePanelLayer({
   panel: React.ReactNode
   isReference: boolean
 }) {
+  useLocale() // Node labels come from `translate`, so the layer re-renders with the language.
   const setSelection = useViewer((s) => s.setSelection)
   const setSelectedReferenceId = useEditor((s) => s.setSelectedReferenceId)
   const setMovingNode = useEditor((s) => s.setMovingNode)
@@ -180,8 +183,9 @@ function MobileMultiPanelLayer({
   panel: React.ReactNode
   type: string | null
 }) {
+  const t = useT(messages)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const display = type ? getTypeDisplay(type) : { icon: '/icons/select.webp', label: 'Selection' }
+  const display = type ? getTypeDisplay(type) : { icon: '/icons/select.webp', label: t('nodeType.selection') }
   const title = breakdown || display.label
 
   useEffect(() => {
@@ -218,6 +222,7 @@ export function PanelManager({
   inspectorFooter?: React.ReactNode
   multiSelectionFooter?: React.ReactNode
 }) {
+  useLocale() // The selection breakdown below comes from `translate`.
   const isMobile = useIsMobile()
   const room = useSelectedRoom()
   const selectedIds = useViewer((s) => s.selection.selectedIds)

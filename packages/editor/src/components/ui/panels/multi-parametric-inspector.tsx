@@ -32,8 +32,11 @@ import { getTypeDisplay } from './node-display'
 import { ParametricFieldControl } from './parametric-field-control'
 import { PanelWrapper } from './panel-wrapper'
 import { formatSelectionBreakdown } from './selection-breakdown'
+import { useT } from '../../../i18n'
+import { messages } from './messages'
 
 export function MultiParametricInspector({ footer }: { footer?: React.ReactNode }) {
+  const t = useT(messages)
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const setSelection = useViewer((s) => s.setSelection)
   const nodeIds = useScene(
@@ -69,8 +72,7 @@ export function MultiParametricInspector({ footer }: { footer?: React.ReactNode 
     <PanelWrapper footer={footer} icon={display.icon} onClose={handleClose} title={title} width={320}>
       {matchedGroup && (
         <div className="border-border/50 border-b px-3 py-2 text-muted-foreground text-xs">
-          {matchedGroup.label} (session only). Plain click reselects all members. Not saved with the
-          project.
+          {t('multi.sessionGroup', { label: matchedGroup.label })}
         </div>
       )}
       {parametrics.groups.map((group, gi) => (

@@ -19,12 +19,15 @@ import {
 } from '../../../lib/wall-region-list'
 import { useWallRegionSelection } from '../../../store/use-wall-region-handles-selection'
 import { PanelSection } from '../controls/panel-section'
+import { useT } from '../../../i18n'
+import { messages } from './messages'
 
 const ROW_ACTION_CLASS =
   'flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10'
 
 /** The wall panel's "Paint regions" section: one row per region, select or delete. */
 export function WallPaintRegionList({ wallId }: { wallId: string }) {
+  const t = useT(messages)
   const nodes = useScene((state) => state.nodes)
   const materials = useScene((state) => state.materials)
   const unit = useViewer((state) => state.unit)
@@ -48,7 +51,7 @@ export function WallPaintRegionList({ wallId }: { wallId: string }) {
   return (
     // Focus inside this list still lets Delete target the active region.
     <div className="contents" data-wall-region-list={wallId}>
-      <PanelSection title="Paint regions">
+      <PanelSection title={t('wallRegions.title')}>
         <div className="flex flex-col gap-1">
           {rows.map((row) => {
             const isActive = active?.wallId === wallId && active.regionId === row.id
@@ -85,13 +88,13 @@ export function WallPaintRegionList({ wallId }: { wallId: string }) {
                   </span>
                 </button>
                 <button
-                  aria-label="Delete region"
+                  aria-label={t('wallRegions.delete')}
                   className={ROW_ACTION_CLASS}
                   onClick={() => {
                     if (isActive) setActive(null)
                     if (removeWallRegion(wallId, row.id)) sfxEmitter.emit('sfx:structure-delete')
                   }}
-                  title="Delete region"
+                  title={t('wallRegions.delete')}
                   type="button"
                 >
                   <Trash2 className="h-3 w-3" />

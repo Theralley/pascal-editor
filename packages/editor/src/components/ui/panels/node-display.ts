@@ -1,36 +1,47 @@
 import { type AnyNode, scriptImages } from '@pascal-app/core'
+import { type MessageKey, translate } from '../../../i18n'
+import { messages } from './messages'
 
 export type NodeDisplay = {
   icon: string
   label: string
 }
 
-const TYPE_DEFAULTS: Record<string, NodeDisplay> = {
-  item: { icon: '/icons/item.webp', label: 'Item' },
-  wall: { icon: '/icons/wall.webp', label: 'Wall' },
-  door: { icon: '/icons/door.webp', label: 'Door' },
-  window: { icon: '/icons/window.webp', label: 'Window' },
-  slab: { icon: '/icons/floor.webp', label: 'Slab' },
-  ceiling: { icon: '/icons/ceiling.webp', label: 'Ceiling' },
-  column: { icon: '/icons/column.webp', label: 'Column' },
-  elevator: { icon: '/icons/elevator.webp', label: 'Elevator' },
-  fence: { icon: '/icons/fence.webp', label: 'Fence' },
-  roof: { icon: '/icons/roof.webp', label: 'Roof' },
-  'roof-segment': { icon: '/icons/roof.webp', label: 'Roof segment' },
-  stair: { icon: '/icons/stairs.webp', label: 'Stair' },
-  'stair-segment': { icon: '/icons/stairs.webp', label: 'Stair segment' },
-  scan: { icon: '/icons/mesh.webp', label: '3D Scan' },
-  guide: { icon: '/icons/floorplan.webp', label: 'Guide image' },
-  zone: { icon: '/icons/zone.webp', label: 'Zone' },
+type NodeTypeDefault = { icon: string; labelKey: MessageKey<typeof messages> }
+
+const TYPE_DEFAULTS: Record<string, NodeTypeDefault> = {
+  item: { icon: '/icons/item.webp', labelKey: 'nodeType.item' },
+  wall: { icon: '/icons/wall.webp', labelKey: 'nodeType.wall' },
+  door: { icon: '/icons/door.webp', labelKey: 'nodeType.door' },
+  window: { icon: '/icons/window.webp', labelKey: 'nodeType.window' },
+  slab: { icon: '/icons/floor.webp', labelKey: 'nodeType.slab' },
+  ceiling: { icon: '/icons/ceiling.webp', labelKey: 'nodeType.ceiling' },
+  column: { icon: '/icons/column.webp', labelKey: 'nodeType.column' },
+  elevator: { icon: '/icons/elevator.webp', labelKey: 'nodeType.elevator' },
+  fence: { icon: '/icons/fence.webp', labelKey: 'nodeType.fence' },
+  roof: { icon: '/icons/roof.webp', labelKey: 'nodeType.roof' },
+  'roof-segment': { icon: '/icons/roof.webp', labelKey: 'nodeType.roof-segment' },
+  stair: { icon: '/icons/stairs.webp', labelKey: 'nodeType.stair' },
+  'stair-segment': { icon: '/icons/stairs.webp', labelKey: 'nodeType.stair-segment' },
+  scan: { icon: '/icons/mesh.webp', labelKey: 'nodeType.scan' },
+  guide: { icon: '/icons/floorplan.webp', labelKey: 'nodeType.guide' },
+  zone: { icon: '/icons/zone.webp', labelKey: 'nodeType.zone' },
+}
+
+function typeDefault(type: string): NodeDisplay {
+  const known = TYPE_DEFAULTS[type]
+  return known
+    ? { icon: known.icon, label: translate(messages, known.labelKey) }
+    : { icon: '/icons/select.webp', label: type }
 }
 
 export function getTypeDisplay(type: string): NodeDisplay {
-  return TYPE_DEFAULTS[type] ?? { icon: '/icons/select.webp', label: type }
+  return typeDefault(type)
 }
 
 export function getNodeDisplay(node: AnyNode | null | undefined): NodeDisplay {
-  if (!node) return { icon: '/icons/select.webp', label: 'Selection' }
-  const fallback = TYPE_DEFAULTS[node.type] ?? { icon: '/icons/select.webp', label: node.type }
+  if (!node) return { icon: '/icons/select.webp', label: translate(messages, 'nodeType.selection') }
+  const fallback = typeDefault(node.type)
   const scripted = scriptImages(node)?.thumbnail
   // Item nodes carry an asset with its own thumbnail/name
   if (node.type === 'item') {
@@ -40,7 +51,7 @@ export function getNodeDisplay(node: AnyNode | null | undefined): NodeDisplay {
     }
   }
   if (node.type === 'zone' && node.spaceRole === 'room') {
-    return { icon: '/icons/kitchen.webp', label: node.name || 'Room' }
+    return { icon: '/icons/kitchen.webp', label: node.name || translate(messages, 'nodeType.room') }
   }
   return {
     icon: scripted ?? fallback.icon,

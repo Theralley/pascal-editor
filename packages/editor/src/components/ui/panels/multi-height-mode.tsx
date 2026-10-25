@@ -27,6 +27,8 @@ import {
   reduceHeightBoundMode,
 } from './multi-field-value'
 import { precisionForStep } from './parametric-field-utils'
+import { useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 function wallFollowsLevelPatch(wall: WallNode, nodes: Record<string, AnyNode>): Partial<WallNode> {
   const terrainSupported =
@@ -99,6 +101,8 @@ export function MultiHeightModeField({
   max?: number
   step?: number
 }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const mode = useScene(useShallow((s) => reduceHeightBoundMode(nodeIds, s.nodes)))
@@ -150,30 +154,30 @@ export function MultiHeightModeField({
       : heightOrigin
   const sliderMixed = storedHeight.kind === 'mixed' || mixedMode
   const currentLabel = Number.isFinite(liveHeight)
-    ? formatLinearMeasurement(liveHeight, unit, metricNotation)
-    : 'Mixed'
+    ? formatLinearMeasurement(liveHeight, unit, metricNotation, locale)
+    : t('mixed')
 
   return (
     <>
       {nodeType === 'wall' && (
         <div className="px-1 font-medium text-[10px] text-muted-foreground/80 uppercase tracking-wider">
-          Top
+          {t('multiHeight.top')}
         </div>
       )}
       <SegmentedControl
         mixed={mixedMode}
         onChange={applyMode}
         options={[
-          { label: 'Follows level', value: 'storey' },
-          { label: 'Custom height', value: 'custom' },
+          { label: t('multiHeight.followsLevel'), value: 'storey' },
+          { label: t('multiHeight.custom'), value: 'custom' },
         ]}
         value={mode.kind === 'same' ? mode.value : 'storey'}
       />
       {isFollows ? (
-        <div className="px-1 text-[11px] text-muted-foreground">Currently {currentLabel}</div>
+        <div className="px-1 text-[11px] text-muted-foreground">{t('multiHeight.currently', { height: currentLabel })}</div>
       ) : isCustom ? (
         <SliderControl
-          label="Height"
+          label={t('height')}
           max={max}
           min={min}
           mixed={sliderMixed}

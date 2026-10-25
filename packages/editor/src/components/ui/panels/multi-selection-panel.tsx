@@ -27,8 +27,11 @@ import useSessionGroups, {
   ungroupCurrentSelection,
 } from '../../../store/use-session-groups'
 import { ActionButton, ActionGroup } from '../controls/action-button'
+import { getTypeDisplay } from './node-display'
 import { PanelWrapper } from './panel-wrapper'
 import { formatSelectionBreakdown } from './selection-breakdown'
+import { translate, useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 /** The building holding the level, when the selection is everything selectable on it. */
 function useWholeLevelBuildingId(selectedIds: readonly string[]) {
@@ -61,32 +64,34 @@ function mergeRefusalNote(
   const { blockingId, limit } = refusal.details as { blockingId?: string; limit?: number }
   const reach = length(limit ?? 0)
   const blocking = nodes[blockingId ?? '']
-  const blockingKind = !blocking
-    ? 'something'
+  const kind = !blocking
+    ? translate(messages, 'merge.kind.something')
     : blocking.type === 'item'
-      ? 'an item'
-      : `a ${blocking.type}`
+      ? translate(messages, 'merge.kind.item')
+      : translate(messages, 'merge.kind.other', {
+          type: getTypeDisplay(blocking.type).label.toLowerCase(),
+        })
   switch (refusal.code) {
     case 'window_already_joined':
-      return 'One of them already wraps another corner. Unwrap it first.'
+      return translate(messages, 'merge.refusal.window_already_joined')
     case 'window_not_on_wall':
-      return 'A roof or dormer window cannot join another window.'
+      return translate(messages, 'merge.refusal.window_not_on_wall')
     case 'windows_not_adjacent':
-      return `They are too far apart. Windows merge with at most ${reach} between them.`
+      return translate(messages, 'merge.refusal.windows_not_adjacent', { reach })
     case 'opening_between':
-      return `There is ${blockingKind} between them.`
+      return translate(messages, 'merge.refusal.opening_between', { kind })
     case 'walls_not_meeting':
-      return 'Their walls do not meet at a corner.'
+      return translate(messages, 'merge.refusal.walls_not_meeting')
     case 'corner_angle':
-      return 'Their walls meet at too sharp or too flat an angle for a corner window.'
+      return translate(messages, 'merge.refusal.corner_angle')
     case 'window_not_at_corner':
-      return `One of them is too far from the corner. A window joins one within ${reach} of it.`
+      return translate(messages, 'merge.refusal.window_not_at_corner', { reach })
     case 'height_exceeds_wall':
-      return 'The window selected first is taller than the other wall. Select the other one first.'
+      return translate(messages, 'merge.refusal.height_exceeds_wall')
     case 'opening_overlap':
-      return `Sliding them to the corner would overlap ${blockingKind}.`
+      return translate(messages, 'merge.refusal.opening_overlap', { kind })
     default:
-      return 'These windows cannot be merged.'
+      return translate(messages, 'merge.refusal.default')
   }
 }
 
@@ -97,6 +102,8 @@ function mergeRefusalNote(
  * Unwrap instead; two that cannot join, the reason.
  */
 function MergeWindowsAction() {
+  const t = useT(messages)
+  const locale = useLocale()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const nodes = useScene((s) => s.nodes)
   const readOnly = useScene((s) => s.readOnly)
@@ -110,7 +117,7 @@ function MergeWindowsAction() {
         className="basis-full whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-40"
         disabled={readOnly}
         icon={<Split className="h-4 w-4" />}
-        label="Unwrap the corner"
+        label={t('merge.unwrap')}
         onClick={() => {
           writeWindowChanges({
             create: null,
@@ -119,13 +126,13 @@ function MergeWindowsAction() {
           })
           triggerSFX('sfx:structure-build')
         }}
-        title="Unwrap the corner: both windows stay, each framed at the corner"
+        title={t('merge.unwrapTitle')}
       />
     )
   const { merge } = offer
   const note = offer.refusal
     ? mergeRefusalNote(offer.refusal, nodes, (meters) =>
-        formatLinearMeasurement(meters, unit, metricNotation),
+        formatLinearMeasurement(meters, unit, metricNotation, locale),
       )
     : null
   return (
@@ -134,7 +141,7 @@ function MergeWindowsAction() {
         className="basis-full whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-40"
         disabled={readOnly || !merge}
         icon={<Merge className="h-4 w-4" />}
-        label="Merge windows"
+        label={t('merge.label')}
         onClick={() => {
           if (!merge) return
           runAsSingleSceneHistoryStep(useScene, () =>
@@ -150,8 +157,8 @@ function MergeWindowsAction() {
         title={
           note ??
           (merge?.kind === 'corner'
-            ? 'Merge windows into a corner window: both take the height, sill and type of the one you selected first'
-            : 'Merge windows into one across both: it keeps the type and style of the one you selected first')
+            ? t('merge.cornerTitle')
+            : t('merge.singleTitle'))
         }
       />
       {note ? <p className="basis-full px-1 text-muted-foreground text-xs">{note}</p> : null}
@@ -160,6 +167,7 @@ function MergeWindowsAction() {
 }
 
 export function MultiSelectionActions() {
+  const t = useT(messages)
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const sessionGroups = useSessionGroups((s) => s.groups)
   const sceneNodes = useScene((s) => s.nodes)
@@ -182,39 +190,39 @@ export function MultiSelectionActions() {
         <ActionButton
           className="basis-full whitespace-nowrap"
           icon={<Building2 className="h-4 w-4" />}
-          label="Select building"
+          label={t('multi.selectBuilding')}
           onClick={() => selectBuilding(buildingId)}
-          title="Select the whole building to move all its levels"
+          title={t('multi.selectBuildingTitle')}
         />
       )}
       {showGroup && (
         <ActionButton
           className="min-w-20 px-2"
           icon={<Group className="h-4 w-4" />}
-          label="Group"
+          label={t('multi.group')}
           onClick={() => groupCurrentSelection()}
-          title="Group (Ctrl/Cmd+G)"
+          title={t('multi.groupTitle')}
         />
       )}
       {showUngroup && (
         <ActionButton
           className="min-w-20 px-2"
           icon={<Ungroup className="h-4 w-4" />}
-          label="Ungroup"
+          label={t('multi.ungroup')}
           onClick={() => ungroupCurrentSelection()}
-          title="Ungroup (Ctrl/Cmd+Shift+G)"
+          title={t('multi.ungroupTitle')}
         />
       )}
       <ActionButton
         className="min-w-20 px-2"
         icon={<Copy className="h-4 w-4" />}
-        label="Duplicate"
+        label={t('duplicate')}
         onClick={() => duplicateSelectionAndPickUp()}
       />
       <ActionButton
         className="min-w-20 px-2 border-red-500/40 text-red-700 dark:text-red-200 hover:bg-red-500/15"
         icon={<Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />}
-        label="Delete"
+        label={t('delete')}
         onClick={() => deleteSelection()}
       />
     </ActionGroup>
@@ -225,6 +233,7 @@ export function MultiSelectionActions() {
  * Docked multi-selection panel. Includes Group / Ungroup for session selection sets.
  */
 export function MultiSelectionPanel({ footer }: { footer?: React.ReactNode }) {
+  const t = useT(messages)
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const setSelection = useViewer((s) => s.setSelection)
   const sessionGroups = useSessionGroups((s) => s.groups)
@@ -246,15 +255,14 @@ export function MultiSelectionPanel({ footer }: { footer?: React.ReactNode }) {
       title={
         matchedGroup
           ? `${matchedGroup.label} · ${selectedIds.length}`
-          : `${selectedIds.length} selected`
+          : t('multi.selectedCount', { count: selectedIds.length })
       }
       width={320}
     >
       {breakdown && <div className="px-3 py-3 text-muted-foreground text-xs">{breakdown}</div>}
       {matchedGroup && (
         <div className="border-border/50 border-t px-3 py-2 text-muted-foreground text-xs">
-          {matchedGroup.label} (session only). Plain click reselects all members. Not saved with the
-          project.
+          {t('multi.sessionGroup', { label: matchedGroup.label })}
         </div>
       )}
       <div className="border-border/50 border-t p-3">

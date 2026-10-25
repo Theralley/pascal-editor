@@ -28,6 +28,8 @@ import {
   PopoverTrigger,
 } from '../../../../components/ui/primitives/popover'
 import { cn } from '../../../../lib/utils'
+import { useT } from '../../../../i18n'
+import { messages } from './messages'
 
 interface CollectionsPopoverProps {
   /** The elements the popover adds to and removes from collections, together. */
@@ -36,6 +38,7 @@ interface CollectionsPopoverProps {
 }
 
 export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProps) {
+  const t = useT(messages)
   const collections = useScene((s) => s.collections)
   const nodes = useScene((s) => s.nodes)
   const createCollection = useScene((s) => s.createCollection)
@@ -102,7 +105,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
           <div className="flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-semibold text-foreground text-xs tracking-tight">
-              Collections
+              {t('title')}
             </span>
           </div>
           <button
@@ -114,7 +117,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
             type="button"
           >
             <Plus className="h-3 w-3" />
-            New
+            {t('new')}
           </button>
         </div>
 
@@ -132,7 +135,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
                   setCreateName('')
                 }
               }}
-              placeholder="Collection name…"
+              placeholder={t('placeholder')}
               value={createName}
             />
             <button
@@ -162,7 +165,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
             <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
               <Layers className="h-6 w-6 text-muted-foreground/40" />
               <p className="text-muted-foreground text-xs">
-                No collections yet. Create one to group elements together.
+                {t('empty')}
               </p>
             </div>
           ) : (
@@ -182,7 +185,7 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
                       key={collection.id}
                     >
                       <span className="truncate text-foreground/80 text-xs">
-                        Delete "{collection.name}"?
+                        {t('confirmDelete', { name: collection.name })}
                       </span>
                       <div className="flex shrink-0 items-center gap-1">
                         <button
@@ -193,14 +196,14 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
                           }}
                           type="button"
                         >
-                          Delete
+                          {t('delete')}
                         </button>
                         <button
                           className="rounded-md px-2 py-0.5 font-medium text-[11px] text-muted-foreground transition-colors hover:bg-black/6 dark:hover:bg-white/10"
                           onClick={() => setDeletingId(null)}
                           type="button"
                         >
-                          Cancel
+                          {t('cancel')}
                         </button>
                       </div>
                     </li>
@@ -314,14 +317,14 @@ export function CollectionsPopover({ nodeIds, children }: CollectionsPopoverProp
                             }}
                           >
                             <Pencil className="h-3.5 w-3.5" />
-                            Rename
+                            {t('rename')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDeletingId(collection.id)}
                             variant="destructive"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            {t('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -18,6 +18,8 @@ import { formatAreaLabel } from '../../../lib/measurements'
 import { Button } from '../primitives/button'
 import { Switch } from '../primitives/switch'
 import { PanelWrapper } from './panel-wrapper'
+import { useLocale, useT } from '../../../i18n'
+import { messages } from './messages'
 
 /**
  * A floor (or ceiling) opening: where it is, what it cuts, and the switch for
@@ -27,6 +29,8 @@ import { PanelWrapper } from './panel-wrapper'
  * handles in the scene. Done and Delete return to the room.
  */
 export function FloorOpeningPanel({ openingId }: { openingId: string }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
   const unit = useViewer((s) => s.unit)
   const readOnly = useScene((state) => state.readOnly)
@@ -35,7 +39,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
   const onCeiling = opening.drawnOn === 'ceiling'
   const zoneId = openingRoom(nodes, opening)
   const zone = zoneId ? nodes[zoneId as AnyNodeId] : undefined
-  const roomName = zone?.type === 'zone' ? zone.name?.trim() || 'Room' : null
+  const roomName = zone?.type === 'zone' ? zone.name?.trim() || t('room') : null
   const level = opening.parentId ? nodes[opening.parentId as AnyNodeId] : undefined
   const adjacentId = opening.parentId
     ? adjacentLevelId(nodes, opening.parentId, onCeiling ? 1 : -1)
@@ -48,18 +52,18 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
     nodes[opening.ownerId as AnyNodeId]?.type === opening.source
   const hints = floorOpeningHints(nodes, opening)
   const title = opening.source === 'stair'
-    ? 'Stair opening'
+    ? t('opening.title.stair')
     : opening.source === 'elevator'
-      ? 'Elevator opening'
-      : onCeiling ? 'Ceiling opening' : 'Floor opening'
+      ? t('opening.title.elevator')
+      : onCeiling ? t('opening.title.ceiling') : t('opening.title.floor')
   const kicker = [
-    'Opening',
-    roomName ? `in ${roomName}` : null,
+    t('opening.kicker'),
+    roomName ? t('opening.kickerIn', { room: roomName }) : null,
     level?.type === 'level' ? getLevelDisplayName(level) : null,
   ]
     .filter(Boolean)
     .join(' · ')
-  const switchLabel = onCeiling ? 'Also cut the floor above' : 'Also cut the ceiling below'
+  const switchLabel = onCeiling ? t('opening.switch.floorAbove') : t('opening.switch.ceilingBelow')
   const setAdjacent = (next: boolean) =>
     useScene.getState().updateNode(opening.id, { cutsAdjacent: next })
 
@@ -72,8 +76,8 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
     >
       <div className="flex flex-col gap-3 px-4 pt-3 pb-4 text-sm" data-floor-opening-panel={opening.id}>
         <p className="text-muted-foreground text-xs">
-          {formatAreaLabel(area([{ outer: opening.polygon, holes: [] }]), unit, 2)}
-          {owned ? ' · Shape follows its owner.' : ' · Drag its corners to change the shape.'}
+          {formatAreaLabel(area([{ outer: opening.polygon, holes: [] }]), unit, 2, locale)}
+          {` · ${owned ? t('opening.shapeFollowsOwner') : t('opening.dragCorners')}`}
         </p>
         {owned && (
           <button
@@ -82,12 +86,14 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
             onClick={() => useViewer.getState().setSelection({ selectedIds: [opening.ownerId!] })}
             type="button"
           >
-            Owned by {opening.source === 'stair' ? 'Staircase' : 'Elevator'}
+            {t('opening.ownedBy', {
+              owner: opening.source === 'stair' ? t('opening.owner.stair') : t('opening.owner.elevator'),
+            })}
           </button>
         )}
         {hosted ? (
           <p className="text-muted-foreground text-xs" data-opening-hosted>
-            A hatch in the mezzanine: it cuts only the mezzanine’s floor.
+            {t('opening.hosted')}
           </p>
         ) : owned ? null : (
           <label className="flex items-start gap-3" data-opening-adjacent>
@@ -95,10 +101,10 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
               <span className="font-medium text-[13px] text-foreground">{switchLabel}</span>
               <span className="text-muted-foreground text-xs">
                 {adjacent?.type === 'level'
-                  ? `On ${getLevelDisplayName(adjacent)}, as one void with this opening.`
+                  ? t('opening.adjacentOn', { level: getLevelDisplayName(adjacent) })
                   : onCeiling
-                    ? 'There is no floor above this storey.'
-                    : 'There is no storey below.'}
+                    ? t('opening.noFloorAbove')
+                    : t('opening.noStoreyBelow')}
               </span>
             </span>
             <Switch
@@ -123,7 +129,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
             type="button"
             variant="outline"
           >
-            Done
+            {t('done')}
           </Button>
           {!owned && <Button
             className="flex-1 rounded-full"
@@ -134,7 +140,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
             type="button"
             variant="outline"
           >
-            Delete
+            {t('delete')}
           </Button>}
         </div>
       </div>

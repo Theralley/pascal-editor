@@ -2,13 +2,15 @@
 
 import { Pentagon, Square } from 'lucide-react'
 import { cn } from '../../../lib/utils'
+import { type MessageKey, useT } from '../../../i18n'
+import { messages } from './messages'
 
 export type OutlineShape = 'rectangle' | 'polygon'
 
 const SHAPES = [
-  { id: 'rectangle', label: 'Rectangle', Icon: Square },
-  { id: 'polygon', label: 'Polygon', Icon: Pentagon },
-] as const
+  { id: 'rectangle', labelKey: 'shape.rectangle', Icon: Square },
+  { id: 'polygon', labelKey: 'shape.polygon', Icon: Pentagon },
+] as const satisfies { id: OutlineShape; labelKey: MessageKey<typeof messages>; Icon: unknown }[]
 
 const pill =
   'inline-flex items-center gap-1 rounded-full border border-border/50 px-2 py-0.5 text-xs text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50'
@@ -32,6 +34,7 @@ export function ShapeChoice({
   /** `data-shape-choice` hook for tests and proofs. */
   data?: string
 }) {
+  const t = useT(messages)
   return (
     <div
       className={cn('flex min-h-7 items-center justify-between gap-2', className)}
@@ -39,7 +42,7 @@ export function ShapeChoice({
     >
       <span className="whitespace-nowrap">{label}</span>
       <div className="flex items-center gap-1.5">
-        {SHAPES.map(({ id, label: shapeLabel, Icon }) => (
+        {SHAPES.map(({ id, labelKey, Icon }) => (
           <button
             className={pill}
             data-shape={id}
@@ -49,7 +52,7 @@ export function ShapeChoice({
             type="button"
           >
             <Icon aria-hidden className="h-3 w-3" />
-            {shapeLabel}
+            {t(labelKey)}
           </button>
         ))}
       </div>
