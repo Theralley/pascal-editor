@@ -15,6 +15,7 @@ import {
   isNodeRevealing,
   publishPerfBatchStats,
   registerMaterialCacheCleanup,
+  subscribeOpeningDisplayAffected,
   subscribeRoofHidden,
   subscribeWallModeAffected,
   useViewer,
@@ -197,6 +198,7 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
   const unsubscribeReleases = subscribeBatchReleases(changed)
   // Release when the wall mode starts restyling a member, re-offer when it stops.
   const unsubscribeWallMode = subscribeWallModeAffected(changed)
+  const unsubscribeOpenings = subscribeOpeningDisplayAffected(changed)
   const unsubscribeRoofs = subscribeRoofHidden(changed)
   const unsubscribeMaterials = registerMaterialCacheCleanup(() => {
     releaseAll()
@@ -208,6 +210,7 @@ export function subscribeBatchInteractions(invalidate: () => void): () => void {
     unsubscribePreviews()
     unsubscribeReleases()
     unsubscribeWallMode()
+    unsubscribeOpenings()
     unsubscribeRoofs()
     unsubscribeMaterials()
   }

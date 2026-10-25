@@ -420,6 +420,25 @@ Handlers now change only when the selection does, never mid-drag.
 
 ## Capability reference
 
+### `capabilities.lowWallOpening`
+
+Opts a wall-hosted opening (door, window) into the Low wall mode's opening display. While `wallMode` is `low`
+and the person's `openingDisplay` (a view preference, saved per project) is `hidden` or `marks`,
+`OpeningDisplaySystem` holds the opening's meshes off the scene layer (scene-visibility reason `'opening-low'`):
+not drawn, not picked, not shadowed, no material written. Every other wall mode, every model export, a capture
+of whole walls and the finished-house picture show the opening as built; a capture of low walls follows the
+person's setting, or the `openings` the agent asked for in `view_scene`'s `presentation`. The node batch releases a
+hidden opening and re-offers it when it returns.
+
+`{ floorMark: true }` kinds build their own flat mark as children of the opening's group, named `floor-mark`
+(the drawn lines) and `floor-mark-hit` (an invisible pick plane), with `createFloorMark` from the viewer. The system
+that builds the opening owns them (a rebuild removes every child but `cutout`), they are held off the scene layer
+from the moment they are built (reason `'floor-mark-off'`), and `marks` lets them through. A click on the plane
+reaches the opening's own handlers, since they sit on the group. Hidden openings stay selectable from the scene
+tree. Door draws its footprint and swing leaves from `doorSwingLeaves`, the helper the plan symbol uses too; a window
+has no floor mark and is left out in `marks` as in `hidden`. `down` (walls hidden) keeps openings as built:
+it is the X-ray mode in which they stay pointer-targetable.
+
 ### `capabilities.followsWallMode`
 
 Opts a kind into the viewer's wall mode. `surfaceRole: 'wall'` is only a colour token and does not

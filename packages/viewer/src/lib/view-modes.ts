@@ -1,4 +1,4 @@
-import type { LevelMode, WallMode } from '../store/use-viewer'
+import type { LevelMode, OpeningDisplay, WallMode } from '../store/use-viewer'
 
 /** The wall modes every view control offers, in the order they are listed. */
 export const WALL_MODE_OPTIONS: readonly { value: WallMode; label: string }[] = [
@@ -16,6 +16,13 @@ export const LEVEL_MODE_OPTIONS: readonly { value: Exclude<LevelMode, 'manual'>;
     { value: 'exploded', label: 'Exploded' },
     { value: 'solo', label: 'Solo' },
   ]
+
+/** How doors and windows stand in the Low wall mode, in the order they are listed. */
+export const OPENING_DISPLAY_OPTIONS: readonly { value: OpeningDisplay; label: string }[] = [
+  { value: 'marks', label: 'Marks' },
+  { value: 'hidden', label: 'Hidden' },
+  { value: 'full', label: 'Full' },
+]
 
 const WALL_STEPS: readonly WallMode[] = ['down', 'low', 'cutaway', 'up']
 

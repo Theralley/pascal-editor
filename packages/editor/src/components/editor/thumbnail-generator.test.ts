@@ -684,6 +684,15 @@ describe('what a capture tells the scene before it draws', () => {
       { wholeWalls: false, finished: true, wallsLow: true },
       { wholeWalls: true, wallsLow: true },
     ],
+    // How the doors and windows stand rides with low walls only.
+    [
+      { wholeWalls: false, finished: false, wallsLow: true, openings: 'marks' as const },
+      { wholeWalls: true, wallsLow: true, openings: 'marks' as const },
+    ],
+    [
+      { wholeWalls: true, finished: false, wallsLow: false, openings: 'hidden' as const },
+      { wholeWalls: true },
+    ],
   ])('%j is %j', (input, expected) => {
     expect(captureLift(input)).toEqual(expected)
   })

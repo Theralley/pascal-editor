@@ -192,7 +192,11 @@ describe('view_scene over the MCP', () => {
       },
     })
     try {
-      const presentation = { mode: 'stacked', walls: { mode: 'low', cutHeight: 0.4 } }
+      const presentation = {
+        mode: 'stacked',
+        walls: { mode: 'low', cutHeight: 0.4 },
+        openings: 'marks',
+      }
       const result = await view.call({ presentation })
       expect(result.isError).toBe(false)
       expect(asked.at(-1)?.presentation).toEqual(presentation)
@@ -212,7 +216,9 @@ describe('view_scene over the MCP', () => {
       }),
     })
     try {
-      const refused = await old.call({ presentation: { mode: 'stacked', walls: { mode: 'low' } } })
+      const refused = await old.call({
+        presentation: { mode: 'stacked', walls: { mode: 'low' }, openings: 'hidden' },
+      })
       expect(refused.isError).toBe(true)
       expect(json(refused.content)).toMatchObject({ code: 'view_presentation_unconfirmed' })
     } finally {

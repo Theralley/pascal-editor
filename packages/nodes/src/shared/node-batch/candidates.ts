@@ -11,6 +11,7 @@ import {
 } from '@pascal-app/core'
 import {
   hideFromScene,
+  isOpeningDisplayAffected,
   isRoofHidden,
   isWallModeAffected,
   SCENE_LAYER,
@@ -123,6 +124,7 @@ export function collectBatchCandidate(nodeId: string): BatchCandidate | null {
     batchable.excluded?.(node) ||
     isSlotPaintPreviewActive(nodeId) ||
     isWallModeAffected(nodeId) ||
+    isOpeningDisplayAffected(nodeId) ||
     isRoofHidden(nodeId)
   ) {
     return null

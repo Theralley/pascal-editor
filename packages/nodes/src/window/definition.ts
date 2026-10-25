@@ -304,6 +304,7 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
     duplicable: true,
     deletable: true,
     wallOpeningPlacement: true,
+    lowWallOpening: {},
     // Windows also host on roof-segment wall faces (base walls under the
     // roof, gable ends) — same wiring as door; see the door capability
     // for why `dirtyHandledByOwnSystem` is required.

@@ -9,7 +9,7 @@ import {
   type ThumbnailGenerateEvent,
   useScene,
 } from '@pascal-app/core'
-import { sceneViewInterior } from '@pascal-app/core/agent-operations'
+import { type SceneViewOpenings, sceneViewInterior } from '@pascal-app/core/agent-operations'
 import {
   computeHeroFraming,
   createSnapshotPipeline,
@@ -457,14 +457,23 @@ export function captureLift({
   wholeWalls,
   finished,
   wallsLow,
+  openings,
 }: {
   wholeWalls: boolean
   finished: boolean
   wallsLow: boolean
-}): { wholeWalls?: boolean; finished?: boolean; wallsLow?: boolean } | undefined {
+  openings?: SceneViewOpenings
+}):
+  | {
+      wholeWalls?: boolean
+      finished?: boolean
+      wallsLow?: boolean
+      openings?: SceneViewOpenings
+    }
+  | undefined {
   const lift = {
     ...(wholeWalls || wallsLow ? { wholeWalls: true } : finished ? { finished: true } : {}),
-    ...(wallsLow ? { wallsLow: true } : {}),
+    ...(wallsLow ? { wallsLow: true, ...(openings ? { openings } : {}) } : {}),
   }
   return Object.keys(lift).length > 0 ? lift : undefined
 }
@@ -1005,6 +1014,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
                   wholeWalls: Boolean(cameraPose || interior),
                   finished: snapLevels,
                   wallsLow: event.presentation?.walls?.mode === 'low',
+                  openings: event.presentation?.openings,
                 }),
               )
               if (cameraPose) {

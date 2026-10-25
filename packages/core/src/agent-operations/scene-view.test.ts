@@ -114,10 +114,19 @@ test('walls low ride the level presentation and are checked against what the ren
   expect(
     input.safeParse({ presentation: { mode: 'stacked', walls: { mode: 'sideways' } } }).success,
   ).toBe(false)
+  for (const openings of ['full', 'hidden', 'marks'])
+    expect(
+      input.safeParse({ presentation: { mode: 'stacked', walls: { mode: 'low' }, openings } })
+        .success,
+    ).toBe(true)
+  expect(input.safeParse({ presentation: { mode: 'stacked', openings: 'sideways' } }).success).toBe(
+    false,
+  )
   const presentation = {
     mode: 'exploded',
     showRoofs: false,
     walls: { mode: 'low', cutHeight: 0.4 },
+    openings: 'hidden',
   } as const
   expect(sceneViewPlan(nodes, { presentation }).presentation).toEqual(presentation)
   expect(() => sceneViewPlan(nodes, { presentation, interior: { levelId: 'level_0' } })).toThrow(
@@ -132,6 +141,20 @@ test('walls low ride the level presentation and are checked against what the ren
     { mode: 'exploded', walls: { mode: 'low', cutHeight: 0.4 } },
     { mode: 'exploded', walls: { mode: 'low', cutHeight: 0.4 } },
   )
+  confirmSceneViewPresentation(
+    { mode: 'stacked', walls: { mode: 'low' }, openings: 'marks' },
+    { mode: 'stacked', walls: { mode: 'low' }, openings: 'marks' },
+  )
+  for (const applied of [
+    { mode: 'stacked' as const, walls: { mode: 'low' as const } },
+    { mode: 'stacked' as const, walls: { mode: 'low' as const }, openings: 'hidden' as const },
+  ])
+    expect(() =>
+      confirmSceneViewPresentation(
+        { mode: 'stacked', walls: { mode: 'low' }, openings: 'marks' },
+        applied,
+      ),
+    ).toThrow('did not confirm the requested level view')
   for (const applied of [
     undefined,
     { mode: 'exploded' as const },

@@ -5,7 +5,13 @@ import type {
   GeometryContext,
   WallNode,
 } from '@pascal-app/core'
-import { getWallBodyCenterOffset } from '@pascal-app/core'
+import {
+  DOOR_PLAN_SWING_ANGLE,
+  doorSwingLeaves,
+  getWallBodyCenterOffset,
+  type SwingLeaf,
+  swingLeafPose,
+} from '@pascal-app/core'
 import {
   readFloorplanContext,
   readFloorplanGeometryMetadata,
@@ -96,7 +102,7 @@ export function buildDoorFloorplan(node: DoorNode, ctx: GeometryContext): Floorp
   // It deliberately ignores `node.swingAngle` / the live open-close
   // animation — the plan view documents how the door is hung, not how
   // far it currently happens to be open, so it must stay static.
-  const swingAngle = Math.PI / 2
+  const swingAngle = DOOR_PLAN_SWING_ANGLE
 
   // Footprint rectangle in the cutout.
   const points: readonly FloorplanPoint[] = [
@@ -189,28 +195,17 @@ export function buildDoorFloorplan(node: DoorNode, ctx: GeometryContext): Floorp
   // middle.
   const swingSign = swingDirection === 'inward' ? 1 : -1
 
-  const drawSwingLeaf = (
-    hX: number,
-    hZ: number,
-    closedX: number,
-    closedZ: number,
-    signedAngle: number,
-  ) => {
-    const radius = Math.sqrt(closedX * closedX + closedZ * closedZ)
-    if (radius < 1e-3) return
-
-    // Rotate the closed leaf vector around the hinge to the open tip.
-    const cos = Math.cos(signedAngle)
-    const sin = Math.sin(signedAngle)
-    const tipX = hX + (closedX * cos - closedZ * sin)
-    const tipZ = hZ + (closedX * sin + closedZ * cos)
-    const closedTipX = hX + closedX
-    const closedTipZ = hZ + closedZ
+  const drawSwingLeaf = (leaf: SwingLeaf) => {
+    const pose = swingLeafPose(leaf)
+    if (!pose) return
+    const { radius, closedTip, tip, sweepFlag } = pose
+    const [hX, hZ] = leaf.hinge
+    const [closedTipX, closedTipZ] = closedTip
+    const [tipX, tipZ] = tip
 
     // Swing arc — from closed tip to open tip via an arc centered at the
     // hinge. SVG `A`: rx ry rotation large-arc-flag sweep-flag x y. The
     // sweep flag flips with the signed angle direction.
-    const sweepFlag = signedAngle >= 0 ? 1 : 0
     const arcPath = `M ${closedTipX} ${closedTipZ} A ${radius} ${radius} 0 0 ${sweepFlag} ${tipX} ${tipZ}`
 
     // Swept wedge fill (light, low opacity) — reads as the open zone.
@@ -760,27 +755,16 @@ export function buildDoorFloorplan(node: DoorNode, ctx: GeometryContext): Floorp
       strokeLinejoin: 'round',
     })
   } else if (isSwingDoor && swingAngle > 1e-3 && width > 1e-3) {
-    if (isDoubleLeaf) {
-      // Two half-width leaves hinged at the opposite outer ends, each
-      // swinging toward the centre. `hingesSide` is irrelevant for a
-      // symmetric double door; only `swingDirection` chooses the side.
-      const halfLeafX = dirX * halfWidth
-      const halfLeafZ = dirZ * halfWidth
-      // Leaf at the start edge: closed leaf points toward the centre.
-      drawSwingLeaf(cx - halfLeafX, cz - halfLeafZ, halfLeafX, halfLeafZ, swingAngle * swingSign)
-      // Leaf at the end edge: closed leaf points the other way, swung
-      // with the opposite sign so both meet perpendicular at the centre.
-      drawSwingLeaf(cx + halfLeafX, cz + halfLeafZ, -halfLeafX, -halfLeafZ, -swingAngle * swingSign)
-    } else {
-      // Single leaf hinged at one end, strike at the opposite end.
-      const hingeTangentSign = hingesSide === 'left' ? 1 : -1
-      drawSwingLeaf(
-        cx - dirX * halfWidth * hingeTangentSign,
-        cz - dirZ * halfWidth * hingeTangentSign,
-        dirX * width * hingeTangentSign,
-        dirZ * width * hingeTangentSign,
-        swingAngle * swingSign * hingeTangentSign,
-      )
+    for (const leaf of doorSwingLeaves({
+      center: [cx, cz],
+      dir: [dirX, dirZ],
+      width,
+      doubleLeaf: isDoubleLeaf,
+      hingesSide,
+      swingSign,
+      swingAngle,
+    })) {
+      drawSwingLeaf(leaf)
     }
   }
 

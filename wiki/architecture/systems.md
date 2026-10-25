@@ -35,6 +35,7 @@ Three.js side-effects on registered objects (`sceneRegistry`). `<Viewer>` mounts
 |---|---|
 | `geometry/` | `GeometrySystem`: rebuilds `def.geometry` kinds on dirty |
 | `wall-mode/` | `WallModeFollowSystem`: walls down and cutaway hide nodes of kinds with `capabilities.followsWallMode` |
+| `opening-display/` | `OpeningDisplaySystem`: the Low wall mode hides doors and windows of kinds with `capabilities.lowWallOpening`, or leaves a floor mark |
 | `floor-elevation/` | `FloorElevationSystem`: lifts `floorPlaced` kinds over slabs |
 | `level/` | `LevelSystem`: stacked / exploded / solo / manual level positions |
 | `wall/` | `WallSystem` (dirty drain, miter cache, initial build) and `WallCutout` (opening holes) |
@@ -55,7 +56,7 @@ columns and procedural items) at priority 2. A definition's
 `system.priority` orders mounted components; it does not set `useFrame` priority.
 
 `WallModeFollowSystem` (priority 3, after `GeometrySystem`, before the node batch) hides nodes of kinds that
-declare `capabilities.followsWallMode` for the wall mode; see `node-definitions.md`. The batch releases a node while it is affected.
+declare `capabilities.followsWallMode` for the wall mode; see `node-definitions.md`. The batch releases a node while it is affected. `OpeningDisplaySystem` (priority 4) does the same for the Low wall mode's doors and windows (`capabilities.lowWallOpening`).
 
 A kind joins by declaring `capabilities.batchable` (`BatchableConfig`): its scope
 (`'level'` children, or `'wall'`-hosted openings that follow their wall), transient

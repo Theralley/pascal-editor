@@ -245,6 +245,7 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
     duplicable: true,
     deletable: true,
     wallOpeningPlacement: true,
+    lowWallOpening: { floorMark: true },
     // Doors also host on roof-segment wall faces (base walls under the
     // roof, gable ends). `buildCut` punches the opening into the
     // segment's wall brush; `dirtyHandledByOwnSystem` keeps the roof-merge

@@ -113,6 +113,7 @@ export {
 export type { DisplayState } from './lib/display-state'
 export { disposeObject3DResources } from './lib/dispose-object3d'
 export type { EdgeMode } from './lib/edge-style'
+export { FLOOR_MARK_HIT_NAME, FLOOR_MARK_NAME } from './lib/floor-mark'
 export {
   BLOCK_MASONRY,
   concreteMaterial,
@@ -315,7 +316,12 @@ export {
   UNDERGROUND_RING,
   undergroundAmbianceNode,
 } from './lib/underground-ambiance'
-export { LEVEL_MODE_OPTIONS, stepWallMode, WALL_MODE_OPTIONS } from './lib/view-modes'
+export {
+  LEVEL_MODE_OPTIONS,
+  OPENING_DISPLAY_OPTIONS,
+  stepWallMode,
+  WALL_MODE_OPTIONS,
+} from './lib/view-modes'
 export { createZoneShape, createZoneWallGeometry } from './lib/zone-geometry'
 export type { LightSource } from './store/use-item-light-pool'
 export { catalogLightSource, useItemLightPool } from './store/use-item-light-pool'
@@ -329,6 +335,7 @@ export {
   groundVeiled,
   type LevelMode,
   type MetricNotation,
+  type OpeningDisplay,
   siteGroundShown,
   type UndergroundEdge,
   type UndergroundLook,
@@ -413,6 +420,14 @@ export {
   presentLevelsForCapture,
   snapLevelsToTruePositions,
 } from './systems/level/level-utils'
+export {
+  isOpeningDisplayAffected,
+  OpeningDisplayCache,
+  OpeningDisplaySystem,
+  type OpeningDisplayViewerState,
+  type OpeningDisplayViewerStore,
+  subscribeOpeningDisplayAffected,
+} from './systems/opening-display/opening-display'
 export { getRoofMaterialArray, levelWallCladdingRef } from './systems/roof/roof-materials'
 // Generic roof-segment primitives. Kinds that compose CSG against
 // the roof shell (chimney's self-trim, dormer's virtual-segment cut)

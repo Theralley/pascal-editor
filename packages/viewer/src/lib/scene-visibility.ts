@@ -12,6 +12,9 @@ import { BATCHED_LAYER, SCENE_LAYER, SHADOW_ONLY_LAYER } from './layers'
  * - `wall-mode` — a node that follows the wall mode (`capabilities.followsWallMode`) while walls
  *   down or the cutaway hides it: not drawn, not picked and not casting a shadow.
  * - `roof-hidden` — the person turned roofs off: not drawn or picked, still casting a shadow.
+ * - `opening-low` — a door or window the Low wall mode leaves out (`capabilities.lowWallOpening`):
+ *   not drawn, not picked and not casting a shadow.
+ * - `floor-mark-off` — the floor mark of such an opening while the Low wall mode does not show it.
  */
 export type HiddenReason =
   | 'isolated'
@@ -21,6 +24,8 @@ export type HiddenReason =
   | 'ground-aside'
   | 'wall-mode'
   | 'roof-hidden'
+  | 'opening-low'
+  | 'floor-mark-off'
 
 /**
  * Single owner of `Object3D.layers` for every feature that hides an object.
@@ -140,7 +145,7 @@ function applyHold(obj: Object3D, hold: Hold): void {
 
   // Hidden by the wall mode, a node is gone from every pass in any combination: no shadow-only
   // caster, no batched stand-in that stays pickable.
-  if (hold.reasons.has('wall-mode')) {
+  if (hold.reasons.has('wall-mode') || hold.reasons.has('opening-low')) {
     obj.layers.disable(SHADOW_ONLY_LAYER)
     obj.layers.disable(BATCHED_LAYER)
     return

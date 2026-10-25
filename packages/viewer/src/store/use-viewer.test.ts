@@ -25,6 +25,8 @@ const resetMeasurementPreferences = () => {
     showRoofsDefault: true,
     wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
     wallCutHeightDefault: WALL_CUT_HEIGHT_DEFAULT,
+    openingDisplay: 'marks',
+    openingDisplayDefault: 'marks',
     projectPresentation: undefined,
     unit: 'metric',
     metricNotation: 'meters',
@@ -127,6 +129,22 @@ describe('view display preferences', () => {
       levelMode: 'solo',
       showRoofs: false,
     })
+  })
+
+  test('how openings stand in low walls is saved per project and starts as marks', () => {
+    const viewer = useViewer.getState()
+    viewer.setProjectId('view-a')
+    expect(useViewer.getState().openingDisplay).toBe('marks')
+    useViewer.getState().setOpeningDisplay('hidden')
+    expect(useViewer.getState().projectPreferences['view-a']).toEqual({ openingDisplay: 'hidden' })
+
+    useViewer.getState().setProjectId('view-b')
+    expect(useViewer.getState().openingDisplay).toBe('hidden')
+    useViewer.getState().setOpeningDisplay('full')
+    useViewer.getState().setProjectId('view-a')
+    expect(useViewer.getState().openingDisplay).toBe('hidden')
+    useViewer.getState().setProjectId('view-b')
+    expect(useViewer.getState().openingDisplay).toBe('full')
   })
 
   test('an override changes the view without touching what was saved or the default', () => {

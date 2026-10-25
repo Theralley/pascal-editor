@@ -33,6 +33,7 @@ import { installTextureNodeNullGuard } from '../../lib/texture-node-guard'
 import useViewer, { type RenderContext } from '../../store/use-viewer'
 import { FloorElevationSystem } from '../../systems/floor-elevation/floor-elevation-system'
 import { GeometrySystem } from '../../systems/geometry/geometry-system'
+import { OpeningDisplaySystem } from '../../systems/opening-display/opening-display'
 import { PerfActionSettleSystem } from '../../systems/perf-action-settle/perf-action-settle-system'
 import { getPendingRoofMergeCount } from '../../systems/roof/roof-system'
 import { RoofVisibilitySystem } from '../../systems/roof/roof-visibility-system'
@@ -821,6 +822,7 @@ function ViewerScene({
       <FloorElevationSystem />
       <GeometrySystem />
       <WallModeFollowSystem />
+      <OpeningDisplaySystem />
       <StairOpeningSystem />
       <RoofElevationSystem />
       <RoofVisibilitySystem />

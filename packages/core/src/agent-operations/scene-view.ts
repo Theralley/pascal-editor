@@ -44,6 +44,9 @@ export type SceneViewLighting = Exclude<(typeof VIEW_LIGHTING)[number], 'current
 /** How the walls stand in a picture: whole, or cut down to stubs at `cutHeight` metres (default per host). */
 export type SceneViewWalls = { mode: 'up' | 'low'; cutHeight?: number }
 
+/** How doors and windows stand while the walls are low: as built, left out, or doors as floor marks. */
+export type SceneViewOpenings = 'full' | 'hidden' | 'marks'
+
 export type SceneViewInput = {
   target?: string
   interior?: SceneViewInteriorInput
@@ -85,8 +88,19 @@ export type SceneViewInterior = { levelId: string; roomId?: string }
 export type SceneViewInteriorInput = { levelId?: string; zoneId?: string }
 
 export type SceneViewPresentation =
-  | { mode: 'stacked' | 'exploded'; showRoofs?: boolean; walls?: SceneViewWalls }
-  | { mode: 'solo'; levelId: string; showRoofs?: boolean; walls?: SceneViewWalls }
+  | {
+      mode: 'stacked' | 'exploded'
+      showRoofs?: boolean
+      walls?: SceneViewWalls
+      openings?: SceneViewOpenings
+    }
+  | {
+      mode: 'solo'
+      levelId: string
+      showRoofs?: boolean
+      walls?: SceneViewWalls
+      openings?: SceneViewOpenings
+    }
 
 /** Validate against the scene being rendered as well as the scene used to request the view. */
 export function sceneViewPresentationLevel(
@@ -116,6 +130,7 @@ export function confirmSceneViewPresentation(
     (applied?.mode !== requested.mode ||
       applied?.showRoofs !== requested.showRoofs ||
       applied?.walls?.mode !== requested.walls?.mode ||
+      applied?.openings !== requested.openings ||
       (requested.walls?.cutHeight !== undefined &&
         applied?.walls?.cutHeight !== requested.walls.cutHeight) ||
       (requested.mode === 'solo' &&

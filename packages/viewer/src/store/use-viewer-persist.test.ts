@@ -96,6 +96,25 @@ describe('stored viewer preferences', () => {
     expect(stored.projectPreferences['scene-1'].showRoofs).toBeUndefined()
   })
 
+  test('the opening display is stored, comes back, and a value it does not know falls back to marks', async () => {
+    useViewer.getState().setProjectId('scene-1')
+    useViewer.getState().setOpeningDisplay('hidden')
+    const stored = JSON.parse(items.get('viewer-preferences') ?? '{}').state
+    expect(stored).toMatchObject({ openingDisplay: 'hidden' })
+    expect(stored.projectPreferences['scene-1']).toEqual({ openingDisplay: 'hidden' })
+
+    await rehydrateFrom({ openingDisplay: 'full' })
+    useViewer.getState().setProjectId('scene-2')
+    expect(useViewer.getState().openingDisplay).toBe('full')
+
+    await rehydrateFrom({
+      openingDisplay: 'sideways',
+      projectPreferences: { 'scene-3': { openingDisplay: 7 } },
+    })
+    useViewer.getState().setProjectId('scene-3')
+    expect(useViewer.getState().openingDisplay).toBe('marks')
+  })
+
   test('a browser-wide wall mode and roofs choice becomes the default of a new project', async () => {
     await rehydrateFrom({ wallMode: 'down', showRoofs: false })
     useViewer.getState().setProjectId('scene-9')

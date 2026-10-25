@@ -2,7 +2,11 @@ import type { ThreeEvent } from '@react-three/fiber'
 import mitt from 'mitt'
 import type { Object3D } from 'three'
 import type { PointAskPin, PointAskStatus } from '../agent-operations/point-context'
-import type { SceneViewInterior, SceneViewPresentation } from '../agent-operations/scene-view'
+import type {
+  SceneViewInterior,
+  SceneViewOpenings,
+  SceneViewPresentation,
+} from '../agent-operations/scene-view'
 import type {
   BlockNode,
   BoxVentNode,
@@ -373,9 +377,17 @@ type ThumbnailEvents = {
    * `wholeWalls`: every wall drawn whole for the frame, whatever the wall mode (an authored pose, an
    * interior view). `exporting`: the scene is cloned for a model export, which must hold the whole
    * building, so nodes the wall mode hides (`followsWallMode`) are shown for the clone.
+   * `wallsLow`: the walls are cut low for the frame; `openings` is how doors and windows stand in it
+   * (`lowWallOpening`), the person's own choice when absent.
    */
   'thumbnail:before-capture':
-    | { wholeWalls?: boolean; exporting?: boolean; finished?: boolean; wallsLow?: boolean }
+    | {
+        wholeWalls?: boolean
+        exporting?: boolean
+        finished?: boolean
+        wallsLow?: boolean
+        openings?: SceneViewOpenings
+      }
     | undefined
   'thumbnail:after-capture': undefined
 }

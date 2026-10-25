@@ -1740,6 +1740,14 @@ export type Capabilities = {
    */
   followsWallMode?: FollowsWallModeConfig
   /**
+   * Opt this wall-hosted opening into the viewer's Low wall mode display: the person's `openingDisplay`
+   * choice hides the opening (held off the scene layer, so it is neither drawn, picked nor shadowed)
+   * or, with `floorMark`, leaves a flat plan mark on the floor that selects the opening. The kind's
+   * system builds the mark as a child named `floor-mark` and `floor-mark-hit`; the viewer only holds
+   * it on or off the scene layer. Walls up, cutaway, down and exports show the opening as built.
+   */
+  lowWallOpening?: { floorMark?: boolean }
+  /**
    * How the node appears when an agent builds it: its construction phase and
    * motion. A kind without it appears at once, with its parent. See
    * `RevealConfig`.

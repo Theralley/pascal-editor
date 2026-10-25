@@ -20,7 +20,7 @@ import { computeSceneBoundsXZ } from '../../../lib/scene-bounds'
 import { cutGroundCollider } from './ground-holes'
 import { createTerrainColliderGeometry } from './terrain-collider'
 
-const SKIPPED_MESH_NAMES = new Set(['cutout', 'collision-mesh'])
+const SKIPPED_MESH_NAMES = new Set(['cutout', 'collision-mesh', 'floor-mark', 'floor-mark-hit'])
 const COLLIDER_NODE_CATEGORIES = new Set(['structure', 'furnish'])
 const DEDICATED_COLLIDER_NODE_TYPES = new Set<AnyNode['type']>(['elevator'])
 const COLLIDER_MATERIAL = new THREE.MeshBasicMaterial()

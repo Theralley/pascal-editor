@@ -25,6 +25,7 @@ import {
   type EdgeMode,
   getSceneTheme,
   LEVEL_MODE_OPTIONS,
+  OPENING_DISPLAY_OPTIONS,
   SCENE_THEMES,
   useViewer,
   WALL_MODE_OPTIONS,
@@ -35,6 +36,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Contrast,
+  DoorOpen,
   Eye,
   EyeOff,
   Footprints,
@@ -227,6 +229,12 @@ const EDGE_OPTIONS = [
   { id: 'strong', name: 'Strong', detail: 'Crisp, opaque edge lines' },
 ] as const satisfies readonly { id: EdgeMode; name: string; detail: string }[]
 
+const OPENING_DISPLAY_DETAIL = {
+  marks: 'Doors as marks on the floor, windows hidden',
+  hidden: 'Doors and windows left out',
+  full: 'Doors and windows as built',
+} as const
+
 const SUBMENU_CONTENT_CLASS = 'min-w-56 rounded-xl border-border/45 bg-popover/95 backdrop-blur-xl'
 
 function DisplayMenu() {
@@ -249,6 +257,9 @@ function DisplayMenu() {
   const setSceneTheme = useViewer((state) => state.setSceneTheme)
   const edges = useViewer((state) => state.edges)
   const setEdges = useViewer((state) => state.setEdges)
+  const wallMode = useViewer((state) => state.wallMode)
+  const openingDisplay = useViewer((state) => state.openingDisplay)
+  const setOpeningDisplay = useViewer((state) => state.setOpeningDisplay)
   const shadows = useViewer((state) => state.shadows)
   const setShadows = useViewer((state) => state.setShadows)
   const magneticSnap = useEditor((state) => state.magneticSnap)
@@ -268,6 +279,9 @@ function DisplayMenu() {
     SHADING_OPTIONS.find((option) => option.id === shading) ?? SHADING_OPTIONS[0]
   const activeEdges = EDGE_OPTIONS.find((option) => option.id === edges) ?? EDGE_OPTIONS[0]
   const activeTheme = getSceneTheme(sceneTheme)
+  const activeOpenings =
+    OPENING_DISPLAY_OPTIONS.find((option) => option.value === openingDisplay) ??
+    OPENING_DISPLAY_OPTIONS[0]
 
   // Keep the menu open when flipping a toggle.
   const keepOpen = (event: Event, fn: () => void) => {
@@ -491,6 +505,34 @@ function DisplayMenu() {
             ) : null}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+
+        {wallMode === 'low' ? (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <DoorOpen className="h-4 w-4" />
+              <span>Openings</span>
+              <span className="ml-auto text-muted-foreground text-xs">{activeOpenings?.label}</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
+              {OPENING_DISPLAY_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onSelect={() => setOpeningDisplay(option.value)}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-foreground">{option.label}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {OPENING_DISPLAY_DETAIL[option.value]}
+                    </span>
+                  </div>
+                  {openingDisplay === option.value ? (
+                    <Check className="ml-auto h-4 w-4 text-foreground" />
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        ) : null}
 
         <DropdownMenuSeparator />
 

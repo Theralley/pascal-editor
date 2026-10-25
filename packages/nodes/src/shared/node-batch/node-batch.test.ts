@@ -15,6 +15,7 @@ import * as viewerExports from '@pascal-app/viewer'
 import {
   BATCHED_LAYER,
   liveRoofs,
+  OpeningDisplayCache,
   SCENE_LAYER,
   useViewer,
   WallModeFollowCache,
@@ -979,6 +980,52 @@ test('a block the wall mode hides leaves the batch, and is re-offered when the m
   settle()
   expect(batched(1)).toBe(true)
   follow.dispose()
+})
+
+test('a door the low walls hide leaves the batch, and is re-offered when the walls stand again', () => {
+  restoreRegistry ??= nodeRegistry._snapshot()
+  nodeRegistry._register({
+    kind: 'door',
+    schemaVersion: 1,
+    capabilities: { batchable: doorBatchable, lowWallOpening: { floorMark: true } },
+  } as never)
+  const { meshes } = setup('door', 4)
+  const ids = meshes.map((_, index) => `door_${index}`)
+  const nodes = useScene.getState().nodes
+  useScene.setState({
+    nodes: {
+      ...nodes,
+      wall_host: {
+        id: 'wall_host',
+        type: 'wall',
+        parentId: 'level_test',
+        visible: true,
+        children: ids,
+      },
+      ...Object.fromEntries(
+        ids.map((id) => [id, { ...nodes[id as AnyNodeId], parentId: 'wall_host' }]),
+      ),
+    },
+  } as never)
+  const openings = new OpeningDisplayCache()
+  settle()
+  const batched = (index: number) => meshes[index]!.layers.isEnabled(BATCHED_LAYER)
+  expect(batched(1)).toBe(true)
+
+  useViewer.setState({ wallMode: 'low', openingDisplay: 'marks' })
+  openings.update()
+  frame()
+  expect(batched(1)).toBe(false)
+  expect(meshes[1]!.layers.isEnabled(SCENE_LAYER)).toBe(false)
+  // Still hidden: a settled wave must not take it back.
+  settle()
+  expect(batched(1)).toBe(false)
+
+  useViewer.setState({ wallMode: 'up' })
+  openings.update()
+  settle()
+  expect(batched(1)).toBe(true)
+  openings.dispose()
 })
 
 test('a roof the toggle hides leaves the batch and stays out of every pass, and is re-offered when it returns', () => {

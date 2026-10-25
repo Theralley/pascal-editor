@@ -57,7 +57,14 @@ const wallsField = z
   })
   .optional()
   .describe(
-    'Walls low, as in The Sims: with mode low every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows keep their frames. up is the walls whole (the default).',
+    'Walls low, as in The Sims: with mode low every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows follow `openings`. up is the walls whole (the default).',
+  )
+
+const openingsField = z
+  .enum(['full', 'hidden', 'marks'])
+  .optional()
+  .describe(
+    "With walls low: how doors and windows stand. full keeps them as built, hidden leaves them out (nothing blocks the view of the rooms), marks leaves each door as a flat swing mark on the floor and hides the windows. Default: the person's own choice (marks for doors, windows hidden). Ignored with walls up.",
   )
 
 export const viewSceneTool = {
@@ -83,18 +90,29 @@ export const viewSceneTool = {
       ),
     presentation: z
       .discriminatedUnion('mode', [
-        z.object({ mode: z.literal('stacked'), showRoofs: showRoofsField, walls: wallsField }),
-        z.object({ mode: z.literal('exploded'), showRoofs: showRoofsField, walls: wallsField }),
+        z.object({
+          mode: z.literal('stacked'),
+          showRoofs: showRoofsField,
+          walls: wallsField,
+          openings: openingsField,
+        }),
+        z.object({
+          mode: z.literal('exploded'),
+          showRoofs: showRoofsField,
+          walls: wallsField,
+          openings: openingsField,
+        }),
         z.object({
           mode: z.literal('solo'),
           levelId: z.string().min(1),
           showRoofs: showRoofsField,
           walls: wallsField,
+          openings: openingsField,
         }),
       ])
       .optional()
       .describe(
-        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. showRoofs: false leaves the roofs out of the picture, true puts them in whatever the person has on. walls (mode low, cutHeight optional) stands every wall as a short stub (default 0.25 m) with a flat cap. Does not change the live view. Do not combine with interior.',
+        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. showRoofs: false leaves the roofs out of the picture, true puts them in whatever the person has on. walls (mode low, cutHeight optional) stands every wall as a short stub (default 0.25 m) with a flat cap, and openings (full, hidden, marks) says how the doors and windows stand in it. Does not change the live view. Do not combine with interior.',
       ),
     from: z
       .enum(VIEW_SIDES)

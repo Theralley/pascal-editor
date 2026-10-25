@@ -29,6 +29,11 @@ export type MetricNotation = 'meters' | 'millimeters'
 /** `down` hides the walls; `low` stands them as short stubs (see `wallCutHeight`). */
 export type WallMode = 'up' | 'cutaway' | 'down' | 'low' | 'translucent'
 export type LevelMode = 'stacked' | 'exploded' | 'solo' | 'manual'
+/**
+ * How doors and windows stand while the walls are `low`: as built, left out, or, for a door, a flat
+ * swing mark on the floor (a window has no mark and is left out). Other wall modes show them as built.
+ */
+export type OpeningDisplay = 'full' | 'hidden' | 'marks'
 
 /** Where `low` cuts the walls (m above the level), and the range the slider may take. */
 export const WALL_CUT_HEIGHT_DEFAULT = 0.25
@@ -267,6 +272,12 @@ type ViewerState = {
   /** Lifts every override: the view goes back to this project's saved picks, else the browser-wide defaults. */
   restoreView: () => void
 
+  /** How doors and windows stand in the `low` wall mode. The person's pick: saved for this project and kept as the browser-wide default. */
+  openingDisplay: OpeningDisplay
+  setOpeningDisplay: (display: OpeningDisplay) => void
+  /** The browser-wide opening display a project without a saved pick starts from. */
+  openingDisplayDefault: OpeningDisplay
+
   /** The height (m) walls stand at in `low` mode. */
   wallCutHeight: number
   /**
@@ -319,6 +330,7 @@ type ViewerState = {
       levelMode?: LevelMode
       showRoofs?: boolean
       wallCutHeight?: number
+      openingDisplay?: OpeningDisplay
     }
   >
 
@@ -380,6 +392,7 @@ type PersistedViewerState = Partial<
     | 'levelMode'
     | 'wallMode'
     | 'showRoofs'
+    | 'openingDisplay'
     | 'wallCutHeight'
     | 'projectPreferences'
   >
@@ -393,6 +406,7 @@ const UNITS = ['metric', 'imperial'] as const
 const METRIC_NOTATIONS = ['meters', 'millimeters'] as const
 const LEVEL_MODES = ['stacked', 'exploded', 'solo', 'manual'] as const
 const WALL_MODES = ['up', 'cutaway', 'down', 'low', 'translucent'] as const
+const OPENING_DISPLAYS = ['full', 'hidden', 'marks'] as const
 
 // Countries still on imperial/US customary units: United States, Liberia, Myanmar.
 const IMPERIAL_REGIONS = ['US', 'LR', 'MM']
@@ -526,6 +540,10 @@ function normalizeProjectPreferences(value: unknown): ViewerState['projectPrefer
       ...(typeof record.wallCutHeight === 'number'
         ? { wallCutHeight: clampWallCutHeight(record.wallCutHeight) }
         : {}),
+      ...(typeof record.openingDisplay === 'string' &&
+      OPENING_DISPLAYS.includes(record.openingDisplay as OpeningDisplay)
+        ? { openingDisplay: record.openingDisplay as OpeningDisplay }
+        : {}),
     }
   }
   return next
@@ -562,6 +580,7 @@ function normalizePersistedViewerState(value: unknown): PersistedViewerState {
     levelMode: pickString<ViewerState['levelMode']>(state.levelMode, LEVEL_MODES, 'stacked'),
     wallMode: pickString<ViewerState['wallMode']>(state.wallMode, WALL_MODES, 'up'),
     showRoofs: typeof state.showRoofs === 'boolean' ? state.showRoofs : true,
+    openingDisplay: pickString<OpeningDisplay>(state.openingDisplay, OPENING_DISPLAYS, 'marks'),
     wallCutHeight: clampWallCutHeight(
       typeof state.wallCutHeight === 'number' ? state.wallCutHeight : WALL_CUT_HEIGHT_DEFAULT,
     ),
@@ -886,6 +905,14 @@ const useViewer = create<ViewerState>()(
             wallCutHeight: saved?.wallCutHeight ?? state.wallCutHeightDefault,
           }
         }),
+      openingDisplay: 'marks',
+      openingDisplayDefault: 'marks',
+      setOpeningDisplay: (display) =>
+        set((state) => ({
+          openingDisplay: display,
+          openingDisplayDefault: display,
+          projectPreferences: withProjectPreference(state, { openingDisplay: display }),
+        })),
       wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
       wallCutHeightDefault: WALL_CUT_HEIGHT_DEFAULT,
       setWallCutHeight: (height, projectId) =>
@@ -987,6 +1014,7 @@ const useViewer = create<ViewerState>()(
             levelMode: prefs.levelMode ?? state.levelModeDefault,
             showRoofs: prefs.showRoofs ?? state.showRoofsDefault,
             wallCutHeight: prefs.wallCutHeight ?? state.wallCutHeightDefault,
+            openingDisplay: prefs.openingDisplay ?? state.openingDisplayDefault,
           })
         }),
       projectPreferences: {},
@@ -1057,6 +1085,7 @@ const useViewer = create<ViewerState>()(
           wallModeDefault: persisted.wallMode ?? currentState.wallModeDefault,
           showRoofsDefault: persisted.showRoofs ?? currentState.showRoofsDefault,
           wallCutHeightDefault: persisted.wallCutHeight ?? currentState.wallCutHeightDefault,
+          openingDisplayDefault: persisted.openingDisplay ?? currentState.openingDisplayDefault,
           ...resolveLook(currentState, {
             ...persisted,
             lookDefaults: {
@@ -1082,6 +1111,7 @@ const useViewer = create<ViewerState>()(
         wallMode: state.wallModeDefault,
         showRoofs: state.showRoofsDefault,
         wallCutHeight: state.wallCutHeightDefault,
+        openingDisplay: state.openingDisplayDefault,
         projectPreferences: Object.fromEntries(
           Object.entries(state.projectPreferences).filter(([key]) => key !== ''),
         ),

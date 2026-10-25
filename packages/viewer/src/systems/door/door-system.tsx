@@ -4,6 +4,7 @@ import {
   DEFAULT_WALL_THICKNESS,
   type DoorNode,
   DoorNode as DoorNodeSchema,
+  doorSwingLeaves,
   getDoorRenderOpenAmount,
   getEffectiveNode,
   getOpeningWallPlacement,
@@ -12,6 +13,8 @@ import {
   type SceneMaterialId,
   sceneRegistry,
   scriptedSize,
+  swingLeafArc,
+  swingLeafPose,
   useInteractive,
   useLiveNodeOverrides,
   useScene,
@@ -21,6 +24,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { applyWorldScaleBoxUVs } from '../../lib/box-uv'
+import { createFloorMark, FLOOR_MARK_LIFT } from '../../lib/floor-mark'
 import {
   type ColorPreset,
   createDefaultMaterial,
@@ -2388,6 +2392,7 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh): boolean {
 
   if (openingKind === 'opening') {
     syncDoorCutout(node, mesh)
+    syncDoorFloorMark(node, mesh)
     return true
   }
 
@@ -2700,6 +2705,7 @@ function updateDoorMesh(rawNode: DoorNode, mesh: THREE.Mesh): boolean {
   }
 
   syncDoorCutout(node, mesh)
+  syncDoorFloorMark(node, mesh)
 
   // Guard: some degenerate door configs can leave a child mesh with an
   // empty (0-vertex) geometry — e.g. a zero-area extruded leaf frame.
@@ -2717,6 +2723,57 @@ function hideEmptyGeometryMeshes(root: THREE.Object3D) {
     const position = child.geometry.getAttribute('position')
     if (!position || position.count === 0) child.visible = false
   })
+}
+
+/**
+ * The door's plan mark on the floor, for the Low wall mode (`OpeningDisplaySystem` lets it through):
+ * the footprint and, for a swing door, the leaf and its swing arc, drawn from the same leaves the
+ * plan draws. The mark is built with the door and held off the scene layer; a click on its hit
+ * plane reaches the door's own handlers.
+ */
+function syncDoorFloorMark(node: DoorNode, mesh: THREE.Mesh) {
+  if (node.roofSegmentId) return
+  const halfWidth = node.width / 2
+  const halfDepth = node.frameDepth / 2
+  const polylines: [number, number][][] = [
+    [
+      [-halfWidth, -halfDepth],
+      [halfWidth, -halfDepth],
+      [halfWidth, halfDepth],
+      [-halfWidth, halfDepth],
+      [-halfWidth, -halfDepth],
+    ],
+  ]
+  const doorType = node.doorType ?? 'hinged'
+  const isDoubleLeaf = doorType === 'double' || doorType === 'french'
+  if (node.openingKind !== 'opening' && (doorType === 'hinged' || isDoubleLeaf)) {
+    for (const leaf of doorSwingLeaves({
+      center: [0, 0],
+      dir: [1, 0],
+      width: node.width,
+      doubleLeaf: isDoubleLeaf,
+      hingesSide: node.hingesSide ?? 'left',
+      swingSign: (node.swingDirection ?? 'inward') === 'inward' ? 1 : -1,
+    })) {
+      const pose = swingLeafPose(leaf)
+      if (!pose) continue
+      polylines.push(
+        [
+          [leaf.hinge[0], leaf.hinge[1]],
+          [pose.tip[0], pose.tip[1]],
+        ],
+        swingLeafArc(leaf).map(([x, z]): [number, number] => [x, z]),
+      )
+    }
+  }
+  mesh.add(
+    ...createFloorMark({
+      polylines,
+      hitWidth: node.width,
+      hitDepth: Math.max(node.frameDepth, 0.3),
+      y: FLOOR_MARK_LIFT - mesh.position.y,
+    }),
+  )
 }
 
 function syncDoorCutout(node: DoorNode, mesh: THREE.Mesh) {

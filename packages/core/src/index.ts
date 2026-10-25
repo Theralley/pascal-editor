@@ -175,6 +175,13 @@ export {
   SECTIONAL_GARAGE_RENDER_OPEN_SCALE,
 } from './lib/door-operation'
 export {
+  DOOR_PLAN_SWING_ANGLE,
+  doorSwingLeaves,
+  type SwingLeaf,
+  swingLeafArc,
+  swingLeafPose,
+} from './lib/door-swing-leaf'
+export {
   type FinishScriptHost,
   type FinishScriptInputs,
   type FinishScriptRefresh,
