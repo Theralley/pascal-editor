@@ -37,6 +37,7 @@ const VISIBLE_PROPS = new Set([
   'group',
   'empty',
   'subtitle',
+  'defaultName',
 ])
 // `vrLabel`, `helpTitle`, `emptyText`: a prop that says it is a label, title or text is one.
 const VISIBLE_NAME_SUFFIX = /(?:Label|Title|Text)$/
@@ -137,14 +138,34 @@ function literalsOf(node: ts.Expression): Literal[] {
     const callback = node.arguments[0]
     const printed = callback ? literalsOf(callback) : []
     const receiver = node.expression.expression
-    // An inline list of strings, mapped into elements, prints each one unless the callback translates it.
-    const translates = callback ? TRANSLATES.test(callback.getText()) : false
-    return translates ? [] : [...literalsOf(receiver), ...printed]
+    // An inline list of strings, mapped into elements, prints each one unless the callback hands it to `t`.
+    const translates = callback ? translatesItem(callback) : false
+    return [...(translates ? [] : literalsOf(receiver)), ...printed]
   }
   return []
 }
 
-const TRANSLATES = /\b(?:t|translate)\(/
+/** Whether a `.map` callback passes its item to `t(...)` or `translate(...)`, so the item is a key. */
+function translatesItem(callback: ts.Expression): boolean {
+  if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) return false
+  const item = callback.parameters[0]?.name
+  if (!item || !ts.isIdentifier(item)) return false
+  return new RegExp(`\\b(?:t|translate)\\(\\s*${item.text}\\b`).test(callback.getText())
+}
+
+const TABLE_SIBLINGS = new Set(['id', 'value', 'icon', 'shortcut', 'keys'])
+
+/** `name:` in an option or menu table: the object also carries an id, value, icon or shortcut. */
+function isTableName(node: ts.PropertyAssignment, file: ts.SourceFile): boolean {
+  if (propertyName(node.name, file) !== 'name' || !ts.isObjectLiteralExpression(node.parent))
+    return false
+  return node.parent.properties.some(
+    (property) =>
+      property !== node &&
+      (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
+      TABLE_SIBLINGS.has(propertyName(property.name, file)),
+  )
+}
 
 const propertyName = (name: ts.PropertyName, file: ts.SourceFile) =>
   ts.isStringLiteralLike(name) ? name.text : name.getText(file)
@@ -219,7 +240,8 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
   const hasEscape = (line: number) => {
     if (markerOn(line)) return true
     const above = lines[line - 1]?.trim() ?? ''
-    return markerOn(line - 1) && (above.startsWith('//') || above.startsWith('{/*'))
+    const commentOnly = above.startsWith('//') || (above.startsWith('{/*') && above.endsWith('*/}'))
+    return markerOn(line - 1) && commentOnly
   }
 
   const insideNamed = (node: ts.Node, names: ReadonlySet<string>) => {
@@ -253,8 +275,12 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
     if (hasEscape(line)) return
     findings.push({ line: line + 1, text: text.trim().replace(/\s+/g, ' ') })
   }
-  const reportLiterals = (expression: ts.Expression) => {
-    for (const literal of literalsOf(expression)) report(literal, literal.text)
+  const reportLiterals = (
+    expression: ts.Expression,
+    accept: (text: string) => boolean = () => true,
+  ) => {
+    for (const literal of literalsOf(expression))
+      if (accept(literal.text)) report(literal, literal.text)
   }
   const renderedStringArray = (expression: ts.Expression) => {
     const target =
@@ -264,7 +290,11 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
     return (
       ts.isIdentifier(target) &&
       stringArrays.has(target.text) &&
-      !TRANSLATES.test(expression.getText())
+      !(
+        ts.isCallExpression(expression) &&
+        expression.arguments[0] &&
+        translatesItem(expression.arguments[0])
+      )
     )
   }
   const reportStringArray = (name: string) => {
@@ -289,7 +319,10 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
       if (value && ts.isStringLiteral(value)) report(value, value.text)
       else if (value && ts.isJsxExpression(value) && value.expression)
         reportLiterals(value.expression)
-    } else if (ts.isPropertyAssignment(node) && isVisibleName(propertyName(node.name, file))) {
+    } else if (
+      ts.isPropertyAssignment(node) &&
+      (isVisibleName(propertyName(node.name, file)) || isTableName(node, file))
+    ) {
       reportLiterals(node.initializer)
     } else if (ts.isCallExpression(node)) {
       const callee = calleeName(node)
@@ -310,7 +343,10 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
                 )
                   reportLiterals(property.initializer)
         } else if (NOTICE_SETTER.test(callee.name)) {
-          for (const argument of node.arguments) reportLiterals(argument)
+          // A later argument is often a status word (`'uploading'`); only a sentence is a message.
+          node.arguments.forEach((argument, index) => {
+            reportLiterals(argument, index === 0 ? () => true : (text) => /\s/.test(text.trim()))
+          })
         } else if (DIALOG_FUNCTIONS.has(callee.name) && first) reportLiterals(first)
       }
     }

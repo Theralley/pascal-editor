@@ -95,6 +95,29 @@ describe('findHardcodedText', () => {
   })
 
   test.each([
+    [
+      'a fallback beside a translated key',
+      "const v = <ul>{['save'].map((k) => (ready ? t(k) : 'Missing translation'))}</ul>",
+      ['Missing translation'],
+    ],
+    [
+      'raw labels beside an unrelated translated tooltip',
+      "const v = <ul>{['Wall', 'Door'].map((n) => <li title={t('tip')}>{n}</li>)}</ul>",
+      ['Wall', 'Door'],
+    ],
+    [
+      'a comment-and-code line above',
+      'const v = (\n<div>\n{/* i18n-ignore */}<p>Ignored</p>\n<p>Shown</p>\n</div>\n)',
+      ['Shown'],
+    ],
+    ['defaultName', 'const v = <Row defaultName="Unnamed room" />', ['Unnamed room']],
+    ['name in an option table', "const rows = [{ id: 'wall', name: 'Wall' }]", ['Wall']],
+    ['name beside an icon', "const row = { icon: Box, name: 'Items' }", ['Items']],
+    [
+      'a sentence as a later setter argument',
+      "const f = () => setStatus(id, 'Upload failed, try again')",
+      ['Upload failed, try again'],
+    ],
     ['a lone key name outside a key context', 'const v = <Button>Delete</Button>', ['Delete']],
     ['Enter in a prop', 'const v = <Btn vrLabel="Enter VR" />', ['Enter VR']],
     ['a detail key', "const rows = [{ detail: 'Needs a roof' }]", ['Needs a roof']],
@@ -151,6 +174,8 @@ describe('findHardcodedText', () => {
   })
 
   test.each([
+    ['a name without table siblings', "const node = { name: 'Wall' }"],
+    ['a status word as a later setter argument', "const f = () => setStatus(levelId, 'uploading')"],
     ['a key name in a keys array', "const row = { keys: ['Ctrl', 'Delete'], action: 'x.y' }"],
     ['a key name in a kbd', 'const v = <kbd>Delete</kbd>'],
     ['a key name in a ShortcutToken', 'const v = <ShortcutToken value="Enter" />'],

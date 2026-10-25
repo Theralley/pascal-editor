@@ -582,6 +582,7 @@ for (const kind of ['table', 'table-design', 'shelf', 'design', 'nested']) {
         palette: undefined,
         selected: false,
         siblingEpoch,
+        locale: 'en' as const,
         unit: 'metric',
         metricNotation: 'meters',
         wallDimensionReference: 'centerline',

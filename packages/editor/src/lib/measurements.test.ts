@@ -300,6 +300,7 @@ describe('measurements in the active language', () => {
       ['1.5 cm garbage', 'en', null],
       ['1.5abc', 'en', null],
       ['', 'en', null],
+      ['9'.repeat(309), 'en', null],
     ] as const
     for (const [text, locale, expected] of cases)
       expect(parsePlainNumber(text, locale)).toBe(expected)

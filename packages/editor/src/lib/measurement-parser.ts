@@ -76,7 +76,8 @@ const COMPLETE_NUMBER = /^\s*[+-]?(?:\d+\.?\d*|\.\d+)\s*$/
 /** A whole number as typed (a Swedish comma allowed), or `null`: `1,5 cm garbage` is not 1.5. */
 export function parsePlainNumber(raw: string, locale?: Locale): number | null {
   const text = normalizeDecimalComma(raw, locale)
-  return COMPLETE_NUMBER.test(text) ? Number.parseFloat(text) : null
+  const value = COMPLETE_NUMBER.test(text) ? Number.parseFloat(text) : Number.NaN
+  return Number.isFinite(value) ? value : null
 }
 
 /**
