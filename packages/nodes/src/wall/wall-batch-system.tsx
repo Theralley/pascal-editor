@@ -129,11 +129,23 @@ function showOwnGeometry(nodeId: string) {
   if (mesh) revealBatchedWall(mesh)
 }
 
-export function revealBatchedWallsForCapture(): void {
+/** The merged meshes a walls-low capture left out of the picture: the walls it cuts draw themselves. */
+let setAside: Mesh[] = []
+
+export function revealBatchedWallsForCapture(event?: { wallsLow?: boolean }): void {
   for (const nodeId of batchByNode.keys()) showOwnGeometry(nodeId)
+  if (!event?.wallsLow) return
+  for (const records of batchesByLevel.values()) {
+    for (const { mesh } of records) {
+      mesh.visible = false
+      setAside.push(mesh)
+    }
+  }
 }
 
 export function holdBatchedWallsAfterCapture(): void {
+  for (const mesh of setAside) mesh.visible = true
+  setAside = []
   for (const nodeId of batchByNode.keys()) {
     const mesh = sceneRegistry.nodes.get(nodeId)
     if (mesh) hideBatchedWall(mesh)
@@ -352,7 +364,8 @@ function unbatchedWallCount(
 function swapBatchCut(cut: boolean) {
   for (const records of batchesByLevel.values()) {
     for (const record of records) {
-      record.mesh.material = cut ? cutMaterials(record.base) : record.base
+      const next = cut ? cutMaterials(record.base) : record.base
+      if (record.mesh.material !== next) record.mesh.material = next
     }
   }
 }
@@ -605,7 +618,8 @@ export function runBatchFrame(
   }
 
   const cut = useViewer.getState().wallMode === 'low'
-  if (cut !== batchesCut) {
+  // While cut, a source material remade since (a texture arrived) has a new clone to wear.
+  if (cut !== batchesCut || cut) {
     batchesCut = cut
     swapBatchCut(cut)
   }

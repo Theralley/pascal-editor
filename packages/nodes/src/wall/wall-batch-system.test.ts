@@ -1,7 +1,13 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { sceneRegistry, useScene } from '@pascal-app/core'
 import * as viewerExports from '@pascal-app/viewer'
-import { displayCutLimitY, SCENE_LAYER, useViewer, type WallMode } from '@pascal-app/viewer'
+import {
+  displayCutLimitY,
+  SCENE_LAYER,
+  uncutMaterials,
+  useViewer,
+  type WallMode,
+} from '@pascal-app/viewer'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -187,6 +193,31 @@ describe('WallBatchSystem walls low', () => {
     expect(root.children.find((child) => child.name === 'wall-batch')).toBe(batch)
     expect(batch.material).toEqual(own)
     expect(masked(batch.material)).toBe(false)
+  })
+
+  test('a walls-low capture leaves the merged mesh out, the walls it cuts draw themselves', () => {
+    const { batch, walls } = setupBatchedLevel()
+    revealBatchedWallsForCapture({ wallsLow: true })
+    expect(batch.visible).toBe(false)
+    expect(walls.every((wall) => wall.layers.isEnabled(SCENE_LAYER))).toBe(true)
+    holdBatchedWallsAfterCapture()
+    expect(batch.visible).toBe(true)
+    expect(walls.every((wall) => !wall.layers.isEnabled(SCENE_LAYER))).toBe(true)
+
+    revealBatchedWallsForCapture()
+    expect(batch.visible).toBe(true)
+    holdBatchedWallsAfterCapture()
+  })
+
+  test('a source material remade while low (a texture arrived) is worn by the next frame', () => {
+    const { batch, runFrame } = setupBatchedLevel(8, 'low')
+    const worn = (batch.material as Material[])[0]!
+    const source = uncutMaterials([worn])[0]!
+    source.needsUpdate = true
+    nowMs = 300
+    runFrame({} as never, 0)
+    expect((batch.material as Material[])[0]).not.toBe(worn)
+    expect(uncutMaterials(batch.material as Material[])[0]).toBe(source)
   })
 
   test('a level merged while low is cut from the start', () => {
