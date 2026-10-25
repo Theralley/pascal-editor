@@ -6,8 +6,10 @@ import {
   FirstPersonControls,
   ParametricViewerRooms,
   type SceneGraph,
+  translate,
   useEditor,
   useFirstPersonHud,
+  useT,
   useViewerFloorDisplay,
   ViewerControlsBar,
   ViewerHoverLabel,
@@ -23,6 +25,7 @@ import { Component, type ReactNode, useCallback, useEffect, useRef, useState } f
 import { flushSync } from 'react-dom'
 import { EmbedCameraControls } from '@/components/embed-camera-controls'
 import { cn } from '@/lib/utils'
+import { messages } from './messages'
 
 interface EmbedViewerProps {
   id: string
@@ -44,6 +47,7 @@ const SWITCHER_POSITION =
  * mode without the back button, or the bare 3D view when `chrome` is off.
  */
 export function EmbedViewer({ id, name, graph, chrome = true }: EmbedViewerProps) {
+  const t = useT(messages)
   const [loaded, setLoaded] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const [mode, setMode] = useState<ViewerStageMode>('3d')
@@ -143,7 +147,7 @@ export function EmbedViewer({ id, name, graph, chrome = true }: EmbedViewerProps
             src="/pascal-logo-shape.svg"
             width={14}
           />
-          Made with Pascal
+          {t('embed.madeWith')}
         </a>
       )}
     </div>
@@ -254,10 +258,7 @@ class ViewerErrorBoundary extends Component<{ children: ReactNode }, { failed: b
     if (!this.state.failed) return this.props.children
     return (
       <div className="flex h-full w-full items-center justify-center p-6 text-center">
-        <p className="max-w-sm text-neutral-600 text-sm">
-          This project could not be shown in 3D here. Try a browser with hardware acceleration
-          turned on.
-        </p>
+        <p className="max-w-sm text-neutral-600 text-sm">{translate(messages, 'embed.failed')}</p>
       </div>
     )
   }

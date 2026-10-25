@@ -1,12 +1,14 @@
 'use client'
 
+import { type Locale, useLocale, useT } from '@pascal-app/editor'
 import { Copy, GitFork, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { CONFLICT_MESSAGE, requestDuplicate } from '@/lib/duplicate-scene'
+import { conflictMessage, requestDuplicate } from '@/lib/duplicate-scene'
 import { cn } from '@/lib/utils'
 import { PascalMark, PRIMARY_PILL, SECONDARY_PILL } from './app-shell'
+import { messages } from './messages'
 
 export interface SceneCardData {
   id: string
@@ -15,12 +17,23 @@ export interface SceneCardData {
   nodeCount: number
   thumbnailUrl: string | null
   updatedAt: string
-  updatedLabel: string
 }
 
 type Dialog = 'rename' | 'fork' | 'delete' | null
 
+/** A short date in the active language; UTC so the server's markup and the browser's agree. */
+function formatUpdated(iso: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale === 'sv' ? 'sv-SE' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(iso))
+}
+
 export function SceneCard({ scene }: { scene: SceneCardData }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
@@ -87,8 +100,14 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
             </p>
           )}
           <p className="mt-0.5 text-muted-foreground text-xs">
-            {scene.nodeCount} {scene.nodeCount === 1 ? 'node' : 'nodes'} · Updated{' '}
-            <time dateTime={scene.updatedAt}>{scene.updatedLabel}</time>
+            {t.rich(
+              'card.meta',
+              { time: (text) => <time dateTime={scene.updatedAt}>{text}</time> },
+              {
+                count: t('card.nodes', { count: scene.nodeCount }),
+                date: formatUpdated(scene.updatedAt, locale),
+              },
+            )}
           </p>
         </div>
       </Link>
@@ -97,7 +116,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
         <button
           aria-expanded={menuOpen}
           aria-haspopup="menu"
-          aria-label={`Actions for ${scene.name}`}
+          aria-label={t('card.actions', { name: scene.name })}
           className={cn(
             'flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground',
             menuOpen && 'bg-background text-foreground',
@@ -119,7 +138,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               type="button"
             >
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-              Rename
+              {t('common.rename')}
             </button>
             <button
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
@@ -128,7 +147,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               type="button"
             >
               <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-              Duplicate
+              {t('common.duplicate')}
             </button>
             <button
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
@@ -137,7 +156,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               type="button"
             >
               <GitFork className="h-3.5 w-3.5 text-muted-foreground" />
-              Make my own version…
+              {t('card.makeOwn')}
             </button>
             <button
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-destructive hover:bg-destructive/10"
@@ -146,7 +165,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               type="button"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Delete
+              {t('common.delete')}
             </button>
           </div>
         )}
@@ -155,7 +174,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
       {dialog === 'rename' && <RenameDialog onClose={() => setDialog(null)} scene={scene} />}
       {dialog === 'fork' && (
         <MakeOwnVersionDialog
-          initialName={`${scene.name} (my version)`.slice(0, 200)}
+          initialName={t('card.myVersion', { name: scene.name }).slice(0, 200)}
           onClose={() => setDialog(null)}
           onSubmit={async (name) => {
             const result = await requestDuplicate(scene.id, { name, version: scene.version })
@@ -210,6 +229,7 @@ function ModalFrame({
 }
 
 function RenameDialog({ scene, onClose }: { scene: SceneCardData; onClose: () => void }) {
+  const t = useT(messages)
   const router = useRouter()
   const dialogRef = useModal(onClose)
   const [name, setName] = useState(scene.name)
@@ -232,27 +252,27 @@ function RenameDialog({ scene, onClose }: { scene: SceneCardData; onClose: () =>
         body: JSON.stringify({ name: trimmed }),
       })
       if (response.status === 409) {
-        setError(CONFLICT_MESSAGE)
+        setError(conflictMessage())
         return
       }
       if (!response.ok) {
-        setError(`Rename failed (${response.status})`)
+        setError(t('card.renameFailed', { status: response.status }))
         return
       }
       dialogRef.current?.close()
       router.refresh()
     } catch {
-      setError('Could not reach the editor.')
+      setError(t('error.unreachable'))
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <ModalFrame dialogRef={dialogRef} title="Rename project">
+    <ModalFrame dialogRef={dialogRef} title={t('card.renameTitle')}>
       <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
         <input
-          aria-label="Project name"
+          aria-label={t('card.projectName')}
           // biome-ignore lint/a11y/noAutofocus: the dialog exists to edit this field
           autoFocus
           className="rounded-lg border border-input bg-accent px-3 py-2 text-sm outline-none focus:border-ring"
@@ -269,10 +289,10 @@ function RenameDialog({ scene, onClose }: { scene: SceneCardData; onClose: () =>
             onClick={() => dialogRef.current?.close()}
             type="button"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className={PRIMARY_PILL} disabled={pending || !name.trim()} type="submit">
-            {pending ? 'Saving…' : 'Save'}
+            {pending ? t('card.saving') : t('card.save')}
           </button>
         </div>
       </form>
@@ -290,6 +310,7 @@ export function MakeOwnVersionDialog({
   onClose: () => void
   onSubmit: (name: string) => Promise<string | null>
 }) {
+  const t = useT(messages)
   const dialogRef = useModal(onClose)
   const [name, setName] = useState(initialName)
   const [error, setError] = useState<string | null>(null)
@@ -308,13 +329,11 @@ export function MakeOwnVersionDialog({
   }
 
   return (
-    <ModalFrame dialogRef={dialogRef} title="Make my own version">
-      <p className="mt-2 text-muted-foreground text-sm">
-        Starts a private copy you can change freely. The original stays as it is.
-      </p>
+    <ModalFrame dialogRef={dialogRef} title={t('card.makeOwnTitle')}>
+      <p className="mt-2 text-muted-foreground text-sm">{t('card.makeOwnBody')}</p>
       <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
         <input
-          aria-label="Name of your version"
+          aria-label={t('card.versionName')}
           // biome-ignore lint/a11y/noAutofocus: the dialog exists to edit this field
           autoFocus
           className="rounded-lg border border-input bg-accent px-3 py-2 text-sm outline-none focus:border-ring"
@@ -331,10 +350,10 @@ export function MakeOwnVersionDialog({
             onClick={() => dialogRef.current?.close()}
             type="button"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className={PRIMARY_PILL} disabled={pending || !name.trim()} type="submit">
-            {pending ? 'Copying…' : 'Make a copy'}
+            {pending ? t('card.copying') : t('card.makeCopy')}
           </button>
         </div>
       </form>
@@ -343,6 +362,7 @@ export function MakeOwnVersionDialog({
 }
 
 function DeleteDialog({ scene, onClose }: { scene: SceneCardData; onClose: () => void }) {
+  const t = useT(messages)
   const router = useRouter()
   const dialogRef = useModal(onClose)
   const [error, setError] = useState<string | null>(null)
@@ -357,31 +377,31 @@ function DeleteDialog({ scene, onClose }: { scene: SceneCardData; onClose: () =>
         headers: { 'If-Match': `"${scene.version}"` },
       })
       if (response.status === 409) {
-        setError(CONFLICT_MESSAGE)
+        setError(conflictMessage())
         return
       }
       if (!response.ok && response.status !== 404) {
-        setError(`Delete failed (${response.status})`)
+        setError(t('card.deleteFailed', { status: response.status }))
         return
       }
       dialogRef.current?.close()
       router.refresh()
     } catch {
-      setError('Could not reach the editor.')
+      setError(t('error.unreachable'))
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <ModalFrame dialogRef={dialogRef} title="Delete project?">
+    <ModalFrame dialogRef={dialogRef} title={t('card.deleteTitle')}>
       <p className="mt-2 text-muted-foreground text-sm">
-        “{scene.name}” will be removed from this editor, along with everything in it.
+        {t('card.deleteBody', { name: scene.name })}
       </p>
       {error && <p className="mt-3 text-destructive text-xs">{error}</p>}
       <div className="mt-5 flex justify-end gap-2">
         <button className={SECONDARY_PILL} onClick={() => dialogRef.current?.close()} type="button">
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           className="inline-flex items-center justify-center rounded-lg bg-destructive px-4 py-1.5 font-medium text-sm text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
@@ -389,7 +409,7 @@ function DeleteDialog({ scene, onClose }: { scene: SceneCardData; onClose: () =>
           onClick={handleDelete}
           type="button"
         >
-          {pending ? 'Deleting…' : 'Delete'}
+          {pending ? t('card.deleting') : t('common.delete')}
         </button>
       </div>
     </ModalFrame>

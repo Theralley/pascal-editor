@@ -1,9 +1,11 @@
 'use client'
 
 import { type ValidateBuildJsonResult, validateBuildJson } from '@pascal-app/core'
+import { translate, useT } from '@pascal-app/editor'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MAX_IMPORT_BYTES, parseImportSrc } from '@/lib/import-src'
+import { messages } from './messages'
 
 type Phase =
   | { kind: 'fetching' }
@@ -26,8 +28,9 @@ type Phase =
  */
 export function ImportClient({ src, name }: { src: string | null; name: string | null }) {
   const router = useRouter()
+  const t = useT(messages)
   const [phase, setPhase] = useState<Phase>({ kind: 'fetching' })
-  const [sceneName, setSceneName] = useState(name ?? 'Imported scene')
+  const [sceneName, setSceneName] = useState(name ?? '')
   // Synchronous re-entry guard: a second tap can fire before React
   // re-renders into 'creating', and two scenes would be created (review
   // feedback — especially likely on the mobile hand-off).
@@ -55,39 +58,41 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
       } catch {
         update({
           kind: 'error',
-          message:
-            'The file could not be fetched. The server hosting it must allow cross-origin requests (CORS).',
+          message: translate(messages, 'fetchFailedCors'),
         })
         return
       }
       if (!response.ok) {
-        update({ kind: 'error', message: `The file could not be fetched (${response.status}).` })
+        update({
+          kind: 'error',
+          message: translate(messages, 'fetchFailedStatus', { status: response.status }),
+        })
         return
       }
       const declared = Number(response.headers.get('content-length') ?? 0)
       if (declared > MAX_IMPORT_BYTES) {
-        update({ kind: 'error', message: 'The file is too large to import.' })
+        update({ kind: 'error', message: translate(messages, 'tooLarge') })
         return
       }
       let text: string
       try {
         text = await response.text()
       } catch {
-        update({ kind: 'error', message: 'The file could not be read.' })
+        update({ kind: 'error', message: translate(messages, 'unreadable') })
         return
       }
       // Blob measures BYTES — text.length counts UTF-16 code units, and
       // a graph full of non-ASCII names could pass here yet still 413
       // at the store (review feedback).
       if (new Blob([text]).size > MAX_IMPORT_BYTES) {
-        update({ kind: 'error', message: 'The file is too large to import.' })
+        update({ kind: 'error', message: translate(messages, 'tooLarge') })
         return
       }
       let parsed: unknown
       try {
         parsed = JSON.parse(text)
       } catch {
-        update({ kind: 'error', message: 'The file could not be parsed as JSON.' })
+        update({ kind: 'error', message: translate(messages, 'notJson') })
         return
       }
       update({ kind: 'review', result: validateBuildJson(parsed) })
@@ -109,7 +114,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: sceneName || 'Imported scene',
+          name: sceneName.trim() || translate(messages, 'defaultName'),
           graph: phase.result.parsed,
         }),
       })
@@ -119,10 +124,10 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
           result: review,
           createError:
             response.status === 401 || response.status === 403
-              ? 'You need to be signed in to import a scene.'
+              ? translate(messages, 'signInNeeded')
               : response.status === 413
-                ? 'The scene is too large for the scene store.'
-                : `Creating the scene failed (${response.status}).`,
+                ? translate(messages, 'storeTooLarge')
+                : translate(messages, 'createFailedStatus', { status: response.status }),
         })
         return
       }
@@ -132,7 +137,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
       setPhase({
         kind: 'review',
         result: review,
-        createError: error instanceof Error ? error.message : 'Creating the scene failed.',
+        createError: error instanceof Error ? error.message : translate(messages, 'createFailed'),
       })
     } finally {
       // Released in every path: after an error the user may retry.
@@ -141,10 +146,10 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
   }, [phase, router, sceneName])
 
   if (phase.kind === 'fetching') {
-    return <p className="text-muted-foreground text-sm">Fetching the scene…</p>
+    return <p className="text-muted-foreground text-sm">{t('fetching')}</p>
   }
   if (phase.kind === 'creating') {
-    return <p className="text-muted-foreground text-sm">Creating the scene…</p>
+    return <p className="text-muted-foreground text-sm">{t('creating')}</p>
   }
   if (phase.kind === 'error') {
     return (
@@ -161,19 +166,22 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
     <div className="space-y-6">
       <div className="rounded-xl border border-border/60 bg-background p-6">
         <label className="mb-1 block font-medium text-muted-foreground text-xs uppercase">
-          Scene name
+          {t('sceneName')}
         </label>
         <input
           className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
           onChange={(event) => setSceneName(event.target.value)}
+          placeholder={t('defaultName')}
           value={sceneName}
         />
 
-        <p className="mt-4 mb-1 font-medium text-muted-foreground text-xs uppercase">Contents</p>
+        <p className="mt-4 mb-1 font-medium text-muted-foreground text-xs uppercase">
+          {t('contents')}
+        </p>
         <p className="text-sm">
-          {result.stats.total} node{result.stats.total === 1 ? '' : 's'}
+          {t('nodes', { count: result.stats.total })}
           {result.stats.floorAreaM2 > 0
-            ? ` · ${Math.round(result.stats.floorAreaM2)} m² of floor`
+            ? t('floorArea', { area: Math.round(result.stats.floorAreaM2) })
             : ''}
         </p>
         {typeEntries.length > 0 && (
@@ -223,7 +231,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
         onClick={handleImport}
         type="button"
       >
-        {phase.createError ? 'Try again' : 'Import as a new scene'}
+        {phase.createError ? t('retry') : t('importAsNew')}
       </button>
     </div>
   )

@@ -11,12 +11,14 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  type MessageKey,
   SegmentedControl,
   useCanChooseLevelMode,
   useEditor,
   useFloorplanAnnotationVisibility,
   useFloorplanMode,
   useSidebarStore,
+  useT,
   VIEW_SHORTCUT_KEYS,
   visibleScene,
 } from '@pascal-app/editor'
@@ -25,10 +27,13 @@ import {
   type EdgeMode,
   getSceneTheme,
   LEVEL_MODE_OPTIONS,
+  type LevelMode,
   OPENING_DISPLAY_OPTIONS,
+  type OpeningDisplay,
   SCENE_THEMES,
   useViewer,
   WALL_MODE_OPTIONS,
+  type WallMode,
 } from '@pascal-app/viewer'
 import {
   Box,
@@ -56,6 +61,7 @@ import {
 import { type ReactNode, useCallback, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { messages } from './messages'
 import { Tooltip, TooltipContent, TooltipTrigger } from './toolbar-tooltip'
 
 const TOOLBAR_CONTAINER =
@@ -91,41 +97,74 @@ function ToolbarTooltip({ children, label }: { children: ReactNode; label: strin
   )
 }
 
+type Key = MessageKey<typeof messages>
+
 const SHADING_OPTIONS = [
-  { id: 'solid', name: 'Solid', detail: 'Flat and fast — no ambient occlusion', icon: Box },
-  { id: 'rendered', name: 'Rendered', detail: 'Full ambient occlusion', icon: Sparkles },
-] as const
+  { id: 'solid', nameKey: 'tb.shadingSolid', detailKey: 'tb.shadingSolidDetail', icon: Box },
+  {
+    id: 'rendered',
+    nameKey: 'tb.shadingRendered',
+    detailKey: 'tb.shadingRenderedDetail',
+    icon: Sparkles,
+  },
+] as const satisfies readonly { id: string; nameKey: Key; detailKey: Key; icon: unknown }[]
 
 const FLOORPLAN_ANNOTATION_OPTIONS = [
-  { id: 'automaticDimensions', name: 'Automatic dimensions', icon: Ruler },
-  { id: 'manualDimensions', name: 'Manual dimensions', icon: Ruler },
-  { id: 'measurements', name: 'Measurements', icon: ScanLine },
-  { id: 'openingMarks', name: 'Door/window marks', icon: Tag },
-  { id: 'structuralGrids', name: 'Structural grids & column centers', icon: Grid2X2 },
-  { id: 'roomLabels', name: 'Room labels', icon: SquareUserRound },
-  { id: 'stairAnnotations', name: 'Stair annotations', icon: Footprints },
-] as const
+  { id: 'automaticDimensions', nameKey: 'tb.annAutoDims', icon: Ruler },
+  { id: 'manualDimensions', nameKey: 'tb.annManualDims', icon: Ruler },
+  { id: 'measurements', nameKey: 'tb.annMeasurements', icon: ScanLine },
+  { id: 'openingMarks', nameKey: 'tb.annOpeningMarks', icon: Tag },
+  { id: 'structuralGrids', nameKey: 'tb.annGrids', icon: Grid2X2 },
+  { id: 'roomLabels', nameKey: 'tb.annRoomLabels', icon: SquareUserRound },
+  { id: 'stairAnnotations', nameKey: 'tb.annStair', icon: Footprints },
+] as const satisfies readonly { id: string; nameKey: Key; icon: unknown }[]
 
 const FLOORPLAN_MODE_OPTIONS = [
-  {
-    id: 'default',
-    name: 'Default',
-    detail: 'Clean plan; dimensions appear with selection',
-  },
-  {
-    id: 'expert',
-    name: 'Expert',
-    detail: 'Full documentation and annotation controls',
-  },
-] as const
+  { id: 'default', nameKey: 'tb.modeDefault', detailKey: 'tb.modeDefaultDetail' },
+  { id: 'expert', nameKey: 'tb.modeExpert', detailKey: 'tb.modeExpertDetail' },
+] as const satisfies readonly { id: string; nameKey: Key; detailKey: Key }[]
 
 const FLOORPLAN_WALL_DIMENSION_REFERENCE_OPTIONS = [
-  { id: 'finished-faces', name: 'Finished faces', detail: 'Full wall thickness' },
-  { id: 'centerline', name: 'Wall centerline', detail: 'Single wall axis' },
-  { id: 'stud-faces', name: 'Face of stud', detail: 'Structural core face' },
-] as const
+  { id: 'finished-faces', nameKey: 'tb.refFinished', detailKey: 'tb.refFinishedDetail' },
+  { id: 'centerline', nameKey: 'tb.refCenter', detailKey: 'tb.refCenterDetail' },
+  { id: 'stud-faces', nameKey: 'tb.refStud', detailKey: 'tb.refStudDetail' },
+] as const satisfies readonly { id: string; nameKey: Key; detailKey: Key }[]
+
+const WALL_MODE_KEYS = {
+  up: 'tb.wallUp',
+  cutaway: 'tb.wallCutaway',
+  low: 'tb.wallLow',
+  down: 'tb.wallDown',
+  translucent: 'tb.wallTranslucent',
+} as const satisfies Record<WallMode, Key>
+
+const LEVEL_MODE_KEYS = {
+  stacked: 'tb.levelStacked',
+  exploded: 'tb.levelExploded',
+  solo: 'tb.levelSolo',
+} as const satisfies Record<Exclude<LevelMode, 'manual'>, Key>
+
+const OPENING_DISPLAY_KEYS = {
+  marks: { nameKey: 'tb.openingMarks', detailKey: 'tb.openingMarksDetail' },
+  hidden: { nameKey: 'tb.openingHidden', detailKey: 'tb.openingHiddenDetail' },
+  full: { nameKey: 'tb.openingFull', detailKey: 'tb.openingFullDetail' },
+} as const satisfies Record<OpeningDisplay, { nameKey: Key; detailKey: Key }>
+
+// A theme the catalog does not know yet keeps the name it ships with.
+const SCENE_THEME_KEYS: Readonly<Record<string, Key>> = {
+  studio: 'tb.themeStudio',
+  paper: 'tb.themePaper',
+  sunset: 'tb.themeSunset',
+  overcast: 'tb.themeOvercast',
+  blueprint: 'tb.themeBlueprint',
+  mediterranean: 'tb.themeMediterranean',
+  twilight: 'tb.themeTwilight',
+  night: 'tb.themeNight',
+  verdant: 'tb.themeVerdant',
+}
 
 function CollapseSidebarButton() {
+  const t = useT(messages)
   const isCollapsed = useSidebarStore((state) => state.isCollapsed)
   const setIsCollapsed = useSidebarStore((state) => state.setIsCollapsed)
 
@@ -135,9 +174,9 @@ function CollapseSidebarButton() {
 
   return (
     <div className={TOOLBAR_CONTAINER}>
-      <ToolbarTooltip label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+      <ToolbarTooltip label={isCollapsed ? t('tb.expand') : t('tb.collapse')}>
         <button
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? t('tb.expand') : t('tb.collapse')}
           className={TOOLBAR_BTN}
           onClick={toggle}
           type="button"
@@ -159,17 +198,18 @@ const SEGMENTS = 'h-8 min-h-0 w-auto rounded-none border-0 bg-transparent p-1 [&
 const WALL_SEGMENTS = `${SEGMENTS} max-w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:flex-none [&>button]:px-2.5 [&>button]:whitespace-nowrap [&>button>span]:whitespace-nowrap`
 
 function LevelModeToggle() {
+  const t = useT(messages)
   const levelMode = useViewer((state) => state.levelMode)
   const setLevelMode = useViewer((state) => state.setLevelMode)
   if (!useCanChooseLevelMode()) return null
 
   return (
     <SegmentedControl
-      aria-label="Levels"
+      aria-label={t('tb.levels')}
       className={SEGMENTS}
       mixed={levelMode === 'manual'}
       onChange={setLevelMode}
-      options={[...LEVEL_MODE_OPTIONS]}
+      options={LEVEL_MODE_OPTIONS.map(({ value }) => ({ value, label: t(LEVEL_MODE_KEYS[value]) }))}
       radio
       value={levelMode}
     />
@@ -177,22 +217,25 @@ function LevelModeToggle() {
 }
 
 function WallModeToggle() {
+  const t = useT(messages)
   const wallMode = useViewer((state) => state.wallMode)
   const setWallMode = useViewer((state) => state.setWallMode)
 
   // A step with U or J can land on a segment the row has scrolled away from.
   useEffect(() => {
     document
-      .querySelector<HTMLElement>('[role="radiogroup"][aria-label="Walls"] [aria-checked="true"]')
+      .querySelector<HTMLElement>(
+        `[role="radiogroup"][aria-label="${CSS.escape(t('tb.walls'))}"] [aria-checked="true"]`,
+      )
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [wallMode])
+  }, [wallMode, t])
 
   return (
     <SegmentedControl
-      aria-label="Walls"
+      aria-label={t('tb.walls')}
       className={WALL_SEGMENTS}
       onChange={setWallMode}
-      options={[...WALL_MODE_OPTIONS]}
+      options={WALL_MODE_OPTIONS.map(({ value }) => ({ value, label: t(WALL_MODE_KEYS[value]) }))}
       radio
       value={wallMode}
     />
@@ -200,15 +243,19 @@ function WallModeToggle() {
 }
 
 function RoofToggle() {
+  const t = useT(messages)
   const showRoofs = useViewer((state) => state.showRoofs)
   const setShowRoofs = useViewer((state) => state.setShowRoofs)
 
   return (
     <ToolbarTooltip
-      label={`${showRoofs ? 'Hide' : 'Show'} roofs (${VIEW_SHORTCUT_KEYS.roofs.toUpperCase()})`}
+      label={t('tb.roofsToggle', {
+        action: showRoofs ? t('tb.hide') : t('tb.show'),
+        key: VIEW_SHORTCUT_KEYS.roofs.toUpperCase(),
+      })}
     >
       <button
-        aria-label="Roofs"
+        aria-label={t('tb.roofs')}
         aria-pressed={showRoofs}
         className={cn(TOOLBAR_BTN, !showRoofs && 'bg-white/10 text-foreground/90')}
         onClick={() => setShowRoofs(!showRoofs)}
@@ -224,20 +271,15 @@ function RoofToggle() {
 // camera projection, units, render mode, edges and scene theme.
 
 const EDGE_OPTIONS = [
-  { id: 'off', name: 'Off', detail: 'No edge lines' },
-  { id: 'soft', name: 'Soft', detail: 'Faint outline of major creases' },
-  { id: 'strong', name: 'Strong', detail: 'Crisp, opaque edge lines' },
-] as const satisfies readonly { id: EdgeMode; name: string; detail: string }[]
-
-const OPENING_DISPLAY_DETAIL = {
-  marks: 'Doors as marks on the floor, windows hidden',
-  hidden: 'Doors and windows left out',
-  full: 'Doors and windows as built',
-} as const
+  { id: 'off', nameKey: 'tb.edgesOff', detailKey: 'tb.edgesOffDetail' },
+  { id: 'soft', nameKey: 'tb.edgesSoft', detailKey: 'tb.edgesSoftDetail' },
+  { id: 'strong', nameKey: 'tb.edgesStrong', detailKey: 'tb.edgesStrongDetail' },
+] as const satisfies readonly { id: EdgeMode; nameKey: Key; detailKey: Key }[]
 
 const SUBMENU_CONTENT_CLASS = 'min-w-56 rounded-xl border-border/45 bg-popover/95 backdrop-blur-xl'
 
 function DisplayMenu() {
+  const t = useT(messages)
   const scene = useEditor(visibleScene)
   const showGrid = useViewer((state) => state.showGrid)
   const setShowGrid = useViewer((state) => state.setShowGrid)
@@ -279,6 +321,10 @@ function DisplayMenu() {
     SHADING_OPTIONS.find((option) => option.id === shading) ?? SHADING_OPTIONS[0]
   const activeEdges = EDGE_OPTIONS.find((option) => option.id === edges) ?? EDGE_OPTIONS[0]
   const activeTheme = getSceneTheme(sceneTheme)
+  const sceneThemeName = (theme: { id: string; name: string }) => {
+    const key = SCENE_THEME_KEYS[theme.id]
+    return key ? t(key) : theme.name
+  }
   const activeOpenings =
     OPENING_DISPLAY_OPTIONS.find((option) => option.value === openingDisplay) ??
     OPENING_DISPLAY_OPTIONS[0]
@@ -291,15 +337,15 @@ function DisplayMenu() {
 
   return (
     <DropdownMenu>
-      <ToolbarTooltip label="Display settings">
+      <ToolbarTooltip label={t('tb.displaySettings')}>
         <DropdownMenuTrigger asChild>
           <button
-            aria-label="Display settings"
+            aria-label={t('tb.displaySettings')}
             className={cn(TOOLBAR_BTN, 'w-auto gap-1.5 px-2.5 text-foreground/90')}
             type="button"
           >
             <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-            <span className="font-medium text-xs">Display</span>
+            <span className="font-medium text-xs">{t('tb.display')}</span>
           </button>
         </DropdownMenuTrigger>
       </ToolbarTooltip>
@@ -314,8 +360,10 @@ function DisplayMenu() {
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <DoorOpen className="h-4 w-4" />
-              <span>Openings</span>
-              <span className="ml-auto text-muted-foreground text-xs">{activeOpenings?.label}</span>
+              <span>{t('tb.openings')}</span>
+              <span className="ml-auto text-muted-foreground text-xs">
+                {activeOpenings ? t(OPENING_DISPLAY_KEYS[activeOpenings.value].nameKey) : null}
+              </span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
               {OPENING_DISPLAY_OPTIONS.map((option) => (
@@ -324,9 +372,11 @@ function DisplayMenu() {
                   onSelect={() => setOpeningDisplay(option.value)}
                 >
                   <div className="flex flex-col">
-                    <span className="text-foreground">{option.label}</span>
+                    <span className="text-foreground">
+                      {t(OPENING_DISPLAY_KEYS[option.value].nameKey)}
+                    </span>
                     <span className="text-muted-foreground text-xs">
-                      {OPENING_DISPLAY_DETAIL[option.value]}
+                      {t(OPENING_DISPLAY_KEYS[option.value].detailKey)}
                     </span>
                   </div>
                   {openingDisplay === option.value ? (
@@ -339,7 +389,7 @@ function DisplayMenu() {
         ) : null}
         <DropdownMenuItem onSelect={(e) => keepOpen(e, () => setShowGrid(!showGrid))}>
           <Grid2X2 className="h-4 w-4" />
-          <span>Grid</span>
+          <span>{t('tb.grid')}</span>
           {showGrid ? (
             <Eye className="ml-auto h-4 w-4 text-foreground" />
           ) : (
@@ -351,7 +401,7 @@ function DisplayMenu() {
             onSelect={(e) => keepOpen(e, () => setShowMeasurements(!showMeasurements))}
           >
             <Ruler className="h-4 w-4" />
-            <span>{scene === 'split' ? '3D measurements' : 'Measurements'}</span>
+            <span>{scene === 'split' ? t('tb.measurements3d') : t('tb.measurements')}</span>
             {showMeasurements ? (
               <Eye className="ml-auto h-4 w-4 text-foreground" />
             ) : (
@@ -364,17 +414,17 @@ function DisplayMenu() {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Layers3 className="h-4 w-4" />
-                <span>Floor plan mode</span>
+                <span>{t('tb.planMode')}</span>
                 <span className="ml-auto text-muted-foreground text-xs">
-                  {floorplanMode === 'default' ? 'Default' : 'Expert'}
+                  {floorplanMode === 'default' ? t('tb.modeDefault') : t('tb.modeExpert')}
                 </span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
                 {FLOORPLAN_MODE_OPTIONS.map((option) => (
                   <DropdownMenuItem key={option.id} onSelect={() => setFloorplanMode(option.id)}>
                     <div className="flex flex-col">
-                      <span className="text-foreground">{option.name}</span>
-                      <span className="text-muted-foreground text-xs">{option.detail}</span>
+                      <span className="text-foreground">{t(option.nameKey)}</span>
+                      <span className="text-muted-foreground text-xs">{t(option.detailKey)}</span>
                     </div>
                     {floorplanMode === option.id ? (
                       <Check className="ml-auto h-4 w-4 text-foreground" />
@@ -388,7 +438,7 @@ function DisplayMenu() {
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Layers3 className="h-4 w-4" />
-                    <span>Floor plan annotations</span>
+                    <span>{t('tb.planAnnotations')}</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
                     {FLOORPLAN_ANNOTATION_OPTIONS.map((option) => {
@@ -402,7 +452,7 @@ function DisplayMenu() {
                           }
                         >
                           <OptionIcon className="h-4 w-4" />
-                          <span>{option.name}</span>
+                          <span>{t(option.nameKey)}</span>
                           {visible ? (
                             <Eye className="ml-auto h-4 w-4 text-foreground" />
                           ) : (
@@ -416,13 +466,14 @@ function DisplayMenu() {
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Ruler className="h-4 w-4" />
-                    <span>Wall dimensions</span>
+                    <span>{t('tb.wallDimensions')}</span>
                     <span className="ml-auto text-muted-foreground text-xs">
-                      {
-                        FLOORPLAN_WALL_DIMENSION_REFERENCE_OPTIONS.find(
+                      {(() => {
+                        const reference = FLOORPLAN_WALL_DIMENSION_REFERENCE_OPTIONS.find(
                           (option) => option.id === wallDimensionReference,
-                        )?.name
-                      }
+                        )
+                        return reference ? t(reference.nameKey) : null
+                      })()}
                     </span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
@@ -434,8 +485,10 @@ function DisplayMenu() {
                         }
                       >
                         <div className="flex flex-col">
-                          <span className="text-foreground">{option.name}</span>
-                          <span className="text-muted-foreground text-xs">{option.detail}</span>
+                          <span className="text-foreground">{t(option.nameKey)}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {t(option.detailKey)}
+                          </span>
                         </div>
                         {wallDimensionReference === option.id ? (
                           <Check className="ml-auto h-4 w-4 text-foreground" />
@@ -450,15 +503,17 @@ function DisplayMenu() {
         ) : null}
         <DropdownMenuItem onSelect={(e) => keepOpen(e, () => setMagneticSnap(!magneticSnap))}>
           <Magnet className="h-4 w-4" />
-          <span>Magnetic snap</span>
+          <span>{t('tb.magneticSnap')}</span>
           <span className="ml-auto text-muted-foreground text-xs">
-            {magneticSnap ? 'On' : 'Off'}
+            {magneticSnap ? t('controls.on') : t('controls.off')}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={(e) => keepOpen(e, () => setShadows(!shadows))}>
           <Contrast className="h-4 w-4" />
-          <span>Shadows</span>
-          <span className="ml-auto text-muted-foreground text-xs">{shadows ? 'On' : 'Off'}</span>
+          <span>{t('tb.shadows')}</span>
+          <span className="ml-auto text-muted-foreground text-xs">
+            {shadows ? t('controls.on') : t('controls.off')}
+          </span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={(e) =>
@@ -472,9 +527,9 @@ function DisplayMenu() {
             icon={cameraMode === 'perspective' ? 'icon-park-outline:perspective' : 'vaadin:grid'}
             width={16}
           />
-          <span>Camera</span>
+          <span>{t('tb.camera')}</span>
           <span className="ml-auto text-muted-foreground text-xs">
-            {cameraMode === 'perspective' ? 'Perspective' : 'Orthographic'}
+            {cameraMode === 'perspective' ? t('tb.perspective') : t('tb.orthographic')}
           </span>
         </DropdownMenuItem>
         <DropdownMenuSub>
@@ -482,17 +537,17 @@ function DisplayMenu() {
             <span className="flex h-4 w-4 items-center justify-center font-semibold text-[10px]">
               {unit === 'imperial' ? 'ft' : metricNotation === 'millimeters' ? 'mm' : 'm'}
             </span>
-            <span>Units</span>
+            <span>{t('tb.units')}</span>
             <span className="ml-auto text-muted-foreground text-xs">
               {unit === 'imperial'
-                ? 'Feet & inches'
+                ? t('tb.feetInches')
                 : metricNotation === 'millimeters'
-                  ? 'Millimeters'
-                  : 'Meters'}
+                  ? t('tb.millimeters')
+                  : t('tb.meters')}
               {unitSource === 'project'
-                ? ' · Project default'
+                ? t('tb.projectDefault')
                 : unitSource === 'local'
-                  ? ' · Your choice'
+                  ? t('tb.yourChoice')
                   : ''}
             </span>
           </DropdownMenuSubTrigger>
@@ -501,7 +556,7 @@ function DisplayMenu() {
               <span className="flex h-4 w-4 items-center justify-center font-semibold text-[10px]">
                 m
               </span>
-              <span>Meters</span>
+              <span>{t('tb.meters')}</span>
               {unit === 'metric' && metricNotation === 'meters' ? (
                 <Check className="ml-auto h-4 w-4 text-foreground" />
               ) : null}
@@ -510,7 +565,7 @@ function DisplayMenu() {
               <span className="flex h-4 w-4 items-center justify-center font-semibold text-[10px]">
                 mm
               </span>
-              <span>Millimeters</span>
+              <span>{t('tb.millimeters')}</span>
               {unit === 'metric' && metricNotation === 'millimeters' ? (
                 <Check className="ml-auto h-4 w-4 text-foreground" />
               ) : null}
@@ -519,14 +574,14 @@ function DisplayMenu() {
               <span className="flex h-4 w-4 items-center justify-center font-semibold text-[10px]">
                 ft
               </span>
-              <span>Feet & inches</span>
+              <span>{t('tb.feetInches')}</span>
               {unit === 'imperial' ? <Check className="ml-auto h-4 w-4 text-foreground" /> : null}
             </DropdownMenuItem>
             {unitSource === 'local' ? (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={resetProjectUnits}>
-                  <span>Use project units</span>
+                  <span>{t('tb.useProjectUnits')}</span>
                 </DropdownMenuItem>
               </>
             ) : null}
@@ -538,8 +593,10 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <activeShading.icon className="h-4 w-4" />
-            <span>Render</span>
-            <span className="ml-auto text-muted-foreground text-xs">{activeShading.name}</span>
+            <span>{t('tb.render')}</span>
+            <span className="ml-auto text-muted-foreground text-xs">
+              {t(activeShading.nameKey)}
+            </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
             {SHADING_OPTIONS.map((option) => {
@@ -548,8 +605,8 @@ function DisplayMenu() {
                 <DropdownMenuItem key={option.id} onSelect={() => setShading(option.id)}>
                   <OptionIcon className="h-4 w-4" />
                   <div className="flex flex-col">
-                    <span className="text-foreground">{option.name}</span>
-                    <span className="text-muted-foreground text-xs">{option.detail}</span>
+                    <span className="text-foreground">{t(option.nameKey)}</span>
+                    <span className="text-muted-foreground text-xs">{t(option.detailKey)}</span>
                   </div>
                   {shading === option.id ? (
                     <Check className="ml-auto h-4 w-4 text-foreground" />
@@ -563,15 +620,15 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <PenLine className="h-4 w-4" />
-            <span>Edges</span>
-            <span className="ml-auto text-muted-foreground text-xs">{activeEdges.name}</span>
+            <span>{t('tb.edges')}</span>
+            <span className="ml-auto text-muted-foreground text-xs">{t(activeEdges.nameKey)}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
             {EDGE_OPTIONS.map((option) => (
               <DropdownMenuItem key={option.id} onSelect={() => setEdges(option.id)}>
                 <div className="flex flex-col">
-                  <span className="text-foreground">{option.name}</span>
-                  <span className="text-muted-foreground text-xs">{option.detail}</span>
+                  <span className="text-foreground">{t(option.nameKey)}</span>
+                  <span className="text-muted-foreground text-xs">{t(option.detailKey)}</span>
                 </div>
                 {edges === option.id ? <Check className="ml-auto h-4 w-4 text-foreground" /> : null}
               </DropdownMenuItem>
@@ -582,9 +639,9 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <SwatchBook className="h-4 w-4" />
-            <span>Scene theme</span>
+            <span>{t('tb.sceneTheme')}</span>
             <span className="ml-auto truncate text-muted-foreground text-xs">
-              {activeTheme.name}
+              {sceneThemeName(activeTheme)}
             </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="min-w-48 rounded-xl border-border/45 bg-popover/95 backdrop-blur-xl">
@@ -602,7 +659,7 @@ function DisplayMenu() {
                       <span key={`${theme.id}-${index}`} style={{ backgroundColor: color }} />
                     ))}
                   </span>
-                  <span className="text-foreground">{theme.name}</span>
+                  <span className="text-foreground">{sceneThemeName(theme)}</span>
                   {sceneTheme === theme.id ? (
                     <Check className="ml-auto h-4 w-4 text-foreground" />
                   ) : null}
@@ -617,6 +674,7 @@ function DisplayMenu() {
 }
 
 function WalkthroughButton() {
+  const t = useT(messages)
   const isFirstPersonMode = useEditor((state) => state.isFirstPersonMode)
   const setFirstPersonMode = useEditor((state) => state.setFirstPersonMode)
   const handleClick = useCallback(() => {
@@ -630,9 +688,9 @@ function WalkthroughButton() {
   }, [isFirstPersonMode, setFirstPersonMode])
 
   return (
-    <ToolbarTooltip label="Walkthrough">
+    <ToolbarTooltip label={t('tb.walkthrough')}>
       <button
-        aria-label="Walkthrough"
+        aria-label={t('tb.walkthrough')}
         aria-pressed={isFirstPersonMode}
         className={cn(
           TOOLBAR_BTN,
@@ -648,8 +706,9 @@ function WalkthroughButton() {
 }
 
 function PreviewButton() {
+  const t = useT(messages)
   return (
-    <ToolbarTooltip label="Preview mode">
+    <ToolbarTooltip label={t('tb.previewMode')}>
       <button
         className="flex items-center gap-1.5 px-2.5 font-medium text-muted-foreground/80 text-xs transition-colors hover:bg-white/8 hover:text-foreground/90"
         onClick={() => useEditor.getState().setPreviewMode(true)}
@@ -705,7 +764,7 @@ export function EditorViewerToolbarRight({
   vrButton,
   vrActive = false,
   vrDisabled = false,
-  vrLabel = vrActive ? 'Exit VR' : 'Enter VR',
+  vrLabel,
 }: {
   onVRToggle?: () => void
   vrButton?: ReactNode
@@ -713,6 +772,7 @@ export function EditorViewerToolbarRight({
   vrDisabled?: boolean
   vrLabel?: string
 }) {
+  const t = useT(messages)
   return (
     <div className={TOOLBAR_CONTAINER}>
       <LevelModeToggle />
@@ -728,7 +788,7 @@ export function EditorViewerToolbarRight({
             <VRButton
               active={vrActive}
               disabled={vrDisabled}
-              label={vrLabel}
+              label={vrLabel ?? (vrActive ? t('tb.exitVr') : t('tb.enterVr'))}
               onToggle={onVRToggle}
             />
           ) : null))

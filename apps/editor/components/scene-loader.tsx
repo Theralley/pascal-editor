@@ -7,8 +7,11 @@ import {
   applySceneGraphToEditor,
   Editor,
   ItemsPanel,
+  type MessageKey,
   type SceneGraph,
   type SidebarTab,
+  translate,
+  useT,
 } from '@pascal-app/editor'
 import { PascalWebXRButton } from '@webxr/plugin/pascal-editor'
 import { Hammer, Layers, Package, Palette, Settings } from 'lucide-react'
@@ -30,6 +33,7 @@ import { useThumbnailAutosave } from '@/lib/use-thumbnail-autosave'
 import { BuildTab } from './build-tab'
 import { EditorNavbar } from './editor-navbar'
 import { KitchenCommands } from './kitchen-browser'
+import { messages } from './messages'
 import { PaintPanel } from './paint-panel'
 import { EditorViewerToolbarLeft, EditorViewerToolbarRight } from './viewer-toolbar'
 import { useWebXRFeature, useWebXRInstalled, WebXRFeatureRuntime } from './webxr-feature-gate'
@@ -55,10 +59,13 @@ function EditorItemsPanel() {
   return <ItemsPanel showSourceFilter={false} showTagFilters={false} />
 }
 
-const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
+const SIDEBAR_TAB_DEFS: (Omit<SidebarTab, 'label'> & {
+  component: React.ComponentType
+  labelKey: MessageKey<typeof messages>
+})[] = [
   {
     id: 'site',
-    label: 'Scene',
+    labelKey: 'loader.tabScene',
     component: () => null, // Built-in SitePanel handles this
     mobileDefaultSnap: 0.5,
     mobileIcon: <Layers className="h-5 w-5" />,
@@ -74,7 +81,7 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   },
   {
     id: 'build',
-    label: 'Build',
+    labelKey: 'loader.tabBuild',
     component: BuildTab,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Hammer className="h-5 w-5" />,
@@ -90,7 +97,7 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   },
   {
     id: 'paint',
-    label: 'Paint',
+    labelKey: 'loader.tabPaint',
     component: PaintPanel,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Palette className="h-5 w-5" />,
@@ -106,7 +113,7 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   },
   {
     id: 'items',
-    label: 'Items',
+    labelKey: 'loader.tabItems',
     component: EditorItemsPanel,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Package className="h-5 w-5" />,
@@ -122,7 +129,7 @@ const SIDEBAR_TABS: (SidebarTab & { component: React.ComponentType })[] = [
   },
   {
     id: 'settings',
-    label: 'Settings',
+    labelKey: 'loader.tabSettings',
     component: () => null,
     mobileDefaultSnap: 0.5,
     mobileIcon: <Settings className="h-5 w-5" />,
@@ -181,6 +188,11 @@ export function SceneLoader(props: SceneLoaderProps) {
 }
 
 function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoaderProps) {
+  const t = useT(messages)
+  const sidebarTabs = useMemo(
+    () => SIDEBAR_TAB_DEFS.map(({ labelKey, ...tab }) => ({ ...tab, label: t(labelKey) })),
+    [t],
+  )
   // A rename must reach the autosave body, which sends `meta.name`.
   const [renamedTo, setRenamedTo] = useState<string | null>(null)
   const meta = useMemo(
@@ -227,7 +239,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
           return
         }
         if (!response.ok) {
-          setSaveError(`Rename failed (${response.status})`)
+          setSaveError(translate(messages, 'loader.renameFailed', { status: response.status }))
           return
         }
         const next = (await response.json()) as SceneMeta
@@ -235,7 +247,9 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         setRenamedTo(next.name)
         setSaveError(null)
       } catch (error) {
-        setSaveError(error instanceof Error ? error.message : 'Rename failed')
+        setSaveError(
+          error instanceof Error ? error.message : translate(messages, 'loader.renameFailedPlain'),
+        )
       }
     },
     [meta.id],
@@ -272,7 +286,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
           `[scene-loader] Blocked autosave: refusing to overwrite scene ${meta.id} ` +
             `(${serverNodeCountRef.current} nodes on the server) with an empty graph.`,
         )
-        setSaveError('Autosave blocked: the editor tried to save an empty scene')
+        setSaveError(translate(messages, 'loader.autosaveBlocked'))
         return false
       }
 
@@ -300,7 +314,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
             console.error(
               `[scene-loader] Server rejected an empty-graph save for scene ${meta.id}.`,
             )
-            setSaveError('Autosave blocked: the editor tried to save an empty scene')
+            setSaveError(translate(messages, 'loader.autosaveBlocked'))
             return false
           }
           setConflict(true)
@@ -308,7 +322,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         }
 
         if (!response.ok) {
-          setSaveError(`Save failed (${response.status})`)
+          setSaveError(translate(messages, 'loader.saveFailed', { status: response.status }))
           return false
         }
 
@@ -320,7 +334,9 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         setSaveError(null)
         return true
       } catch (error) {
-        setSaveError(error instanceof Error ? error.message : 'Save failed')
+        setSaveError(
+          error instanceof Error ? error.message : translate(messages, 'loader.saveFailedPlain'),
+        )
         return false
       } finally {
         pendingGraphSignaturesRef.current.delete(graphJson)
@@ -357,7 +373,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
       } finally {
         strictSaveRef.current = false
       }
-      if (!flushed) return 'Your latest changes could not be saved, so nothing was copied.'
+      if (!flushed) return translate(messages, 'loader.copyNotSaved')
       const result = await requestDuplicate(meta.id, { name, version: versionRef.current })
       if (!result.ok) return result.message
       router.push(`/project/${result.id}`)
@@ -394,7 +410,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
 
     source.addEventListener('error', () => {
       if (source.readyState === EventSource.CLOSED) {
-        setSaveError('Live scene connection closed')
+        setSaveError(translate(messages, 'loader.liveClosed'))
       }
     })
 
@@ -417,38 +433,43 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
     () => ({
       projectSection: copiedFrom ? (
         <p className="text-muted-foreground text-xs">
-          Copied from{' '}
-          <a className="underline underline-offset-2" href={`/project/${copiedFrom.id}`}>
-            {copiedFrom.name}
-          </a>
+          {t.rich(
+            'loader.copiedFrom',
+            {
+              link: (text) => (
+                <a className="underline underline-offset-2" href={`/project/${copiedFrom.id}`}>
+                  {text}
+                </a>
+              ),
+            },
+            { name: copiedFrom.name },
+          )}
         </p>
       ) : undefined,
     }),
-    [copiedFrom],
+    [copiedFrom, t],
   )
 
   return (
     <div className="dark relative h-screen w-screen">
       {conflict && (
         <div className="dark pointer-events-auto absolute top-14 left-1/2 z-50 w-full max-w-md -translate-x-1/2 rounded-lg border border-border bg-background p-4 text-foreground shadow-xl">
-          <h2 className="font-semibold text-sm">Another session saved first — refresh?</h2>
-          <p className="mt-1 text-muted-foreground text-xs">
-            Your changes haven&apos;t been saved. Reload to pick up the latest version.
-          </p>
+          <h2 className="font-semibold text-sm">{t('loader.conflictTitle')}</h2>
+          <p className="mt-1 text-muted-foreground text-xs">{t('loader.conflictBody')}</p>
           <div className="mt-3 flex items-center gap-2">
             <button
               className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground text-xs hover:bg-primary/90"
               onClick={() => router.refresh()}
               type="button"
             >
-              Reload
+              {t('common.reload')}
             </button>
             <button
               className="rounded-lg border border-border px-3 py-1.5 font-medium text-xs hover:bg-accent"
               onClick={() => setConflict(false)}
               type="button"
             >
-              Dismiss
+              {t('common.dismiss')}
             </button>
           </div>
         </div>
@@ -479,7 +500,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
         projectId={meta.projectId ?? meta.id}
         projectName={meta.name}
         settingsPanelProps={settingsPanelProps}
-        sidebarTabs={SIDEBAR_TABS}
+        sidebarTabs={sidebarTabs}
         viewerBanner={<PoolSectionBanner />}
         viewerToolbarLeft={<EditorViewerToolbarLeft />}
         viewerToolbarRight={
@@ -492,7 +513,7 @@ function SceneEditor({ initialScene, meta: initialMeta, copiedFrom }: SceneLoade
                 />
               ) : null
             }
-            vrLabel="Enter VR"
+            vrLabel={t('loader.enterVr')}
           />
         }
       />

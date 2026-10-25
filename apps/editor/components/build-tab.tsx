@@ -13,6 +13,7 @@ import {
   BuildPanelSection,
   BuildToolGrid,
   BuildToolTile,
+  type MessageKey,
   selectWallDrawVariant,
   startTerraceDraft,
   TerrainSculptPanel,
@@ -20,6 +21,7 @@ import {
   triggerSFX,
   useEditor,
   useFloorplanMode,
+  useT,
   useTerraceDraft,
   useWallDrawVariant,
 } from '@pascal-app/editor'
@@ -50,8 +52,51 @@ import {
 import { getActiveRoofFeatureId, ROOF_TYPE_OPTIONS } from '@/lib/build-tab-state'
 import { cn } from '@/lib/utils'
 import { KitchenBrowser } from './kitchen-browser'
+import { messages } from './messages'
 
 const subscribeToClientMount = () => () => {}
+
+type Key = MessageKey<typeof messages>
+
+// Labels the palette ships in English, by id. A kind registered later keeps its own label.
+const BUILD_TYPE_KEYS: Readonly<Record<string, Key>> = {
+  wall: 'type.wall',
+  fence: 'type.fence',
+  slab: 'type.slab',
+  ceiling: 'type.ceiling',
+  roof: 'type.roof',
+  stair: 'type.stair',
+  elevator: 'type.elevator',
+  door: 'type.door',
+  window: 'type.window',
+  column: 'type.column',
+  shelf: 'type.shelf',
+  spawn: 'type.spawn',
+  kitchen: 'type.kitchen',
+  mep: 'build.mep',
+  terrain: 'type.terrain',
+  terrace: 'type.terrace',
+}
+
+const MEP_ITEM_KEYS: Readonly<Record<string, Key>> = {
+  'duct-segment': 'mep.duct-segment',
+  'duct-terminal': 'mep.duct-terminal',
+  'hvac-equipment': 'mep.hvac-equipment',
+  lineset: 'mep.lineset',
+  'liquid-line': 'mep.liquid-line',
+  'pipe-segment': 'mep.pipe-segment',
+}
+
+const ROOF_TYPE_KEYS: Readonly<Record<string, Key>> = {
+  hip: 'roof.hip',
+  gable: 'roof.gable',
+  shed: 'roof.shed',
+  flat: 'roof.flat',
+  gambrel: 'roof.gambrel',
+  dutch: 'roof.dutch',
+  mansard: 'roof.mansard',
+  conical: 'roof.conical',
+}
 
 /**
  * Build tab for the open-source standalone editor — a preset-less replica of
@@ -59,6 +104,11 @@ const subscribeToClientMount = () => () => {}
  * with the kind's own `def.defaults()`. Painting has its own rail panel.
  */
 export function BuildTab() {
+  const t = useT(messages)
+  const labelOf = (table: Readonly<Record<string, Key>>, id: string, fallback: string) => {
+    const key = table[id]
+    return key ? t(key) : fallback
+  }
   const [mepOpen, setMepOpen] = useState(false)
   const [kitchenOpen, setKitchenOpen] = useState(false)
   const [buildSearch, setBuildSearch] = useState('')
@@ -181,13 +231,13 @@ export function BuildTab() {
       data-build-tool={type.id}
       iconSrc={type.iconSrc}
       key={type.id}
-      label={type.label}
+      label={labelOf(BUILD_TYPE_KEYS, type.id, type.label)}
       onClick={() => {
         triggerSFX('sfx:menu-click')
         handleTypeClick(type)
       }}
       onMouseEnter={() => triggerSFX('sfx:menu-hover')}
-      title={type.label}
+      title={labelOf(BUILD_TYPE_KEYS, type.id, type.label)}
     />
   )
   const typesIn = (section: NonNullable<BuildType['section']>) =>
@@ -197,12 +247,12 @@ export function BuildTab() {
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
       <label className="sr-only" htmlFor="build-search">
-        Search build tools and kitchen items
+        {t('build.searchLabel')}
       </label>
       <input
         id="build-search"
         type="search"
-        placeholder="Search tools, fridge, sink…"
+        placeholder={t('build.search')}
         value={buildSearch}
         onChange={(event) => setBuildSearch(event.target.value)}
         className="h-9 w-full shrink-0 rounded-lg border border-border bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -211,7 +261,11 @@ export function BuildTab() {
         <>
           <BuildToolGrid columns={4}>
             {buildTypes
-              .filter((type) => type.label.toLowerCase().includes(buildSearch.toLowerCase()))
+              .filter((type) =>
+                labelOf(BUILD_TYPE_KEYS, type.id, type.label)
+                  .toLowerCase()
+                  .includes(buildSearch.toLowerCase()),
+              )
               .map(renderTile)}
           </BuildToolGrid>
           <KitchenBrowser query={buildSearch} />
@@ -227,7 +281,7 @@ export function BuildTab() {
                 useEditor.getState().setMode('select')
               }}
             >
-              ← All build tools
+              {t('build.allTools')}
             </button>
           ) : (
             <div className="flex flex-col gap-3 [&>section+section]:border-border/60 [&>section+section]:border-t [&>section+section]:pt-3">
@@ -242,16 +296,16 @@ export function BuildTab() {
                     activateBuildTool('wall')
                 }}
               />
-              <BuildPanelSection id="add" title="Add to rooms">
+              <BuildPanelSection id="add" title={t('build.addToRooms')}>
                 <BuildToolGrid columns={4}>{typesIn('add').map(renderTile)}</BuildToolGrid>
               </BuildPanelSection>
-              <BuildPanelSection id="outdoor" title="Outdoor">
+              <BuildPanelSection id="outdoor" title={t('build.outdoor')}>
                 <BuildToolGrid columns={4}>{typesIn('outdoor').map(renderTile)}</BuildToolGrid>
               </BuildPanelSection>
               <BuildPanelAdvancedSection
                 containsActiveTool={advancedTypes.some(isTypeActive)}
-                description="Rooms already create their floor and ceiling. Use these for platforms and one-off structure."
-                hint="Slab, ceiling, column…"
+                description={t('build.advancedDescription')}
+                hint={t('build.advancedHint')}
               >
                 <BuildToolGrid columns={4}>{advancedTypes.map(renderTile)}</BuildToolGrid>
               </BuildPanelAdvancedSection>
@@ -266,7 +320,7 @@ export function BuildTab() {
             <div className="flex flex-col gap-3 border-border/60 border-t pt-3">
               <div className="flex flex-col gap-2">
                 <div className="px-0.5 pt-1 font-medium text-muted-foreground text-xs">
-                  Roof type
+                  {t('build.roofType')}
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {ROOF_TYPE_OPTIONS.map((roofType) => {
@@ -288,7 +342,7 @@ export function BuildTab() {
                         onMouseEnter={() => triggerSFX('sfx:menu-hover')}
                         type="button"
                       >
-                        {roofType.label}
+                        {labelOf(ROOF_TYPE_KEYS, roofType.value, roofType.label)}
                       </button>
                     )
                   })}
@@ -306,14 +360,14 @@ export function BuildTab() {
               />
               {activeRoofType === 'conical' && (
                 <p className="border-border/50 border-t px-0.5 pt-3 text-[11px] text-muted-foreground leading-relaxed">
-                  Select a curved wall to match its radius and arc.
+                  {t('build.conicalHint')}
                 </p>
               )}
 
               {roofFeatures.length > 0 ? (
                 <div className="flex flex-col gap-2 border-border/50 border-t pt-3">
                   <div className="px-0.5 font-medium text-muted-foreground text-xs">
-                    Features & extensions
+                    {t('build.roofFeatures')}
                   </div>
                   <TooltipProvider delayDuration={0} disableHoverableContent>
                     <div
@@ -362,28 +416,31 @@ export function BuildTab() {
             </div>
           ) : fenceContext ? (
             <div className="flex flex-col gap-3 border-border/50 border-t pt-3">
-              <div className="px-0.5 font-medium text-muted-foreground text-xs">Fence features</div>
+              <div className="px-0.5 font-medium text-muted-foreground text-xs">
+                {t('build.fenceFeatures')}
+              </div>
               <BuildToolGrid columns={4}>
+                {/* i18n-ignore: feature ids, labelled below */}
                 {(['gate', 'opening'] as const).map((kind) => (
                   <BuildToolTile
                     active={placingFenceFeature === kind}
                     iconSrc={kind === 'gate' ? '/icons/gate.webp' : '/icons/open-passage.webp'}
                     key={kind}
-                    label={kind === 'gate' ? 'Gate' : 'Opening'}
+                    label={kind === 'gate' ? t('build.gate') : t('build.opening')}
                     onClick={() => {
                       triggerSFX('sfx:menu-click')
                       activateFenceFeaturePlacement(kind)
                     }}
                     onMouseEnter={() => triggerSFX('sfx:menu-hover')}
-                    title={kind === 'gate' ? 'Add Gate' : 'Add Open Passage'}
+                    title={kind === 'gate' ? t('build.addGate') : t('build.addOpening')}
                   />
                 ))}
               </BuildToolGrid>
               {selectedFenceFeature && (
                 <label className="flex items-center justify-between text-xs">
-                  Match fence style
+                  {t('build.matchFenceStyle')}
                   <input
-                    aria-label="Match fence style"
+                    aria-label={t('build.matchFenceStyle')}
                     type="checkbox"
                     checked={selectedFenceFeature.matchFenceStyle !== false}
                     onChange={(event) =>
@@ -396,17 +453,14 @@ export function BuildTab() {
               )}
               {!!placingFenceFeature && (
                 <div className="space-y-2 text-xs">
-                  <p>
-                    Hover a fence to preview. Click to place. Esc cancels. Leave room between
-                    openings.
-                  </p>
+                  <p>{t('build.fenceHint')}</p>
                   {typeof fenceDefaults?.featurePlacementFeedback === 'string' && (
                     <p role="status" className="text-amber-400">
                       {fenceDefaults.featurePlacementFeedback}
                     </p>
                   )}
                   <label className="flex items-center justify-between">
-                    Match fence style
+                    {t('build.matchFenceStyle')}
                     <input
                       type="checkbox"
                       checked={fenceDefaults?.featureMatchStyle !== false}
@@ -420,7 +474,7 @@ export function BuildTab() {
                   </label>
                   {fenceDefaults?.featureMatchStyle === false && placingFenceFeature === 'gate' && (
                     <label className="flex items-center justify-between">
-                      Gate style
+                      {t('build.gateStyle')}
                       <select
                         className="rounded border bg-background p-1"
                         value={
@@ -435,16 +489,16 @@ export function BuildTab() {
                           })
                         }
                       >
-                        <option value="picket">Picket</option>
-                        <option value="slat">Vertical slats</option>
-                        <option value="horizontal">Horizontal boards</option>
-                        <option value="privacy">Solid privacy</option>
-                        <option value="rail">Open rails</option>
+                        <option value="picket">{t('build.stylePicket')}</option>
+                        <option value="slat">{t('build.styleSlat')}</option>
+                        <option value="horizontal">{t('build.styleHorizontal')}</option>
+                        <option value="privacy">{t('build.stylePrivacy')}</option>
+                        <option value="rail">{t('build.styleRail')}</option>
                       </select>
                     </label>
                   )}
                   <label className="flex items-center justify-between">
-                    Opening width (m)
+                    {t('build.openingWidth')}
                     <input
                       className="w-20 rounded border bg-background p-1"
                       type="number"
@@ -468,7 +522,7 @@ export function BuildTab() {
                   </label>
                   {placingFenceFeature === 'gate' && (
                     <label className="flex items-center justify-between">
-                      Leaves
+                      {t('build.leaves')}
                       <select
                         className="rounded border bg-background p-1"
                         value={fenceDefaults?.featureLeafType === 'double' ? 'double' : 'single'}
@@ -479,23 +533,22 @@ export function BuildTab() {
                           })
                         }
                       >
-                        <option value="single">Single gate</option>
-                        <option value="double">Double gate</option>
+                        <option value="single">{t('build.singleGate')}</option>
+                        <option value="double">{t('build.doubleGate')}</option>
                       </select>
                     </label>
                   )}
                 </div>
               )}
-              <p className="px-0.5 text-[11px] text-muted-foreground">
-                Choose Gate or Open Passage, then click its position on any fence. Find placed gates
-                and openings under their fence in the scene graph.
-              </p>
+              <p className="px-0.5 text-[11px] text-muted-foreground">{t('build.fenceHelp')}</p>
             </div>
           ) : isKitchenActive ? (
             <KitchenBrowser />
           ) : isMepActive ? (
             <div className="flex flex-col gap-2 border-border/60 border-t pt-3">
-              <div className="px-0.5 pt-1 font-medium text-muted-foreground text-xs">MEP</div>
+              <div className="px-0.5 pt-1 font-medium text-muted-foreground text-xs">
+                {t('build.mep')}
+              </div>
               <TooltipProvider delayDuration={0} disableHoverableContent>
                 <div
                   className="grid gap-1.5 px-0.5"
@@ -522,7 +575,7 @@ export function BuildTab() {
                             type="button"
                           >
                             <Image
-                              alt={item.label}
+                              alt={labelOf(MEP_ITEM_KEYS, item.id, item.label)}
                               className="size-full object-contain transition-transform duration-200 group-hover:scale-110"
                               height={48}
                               src={item.iconSrc}
@@ -531,7 +584,7 @@ export function BuildTab() {
                           </button>
                         </TooltipTrigger>
                         <TooltipContent className="pointer-events-none" side="top">
-                          {item.label}
+                          {labelOf(MEP_ITEM_KEYS, item.id, item.label)}
                         </TooltipContent>
                       </Tooltip>
                     )
@@ -565,7 +618,7 @@ export function BuildTab() {
 
               {liquidLineContext ? (
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-muted-foreground text-xs">Liquid Line</span>
+                  <span className="text-muted-foreground text-xs">{t('build.liquidLine')}</span>
                   <button
                     className={cn(
                       'flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200',
@@ -580,13 +633,13 @@ export function BuildTab() {
                     onMouseEnter={() => triggerSFX('sfx:menu-hover')}
                     type="button"
                   >
-                    <span>Follow lineset</span>
-                    <span className="text-muted-foreground text-xs">{follow ? 'On' : 'Off'}</span>
+                    <span>{t('build.followLineset')}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {follow ? t('controls.on') : t('controls.off')}
+                    </span>
                   </button>
                   <span className="px-1 text-[11px] text-muted-foreground">
-                    {follow
-                      ? 'Click a lineset to lay the line beside it.'
-                      : 'Trace a line alongside an existing lineset (F).'}
+                    {follow ? t('build.followOn') : t('build.followOff')}
                   </span>
                 </div>
               ) : null}

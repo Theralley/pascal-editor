@@ -1,9 +1,7 @@
 import type { SceneGraph } from '@pascal-app/editor'
-import Link from 'next/link'
-import { AppCard, PRIMARY_PILL } from '@/components/app-shell'
 import { SceneLoader, type SceneMeta } from '@/components/scene-loader'
 import { getSceneOperations } from '@/lib/scene-store-server'
-import { cn } from '@/lib/utils'
+import { ProjectNotFound } from './project-not-found'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,17 +19,7 @@ export default async function ScenePage({ params }: { params: Promise<{ id: stri
   const scene = await fetchScene(id)
 
   if (!scene) {
-    return (
-      <AppCard>
-        <h1 className="mt-6 font-semibold text-lg">Project not found</h1>
-        <p className="mt-1 text-muted-foreground text-sm">
-          There is no project with id <code className="font-mono">{id}</code> on this editor.
-        </p>
-        <Link className={cn(PRIMARY_PILL, 'mt-5')} href="/">
-          All projects
-        </Link>
-      </AppCard>
-    )
+    return <ProjectNotFound id={id} />
   }
 
   const { graph, ...meta } = scene

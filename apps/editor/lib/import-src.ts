@@ -7,6 +7,9 @@
  * plain https resource, not about SSRF (no server ever fetches it).
  */
 
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
+
 /**
  * Hard cap on the fetched document. Matches the scene store's own limit
  * (`DEFAULT_MAX_SCENE_BYTES` in the sqlite scene store, 10 MB): a file
@@ -23,21 +26,21 @@ export type ImportSrcResult = { ok: true; url: URL } | { ok: false; reason: stri
  */
 export function parseImportSrc(raw: string | null | undefined): ImportSrcResult {
   if (!raw) {
-    return { ok: false, reason: 'Missing `src` parameter.' }
+    return { ok: false, reason: translate(messages, 'importSrc.missing') }
   }
   let url: URL
   try {
     url = new URL(raw)
   } catch {
-    return { ok: false, reason: 'The `src` parameter is not an absolute URL.' }
+    return { ok: false, reason: translate(messages, 'importSrc.notAbsolute') }
   }
   if (url.username || url.password) {
-    return { ok: false, reason: 'Credentials in the `src` URL are not allowed.' }
+    return { ok: false, reason: translate(messages, 'importSrc.credentials') }
   }
   const isLocalhost =
     url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]'
   if (url.protocol === 'https:' || (url.protocol === 'http:' && isLocalhost)) {
     return { ok: true, url }
   }
-  return { ok: false, reason: 'Only https URLs can be imported.' }
+  return { ok: false, reason: translate(messages, 'importSrc.httpsOnly') }
 }

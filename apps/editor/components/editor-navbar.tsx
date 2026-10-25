@@ -1,10 +1,11 @@
 'use client'
 
-import { useEditor } from '@pascal-app/editor'
+import { useEditor, useT } from '@pascal-app/editor'
 import { ChevronDown, Copy, Eye, GitFork, Pencil, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { PascalMark } from './app-shell'
+import { messages } from './messages'
 import { MakeOwnVersionDialog } from './scene-card'
 import { SharePanel } from './share-panel'
 
@@ -29,6 +30,7 @@ export function EditorNavbar({
   onDuplicate,
   copiedFrom,
 }: EditorNavbarProps) {
+  const t = useT(messages)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [forkOpen, setForkOpen] = useState(false)
@@ -101,10 +103,10 @@ export function EditorNavbar({
     <nav className="flex h-12 shrink-0 items-center gap-2 border-border/30 border-b bg-sidebar px-2 lg:px-3">
       <div className="flex min-w-0 items-center gap-1.5 lg:gap-2">
         <Link
-          aria-label="All projects"
+          aria-label={t('navbar.allProjects')}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-accent"
           href="/"
-          title="All projects"
+          title={t('navbar.allProjects')}
         >
           <PascalMark />
         </Link>
@@ -114,7 +116,7 @@ export function EditorNavbar({
         <div className="min-w-0 max-w-40 lg:max-w-72">
           {editing ? (
             <input
-              aria-label="Project name"
+              aria-label={t('card.projectName')}
               className="h-7 w-full rounded-md bg-accent/50 px-2 py-0 font-medium text-foreground text-sm outline-none ring-1 ring-primary/50 focus:ring-primary"
               maxLength={200}
               onBlur={commit}
@@ -127,7 +129,7 @@ export function EditorNavbar({
             <button
               className="group/title flex h-7 max-w-full items-center gap-1.5 rounded-md px-2 text-left transition-colors hover:bg-accent/50"
               onClick={startEditing}
-              title="Rename project"
+              title={t('card.renameTitle')}
               type="button"
             >
               <span className="truncate font-medium text-sm">{name}</span>
@@ -140,7 +142,7 @@ export function EditorNavbar({
           <button
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            aria-label="Project actions"
+            aria-label={t('navbar.actions')}
             className="flex h-7 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
             onClick={() => setMenuOpen((open) => !open)}
             type="button"
@@ -162,7 +164,7 @@ export function EditorNavbar({
                 type="button"
               >
                 <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                Rename
+                {t('common.rename')}
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
@@ -171,7 +173,7 @@ export function EditorNavbar({
                 type="button"
               >
                 <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                Duplicate
+                {t('common.duplicate')}
               </button>
               <button
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-accent"
@@ -183,7 +185,7 @@ export function EditorNavbar({
                 type="button"
               >
                 <GitFork className="h-3.5 w-3.5 text-muted-foreground" />
-                Make my own version…
+                {t('card.makeOwn')}
               </button>
               {copiedFrom && (
                 <Link
@@ -191,7 +193,7 @@ export function EditorNavbar({
                   href={`/project/${copiedFrom.id}`}
                   role="menuitem"
                 >
-                  Copied from {copiedFrom.name}
+                  {t('navbar.copiedFrom', { name: copiedFrom.name })}
                 </Link>
               )}
             </div>
@@ -227,7 +229,7 @@ export function EditorNavbar({
           type="button"
         >
           <Share2 className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Share</span>
+          <span className="hidden sm:inline">{t('navbar.share')}</span>
         </button>
         {shareOpen && (
           <SharePanel anchorRef={shareAnchorRef} onClose={closeShare} sceneId={sceneId} />
@@ -235,7 +237,7 @@ export function EditorNavbar({
       </div>
       {forkOpen && (
         <MakeOwnVersionDialog
-          initialName={`${name} (my version)`.slice(0, 200)}
+          initialName={t('card.myVersion', { name }).slice(0, 200)}
           onClose={() => setForkOpen(false)}
           onSubmit={onDuplicate}
         />

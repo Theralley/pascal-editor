@@ -1,4 +1,7 @@
-export const CONFLICT_MESSAGE = 'This project changed since the page loaded. Reload and try again.'
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
+
+export const conflictMessage = () => translate(messages, 'duplicate.conflict')
 
 export type DuplicateResult = { ok: true; id: string } | { ok: false; message: string }
 
@@ -13,11 +16,15 @@ export async function requestDuplicate(
       headers: { 'Content-Type': 'application/json', 'If-Match': `"${version}"` },
       body: JSON.stringify(name ? { name } : {}),
     })
-    if (response.status === 409) return { ok: false, message: CONFLICT_MESSAGE }
-    if (!response.ok) return { ok: false, message: `Copy failed (${response.status})` }
+    if (response.status === 409) return { ok: false, message: conflictMessage() }
+    if (!response.ok)
+      return {
+        ok: false,
+        message: translate(messages, 'duplicate.failed', { status: response.status }),
+      }
     const copy = (await response.json()) as { id: string }
     return { ok: true, id: copy.id }
   } catch {
-    return { ok: false, message: 'Could not reach the editor.' }
+    return { ok: false, message: translate(messages, 'duplicate.unreachable') }
   }
 }

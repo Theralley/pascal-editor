@@ -6,6 +6,7 @@ import { safeNextPath } from '@/lib/safe-next-path'
 import { LoginForm } from './login-form'
 
 export const dynamic = 'force-dynamic'
+// i18n-ignore: server metadata cannot follow the language chosen in the browser
 export const metadata: Metadata = { title: 'Sign in · Pascal' }
 
 export default async function LoginPage({
@@ -19,10 +20,6 @@ export default async function LoginPage({
   )
   return (
     <AppCard>
-      <h1 className="mt-6 font-semibold text-lg">Sign in to this editor</h1>
-      <p className="mt-1 text-muted-foreground text-sm">
-        Enter the admin password set for this instance.
-      </p>
       <LoginForm next={safeNextPath(next, origin)} />
     </AppCard>
   )
