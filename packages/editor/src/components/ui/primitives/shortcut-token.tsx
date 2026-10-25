@@ -1,34 +1,43 @@
 import { Icon } from '@iconify/react'
 import type * as React from 'react'
 
+import { type MessageKey, useT } from '../../../i18n'
 import { cn } from '../../../lib/utils'
+import { messages } from './messages'
 
 const MOUSE_SHORTCUTS = {
   Click: {
     icon: 'ph:mouse-left-click-fill',
-    label: 'Left click',
+    labelKey: 'mouse.leftClick',
   },
   'Left click': {
     icon: 'ph:mouse-left-click-fill',
-    label: 'Left click',
+    labelKey: 'mouse.leftClick',
   },
   'Middle click': {
     icon: 'qlementine-icons:mouse-middle-button-16',
-    label: 'Middle click',
+    labelKey: 'mouse.middleClick',
   },
   'Right click': {
     icon: 'ph:mouse-right-click-fill',
-    label: 'Right click',
+    labelKey: 'mouse.rightClick',
   },
   Scroll: {
     icon: 'ph:mouse-scroll-fill',
-    label: 'Scroll',
+    labelKey: 'mouse.scroll',
   },
-} as const
+} as const satisfies Record<string, { icon: string; labelKey: MessageKey<typeof messages> }>
 
 // The platform-agnostic command modifier. Both Cmd and Ctrl bind the action; we
 // render the symbol for the *current* device so the hint reads native (⌘ on Mac,
 // Ctrl elsewhere) without implying only one of them works.
+// Hints name some gestures as a token; these are words, not keys, so they follow the language.
+const GESTURE_WORDS = {
+  Drag: 'gesture.Drag',
+  Hover: 'gesture.Hover',
+  Release: 'gesture.Release',
+} as const satisfies Record<string, MessageKey<typeof messages>>
+
 const COMMAND_VALUES = new Set(['Cmd/Ctrl', 'Cmd', 'Command', 'Meta'])
 
 // Resolved once on the client at module load — the editor HUD is client-only, so
@@ -65,25 +74,28 @@ type ShortcutTokenProps = React.ComponentProps<'kbd'> & {
 }
 
 function ShortcutToken({ className, displayValue, value, ...props }: ShortcutTokenProps) {
+  const t = useT(messages)
   const mouseShortcut =
     value in MOUSE_SHORTCUTS ? MOUSE_SHORTCUTS[value as keyof typeof MOUSE_SHORTCUTS] : null
   const isCommand = COMMAND_VALUES.has(value)
   const isShift = value === 'Shift'
   const commandDisplay = IS_MAC ? '⌘' : 'Ctrl'
   const commandLabel = IS_MAC ? 'Command' : 'Control'
+  const mouseLabel = mouseShortcut ? t(mouseShortcut.labelKey) : null
+  const gestureWord = value in GESTURE_WORDS ? t(GESTURE_WORDS[value as keyof typeof GESTURE_WORDS]) : null
 
   return (
     <kbd
       aria-label={
-        mouseShortcut?.label ??
-        (isCommand ? commandLabel : isShift ? 'Shift' : (displayValue ?? value))
+        mouseLabel ??
+        (isCommand ? commandLabel : isShift ? 'Shift' : (gestureWord ?? displayValue ?? value))
       }
       className={cn(
         'inline-flex h-6 items-center rounded border border-border bg-muted px-2 font-medium font-mono text-[11px] text-muted-foreground',
         (mouseShortcut || isShift) && 'justify-center px-1.5',
         className,
       )}
-      title={mouseShortcut?.label ?? (isCommand ? commandLabel : isShift ? 'Shift' : value)}
+      title={mouseLabel ?? (isCommand ? commandLabel : isShift ? 'Shift' : (gestureWord ?? value))}
       {...props}
     >
       {mouseShortcut ? (
@@ -96,7 +108,7 @@ function ShortcutToken({ className, displayValue, value, ...props }: ShortcutTok
             icon={mouseShortcut.icon}
             width={14}
           />
-          <span className="sr-only">{mouseShortcut.label}</span>
+          <span className="sr-only">{mouseLabel}</span>
         </>
       ) : isShift ? (
         // Icon rather than the ⇧ text glyph — the font renders the glyph's
@@ -117,7 +129,7 @@ function ShortcutToken({ className, displayValue, value, ...props }: ShortcutTok
         // it up a touch on Mac. "Ctrl" stays at the token's normal size.
         <span className={IS_MAC ? 'text-[13px] leading-none' : undefined}>{commandDisplay}</span>
       ) : (
-        (displayValue ?? value)
+        (gestureWord ?? displayValue ?? value)
       )}
     </kbd>
   )

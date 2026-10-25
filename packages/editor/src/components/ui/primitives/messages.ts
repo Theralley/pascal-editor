@@ -1,0 +1,36 @@
+import { defineMessages } from '../../../i18n'
+
+export const messages = defineMessages({
+  en: {
+    close: 'Close',
+    'error.title': 'Something went wrong',
+    'error.retry': 'Try again',
+    'sidebar.title': 'Sidebar',
+    'sidebar.description': 'Displays the mobile sidebar.',
+    'sidebar.toggle': 'Toggle Sidebar',
+    opacity: 'Opacity',
+    'mouse.leftClick': 'Left click',
+    'mouse.middleClick': 'Middle click',
+    'mouse.rightClick': 'Right click',
+    'mouse.scroll': 'Scroll',
+    'gesture.Drag': 'Drag',
+    'gesture.Hover': 'Hover',
+    'gesture.Release': 'Release',
+  },
+  sv: {
+    close: 'Stäng',
+    'error.title': 'Något gick fel',
+    'error.retry': 'Försök igen',
+    'sidebar.title': 'Sidofält',
+    'sidebar.description': 'Visar sidofältet på mobil.',
+    'sidebar.toggle': 'Visa eller dölj sidofältet',
+    opacity: 'Opacitet',
+    'mouse.leftClick': 'Vänsterklick',
+    'mouse.middleClick': 'Mittenklick',
+    'mouse.rightClick': 'Högerklick',
+    'mouse.scroll': 'Scrolla',
+    'gesture.Drag': 'Dra',
+    'gesture.Hover': 'Håll över',
+    'gesture.Release': 'Släpp',
+  },
+})
