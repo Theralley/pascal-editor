@@ -3,11 +3,9 @@
 import { ChevronRight } from 'lucide-react'
 import { type ComponentPropsWithoutRef, type ReactNode, useEffect, useState } from 'react'
 import { cn } from '../../../lib/utils'
-import {
-  WALL_DRAW_IDLE_CAPTION,
-  WALL_DRAW_VARIANTS,
-  type WallDrawVariant,
-} from '../../../lib/wall-draw-variant'
+import { useT } from '../../../i18n'
+import { WALL_DRAW_VARIANTS, type WallDrawVariant } from '../../../lib/wall-draw-variant'
+import { messages } from './messages'
 
 /**
  * The Build panel's grouped layout (Rooms / Add to rooms / Outdoor / Advanced),
@@ -70,6 +68,7 @@ export function BuildPanelAdvancedSection({
   description?: string
   hint?: string
 }) {
+  const t = useT(messages)
   const [open, setOpen] = useState(false)
   useEffect(() => setOpen(readAdvancedOpen()), [])
   useEffect(() => {
@@ -94,7 +93,7 @@ export function BuildPanelAdvancedSection({
             open && 'rotate-90',
           )}
         />
-        <h3 className="font-medium text-foreground text-xs">Advanced</h3>
+        <h3 className="font-medium text-foreground text-xs">{t('advanced')}</h3>
         {hint ? (
           <span className="ml-auto truncate text-[11px] text-muted-foreground">{hint}</span>
         ) : null}
@@ -214,9 +213,10 @@ export function BuildPanelRoomsSection({
   /** Extra attributes per tile (e.g. a host's guide-target hook). */
   tileProps?: (variant: WallDrawVariant) => Record<string, string | undefined>
 }) {
+  const t = useT(messages)
   const active = WALL_DRAW_VARIANTS.find((variant) => variant.id === activeVariant)
   return (
-    <BuildPanelSection hint="walls · floor · ceiling" id="rooms" title="Rooms">
+    <BuildPanelSection hint={t('roomsHint')} id="rooms" title={t('rooms')}>
       <BuildToolGrid columns={3}>
         {WALL_DRAW_VARIANTS.map((variant) => (
           <BuildToolTile
@@ -224,18 +224,18 @@ export function BuildPanelRoomsSection({
             data-build-tool={`room-${variant.id}`}
             iconSrc={variant.iconSrc}
             key={variant.id}
-            label={variant.label}
+            label={t(`${variant.id}.label`)}
             onClick={() => onSelect(variant.id)}
             onMouseEnter={() => onHover?.(variant.id)}
             size="lg"
-            title={variant.title}
+            title={t(`${variant.id}.title`)}
             {...tileProps?.(variant.id)}
           />
         ))}
       </BuildToolGrid>
       <BuildPanelCaption
-        lead={active?.caption.lead}
-        rest={active ? active.caption.rest : WALL_DRAW_IDLE_CAPTION}
+        lead={active ? t(`${active.id}.lead`) : undefined}
+        rest={active ? t(`${active.id}.rest`) : t('idleCaption')}
       />
     </BuildPanelSection>
   )
