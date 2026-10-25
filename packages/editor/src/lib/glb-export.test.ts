@@ -1164,6 +1164,26 @@ describe('prepareSceneForExport', () => {
     expect(hasMesh).toBe(false)
   })
 
+  test('stamps whether the low cut applies on every wall, curtain or not', () => {
+    const root = new THREE.Group()
+    const nodes: Record<string, AnyNode> = {}
+    for (const [id, wallType] of [
+      ['wall_basic', 'basic'],
+      ['wall_curtain', 'curtain'],
+    ] as const) {
+      const group = new THREE.Group()
+      group.add(meshWithNodeMaterial(nodeMaterial()))
+      root.add(group)
+      sceneRegistry.nodes.set(id, group)
+      nodes[id] = { object: 'node', id, type: 'wall', wallType } as unknown as AnyNode
+    }
+
+    const { scene } = prepareSceneForExport(root, nodes)
+
+    expect(scene.getObjectByProperty('name', 'wall_basic')?.userData.displayCut).toBe(true)
+    expect(scene.getObjectByProperty('name', 'wall_curtain')?.userData.displayCut).toBe(false)
+  })
+
   test('bakes a swing door into an open quaternion clip', () => {
     const root = new THREE.Group()
     const doorGroup = new THREE.Group()

@@ -27,6 +27,7 @@ import {
 import { createDefaultMaterial, type RenderShading } from '../../lib/materials'
 import { getCachedLevelMiters } from './level-miter-cache'
 import { wallCutApplies } from './wall-cut-eligibility'
+import { wallParts } from './wall-cutout-cache'
 
 export const WALL_CUT_CAPS_NAME = 'wall-cut-caps'
 const WALL_COLLISION_MESH = 'collision-mesh'
@@ -145,6 +146,8 @@ function footprintSolids(
   ])
 }
 
+const EMPTY: Section = { solids: [], complete: true }
+
 type Cap = {
   mesh: Mesh | null
   root: Object3D
@@ -166,7 +169,13 @@ export class WallCutCaps {
   /** Per wall: its body taken into the level once, and the section at the last height asked. */
   private readonly sections = new Map<
     string,
-    { key: string; prepared: PreparedSection; height: number; section: Section }
+    {
+      key: string
+      body: PreparedSection
+      parts: PreparedSection
+      height: number
+      section: Section
+    }
   >()
   private material: Material | null = null
   private shading: RenderShading | undefined
@@ -287,12 +296,15 @@ export class WallCutCaps {
     root.updateWorldMatrix(true, false)
     mesh.updateWorldMatrix(true, false)
     const relative = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
+    // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
+    const parts = wallParts(mesh).map((part) => part.geometry.uuid)
     return [
       geometry.uuid,
       'version' in position ? position.version : position.data.version,
       geometry.drawRange.start,
       geometry.drawRange.count,
       ...relative.elements,
+      ...parts,
     ].join(',')
   }
 
@@ -310,14 +322,31 @@ export class WallCutCaps {
     let kept = this.sections.get(wall.id)
     if (!kept || kept.key !== key) {
       // A seam narrower than a hundredth of the wall's thickness is the mesh's, not a gap.
-      const prepared = prepareSection([mesh], root, Math.max(1e-3, (wall.thickness ?? 0.1) * 0.01))
-      kept = { key, prepared, height, section: prepared.at(height) }
+      const seam = Math.max(1e-3, (wall.thickness ?? 0.1) * 0.01)
+      // The parts are solids of their own, so one that overlaps the body is never its hole; their
+      // outlines may stay open without the body's cap going back to the footprint.
+      kept = {
+        key,
+        body: prepareSection([mesh], root, seam),
+        parts: prepareSection(wallParts(mesh), root, seam),
+        height,
+        section: EMPTY,
+      }
+      kept.section = this.sectionAt(kept, height)
       this.sections.set(wall.id, kept)
     } else if (kept.height !== height) {
       kept.height = height
-      kept.section = kept.prepared.at(height)
+      kept.section = this.sectionAt(kept, height)
     }
     return kept.section
+  }
+
+  private sectionAt(
+    kept: { body: PreparedSection; parts: PreparedSection },
+    height: number,
+  ): Section {
+    const body = kept.body.at(height)
+    return { solids: [...body.solids, ...kept.parts.at(height).solids], complete: body.complete }
   }
 
   private build(

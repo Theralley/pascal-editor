@@ -399,6 +399,23 @@ describe('WallCutCaps', () => {
     caps.dispose()
   })
 
+  test("a moulding is a solid of its own: a cap over it never turns the wall's own cap into a hole", () => {
+    const { root, mesh } = level()
+    // A casing round the whole wall, 0.5 m tall: its outline encloses the wall's.
+    const casing = new Mesh(new BoxGeometry(4.4, 0.5, 0.6).translate(2, 0.25, 0), [
+      new MeshBasicMaterial(),
+    ])
+    mesh.add(casing)
+    root.updateMatrixWorld(true)
+    const caps = new WallCutCaps()
+    caps.update(true, 0.25, 'solid')
+    const cap = capsOf(root)!
+    expect(covers(cap, 2, 0)).toBe(true)
+    expect(covers(cap, 2, 0.25)).toBe(true)
+    expect(covers(cap, 2, 0.4)).toBe(false)
+    caps.dispose()
+  })
+
   test('an update with nothing changed looks at nothing', () => {
     const { root } = level()
     const caps = new WallCutCaps()
