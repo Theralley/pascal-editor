@@ -150,7 +150,36 @@ function translatesItem(callback: ts.Expression): boolean {
   if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) return false
   const item = callback.parameters[0]?.name
   if (!item || !ts.isIdentifier(item)) return false
-  return new RegExp(`\\b(?:t|translate)\\(\\s*${item.text}\\b`).test(callback.getText())
+  let passed = false
+  const walk = (node: ts.Node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      (node.expression.text === 't' || node.expression.text === 'translate')
+    ) {
+      const argument = node.arguments[0]
+      if (argument && ts.isIdentifier(argument) && argument.text === item.text) passed = true
+    }
+    ts.forEachChild(node, walk)
+  }
+  walk(callback.body)
+  return passed
+}
+
+/** A template or a `+` chain: one message built from several pieces. */
+const isComposed = (node: ts.Expression): boolean =>
+  ts.isTemplateExpression(node) ||
+  (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)
+
+/** The text of a composed message, with `{}` for each expression, so whitespace is judged on the whole. */
+function staticText(node: ts.Expression): string {
+  if (ts.isStringLiteralLike(node)) return node.text
+  if (ts.isTemplateExpression(node))
+    return node.head.text + node.templateSpans.map((span) => `{}${span.literal.text}`).join('')
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)
+    return staticText(node.left) + staticText(node.right)
+  if (ts.isParenthesizedExpression(node)) return staticText(node.expression)
+  return '{}'
 }
 
 const TABLE_SIBLINGS = new Set(['id', 'value', 'icon', 'shortcut', 'keys'])
@@ -345,7 +374,10 @@ export function findHardcodedText(source: string, fileName = 'file.tsx'): Findin
         } else if (NOTICE_SETTER.test(callee.name)) {
           // A later argument is often a status word (`'uploading'`); only a sentence is a message.
           node.arguments.forEach((argument, index) => {
-            reportLiterals(argument, index === 0 ? () => true : (text) => /\s/.test(text.trim()))
+            if (index === 0) reportLiterals(argument)
+            else if (isComposed(argument)) {
+              if (/\s/.test(staticText(argument))) reportLiterals(argument)
+            } else reportLiterals(argument, (text) => /\s/.test(text.trim()))
           })
         } else if (DIALOG_FUNCTIONS.has(callee.name) && first) reportLiterals(first)
       }

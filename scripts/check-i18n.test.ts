@@ -110,6 +110,17 @@ describe('findHardcodedText', () => {
       'const v = (\n<div>\n{/* i18n-ignore */}<p>Ignored</p>\n<p>Shown</p>\n</div>\n)',
       ['Shown'],
     ],
+    [
+      'a template as a later setter argument',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: source under test
+      'const f = () => setStatus(id, `Uploading ${filename}`)',
+      ['Uploading'],
+    ],
+    [
+      'a concatenation as a later setter argument',
+      "const f = () => setError(id, 'Missing ' + filename)",
+      ['Missing'],
+    ],
     ['defaultName', 'const v = <Row defaultName="Unnamed room" />', ['Unnamed room']],
     ['name in an option table', "const rows = [{ id: 'wall', name: 'Wall' }]", ['Wall']],
     ['name beside an icon', "const row = { icon: Box, name: 'Items' }", ['Items']],
@@ -174,6 +185,9 @@ describe('findHardcodedText', () => {
   })
 
   test.each([
+    ['a key held in a $-named parameter', "const v = <ul>{['save'].map(($key) => t($key))}</ul>"],
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: source under test
+    ['a template made only of an expression', 'const f = () => setStatus(id, `${state}`)'],
     ['a name without table siblings', "const node = { name: 'Wall' }"],
     ['a status word as a later setter argument', "const f = () => setStatus(levelId, 'uploading')"],
     ['a key name in a keys array', "const row = { keys: ['Ctrl', 'Delete'], action: 'x.y' }"],
