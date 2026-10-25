@@ -980,7 +980,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               emitter.emit(
                 'thumbnail:before-capture',
                 cameraPose || interior
-                  ? { wholeWalls: true }
+                  ? { wholeWalls: true, wallsLow: event.presentation?.walls?.mode === 'low' }
                   : snapLevels
                     ? { finished: true }
                     : undefined,

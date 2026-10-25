@@ -175,6 +175,51 @@ describe('view_scene over the MCP', () => {
     }
   })
 
+  test('walls low reach the editor tab with the level presentation, and a tab that did not apply them is refused', async () => {
+    const asked: Parameters<SceneViewHost['capture']>[0][] = []
+    const view = await viewWith({
+      capture: async (request) => {
+        asked.push(request)
+        return {
+          image: new Uint8Array([1]),
+          mimeType: 'image/webp',
+          width: request.size.w,
+          height: request.size.h,
+          tab: 'tab_1',
+          capturedAt: '2026-10-24T09:00:00.000Z',
+          presentation: request.presentation,
+        }
+      },
+    })
+    try {
+      const presentation = { mode: 'stacked', walls: { mode: 'low', cutHeight: 0.4 } }
+      const result = await view.call({ presentation })
+      expect(result.isError).toBe(false)
+      expect(asked.at(-1)?.presentation).toEqual(presentation)
+      expect(json(result.content).presentation).toEqual(presentation)
+    } finally {
+      await view.close()
+    }
+    const old = await viewWith({
+      capture: async (request) => ({
+        image: new Uint8Array([1]),
+        mimeType: 'image/webp',
+        width: request.size.w,
+        height: request.size.h,
+        tab: 'tab_old',
+        capturedAt: '2026-10-24T09:00:00.000Z',
+        presentation: { mode: 'stacked' },
+      }),
+    })
+    try {
+      const refused = await old.call({ presentation: { mode: 'stacked', walls: { mode: 'low' } } })
+      expect(refused.isError).toBe(true)
+      expect(json(refused.content)).toMatchObject({ code: 'view_presentation_unconfirmed' })
+    } finally {
+      await old.close()
+    }
+  })
+
   test('an unconfirmed or different level view is refused, never labelled as verified', async () => {
     for (const presentation of [
       undefined,

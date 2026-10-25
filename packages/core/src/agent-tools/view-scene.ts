@@ -46,6 +46,20 @@ const showRoofsField = z
     'Roofs in the picture: false leaves them out, true shows them. Default: the roofs as the finished house has them.',
   )
 
+const wallsField = z
+  .object({
+    mode: z.enum(['up', 'low']),
+    cutHeight: measurement('length', 'm', {
+      min: 0.05,
+      max: 1.5,
+      description: 'With low: the height the walls stand at, in metres. Default 0.25.',
+    }).optional(),
+  })
+  .optional()
+  .describe(
+    'Walls low, as in The Sims: with mode low every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows keep their frames. up is the walls whole (the default).',
+  )
+
 export const viewSceneTool = {
   name: 'view_scene',
   title: 'Look at the scene',
@@ -69,17 +83,18 @@ export const viewSceneTool = {
       ),
     presentation: z
       .discriminatedUnion('mode', [
-        z.object({ mode: z.literal('stacked'), showRoofs: showRoofsField }),
-        z.object({ mode: z.literal('exploded'), showRoofs: showRoofsField }),
+        z.object({ mode: z.literal('stacked'), showRoofs: showRoofsField, walls: wallsField }),
+        z.object({ mode: z.literal('exploded'), showRoofs: showRoofsField, walls: wallsField }),
         z.object({
           mode: z.literal('solo'),
           levelId: z.string().min(1),
           showRoofs: showRoofsField,
+          walls: wallsField,
         }),
       ])
       .optional()
       .describe(
-        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. showRoofs: false leaves the roofs out of the picture, true puts them in whatever the person has on. Does not change the live view. Do not combine with interior.',
+        'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. showRoofs: false leaves the roofs out of the picture, true puts them in whatever the person has on. walls (mode low, cutHeight optional) stands every wall as a short stub (default 0.25 m) with a flat cap. Does not change the live view. Do not combine with interior.',
       ),
     from: z
       .enum(VIEW_SIDES)

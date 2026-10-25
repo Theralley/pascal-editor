@@ -27,6 +27,7 @@ import {
 import { VIEW_SCENE_CASES, viewSceneCaseProblems } from './__fixtures__/view-scene-cases'
 import { pointInPolygon } from './plan-geometry'
 import {
+  confirmSceneViewPresentation,
   photoCropSize,
   type SceneViewBox,
   sceneViewBounds,
@@ -98,6 +99,51 @@ function building(): Record<string, AnyNode> {
 }
 
 const box: SceneViewBox = { min: [0, 0, 0], max: [20, 6, 10] }
+
+test('walls low ride the level presentation and are checked against what the renderer applied', () => {
+  const nodes = building()
+  const input = z.object(viewSceneTool.input)
+  expect(
+    input.safeParse({ presentation: { mode: 'stacked', walls: { mode: 'low', cutHeight: 0.4 } } })
+      .success,
+  ).toBe(true)
+  expect(
+    input.safeParse({ presentation: { mode: 'stacked', walls: { mode: 'low', cutHeight: 3 } } })
+      .success,
+  ).toBe(false)
+  expect(
+    input.safeParse({ presentation: { mode: 'stacked', walls: { mode: 'sideways' } } }).success,
+  ).toBe(false)
+  const presentation = {
+    mode: 'exploded',
+    showRoofs: false,
+    walls: { mode: 'low', cutHeight: 0.4 },
+  } as const
+  expect(sceneViewPlan(nodes, { presentation }).presentation).toEqual(presentation)
+  expect(() => sceneViewPlan(nodes, { presentation, interior: { levelId: 'level_0' } })).toThrow(
+    'Choose a level presentation',
+  )
+  confirmSceneViewPresentation({ mode: 'stacked' }, { mode: 'stacked' })
+  confirmSceneViewPresentation(
+    { mode: 'stacked', walls: { mode: 'low' } },
+    { mode: 'stacked', walls: { mode: 'low' } },
+  )
+  confirmSceneViewPresentation(
+    { mode: 'exploded', walls: { mode: 'low', cutHeight: 0.4 } },
+    { mode: 'exploded', walls: { mode: 'low', cutHeight: 0.4 } },
+  )
+  for (const applied of [
+    undefined,
+    { mode: 'exploded' as const },
+    { mode: 'exploded' as const, walls: { mode: 'low' as const, cutHeight: 0.25 } },
+  ])
+    expect(() =>
+      confirmSceneViewPresentation(
+        { mode: 'exploded', walls: { mode: 'low', cutHeight: 0.4 } },
+        applied,
+      ),
+    ).toThrow('did not confirm the requested level view')
+})
 
 test('level captures frame the settled Solo and Exploded geometry without changing the graph', () => {
   const nodes = building()

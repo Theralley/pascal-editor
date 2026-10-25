@@ -41,6 +41,9 @@ type StreetSide = (typeof STREET_SIDES)[number]
 /** The light a host renders a view in; the scene's own when absent. */
 export type SceneViewLighting = Exclude<(typeof VIEW_LIGHTING)[number], 'current'>
 
+/** How the walls stand in a picture: whole, or cut down to stubs at `cutHeight` metres (default per host). */
+export type SceneViewWalls = { mode: 'up' | 'low'; cutHeight?: number }
+
 export type SceneViewInput = {
   target?: string
   interior?: SceneViewInteriorInput
@@ -82,8 +85,8 @@ export type SceneViewInterior = { levelId: string; roomId?: string }
 export type SceneViewInteriorInput = { levelId?: string; zoneId?: string }
 
 export type SceneViewPresentation =
-  | { mode: 'stacked' | 'exploded'; showRoofs?: boolean }
-  | { mode: 'solo'; levelId: string; showRoofs?: boolean }
+  | { mode: 'stacked' | 'exploded'; showRoofs?: boolean; walls?: SceneViewWalls }
+  | { mode: 'solo'; levelId: string; showRoofs?: boolean; walls?: SceneViewWalls }
 
 /** Validate against the scene being rendered as well as the scene used to request the view. */
 export function sceneViewPresentationLevel(
@@ -112,12 +115,15 @@ export function confirmSceneViewPresentation(
     requested &&
     (applied?.mode !== requested.mode ||
       applied?.showRoofs !== requested.showRoofs ||
+      applied?.walls?.mode !== requested.walls?.mode ||
+      (requested.walls?.cutHeight !== undefined &&
+        applied?.walls?.cutHeight !== requested.walls.cutHeight) ||
       (requested.mode === 'solo' &&
         (applied?.mode !== 'solo' || applied.levelId !== requested.levelId)))
   )
     refuse(
       'view_presentation_unconfirmed',
-      'The renderer did not confirm the requested level view. Refresh the renderer and retry; this picture cannot verify Solo, Exploded or roof behavior.',
+      'The renderer did not confirm the requested level view. Refresh the renderer and retry; this picture cannot verify Solo, Exploded, roof or wall behavior.',
       { requested, applied: applied ?? null },
     )
 }

@@ -375,7 +375,7 @@ type ThumbnailEvents = {
    * building, so nodes the wall mode hides (`followsWallMode`) are shown for the clone.
    */
   'thumbnail:before-capture':
-    | { wholeWalls?: boolean; exporting?: boolean; finished?: boolean }
+    | { wholeWalls?: boolean; exporting?: boolean; finished?: boolean; wallsLow?: boolean }
     | undefined
   'thumbnail:after-capture': undefined
 }
