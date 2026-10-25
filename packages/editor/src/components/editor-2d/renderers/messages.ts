@@ -8,7 +8,7 @@ export const messages = defineMessages({
     'dimension.collapse': 'Value would collapse the geometry',
   },
   sv: {
-    'dimension.override': 'åsidosatt',
+    'dimension.override': 'manuellt',
     'dimension.cannotRead': 'Kan inte läsa ”{value}”',
     'dimension.notDrivable': 'Kan inte styras — {reason}',
     'dimension.collapse': 'Värdet skulle få geometrin att kollapsa',

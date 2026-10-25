@@ -9,7 +9,6 @@ export const messages = defineMessages({
     'measure.volumePrefix': 'V',
     'measure.create': 'Create',
     'measure.align': 'ALIGN',
-    'openWallEnd.label': 'Wall end not joined',
   },
   sv: {
     'measure.extrusionHeight': 'Extruderingshöjd',
@@ -18,7 +17,6 @@ export const messages = defineMessages({
     'measure.perimeterPrefix': 'O',
     'measure.volumePrefix': 'V',
     'measure.create': 'Skapa',
-    'measure.align': 'LINJERA',
-    'openWallEnd.label': 'Väggände utan anslutning',
+    'measure.align': 'RIKTA IN',
   },
 })

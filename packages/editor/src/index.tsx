@@ -327,6 +327,8 @@ export {
   type FloorplanPreviewProps,
   type FloorplanPreviewScene,
 } from './components/viewer/floorplan-preview'
+// The viewer chrome's words, for hosts that build their own toolbar so shared labels cannot drift.
+export { messages as viewerMessages } from './components/viewer/messages'
 export { useViewerCameraNavigationSync } from './components/viewer/use-viewer-camera-navigation-sync'
 export {
   ViewerControlsBar,

@@ -7,9 +7,6 @@
  * plain https resource, not about SSRF (no server ever fetches it).
  */
 
-import { translate } from '@pascal-app/editor'
-import { messages } from './messages'
-
 /**
  * Hard cap on the fetched document. Matches the scene store's own limit
  * (`DEFAULT_MAX_SCENE_BYTES` in the sqlite scene store, 10 MB): a file
@@ -17,7 +14,10 @@ import { messages } from './messages'
  */
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024
 
-export type ImportSrcResult = { ok: true; url: URL } | { ok: false; reason: string }
+/** Why a `src` was refused; the page words it in the visitor's language. */
+export type ImportSrcReason = 'missing' | 'notAbsolute' | 'credentials' | 'httpsOnly'
+
+export type ImportSrcResult = { ok: true; url: URL } | { ok: false; reason: ImportSrcReason }
 
 /**
  * Accepts only absolute `https:` URLs without embedded credentials.
@@ -26,21 +26,21 @@ export type ImportSrcResult = { ok: true; url: URL } | { ok: false; reason: stri
  */
 export function parseImportSrc(raw: string | null | undefined): ImportSrcResult {
   if (!raw) {
-    return { ok: false, reason: translate(messages, 'importSrc.missing') }
+    return { ok: false, reason: 'missing' }
   }
   let url: URL
   try {
     url = new URL(raw)
   } catch {
-    return { ok: false, reason: translate(messages, 'importSrc.notAbsolute') }
+    return { ok: false, reason: 'notAbsolute' }
   }
   if (url.username || url.password) {
-    return { ok: false, reason: translate(messages, 'importSrc.credentials') }
+    return { ok: false, reason: 'credentials' }
   }
   const isLocalhost =
     url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]'
   if (url.protocol === 'https:' || (url.protocol === 'http:' && isLocalhost)) {
     return { ok: true, url }
   }
-  return { ok: false, reason: translate(messages, 'importSrc.httpsOnly') }
+  return { ok: false, reason: 'httpsOnly' }
 }

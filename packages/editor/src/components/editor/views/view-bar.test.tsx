@@ -2,6 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { useViewer } from '@pascal-app/viewer'
 import { setLocale } from '../../../i18n'
 import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
+import { pluginsView } from './use-editor-views'
 import { GroundModeToggle } from './view-bar'
 
 const saved = useViewer.getState()
@@ -59,7 +60,11 @@ test('the bar speaks Swedish: the ground state and its choices', () => {
   setLocale('sv')
   useViewer.setState({ belowGrade: true, gradeStanding: 'below-grade', groundMode: 'auto' })
   const bar = renderCurrentMarkup(<GroundModeToggle />)
-  expect(bar).toContain('Under marknivå · marken är dold')
+  expect(bar).toContain('Under marknivå · marken är nedtonad')
   expect(bar).toMatch(/aria-pressed="true"[^>]*>Auto</)
-  expect(bar).toMatch(/aria-pressed="false"[^>]*>Hel</)
+  expect(bar).toMatch(/aria-pressed="false"[^>]*>Täckande</)
+})
+
+test('the plugin directory keeps one loader across renders, so the host never remounts it', () => {
+  expect(pluginsView('Plugins').component).toBe(pluginsView('Tillägg').component)
 })

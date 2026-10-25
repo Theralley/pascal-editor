@@ -19,11 +19,16 @@ import { messages } from './messages'
 
 export const PLUGINS_VIEW_ID = 'plugins'
 
-const pluginsView = (label: string): EditorViewDescriptor => ({
+// One loader for the life of the module: the host caches `React.lazy` per loader, so a new one
+// each render would remount the directory and lose its detail panel, search and Undo toast.
+const loadPluginsView = () =>
+  import('./plugins-view').then((module) => ({ default: module.PluginsView }))
+
+export const pluginsView = (label: string): EditorViewDescriptor => ({
   id: PLUGINS_VIEW_ID,
   label,
   icon: { kind: 'url', src: '/icons/plugins.webp' },
-  component: () => import('./plugins-view').then((module) => ({ default: module.PluginsView })),
+  component: loadPluginsView,
   workspaces: ['edit'],
 })
 

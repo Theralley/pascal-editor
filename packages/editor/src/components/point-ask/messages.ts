@@ -16,8 +16,6 @@ export const messages = defineMessages({
     'hover.working': 'Pascal is working on this',
     'hover.wallHint': '⌥ the wall',
 
-    'pill.hint': 'Point at anything to ask Pascal',
-    'pill.leave': ' · Esc to leave',
     'before.tag': 'Before',
 
     'pin.title': 'Sent to Pascal',
@@ -49,6 +47,7 @@ export const messages = defineMessages({
     'refusal.historyHeld': 'Another change is in progress. Try again in a moment.',
     'refusal.noBefore': 'The scene has changed too much since to show how it was.',
     'refusal.turnWorking': 'Pascal is still working. Try again when it’s done.',
+    'pill.text': '<b>Point at anything to ask Pascal</b> · Esc to leave',
   },
   sv: {
     'bubble.title': 'Fråga Pascal',
@@ -65,8 +64,6 @@ export const messages = defineMessages({
     'hover.working': 'Pascal arbetar med det här',
     'hover.wallHint': '⌥ väggen',
 
-    'pill.hint': 'Peka på något för att fråga Pascal',
-    'pill.leave': ' · Esc för att lämna',
     'before.tag': 'Före',
 
     'pin.title': 'Skickat till Pascal',
@@ -80,7 +77,7 @@ export const messages = defineMessages({
     'card.error': 'Pascal kunde inte göra det här.',
     'card.question': 'Pascal behöver ett svar från dig.',
     'card.undone': 'Ångrat',
-    'card.onIt': 'Pascal jobbar på det',
+    'card.onIt': 'Pascal arbetar på det',
     'card.after': 'Efter',
     'card.editedSince':
       'Du har ändrat scenen sedan dess. Om du ångrar tas även de ändringarna bort.',
@@ -99,5 +96,6 @@ export const messages = defineMessages({
     'refusal.historyHeld': 'En annan ändring pågår. Försök igen om en stund.',
     'refusal.noBefore': 'Scenen har ändrats för mycket för att visa hur den var.',
     'refusal.turnWorking': 'Pascal arbetar fortfarande. Försök igen när det är klart.',
+    'pill.text': '<b>Peka på något för att fråga Pascal</b> · Esc för att lämna',
   },
 })

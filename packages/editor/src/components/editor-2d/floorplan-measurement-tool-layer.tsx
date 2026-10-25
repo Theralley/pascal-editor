@@ -638,6 +638,7 @@ function FloorplanExtrusionControl({
   unitsPerPixel: number
 }) {
   const t = useT(messages)
+  const locale = useLocale()
   const unit = useViewer((state) => state.unit)
   const extrusionHeight = useMeasurementDraft((state) => state.extrusionHeight)
   const points = useMeasurementDraft((state) => state.points)
@@ -673,7 +674,7 @@ function FloorplanExtrusionControl({
         baseNormal[2] * extrusionHeight,
       ]
     : [0, 0, 0]
-  const volumeLabel = formatVolumeLabel(measurementPrismVolume(points, extrusion), unit)
+  const volumeLabel = formatVolumeLabel(measurementPrismVolume(points, extrusion), unit, 1, locale)
 
   return (
     <g transform={`rotate(${-sceneRotationDeg} ${center[0]} ${center[2]})`}>
@@ -1624,7 +1625,7 @@ export function FloorplanMeasurementToolLayer() {
           text={`${hover.semantic.label}${
             hover.semantic.length === null
               ? ''
-              : ` · ${formatLinearMeasurement(hover.semantic.length, unit, metricNotation)}`
+              : ` · ${formatLinearMeasurement(hover.semantic.length, unit, metricNotation, locale)}`
           }`}
           textColor={labelText}
           unitsPerPixel={unitsPerPixel}

@@ -168,7 +168,7 @@ function ceilingContent(
       lights
         ? t('ceiling.lightsHang', { count: ids.length, summary: hostedSummary(ids, nodes) })
         : t('ceiling.itemsOn', { count: ids.length, names: parenthesized(names) }),
-      t('ceiling.keepInPlace', { count: ids.length }),
+      t(lights ? 'ceiling.keepLightsInPlace' : 'ceiling.keepInPlace', { count: ids.length }),
     )
   }
   return {
@@ -216,10 +216,17 @@ function constructionContent(
     }
   }
   if (change.part === 'floor') {
+    // Swedish: a door or a lamp is "den", an item or a window is "det".
+    const single =
+      change.hostedIds.length === 1 ? hostedKind(nodes[change.hostedIds[0] as string]) : null
+    const commonGender = single === 'door' || single === 'light'
     return {
       title: t('floor.title', { room }),
       description: hosted
-        ? t('floor.hostedOn', { count: change.hostedIds.length, hosted })
+        ? t(commonGender ? 'floor.hostedOnCommon' : 'floor.hostedOn', {
+            count: change.hostedIds.length,
+            hosted,
+          })
         : t('floor.removes'),
       keepLabel: hosted && canKeep ? t('floor.keepItems') : null,
       confirmLabel: t(hosted ? 'floor.deleteItems' : 'floor.remove'),
@@ -289,9 +296,10 @@ export function DeleteConfirmationDialog() {
   const cancel = useDeleteConfirmation((state) => state.cancel)
   const confirm = useDeleteConfirmation((state) => state.confirm)
   const nodes = useScene((state) => (request ? state.nodes : null))
+  // The words are read in the active language, so `locale` rebuilds them on a switch.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `locale` is a trigger, not a value the memo reads
   const live = useMemo(
     () => (request && nodes ? deleteConfirmationContent(request, nodes) : null),
-    // The words are read in the active language; `locale` makes them rebuild on a switch.
     [request, nodes, locale],
   )
   // Hold the last words through the close animation so the dialog never empties.

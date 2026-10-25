@@ -1,4 +1,5 @@
 import type { SceneCardData } from '@/components/scene-card'
+import { nextProjectNumber } from '@/lib/next-project-number'
 import { getSceneOperations } from '@/lib/scene-store-server'
 import { sceneThumbnailUrl } from '@/lib/scene-thumbnails'
 import { HomeView } from './home-view'
@@ -18,15 +19,6 @@ async function fetchScenes(): Promise<SceneCardData[]> {
       updatedAt: scene.updatedAt,
     })),
   )
-}
-
-/** `Project #n`: one past the highest number still in use, never below the count. */
-function nextProjectNumber(names: string[]): number {
-  const highest = names.reduce((max, name) => {
-    const match = /^Project #(\d+)$/.exec(name.trim())
-    return match ? Math.max(max, Number(match[1])) : max
-  }, 0)
-  return Math.max(highest, names.length) + 1
 }
 
 export default async function HomePage() {

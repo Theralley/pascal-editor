@@ -1,11 +1,18 @@
 'use client'
 
 import { type ValidateBuildJsonResult, validateBuildJson } from '@pascal-app/core'
-import { translate, useT } from '@pascal-app/editor'
+import { type MessageKey, type MessageVars, translate, useT } from '@pascal-app/editor'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { MAX_IMPORT_BYTES, parseImportSrc } from '@/lib/import-src'
+import { type ImportSrcReason, MAX_IMPORT_BYTES, parseImportSrc } from '@/lib/import-src'
 import { messages } from './messages'
+
+const SRC_REASON_KEYS = {
+  missing: 'src.missing',
+  notAbsolute: 'src.notAbsolute',
+  credentials: 'src.credentials',
+  httpsOnly: 'src.httpsOnly',
+} as const satisfies Record<ImportSrcReason, MessageKey<typeof messages>>
 
 type Phase =
   | { kind: 'fetching' }
@@ -15,7 +22,7 @@ type Phase =
   // already be gone (review feedback).
   | { kind: 'review'; result: ValidateBuildJsonResult; createError?: string }
   | { kind: 'creating'; result: ValidateBuildJsonResult }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; key: MessageKey<typeof messages>; vars?: MessageVars }
 
 /**
  * Client half of `/import?src=<url>`: fetches the build JSON in the
@@ -30,7 +37,9 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
   const router = useRouter()
   const t = useT(messages)
   const [phase, setPhase] = useState<Phase>({ kind: 'fetching' })
-  const [sceneName, setSceneName] = useState(name ?? '')
+  // null until the visitor types: the field then shows the name from the link, or the default in their language.
+  const [typedName, setTypedName] = useState<string | null>(null)
+  const sceneName = typedName ?? name ?? t('defaultName')
   // Synchronous re-entry guard: a second tap can fire before React
   // re-renders into 'creating', and two scenes would be created (review
   // feedback — especially likely on the mobile hand-off).
@@ -43,7 +52,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
     // surface as an error either.
     const parsedSrc = parseImportSrc(src)
     if (!parsedSrc.ok) {
-      setPhase({ kind: 'error', message: parsedSrc.reason })
+      setPhase({ kind: 'error', key: SRC_REASON_KEYS[parsedSrc.reason] })
       return
     }
     let cancelled = false
@@ -58,41 +67,42 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
       } catch {
         update({
           kind: 'error',
-          message: translate(messages, 'fetchFailedCors'),
+          key: 'fetchFailedCors',
         })
         return
       }
       if (!response.ok) {
         update({
           kind: 'error',
-          message: translate(messages, 'fetchFailedStatus', { status: response.status }),
+          key: 'fetchFailedStatus',
+          vars: { status: response.status },
         })
         return
       }
       const declared = Number(response.headers.get('content-length') ?? 0)
       if (declared > MAX_IMPORT_BYTES) {
-        update({ kind: 'error', message: translate(messages, 'tooLarge') })
+        update({ kind: 'error', key: 'tooLarge' })
         return
       }
       let text: string
       try {
         text = await response.text()
       } catch {
-        update({ kind: 'error', message: translate(messages, 'unreadable') })
+        update({ kind: 'error', key: 'unreadable' })
         return
       }
       // Blob measures BYTES — text.length counts UTF-16 code units, and
       // a graph full of non-ASCII names could pass here yet still 413
       // at the store (review feedback).
       if (new Blob([text]).size > MAX_IMPORT_BYTES) {
-        update({ kind: 'error', message: translate(messages, 'tooLarge') })
+        update({ kind: 'error', key: 'tooLarge' })
         return
       }
       let parsed: unknown
       try {
         parsed = JSON.parse(text)
       } catch {
-        update({ kind: 'error', message: translate(messages, 'notJson') })
+        update({ kind: 'error', key: 'notJson' })
         return
       }
       update({ kind: 'review', result: validateBuildJson(parsed) })
@@ -154,7 +164,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
   if (phase.kind === 'error') {
     return (
       <div className="rounded-xl border border-border/60 bg-background p-6">
-        <p className="text-destructive text-sm">{phase.message}</p>
+        <p className="text-destructive text-sm">{t(phase.key, phase.vars)}</p>
       </div>
     )
   }
@@ -170,8 +180,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
         </label>
         <input
           className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
-          onChange={(event) => setSceneName(event.target.value)}
-          placeholder={t('defaultName')}
+          onChange={(event) => setTypedName(event.target.value)}
           value={sceneName}
         />
 
@@ -179,10 +188,12 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
           {t('contents')}
         </p>
         <p className="text-sm">
-          {t('nodes', { count: result.stats.total })}
           {result.stats.floorAreaM2 > 0
-            ? t('floorArea', { area: Math.round(result.stats.floorAreaM2) })
-            : ''}
+            ? t('nodesWithArea', {
+                count: result.stats.total,
+                area: Math.round(result.stats.floorAreaM2),
+              })
+            : t('nodes', { count: result.stats.total })}
         </p>
         {typeEntries.length > 0 && (
           <p className="mt-1 text-muted-foreground text-xs">

@@ -83,7 +83,7 @@ import {
   resolvePlanRoomHit,
   roomPickingEnabled,
 } from '../../hooks/use-selected-room'
-import { useT } from '../../i18n'
+import { type Locale, useLocale, useT } from '../../i18n'
 import { resolveCeilingPlanPointSnap } from '../../lib/ceiling-plan-snap'
 import {
   alignFloorplanDraftPoint,
@@ -2435,9 +2435,10 @@ function formatMeasurement(
   unit: 'metric' | 'imperial',
   metersPerUnit: number | null = null,
   metricNotation: 'meters' | 'millimeters' = 'meters',
+  locale?: Locale,
 ) {
   const measuredValue = metersPerUnit && metersPerUnit > 0 ? value * metersPerUnit : value
-  return formatLinearMeasurement(measuredValue, unit, metricNotation)
+  return formatLinearMeasurement(measuredValue, unit, metricNotation, locale)
 }
 
 function formatNumber(value: number, fractionDigits = 2) {
@@ -3330,6 +3331,7 @@ function FloorplanReferenceScaleDraftLine({
   unitsPerPixel: number
 }) {
   const t = useT(messages)
+  const locale = useLocale()
   const cursor = useFloorplanDraftPreview((s) => s.cursorPoint)
   const metricNotation = useViewer((state) => state.metricNotation)
   if (!cursor) {
@@ -3346,6 +3348,7 @@ function FloorplanReferenceScaleDraftLine({
           unit,
           null,
           metricNotation,
+          locale,
         ),
       })}
       palette={palette}
@@ -3740,6 +3743,7 @@ const FloorplanSiteEdgeLabelLayer = memo(function FloorplanSiteEdgeLabelLayer({
   unitsPerPixel: number
 }) {
   const metricNotation = useViewer((state) => state.metricNotation)
+  const locale = useLocale()
   if (!(shouldShow && sitePolygon && sitePolygon.polygon.length >= 2)) {
     return null
   }
@@ -3788,7 +3792,7 @@ const FloorplanSiteEdgeLabelLayer = memo(function FloorplanSiteEdgeLabelLayer({
       labelAngleDeg += 180
     }
 
-    const label = formatMeasurement(length, unit, null, metricNotation)
+    const label = formatMeasurement(length, unit, null, metricNotation, locale)
     const width = Math.max(label.length * upx * 6.4 + padX * 2, minWidth)
     const height = fontSize + padY * 2
 
@@ -4458,6 +4462,7 @@ function FloorplanLinearDraftLayer({
   sceneRotationDeg: number
 }) {
   const metricNotation = useViewer((state) => state.metricNotation)
+  const locale = useLocale()
   const wallDraftEnd = useFloorplanDraftPreview((s) => s.wallDraftEnd)
   const fenceDraftEnd = useFloorplanDraftPreview((s) => s.fenceDraftEnd)
   const roofDraftEnd = useFloorplanDraftPreview((s) => s.roofDraftEnd)
@@ -4517,7 +4522,7 @@ function FloorplanLinearDraftLayer({
       const dy = to[1] - from[1]
       const length = Math.hypot(dx, dy)
       return {
-        lengthLabel: formatMeasurement(length, unit, null, metricNotation),
+        lengthLabel: formatMeasurement(length, unit, null, metricNotation, locale),
         midpoint: [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2] as WallPlanPoint,
         direction: [dx / length, dy / length] as WallPlanPoint,
         angleLabels: [],
@@ -4527,6 +4532,7 @@ function FloorplanLinearDraftLayer({
   }, [
     isWallBuildActive,
     levelId,
+    locale,
     metricNotation,
     unit,
     wallRectangleDraftEnd,
@@ -4660,7 +4666,7 @@ function FloorplanLinearDraftLayer({
     }
 
     return {
-      lengthLabel: formatMeasurement(length, unit, null, metricNotation),
+      lengthLabel: formatMeasurement(length, unit, null, metricNotation, locale),
       midpoint: [
         (wallDraftStart[0] + wallDraftEnd[0]) / 2,
         (wallDraftStart[1] + wallDraftEnd[1]) / 2,
@@ -4668,7 +4674,7 @@ function FloorplanLinearDraftLayer({
       direction: [dx / length, dy / length] as WallPlanPoint,
       angleLabels,
     }
-  }, [isWallBuildActive, metricNotation, unit, wallDraftEnd, wallDraftStart, walls])
+  }, [isWallBuildActive, locale, metricNotation, unit, wallDraftEnd, wallDraftStart, walls])
 
   // Axis guides for wall and fence drafts — parity with the 3D tools'
   // `DraftAxisGuides`: an X/Z cross through the draft start, and a single
@@ -4854,6 +4860,7 @@ export function FloorplanPanel({
   floorplanSceneSlot?: ReactNode
 }) {
   const t = useT(messages)
+  const locale = useLocale()
   useFloorplanCameraSyncBridge()
   const viewportHostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -11350,6 +11357,7 @@ export function FloorplanPanel({
                   unit,
                   null,
                   metricNotation,
+                  locale,
                 )}
               </div>
             </div>
@@ -11396,7 +11404,7 @@ export function FloorplanPanel({
             <div className="mt-3 rounded-lg bg-muted/45 px-3 py-2 text-muted-foreground text-xs">
               {pendingReferenceImageScaleFactor
                 ? t('plan.scaleFactor', {
-                    factor: formatNumber(pendingReferenceImageScaleFactor, 3),
+                    factor: Number(formatNumber(pendingReferenceImageScaleFactor, 3)),
                   })
                 : t('plan.scaleEnterPositive')}
             </div>

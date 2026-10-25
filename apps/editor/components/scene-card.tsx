@@ -4,7 +4,7 @@ import { type Locale, useLocale, useT } from '@pascal-app/editor'
 import { Copy, GitFork, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { conflictMessage, requestDuplicate } from '@/lib/duplicate-scene'
 import { cn } from '@/lib/utils'
 import { PascalMark, PRIMARY_PILL, SECONDARY_PILL } from './app-shell'
@@ -21,19 +21,26 @@ export interface SceneCardData {
 
 type Dialog = 'rename' | 'fork' | 'delete' | null
 
-/** A short date in the active language; UTC so the server's markup and the browser's agree. */
-function formatUpdated(iso: string, locale: Locale) {
+const subscribeToClientMount = () => () => {}
+
+/** A short date in the active language; UTC until mounted, so the server's markup and hydration agree. */
+function formatUpdated(iso: string, locale: Locale, local: boolean) {
   return new Intl.DateTimeFormat(locale === 'sv' ? 'sv-SE' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: local ? undefined : 'UTC',
   }).format(new Date(iso))
 }
 
 export function SceneCard({ scene }: { scene: SceneCardData }) {
   const t = useT(messages)
   const locale = useLocale()
+  const mounted = useSyncExternalStore(
+    subscribeToClientMount,
+    () => true,
+    () => false,
+  )
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
@@ -105,7 +112,7 @@ export function SceneCard({ scene }: { scene: SceneCardData }) {
               { time: (text) => <time dateTime={scene.updatedAt}>{text}</time> },
               {
                 count: t('card.nodes', { count: scene.nodeCount }),
-                date: formatUpdated(scene.updatedAt, locale),
+                date: formatUpdated(scene.updatedAt, locale, mounted),
               },
             )}
           </p>

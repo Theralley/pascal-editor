@@ -24,6 +24,7 @@ import {
   useT,
   useTerraceDraft,
   useWallDrawVariant,
+  viewerMessages,
 } from '@pascal-app/editor'
 import { useLiquidLineToolOptions } from '@pascal-app/nodes'
 import { useViewer } from '@pascal-app/viewer'
@@ -105,6 +106,7 @@ const ROOF_TYPE_KEYS: Readonly<Record<string, Key>> = {
  */
 export function BuildTab() {
   const t = useT(messages)
+  const v = useT(viewerMessages)
   const labelOf = (table: Readonly<Record<string, Key>>, id: string, fallback: string) => {
     const key = table[id]
     return key ? t(key) : fallback
@@ -635,7 +637,7 @@ export function BuildTab() {
                   >
                     <span>{t('build.followLineset')}</span>
                     <span className="text-muted-foreground text-xs">
-                      {follow ? t('controls.on') : t('controls.off')}
+                      {follow ? v('controls.on') : v('controls.off')}
                     </span>
                   </button>
                   <span className="px-1 text-[11px] text-muted-foreground">

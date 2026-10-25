@@ -62,8 +62,7 @@ export function ModePill() {
   if (!shown) return null
   return (
     <div className="pa-pill" ref={el} role="status">
-      <b>{t('pill.hint')}</b>
-      {t('pill.leave')}
+      {t.rich('pill.text', { b: (text) => <b>{text}</b> })}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { type SceneGraph, useT } from '@pascal-app/editor'
+import { type SceneGraph, translate, useT } from '@pascal-app/editor'
 import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -30,7 +30,10 @@ export function CreateProjectButton({ nextNumber }: { nextNumber: number }) {
       const response = await fetch('/api/scenes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: `Project #${nextNumber}`, graph: EMPTY_GRAPH }),
+        body: JSON.stringify({
+          name: translate(messages, 'create.defaultName', { number: nextNumber }),
+          graph: EMPTY_GRAPH,
+        }),
       })
       if (!response.ok) {
         setError(t('create.failed', { status: response.status }))

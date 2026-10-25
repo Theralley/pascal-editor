@@ -6,7 +6,6 @@ import {
   FirstPersonControls,
   ParametricViewerRooms,
   type SceneGraph,
-  translate,
   useEditor,
   useFirstPersonHud,
   useT,
@@ -256,10 +255,15 @@ class ViewerErrorBoundary extends Component<{ children: ReactNode }, { failed: b
 
   render() {
     if (!this.state.failed) return this.props.children
-    return (
-      <div className="flex h-full w-full items-center justify-center p-6 text-center">
-        <p className="max-w-sm text-neutral-600 text-sm">{translate(messages, 'embed.failed')}</p>
-      </div>
-    )
+    return <ViewerFailed />
   }
+}
+
+function ViewerFailed() {
+  const t = useT(messages)
+  return (
+    <div className="flex h-full w-full items-center justify-center p-6 text-center">
+      <p className="max-w-sm text-neutral-600 text-sm">{t('embed.failed')}</p>
+    </div>
+  )
 }

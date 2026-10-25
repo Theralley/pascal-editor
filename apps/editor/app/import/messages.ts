@@ -25,6 +25,14 @@ export const messages = defineMessages({
     floorArea: ' · {area} m² of floor',
     retry: 'Try again',
     importAsNew: 'Import as a new scene',
+    'src.missing': 'Missing `src` parameter.',
+    'src.notAbsolute': 'The `src` parameter is not an absolute URL.',
+    'src.credentials': 'Credentials in the `src` URL are not allowed.',
+    'src.httpsOnly': 'Only https URLs can be imported.',
+    nodesWithArea: {
+      one: '{count} node · {area} m² of floor',
+      other: '{count} nodes · {area} m² of floor',
+    },
   },
   sv: {
     home: 'Hem',
@@ -50,5 +58,13 @@ export const messages = defineMessages({
     floorArea: ' · {area} m² golvyta',
     retry: 'Försök igen',
     importAsNew: 'Importera som en ny scen',
+    'src.missing': 'Parametern `src` saknas.',
+    'src.notAbsolute': 'Parametern `src` är inte en absolut URL.',
+    'src.credentials': 'Inloggningsuppgifter i `src`-adressen är inte tillåtna.',
+    'src.httpsOnly': 'Bara https-adresser kan importeras.',
+    nodesWithArea: {
+      one: '{count} element · {area} m² golvyta',
+      other: '{count} element · {area} m² golvyta',
+    },
   },
 })

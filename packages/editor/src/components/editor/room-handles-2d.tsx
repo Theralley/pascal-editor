@@ -5,7 +5,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { Minus, Plus } from 'lucide-react'
 import { type PointerEvent as ReactPointerEvent, useMemo, useState } from 'react'
 import { useSelectedRoom } from '../../hooks/use-selected-room'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { formatLinearMeasurement, MEASUREMENT_FLOORPLAN_COLOR } from '../../lib/measurements'
 import {
   commitRoomFloorElevation,
@@ -59,6 +59,7 @@ function signed(text: string, value: number) {
  */
 export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
   const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((s) => s.nodes)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -71,7 +72,7 @@ export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
     event.stopPropagation()
     if (next !== null)
       commitRoomFloorElevation(zoneId, next, (meters) =>
-        formatLinearMeasurement(meters, unit, metricNotation),
+        formatLinearMeasurement(meters, unit, metricNotation, locale),
       )
   }
   return (
@@ -94,7 +95,7 @@ export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
         className="min-w-14 text-center font-medium text-foreground text-xs tabular-nums"
         data-room-floor-height-value
       >
-        {signed(formatMeasurement(Math.abs(height), unit, metricNotation), height)}
+        {signed(formatMeasurement(Math.abs(height), unit, metricNotation, locale), height)}
       </span>
       <ActionMenuButton
         disabled={up === null}
@@ -264,6 +265,7 @@ function PlanReadout({ at, text, refused }: { at: Point; text: string; refused: 
  * distance: indigo line, end dots, outlined label along the line.
  */
 function PlanRoomDimensions({ dimensions }: { dimensions: RoomDimension[] }) {
+  const locale = useLocale()
   const context = useFloorplanRender()
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -296,13 +298,13 @@ function PlanRoomDimensions({ dimensions }: { dimensions: RoomDimension[] }) {
           appearance: 'outlined',
           cx: (from[0] + to[0]) / 2,
           cy: (from[1] + to[1]) / 2,
-          text: formatLinearMeasurement(distance, unit, metricNotation),
+          text: formatLinearMeasurement(distance, unit, metricNotation, locale),
           angle: Math.atan2(to[1] - from[1], to[0] - from[0]),
           offsetPx: 14,
         },
       ]),
     }),
-    [dimensions, unit, metricNotation],
+    [dimensions, locale, unit, metricNotation],
   )
   if (!dimensions.length) return null
   return (
@@ -326,6 +328,7 @@ type PlanDrag = Extract<RoomHandleDrag, { kind: 'push' | 'mezzanine-edge' }>
  * themselves draw from the live overrides and the wall ghosts).
  */
 export function RoomHandleDragPreview2D({ levelId }: { levelId: string | null }) {
+  const locale = useLocale()
   const drag = useRoomHandleDrag((s) => s.drag)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -337,7 +340,7 @@ export function RoomHandleDragPreview2D({ levelId }: { levelId: string | null })
   ]
   const text =
     plan.message ??
-    signed(formatMeasurement(Math.abs(plan.distance), unit, metricNotation), plan.distance)
+    signed(formatMeasurement(Math.abs(plan.distance), unit, metricNotation, locale), plan.distance)
   return (
     <g data-room-drag-preview-2d pointerEvents="none">
       {plan.kind === 'mezzanine-edge' && plan.outline.length >= 3 && (
