@@ -2,7 +2,9 @@
 
 import { Box, Columns2, Map as MapIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useT } from '../../i18n'
 import { cn } from '../../lib/utils'
+import { messages } from './messages'
 import { normalizeViewerStageModes, type ViewerStageMode } from './viewer-stage-modes'
 
 export type { ViewerStageMode } from './viewer-stage-modes'
@@ -22,11 +24,12 @@ export function ViewerStageSwitcher({
   modes,
   onChange,
 }: ViewerStageSwitcherProps) {
+  const t = useT(messages)
   const enabledModes = normalizeViewerStageModes(modes)
 
   return (
     <div
-      aria-label="Viewer layout"
+      aria-label={t('stage.layout')}
       className={cn(
         'dark absolute top-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-neutral-950/82 p-1 text-white shadow-elevation-4 backdrop-blur-xl',
         className,
@@ -37,7 +40,7 @@ export function ViewerStageSwitcher({
         <StageButton
           active={mode === '3d'}
           icon={<Box />}
-          label="3D"
+          label={t('stage.3d')}
           onClick={() => onChange('3d')}
         />
       ) : null}
@@ -45,7 +48,7 @@ export function ViewerStageSwitcher({
         <StageButton
           active={mode === '2d'}
           icon={<MapIcon />}
-          label="2D"
+          label={t('stage.2d')}
           onClick={() => onChange('2d')}
         />
       ) : null}
@@ -54,7 +57,7 @@ export function ViewerStageSwitcher({
           active={mode === 'split'}
           className={hideSplitOnMobile && enabledModes.length > 1 ? 'hidden md:flex' : undefined}
           icon={<Columns2 />}
-          label="Split"
+          label={t('stage.split')}
           onClick={() => onChange('split')}
         />
       ) : null}

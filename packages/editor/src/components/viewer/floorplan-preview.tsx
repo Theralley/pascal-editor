@@ -27,6 +27,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useT } from '../../i18n'
 import {
   FLOORPLAN_VIEW_ROTATION_DEG,
   floorplanLocalToWorldPoint,
@@ -64,6 +65,7 @@ import {
   visibleFloorplanViewWidth,
 } from './floorplan-preview-navigation'
 import { isVisibleInFloorplan } from './floorplan-preview-visibility'
+import { messages } from './messages'
 
 const READ_ONLY_PALETTE: FloorplanPalette = {
   selectedStroke: '#4f46e5',
@@ -80,7 +82,7 @@ const READ_ONLY_PALETTE: FloorplanPalette = {
   curveHandleHoverStroke: '#14b8a6',
   measurementStroke: '#475569',
   measurementLabelBackground: '#ffffff',
-  measurementLabelText: '#0f172a',
+  measurementLabelText: '#0f172a', // i18n-ignore
 }
 const EMPTY_PREVIEW_NODES: Record<string, AnyNode> = {}
 const EMPTY_INSTALLED_PLUGINS: readonly string[] = []
@@ -309,6 +311,7 @@ export function FloorplanPreview({
   showLevelSelector = true,
   synchronizeNavigation = false,
 }: FloorplanPreviewProps) {
+  const t = useT(messages)
   const storeNodes = useScene((state) => (scene ? EMPTY_PREVIEW_NODES : state.nodes))
   const storeInstalledPlugins = useScene((state) =>
     scene ? EMPTY_INSTALLED_PLUGINS : state.installedPlugins,
@@ -869,7 +872,7 @@ export function FloorplanPreview({
         className={className}
         style={{ display: 'grid', placeItems: 'center', background: '#f8fafc', color: '#64748b' }}
       >
-        No floor plans are available for this scene.
+        {t('plan.empty')}
       </div>
     )
   }
@@ -882,7 +885,9 @@ export function FloorplanPreview({
       {synchronizeNavigation ? <FloorplanCameraSyncMount /> : null}
       <div
         aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight + - 0 F"
-        aria-label={`${activeLevel ? levelLabel(activeLevel) : 'Floor plan'} 2D view`}
+        aria-label={t('plan.view', {
+          level: activeLevel ? levelLabel(activeLevel) : t('plan.floorPlan'),
+        })}
         onKeyDown={onKeyDown}
         role="application"
         ref={interactionRef}
@@ -969,9 +974,9 @@ export function FloorplanPreview({
             fontWeight: 600,
           }}
         >
-          Floor
+          {t('plan.floor')}
           <select
-            aria-label="Floor"
+            aria-label={t('plan.floor')}
             onChange={(event) => chooseLevel(event.target.value)}
             style={{
               border: '1px solid rgba(148,163,184,.55)',
@@ -1013,28 +1018,28 @@ export function FloorplanPreview({
         }}
       >
         <button
-          aria-label="Zoom out"
+          aria-label={t('plan.zoomOut')}
           onClick={() => zoom(1.2)}
           style={controlStyle}
-          title="Zoom out"
+          title={t('plan.zoomOut')}
           type="button"
         >
           <Minus size={16} />
         </button>
         <button
-          aria-label="Fit floor plan"
+          aria-label={t('plan.fit')}
           onClick={() => updateLocalViewBox(fittedViewBox)}
           style={controlStyle}
-          title="Fit floor plan"
+          title={t('plan.fit')}
           type="button"
         >
           <Maximize2 size={15} />
         </button>
         <button
-          aria-label="Zoom in"
+          aria-label={t('plan.zoomIn')}
           onClick={() => zoom(0.8)}
           style={controlStyle}
-          title="Zoom in"
+          title={t('plan.zoomIn')}
           type="button"
         >
           <Plus size={16} />

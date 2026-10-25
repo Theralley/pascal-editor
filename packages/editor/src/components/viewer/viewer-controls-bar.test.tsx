@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { LEVEL_MODE_OPTIONS, useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
+import { setLocale } from '../../i18n'
 import { renderCurrentMarkup } from '../../test-utils/render-current-markup'
 import { ViewerControlsBar } from './viewer-controls-bar'
 
 const saved = useViewer.getState()
-afterEach(() => useViewer.setState(saved, true))
+afterEach(() => {
+  useViewer.setState(saved, true)
+  setLocale('en')
+})
 
 const bar = (props: Partial<Parameters<typeof ViewerControlsBar>[0]> = {}) =>
   renderCurrentMarkup(<ViewerControlsBar onWalkthroughToggle={() => {}} {...props} />)
@@ -28,6 +32,20 @@ describe('the viewer controls bar', () => {
     const markup = bar({ walkthroughActive: true })
     expect(buttonNamed(markup, 'Roofs')).toContain('aria-pressed="false"')
     expect(buttonNamed(markup, 'Walkthrough')).toContain('aria-pressed="true"')
+  })
+
+  test('speaks Swedish: the group names, every wall and level mode and the roof tooltip', () => {
+    setLocale('sv')
+    useViewer.setState({ showRoofs: false })
+    const markup = bar()
+    expect(markup).toContain('aria-label="Väggar"')
+    expect(markup).toContain('aria-label="Våningar"')
+    for (const label of ['Uppe', 'Genomskuren', 'Låga', 'Dolda', 'Genomskinliga'])
+      expect(markup).toContain(`>${label}</span>`)
+    for (const label of ['Staplade', 'Isärdragna', 'Ensam'])
+      expect(markup).toContain(`>${label}</span>`)
+    expect(buttonNamed(markup, 'Tak')).toContain('aria-pressed="false"')
+    expect(markup).not.toContain('Cutaway')
   })
 
   test('a baked scene has no wall modes to choose', () => {

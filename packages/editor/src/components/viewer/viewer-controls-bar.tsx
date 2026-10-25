@@ -6,9 +6,11 @@ import {
   type EdgeMode,
   getSceneTheme,
   LEVEL_MODE_OPTIONS,
+  type LevelMode,
   SCENE_THEMES,
   useViewer,
   WALL_MODE_OPTIONS,
+  type WallMode,
 } from '@pascal-app/viewer'
 import {
   Box,
@@ -29,6 +31,7 @@ import {
   Square,
   SwatchBook,
 } from 'lucide-react'
+import { type MessageKey, useT } from '../../i18n'
 import { cn } from '../../lib/utils'
 import { VIEW_SHORTCUT_KEYS } from '../../lib/view-shortcuts'
 import { ActionButton } from '../ui/action-menu/action-button'
@@ -46,6 +49,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/primitives/dropdown-menu'
 import { TooltipProvider } from '../ui/primitives/tooltip'
+import { messages } from './messages'
 
 const levelModeIcons = {
   stacked: Layers,
@@ -63,16 +67,50 @@ const wallModeIcons = {
 
 const SEGMENTS = 'h-10 min-h-0 w-auto sm:h-11'
 
+type Key = MessageKey<typeof messages>
+
 const SHADING_OPTIONS = [
-  { id: 'solid', name: 'Solid', detail: 'Flat and fast — no ambient occlusion', icon: Box },
-  { id: 'rendered', name: 'Rendered', detail: 'Full ambient occlusion', icon: Sparkles },
-] as const
+  { id: 'solid', nameKey: 'shading.solid', detailKey: 'shading.solidDetail', icon: Box },
+  {
+    id: 'rendered',
+    nameKey: 'shading.rendered',
+    detailKey: 'shading.renderedDetail',
+    icon: Sparkles,
+  },
+] as const satisfies readonly { id: string; nameKey: Key; detailKey: Key; icon: unknown }[]
 
 const EDGE_OPTIONS = [
-  { id: 'off', name: 'Off', detail: 'No edge lines' },
-  { id: 'soft', name: 'Soft', detail: 'Faint outline of major creases' },
-  { id: 'strong', name: 'Strong', detail: 'Crisp, opaque edge lines' },
-] as const satisfies readonly { id: EdgeMode; name: string; detail: string }[]
+  { id: 'off', nameKey: 'edges.off', detailKey: 'edges.offDetail' },
+  { id: 'soft', nameKey: 'edges.soft', detailKey: 'edges.softDetail' },
+  { id: 'strong', nameKey: 'edges.strong', detailKey: 'edges.strongDetail' },
+] as const satisfies readonly { id: EdgeMode; nameKey: Key; detailKey: Key }[]
+
+const WALL_MODE_KEYS = {
+  up: 'wall.up',
+  cutaway: 'wall.cutaway',
+  low: 'wall.low',
+  down: 'wall.down',
+  translucent: 'wall.translucent',
+} as const satisfies Record<WallMode, Key>
+
+const LEVEL_MODE_KEYS = {
+  stacked: 'level.stacked',
+  exploded: 'level.exploded',
+  solo: 'level.solo',
+} as const satisfies Record<Exclude<LevelMode, 'manual'>, Key>
+
+// A theme the catalog does not know yet keeps the name it ships with.
+const SCENE_THEME_KEYS: Readonly<Record<string, Key>> = {
+  studio: 'theme.studio',
+  paper: 'theme.paper',
+  sunset: 'theme.sunset',
+  overcast: 'theme.overcast',
+  blueprint: 'theme.blueprint',
+  mediterranean: 'theme.mediterranean',
+  twilight: 'theme.twilight',
+  night: 'theme.night',
+  verdant: 'theme.verdant',
+}
 
 // Keep the dropdown open when flipping an in-place toggle row.
 const keepOpen = (event: Event, fn: () => void) => {
@@ -90,6 +128,7 @@ function VisibilityMenu({
   canShowScans: boolean
   canShowGuides: boolean
 }) {
+  const t = useT(messages)
   const showScans = useViewer((s) => s.showScans)
   const showGuides = useViewer((s) => s.showGuides)
   return (
@@ -97,7 +136,7 @@ function VisibilityMenu({
       <DropdownMenuTrigger asChild>
         <ActionButton
           className="hover:bg-white/5 hover:text-foreground"
-          label="Visibility"
+          label={t('controls.visibility')}
           size="icon"
           tooltipClassName="dark"
           tooltipSide="top"
@@ -112,7 +151,7 @@ function VisibilityMenu({
             onSelect={(e) => keepOpen(e, () => useViewer.getState().setShowScans(!showScans))}
           >
             <img alt="" className="h-4 w-4 object-contain" src="/icons/mesh.webp" />
-            <span>Scans</span>
+            <span>{t('controls.scans')}</span>
             {showScans ? (
               <Eye className="ml-auto h-4 w-4 text-foreground" />
             ) : (
@@ -125,7 +164,7 @@ function VisibilityMenu({
             onSelect={(e) => keepOpen(e, () => useViewer.getState().setShowGuides(!showGuides))}
           >
             <img alt="" className="h-4 w-4 object-contain" src="/icons/floorplan.webp" />
-            <span>Guides</span>
+            <span>{t('controls.guides')}</span>
             {showGuides ? (
               <Eye className="ml-auto h-4 w-4 text-foreground" />
             ) : (
@@ -141,6 +180,7 @@ function VisibilityMenu({
 // One "Display" button gathering shadows, camera projection, colors, render
 // mode, scene theme and edges.
 function DisplayMenu() {
+  const t = useT(messages)
   const cameraMode = useViewer((s) => s.cameraMode)
   const shading = useViewer((s) => s.shading)
   const textures = useViewer((s) => s.textures)
@@ -150,12 +190,16 @@ function DisplayMenu() {
   const activeShading = SHADING_OPTIONS.find((o) => o.id === shading) ?? SHADING_OPTIONS[0]
   const activeTheme = getSceneTheme(sceneTheme)
   const activeEdges = EDGE_OPTIONS.find((o) => o.id === edges) ?? EDGE_OPTIONS[0]
+  const sceneThemeName = (theme: { id: string; name: string }) => {
+    const key = SCENE_THEME_KEYS[theme.id]
+    return key ? t(key) : theme.name
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <ActionButton
           className="hover:bg-white/5 hover:text-foreground"
-          label="Display settings"
+          label={t('controls.display')}
           size="icon"
           tooltipClassName="dark"
           tooltipSide="top"
@@ -170,8 +214,10 @@ function DisplayMenu() {
           onSelect={(e) => keepOpen(e, () => useViewer.getState().setShadows(!shadows))}
         >
           <Contrast className="h-4 w-4" />
-          <span>Shadows</span>
-          <span className="ml-auto text-muted-foreground text-xs">{shadows ? 'On' : 'Off'}</span>
+          <span>{t('controls.shadows')}</span>
+          <span className="ml-auto text-muted-foreground text-xs">
+            {shadows ? t('controls.on') : t('controls.off')}
+          </span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={(e) =>
@@ -183,18 +229,18 @@ function DisplayMenu() {
           }
         >
           <Camera className="h-4 w-4" />
-          <span>Camera</span>
+          <span>{t('controls.camera')}</span>
           <span className="ml-auto text-muted-foreground text-xs">
-            {cameraMode === 'perspective' ? 'Perspective' : 'Orthographic'}
+            {cameraMode === 'perspective' ? t('controls.perspective') : t('controls.orthographic')}
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={(e) => keepOpen(e, () => useViewer.getState().setTextures(!textures))}
         >
           {textures ? <Palette className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-          <span>Colors</span>
+          <span>{t('controls.colors')}</span>
           <span className="ml-auto text-muted-foreground text-xs">
-            {textures ? 'Colored' : 'Monochrome'}
+            {textures ? t('controls.colored') : t('controls.monochrome')}
           </span>
         </DropdownMenuItem>
 
@@ -203,8 +249,10 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <activeShading.icon className="h-4 w-4" />
-            <span>Render</span>
-            <span className="ml-auto text-muted-foreground text-xs">{activeShading.name}</span>
+            <span>{t('controls.render')}</span>
+            <span className="ml-auto text-muted-foreground text-xs">
+              {t(activeShading.nameKey)}
+            </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="dark min-w-56">
             {SHADING_OPTIONS.map((option) => {
@@ -216,8 +264,8 @@ function DisplayMenu() {
                 >
                   <OptionIcon className="h-4 w-4" />
                   <div className="flex flex-col">
-                    <span className="text-foreground">{option.name}</span>
-                    <span className="text-muted-foreground text-xs">{option.detail}</span>
+                    <span className="text-foreground">{t(option.nameKey)}</span>
+                    <span className="text-muted-foreground text-xs">{t(option.detailKey)}</span>
                   </div>
                   {shading === option.id ? (
                     <Check className="ml-auto h-4 w-4 text-foreground" />
@@ -231,32 +279,32 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <SwatchBook className="h-4 w-4" />
-            <span>Scene theme</span>
+            <span>{t('controls.sceneTheme')}</span>
             <span className="ml-auto truncate text-muted-foreground text-xs">
-              {activeTheme.name}
+              {sceneThemeName(activeTheme)}
             </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="dark min-w-48">
-            {SCENE_THEMES.map((t) => {
+            {SCENE_THEMES.map((theme) => {
               const swatches = (['wall', 'roof', 'floor', 'glazing'] as const).map(
-                (role) => t.clayTints?.[role] ?? CLAY_PALETTE[role],
+                (role) => theme.clayTints?.[role] ?? CLAY_PALETTE[role],
               )
               return (
                 <DropdownMenuItem
                   className="gap-2"
-                  key={t.id}
-                  onSelect={() => useViewer.getState().setSceneTheme(t.id)}
+                  key={theme.id}
+                  onSelect={() => useViewer.getState().setSceneTheme(theme.id)}
                 >
                   <span
                     className="grid h-5 w-5 shrink-0 grid-cols-2 overflow-hidden rounded-sm border border-black/10"
-                    style={{ backgroundColor: t.background }}
+                    style={{ backgroundColor: theme.background }}
                   >
                     {swatches.map((color, index) => (
-                      <span key={`${t.id}-${index}`} style={{ backgroundColor: color }} />
+                      <span key={`${theme.id}-${index}`} style={{ backgroundColor: color }} />
                     ))}
                   </span>
-                  <span>{t.name}</span>
-                  {sceneTheme === t.id ? <Check className="ml-auto h-4 w-4" /> : null}
+                  <span>{sceneThemeName(theme)}</span>
+                  {sceneTheme === theme.id ? <Check className="ml-auto h-4 w-4" /> : null}
                 </DropdownMenuItem>
               )
             })}
@@ -266,8 +314,8 @@ function DisplayMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <PenLine className="h-4 w-4" />
-            <span>Edges</span>
-            <span className="ml-auto text-muted-foreground text-xs">{activeEdges.name}</span>
+            <span>{t('controls.edges')}</span>
+            <span className="ml-auto text-muted-foreground text-xs">{t(activeEdges.nameKey)}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="dark min-w-56">
             {EDGE_OPTIONS.map((option) => (
@@ -276,8 +324,8 @@ function DisplayMenu() {
                 onSelect={() => useViewer.getState().setEdges(option.id)}
               >
                 <div className="flex flex-col">
-                  <span className="text-foreground">{option.name}</span>
-                  <span className="text-muted-foreground text-xs">{option.detail}</span>
+                  <span className="text-foreground">{t(option.nameKey)}</span>
+                  <span className="text-muted-foreground text-xs">{t(option.detailKey)}</span>
                 </div>
                 {edges === option.id ? <Check className="ml-auto h-4 w-4 text-foreground" /> : null}
               </DropdownMenuItem>
@@ -315,6 +363,7 @@ export const ViewerControlsBar = ({
   onWalkthroughToggle,
   className,
 }: ViewerControlsBarProps) => {
+  const t = useT(messages)
   const levelMode = useViewer((s) => s.levelMode)
   const wallMode = useViewer((s) => s.wallMode)
   const showRoofs = useViewer((s) => s.showRoofs)
@@ -341,18 +390,18 @@ export const ViewerControlsBar = ({
 
           {/* Level mode */}
           <SegmentedControl
-            aria-label="Levels"
+            aria-label={t('controls.levels')}
             className={SEGMENTS}
             mixed={levelMode === 'manual'}
             onChange={(mode) => useViewer.getState().setLevelMode(mode)}
-            options={LEVEL_MODE_OPTIONS.map(({ value, label }) => {
+            options={LEVEL_MODE_OPTIONS.map(({ value }) => {
               const Icon = levelModeIcons[value]
               return {
                 value,
                 label: (
                   <>
                     <Icon className="h-5 w-5" />
-                    <span className="sr-only">{label}</span>
+                    <span className="sr-only">{t(LEVEL_MODE_KEYS[value])}</span>
                   </>
                 ),
               }
@@ -364,15 +413,15 @@ export const ViewerControlsBar = ({
           {/* Wall mode — parametric only; baked GLB walls are fixed-height. */}
           {!glbActive && (
             <SegmentedControl
-              aria-label="Walls"
+              aria-label={t('controls.walls')}
               className={SEGMENTS}
               onChange={(mode) => useViewer.getState().setWallMode(mode)}
-              options={WALL_MODE_OPTIONS.map(({ value, label }) => ({
+              options={WALL_MODE_OPTIONS.map(({ value }) => ({
                 value,
                 label: (
                   <>
                     <img alt="" className="h-6 w-6 object-contain" src={wallModeIcons[value]} />
-                    <span className="sr-only">{label}</span>
+                    <span className="sr-only">{t(WALL_MODE_KEYS[value])}</span>
                   </>
                 ),
               }))}
@@ -382,10 +431,13 @@ export const ViewerControlsBar = ({
           )}
 
           <ActionButton
-            aria-label="Roofs"
+            aria-label={t('controls.roofs')}
             aria-pressed={showRoofs}
             className={showRoofs ? 'hover:bg-white/5' : 'bg-white/10'}
-            label={`Roofs: ${showRoofs ? 'On' : 'Off'} (${VIEW_SHORTCUT_KEYS.roofs.toUpperCase()})`}
+            label={t('controls.roofsState', {
+              state: showRoofs ? t('controls.on') : t('controls.off'),
+              key: VIEW_SHORTCUT_KEYS.roofs.toUpperCase(),
+            })}
             onClick={() => useViewer.getState().setShowRoofs(!showRoofs)}
             size="icon"
             tooltipClassName="dark"
@@ -403,14 +455,16 @@ export const ViewerControlsBar = ({
 
           {/* Walkthrough */}
           <ActionButton
-            aria-label="Walkthrough"
+            aria-label={t('controls.walkthrough')}
             aria-pressed={walkthroughActive}
             className={
               walkthroughActive
                 ? 'bg-emerald-500/20 text-emerald-400'
                 : 'hover:bg-white/5 hover:text-emerald-400'
             }
-            label={`Walkthrough: ${walkthroughActive ? 'On' : 'Off'}`}
+            label={t('controls.walkthroughState', {
+              state: walkthroughActive ? t('controls.on') : t('controls.off'),
+            })}
             onClick={onWalkthroughToggle}
             size="icon"
             tooltipClassName="dark"
@@ -428,7 +482,7 @@ export const ViewerControlsBar = ({
           {/* Camera actions */}
           <ActionButton
             className="group hidden hover:bg-white/5 sm:inline-flex"
-            label="Orbit left"
+            label={t('controls.orbitLeft')}
             onClick={() => emitter.emit('camera-controls:orbit-ccw')}
             size="icon"
             tooltipClassName="dark"
@@ -436,7 +490,7 @@ export const ViewerControlsBar = ({
             variant="ghost"
           >
             <img
-              alt="Orbit left"
+              alt={t('controls.orbitLeft')}
               className="h-[28px] w-[28px] -scale-x-100 object-contain opacity-70 transition-opacity group-hover:opacity-100"
               src="/icons/rotate.webp"
             />
@@ -444,7 +498,7 @@ export const ViewerControlsBar = ({
 
           <ActionButton
             className="group hidden hover:bg-white/5 sm:inline-flex"
-            label="Orbit right"
+            label={t('controls.orbitRight')}
             onClick={() => emitter.emit('camera-controls:orbit-cw')}
             size="icon"
             tooltipClassName="dark"
@@ -452,7 +506,7 @@ export const ViewerControlsBar = ({
             variant="ghost"
           >
             <img
-              alt="Orbit right"
+              alt={t('controls.orbitRight')}
               className="h-[28px] w-[28px] object-contain opacity-70 transition-opacity group-hover:opacity-100"
               src="/icons/rotate.webp"
             />
@@ -460,7 +514,7 @@ export const ViewerControlsBar = ({
 
           <ActionButton
             className="group hover:bg-white/5"
-            label="Top view"
+            label={t('controls.topView')}
             onClick={() => emitter.emit('camera-controls:top-view')}
             size="icon"
             tooltipClassName="dark"
@@ -468,7 +522,7 @@ export const ViewerControlsBar = ({
             variant="ghost"
           >
             <img
-              alt="Top view"
+              alt={t('controls.topView')}
               className="h-[28px] w-[28px] object-contain opacity-70 transition-opacity group-hover:opacity-100"
               src="/icons/topview.webp"
             />
