@@ -60,9 +60,10 @@ import {
 } from '../primitives/dropdown-menu'
 import { Switch } from '../primitives/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip'
+import type { PanelT } from './node-display'
 import { RoomOpeningsField } from './room-openings-field'
 import { ShapeChoice } from './shape-choice'
-import { translate, useLocale, useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 
 /** The buttons a row offers — derived together with its presence. */
@@ -247,7 +248,7 @@ export function DrawnFloorRow({ zoneId }: { zoneId: string }) {
       const slab = scene.nodes[drawn.slabId as AnyNodeId]
       return {
         id: drawn.slabId,
-        name: (slab?.type === 'slab' && slab.name?.trim()) || translate(messages, 'slab'),
+        name: (slab?.type === 'slab' && slab.name?.trim()) || '',
         shared: drawn.sharedZoneIds.length,
         ambiguous: drawn.ambiguous,
       }
@@ -259,7 +260,7 @@ export function DrawnFloorRow({ zoneId }: { zoneId: string }) {
       <span className="min-w-0">
         {t.rich(floor.ambiguous ? 'build.drawnSeveral' : 'build.drawnSingle', {
           name: (text) => <span className="text-foreground">{text}</span>,
-        }, { name: floor.name })}
+        }, { name: floor.name || t('slab') })}
         {floor.shared > 0 &&
           t('build.sharedWith', { rooms: t('build.rooms', { count: floor.shared }) })}
       </span>
@@ -372,7 +373,7 @@ function SitsOn({ zoneId, noFloor }: { zoneId: string; noFloor: boolean }) {
       if (plate.plateRole !== 'base')
         return {
           id: plate.id as string,
-          name: plate.name?.trim() || translate(messages, 'slab'),
+          name: plate.name?.trim() || '',
           drawn: true,
           lift: 0,
           supported: false,
@@ -412,7 +413,7 @@ function SitsOn({ zoneId, noFloor }: { zoneId: string; noFloor: boolean }) {
         {t.rich(
           'build.sitsOn',
           { name: (text) => <span className="text-foreground">{text}</span> },
-          { name: summary.name, preset },
+          { name: summary.name || t('slab'), preset },
         )}
       </span>
       <ChevronRight className="size-3 shrink-0" />
@@ -502,13 +503,14 @@ function sharingRoomNames(
   nodes: Record<string, import('@pascal-app/core').AnyNode>,
   zoneId: string,
   wallIds: readonly string[],
+  t: PanelT,
 ) {
   return Object.values(nodes).flatMap((node) =>
     node.type === 'zone' &&
     node.id !== zoneId &&
     node.spaceRole === 'room' &&
     node.boundaryWallIds.some((id) => wallIds.includes(id))
-      ? [node.name?.trim() || translate(messages, 'build.nextRoom')]
+      ? [node.name?.trim() || t('build.nextRoom')]
       : [],
   )
 }
@@ -633,7 +635,7 @@ export function RoomConstructionRows({ room }: { room: RoomSelectionRecord }) {
 
   const wallIds = room.boundaryWallIds
   const openSides = state.walls.separators.length
-  const shared = sharingRoomNames(nodes, zoneId, state.walls.sharedWallIds)
+  const shared = sharingRoomNames(nodes, zoneId, state.walls.sharedWallIds, t)
   const wallsMeta =
     state.walls.state === 'partial'
       ? t('build.wallsPartial', {

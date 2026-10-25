@@ -39,8 +39,9 @@ import { MetricControl } from '../controls/metric-control'
 import { SegmentedControl } from '../controls/segmented-control'
 import { Button } from '../primitives/button'
 import { PanelWrapper } from './panel-wrapper'
-import { translate, useLocale, useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
+import type { PanelT } from './node-display'
 
 /** Unpainted finishes, as the plate renders them (nodes' slab slot defaults). */
 const EDGE_DEFAULT = '#cccccc'
@@ -282,13 +283,17 @@ type Notice = {
   together: { ids: string[]; patch: FloorFoundationPatch; lower: boolean } | null
 }
 
-export function moveTogetherLabel(count: number, lower: boolean) {
-  if (count === 2) return translate(messages, lower ? 'foundation.lowerBoth' : 'foundation.raiseBoth')
-  return translate(messages, lower ? 'foundation.lowerAll' : 'foundation.raiseAll', { count })
+export function moveTogetherLabel(count: number, lower: boolean, t: PanelT) {
+  if (count === 2) return t(lower ? 'foundation.lowerBoth' : 'foundation.raiseBoth')
+  return t(lower ? 'foundation.lowerAll' : 'foundation.raiseAll', { count })
 }
 
 /** "Floor plate · Ground floor", upstairs "Floor plate · Floor 1 · rests on Ground floor". */
-export function floorPlateKicker(nodes: Record<string, AnyNode>, plate: SlabNode): string {
+export function floorPlateKicker(
+  nodes: Record<string, AnyNode>,
+  plate: SlabNode,
+  t: PanelT,
+): string {
   const level = plate.parentId ? nodes[plate.parentId] : undefined
   const levelName = level?.type === 'level' ? ` · ${getLevelDisplayName(level)}` : ''
   // A supported floor rests on the storey right below it.
@@ -303,9 +308,9 @@ export function floorPlateKicker(nodes: Record<string, AnyNode>, plate: SlabNode
       )
         below = node
   const restsOn = below
-    ? ` · ${translate(messages, 'foundation.restsOn', { level: getLevelDisplayName(below) })}`
+    ? ` · ${t('foundation.restsOn', { level: getLevelDisplayName(below) })}`
     : ''
-  return `${translate(messages, 'foundation.floorPlateHeading')}${levelName}${restsOn}`
+  return `${t('foundation.floorPlateHeading')}${levelName}${restsOn}`
 }
 
 /**
@@ -315,7 +320,11 @@ export function floorPlateKicker(nodes: Record<string, AnyNode>, plate: SlabNode
  * the ground has two inputs, the slab thickness and the foundation height (0 on
  * the ground); its floor top above the ground is their sum, read-only.
  */
-export function floorFoundationModel(nodes: Record<string, AnyNode>, plate: SlabNode) {
+export function floorFoundationModel(
+  nodes: Record<string, AnyNode>,
+  plate: SlabNode,
+  t: PanelT,
+) {
   const upper = upperFloorHeightControl(nodes, plate) !== null
   const height = footprintHeightValue(nodes, plate)
   const levelBase = plate.parentId
@@ -324,7 +333,7 @@ export function floorFoundationModel(nodes: Record<string, AnyNode>, plate: Slab
     : 0
   return {
     upper,
-    kicker: floorPlateKicker(nodes, plate),
+    kicker: floorPlateKicker(nodes, plate, t),
     preset: upper ? ('ground' as const) : footprintPreset(nodes, plate),
     /** Upstairs: the floor top (level-local). On the ground: the foundation height. */
     height,
@@ -357,7 +366,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
   if (plate?.type !== 'slab' || plate.plateRole !== 'base') return null
   const length = (meters: number) => formatLinearMeasurement(meters, unit, metricNotation, locale)
   const { upper, kicker, preset, height, floorTop, minHeight, minThickness, underFloor, thickFloor } =
-    floorFoundationModel(nodes, plate)
+    floorFoundationModel(nodes, plate, t)
   const level = plate.parentId ? nodes[plate.parentId as AnyNodeId] : undefined
   const maxHeight = level?.type === 'level' ? getStoredLevelHeight(level) - 0.5 : 3
   // A refused change says why, in the panel's words, never as an error; when
@@ -422,7 +431,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
         />
         <section className="flex flex-col gap-1.5" data-floor-plate-group>
           <h3 className="font-medium text-muted-foreground text-xs">
-            {upper ? t('foundation.floorPlateHeading') : t('slab')}
+            {upper ? t('foundation.floorPlateHeading') : t('foundation.slabHeading')}
           </h3>
           {upper ? (
             <div title={t('foundation.thickerFloor')}>
@@ -555,7 +564,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
                 type="button"
                 variant="outline"
               >
-                {moveTogetherLabel(notice.together.ids.length, notice.together.lower)}
+                {moveTogetherLabel(notice.together.ids.length, notice.together.lower, t)}
               </Button>
             )}
           </div>

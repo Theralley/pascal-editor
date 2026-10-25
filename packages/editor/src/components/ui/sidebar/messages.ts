@@ -15,7 +15,7 @@ export const messages = defineMessages({
     settings: 'Inställningar',
     plugins: 'Tillägg',
     loading: 'Laddar…',
-    'crashed.title': 'Tillägget "{label}" kraschade',
+    'crashed.title': 'Tillägget ”{label}” kraschade',
     'crashed.body':
       'Panelen stötte på ett fel och stängdes av för den här sessionen. Resten av editorn påverkas inte – ladda om sidan för att försöka igen.',
   },

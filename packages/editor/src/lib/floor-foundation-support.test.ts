@@ -21,6 +21,9 @@ import {
   floorFoundationModel,
   floorPlateKicker,
 } from '../components/ui/panels/floor-foundation-panel'
+import { messages } from '../components/ui/panels/messages'
+import type { PanelT } from '../components/ui/panels/node-display'
+import { translate } from '../i18n'
 import { installImmediateAnimationFrames } from '../test-utils/immediate-animation-frames'
 import {
   applyFloorFoundation,
@@ -35,6 +38,10 @@ import {
   thickFloorAdvice,
 } from './floor-footprints'
 import { applyRoomPlan } from './room-structure-commands'
+
+const t: PanelT = (key, vars) => translate(messages, key, vars)
+const model = (nodes: Parameters<typeof floorFoundationModel>[0], plate: SlabNode) =>
+  floorFoundationModel(nodes, plate, t)
 
 const GROUND = 'level_support_ground'
 const UPPER = 'level_support_upper'
@@ -98,8 +105,10 @@ describe('Floor & foundation support class (point 5)', () => {
   })
 
   test('the kicker says where the plate is and what it rests on', () => {
-    expect(floorPlateKicker(nodes(), plateOf(GROUND, 'Living'))).toBe('Floor plate · Ground floor')
-    expect(floorPlateKicker(nodes(), plateOf(UPPER, 'Bedroom'))).toBe(
+    expect(floorPlateKicker(nodes(), plateOf(GROUND, 'Living'), t)).toBe(
+      'Floor plate · Ground floor',
+    )
+    expect(floorPlateKicker(nodes(), plateOf(UPPER, 'Bedroom'), t)).toBe(
       'Floor plate · Floor 1 · rests on Ground floor',
     )
   })
@@ -153,7 +162,7 @@ describe('Floor & foundation support class (point 5)', () => {
     expect(thickFloorAdvice(nodes(), bedroom, underside + 0.35)).toBe(false)
     expect(thickFloorAdvice(nodes(), bedroom, underside + 0.45)).toBe(true)
     expect(setFootprintHeight(bedroom.id, underside + 0.45)).toBeNull()
-    expect(floorFoundationModel(nodes(), nodes()[bedroom.id] as SlabNode).thickFloor).toBe(true)
+    expect(model(nodes(), nodes()[bedroom.id] as SlabNode).thickFloor).toBe(true)
   })
 })
 
@@ -179,28 +188,28 @@ describe('Upper-floor height drag release (round-final item 6)', () => {
 
 describe('Floor & foundation panel (point 5)', () => {
   test('a ground floor gets the foundation group; an upper floor never offers the ground', () => {
-    const ground = floorFoundationModel(nodes(), plateOf(GROUND, 'Living'))
+    const ground = model(nodes(), plateOf(GROUND, 'Living'))
     expect(ground).toMatchObject({ upper: false, preset: 'ground', underFloor: true, minHeight: 0 })
-    const upper = floorFoundationModel(nodes(), plateOf(UPPER, 'Bedroom'))
+    const upper = model(nodes(), plateOf(UPPER, 'Bedroom'))
     expect(upper).toMatchObject({ upper: true, underFloor: false, thickFloor: false })
     expect(upper.kicker).toBe('Floor plate · Floor 1 · rests on Ground floor')
   })
 
   test('on the ground the two inputs are slab thickness and foundation height; the top follows', () => {
     const living = plateOf(GROUND, 'Living')
-    const start = floorFoundationModel(nodes(), living)
+    const start = model(nodes(), living)
     expect(start).toMatchObject({ preset: 'ground', height: 0, minThickness: 0.01 })
     expect(start.floorTop).toBeCloseTo(living.thickness)
     expect(applyFloorFoundation(living.id, { thickness: 0.1 })).toBeNull()
     let plate = nodes()[living.id] as SlabNode
-    expect(floorFoundationModel(nodes(), plate)).toMatchObject({
+    expect(model(nodes(), plate)).toMatchObject({
       preset: 'ground',
       height: 0,
       floorTop: expect.closeTo(0.1),
     })
     expect(applyFloorFoundation(living.id, presetPatch(nodes(), plate, 'raised'))).toBeNull()
     plate = nodes()[living.id] as SlabNode
-    expect(floorFoundationModel(nodes(), plate)).toMatchObject({
+    expect(model(nodes(), plate)).toMatchObject({
       preset: 'raised',
       height: expect.closeTo(0.3),
       floorTop: expect.closeTo(0.4),
@@ -208,7 +217,7 @@ describe('Floor & foundation panel (point 5)', () => {
     expect(plate.foundation?.type).toBe('solid')
     expect(applyFloorFoundation(living.id, presetPatch(nodes(), plate, 'ground'))).toBeNull()
     plate = nodes()[living.id] as SlabNode
-    expect(floorFoundationModel(nodes(), plate)).toMatchObject({
+    expect(model(nodes(), plate)).toMatchObject({
       preset: 'ground',
       height: 0,
       floorTop: expect.closeTo(0.1),
@@ -238,11 +247,11 @@ describe('Floor & foundation panel (point 5)', () => {
 
   test('upstairs the one control is the thickness; the floor top above the ground is its caption', () => {
     const bedroom = plateOf(UPPER, 'Bedroom')
-    const before = floorFoundationModel(nodes(), bedroom)
+    const before = model(nodes(), bedroom)
     const base = getLevelElevations(nodes()).get(UPPER as AnyNodeId)!.baseY
     expect(before.floorTop).toBeCloseTo(base + before.height)
     expect(setFootprintHeight(bedroom.id, before.height + 0.1)).toBeNull()
-    const after = floorFoundationModel(nodes(), nodes()[bedroom.id] as SlabNode)
+    const after = model(nodes(), nodes()[bedroom.id] as SlabNode)
     expect((nodes()[bedroom.id] as SlabNode).thickness).toBeCloseTo(bedroom.thickness + 0.1)
     expect(after.floorTop).toBeCloseTo(before.floorTop + 0.1)
   })

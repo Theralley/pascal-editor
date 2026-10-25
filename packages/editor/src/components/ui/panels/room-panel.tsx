@@ -44,6 +44,7 @@ import {
 import { ColorDot } from '../primitives/color-dot'
 import { Popover, PopoverAnchor, PopoverContent } from '../primitives/popover'
 import { ShortcutToken } from '../primitives/shortcut-token'
+import type { PanelT } from './node-display'
 import { PanelWrapper } from './panel-wrapper'
 import { RoomOpeningsField } from './room-openings-field'
 import {
@@ -55,7 +56,7 @@ import {
   roomInsideHeight,
 } from './room-construction-rows'
 import { type RoomNameOption, roomNameOptions } from './room-name-options'
-import { translate, useLocale, useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 
 /** "Room · Ground floor", "Mezzanine · in Kitchen", "Room · not enclosed". */
@@ -63,20 +64,21 @@ export function roomKicker(
   nodes: Record<string, AnyNode>,
   zoneId: string,
   options: { mezzanine?: boolean; open?: boolean } = {},
+  t: PanelT,
 ): string {
   const zone = nodes[zoneId]
   if (options.mezzanine && zone?.type === 'zone') {
     const host = zone.hostZoneId ? nodes[zone.hostZoneId] : undefined
     const hostName = host?.type === 'zone' ? host.name?.trim() : ''
     return hostName
-      ? translate(messages, 'room.kicker.mezzanineIn', { host: hostName })
-      : translate(messages, 'mezzanine')
+      ? t('room.kicker.mezzanineIn', { host: hostName })
+      : t('mezzanine')
   }
-  if (options.open) return translate(messages, 'room.kicker.notEnclosed')
+  if (options.open) return t('room.kicker.notEnclosed')
   const level = zone?.parentId ? nodes[zone.parentId] : undefined
   return level?.type === 'level'
-    ? translate(messages, 'room.kicker.roomLevel', { level: getLevelDisplayName(level) })
-    : translate(messages, 'room')
+    ? t('room.kicker.roomLevel', { level: getLevelDisplayName(level) })
+    : t('room')
 }
 
 export function RoomPanel({
@@ -97,7 +99,7 @@ export function RoomPanel({
   const mezzanine = !!room.mezzanine
   return (
     <PanelWrapper
-      kicker={roomKicker(nodes, room.zoneId, { mezzanine })}
+      kicker={roomKicker(nodes, room.zoneId, { mezzanine }, t)}
       onClose={onClose}
       title={name.trim() || (mezzanine ? t('mezzanine') : t('room'))}
       titleContent={
@@ -143,7 +145,7 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
   if (zone?.type !== 'zone') return null
   return (
     <PanelWrapper
-      kicker={roomKicker(nodes, zoneId, { open: true })}
+      kicker={roomKicker(nodes, zoneId, { open: true }, t)}
       onClose={onClose}
       title={name.trim() || t('room')}
       titleContent={
@@ -251,15 +253,15 @@ function RoomFloorScriptRow({ zoneId }: { zoneId: string }) {
     const zone = scene.nodes[zoneId as AnyNodeId]
     return zone?.type === 'zone' ? zone.floor?.script?.script : undefined
   })
-  const [code, setCode] = useState<{ sha: string; text: string } | null>(null)
+  const [code, setCode] = useState<{ sha: string; text: string | null } | null>(null)
   const [open, setOpen] = useState(false)
   if (!sha) return null
   const toggleCode = () => {
     setOpen((shown) => !shown)
     if (code?.sha === sha) return
     finishScriptCode(sha).then(
-      (text) => setCode({ sha, text: text ?? t('room.scriptUnreadable') }),
-      () => setCode({ sha, text: t('room.scriptUnreadable') }),
+      (text) => setCode({ sha, text }),
+      () => setCode({ sha, text: null }),
     )
   }
   const remove = () => {
@@ -296,7 +298,7 @@ function RoomFloorScriptRow({ zoneId }: { zoneId: string }) {
       </div>
       {open && (
         <pre className="max-h-60 overflow-auto whitespace-pre rounded-lg border border-border/50 p-2 font-mono text-[11px] text-foreground">
-          {code?.sha === sha ? code.text : t('loading')}
+          {code?.sha === sha ? (code.text ?? t('room.scriptUnreadable')) : t('loading')}
         </pre>
       )}
     </div>

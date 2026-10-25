@@ -18,6 +18,8 @@ import {
   ZoneNode,
 } from '@pascal-app/core'
 import { moveTogetherLabel } from '../components/ui/panels/floor-foundation-panel'
+import { messages } from '../components/ui/panels/messages'
+import { translate } from '../i18n'
 import {
   applyFloorFoundation,
   applyRoomFloorConstruction,
@@ -418,7 +420,9 @@ describe('floor footprints', () => {
     // What the notice offers instead: both footprints, together, in one step.
     const together = footprintsToMoveTogether(nodes(), house.id, patch)
     expect(together).toEqual([house.id, shed.id])
-    expect(moveTogetherLabel(together!.length, false)).toBe('Raise both')
+    expect(
+      moveTogetherLabel(together!.length, false, (key, vars) => translate(messages, key, vars)),
+    ).toBe('Raise both')
     const steps = history()
     expect(applyFloorFoundation(together!, patch)).toBeNull()
     expect(history()).toBe(steps + 1)

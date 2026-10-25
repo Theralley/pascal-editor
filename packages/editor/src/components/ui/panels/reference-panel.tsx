@@ -30,7 +30,7 @@ import { ActionButton, ActionGroup } from '../controls/action-button'
 import { PanelSection } from '../controls/panel-section'
 import { SliderControl } from '../controls/slider-control'
 import { PanelWrapper } from './panel-wrapper'
-import { useT } from '../../../i18n'
+import { type MessageKey, useT } from '../../../i18n'
 import { messages } from './messages'
 
 type ReferenceNode = ScanNode | GuideNode
@@ -49,7 +49,7 @@ export function ReferencePanel() {
   const deleteNode = useScene((s) => s.deleteNode)
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const [isReplacing, setIsReplacing] = useState(false)
-  const [replaceError, setReplaceError] = useState<string | null>(null)
+  const [replaceError, setReplaceError] = useState<MessageKey<typeof messages> | null>(null)
   const [isAssetMissing, setIsAssetMissing] = useState(false)
 
   const node = useScene((s) =>
@@ -80,7 +80,7 @@ export function ReferencePanel() {
       }
 
       if (!file.type.startsWith('image/')) {
-        setReplaceError(t('reference.chooseImage'))
+        setReplaceError('reference.chooseImage')
         return
       }
 
@@ -102,12 +102,12 @@ export function ReferencePanel() {
         // so it can be resized/rotated right away.
         setGuideLocked(selectedReferenceId, false)
       } catch {
-        setReplaceError(t('reference.replaceFailed'))
+        setReplaceError('reference.replaceFailed')
       } finally {
         setIsReplacing(false)
       }
     },
-    [node?.type, selectedReferenceId, setGuideScaleReferenceVisible, t, updateNode],
+    [node?.type, selectedReferenceId, setGuideScaleReferenceVisible, updateNode],
   )
 
   const handleDeleteGuide = useCallback(() => {
@@ -240,7 +240,7 @@ export function ReferencePanel() {
 
             {replaceError && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1.5 text-destructive text-xs">
-                {replaceError}
+                {t(replaceError)}
               </div>
             )}
 

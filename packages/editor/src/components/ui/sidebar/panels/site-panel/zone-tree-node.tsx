@@ -6,7 +6,6 @@ import { formatAreaLabel } from './../../../../../lib/measurements'
 import {
   selectZoneOrRoom,
   useZoneSelected,
-  zoneKindLabel,
 } from './../../../../../lib/room-zone-routing'
 import { toggleZoneMembership } from './../../../../../lib/units'
 import { InlineRenameInput } from './inline-rename-input'
@@ -35,7 +34,7 @@ export const ZoneTreeNode = memo(function ZoneTreeNode({
   const color = useScene((s) => (s.nodes[nodeId] as ZoneNode | undefined)?.color)
   const polygon = useScene((s) => (s.nodes[nodeId] as ZoneNode | undefined)?.polygon ?? [])
   const isSelected = useZoneSelected(nodeId)
-  const kind = useScene((s) => zoneKindLabel(s.nodes[nodeId] as ZoneNode | undefined))
+  const isRoom = useScene((s) => (s.nodes[nodeId] as ZoneNode | undefined)?.spaceRole === 'room')
   const isHovered = useViewer((state) => state.hoveredId === nodeId)
   const setHoveredId = useViewer((state) => state.setHoveredId)
   const unit = useViewer((state) => state.unit)
@@ -53,7 +52,7 @@ export const ZoneTreeNode = memo(function ZoneTreeNode({
   const handleStopEditing = useCallback(() => setIsEditing(false), [])
 
   const defaultName = t('node.areaLabel', {
-    name: t(kind === 'Room' ? 'zone.room' : 'zone.zone'),
+    name: t(isRoom ? 'zone.room' : 'zone.zone'),
     area: formatAreaLabel(calculatePolygonArea(polygon), unit, 1, locale),
   })
 

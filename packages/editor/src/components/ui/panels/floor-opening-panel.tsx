@@ -117,7 +117,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
         )}
         {hints.map((hint) => (
           <p className="text-muted-foreground text-xs" data-opening-hint={hint.code} key={hint.code}>
-            {hint.message}
+            {t(`opening.hint.${hint.code}`)}
           </p>
         ))}
         <div className="flex items-center gap-2">

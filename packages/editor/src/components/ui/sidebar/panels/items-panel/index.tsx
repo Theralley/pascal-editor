@@ -15,6 +15,12 @@ import { type FunctionTreeNode, FunctionTreePanel } from './function-tree-panel'
 import { messages } from './messages'
 
 const PLACEMENT_TAGS = new Set(['floor', 'wall', 'ceiling', 'countertop'])
+const PLACEMENT_LABEL_KEYS: Record<string, MessageKey<typeof messages>> = {
+  floor: 'placement.floor',
+  wall: 'placement.wall',
+  ceiling: 'placement.ceiling',
+  countertop: 'placement.countertop',
+}
 
 export function ItemsPanel({
   items,
@@ -308,7 +314,7 @@ function LegacyItemsPanel({
                       onClick={() => setActivePlacementTag(isActive ? null : tag)}
                       type="button"
                     >
-                      {tag}
+                      {PLACEMENT_LABEL_KEYS[tag] ? t(PLACEMENT_LABEL_KEYS[tag]) : tag}
                       <span
                         className={cn(
                           'text-[10px]',

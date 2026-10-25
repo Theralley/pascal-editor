@@ -72,7 +72,6 @@ import { requestRoomDeletion } from './../../../../../lib/room-structure-command
 import {
   selectZoneOrRoom,
   useZoneSelected,
-  zoneKindLabel,
 } from './../../../../../lib/room-zone-routing'
 import { createUnitInBuilding, toggleZoneMembership } from './../../../../../lib/units'
 import { cn } from './../../../../../lib/utils'
@@ -1209,7 +1208,7 @@ const ZoneItem = memo(function ZoneItem({
   }, [isSelected])
 
   const defaultName = t('node.areaLabel', {
-    name: t(zoneKindLabel(zone) === 'Room' ? 'zone.room' : 'zone.zone'),
+    name: t(isRoom ? 'zone.room' : 'zone.zone'),
     area: formatAreaLabel(calculatePolygonArea(zone.polygon), unit, 1, locale),
   })
 

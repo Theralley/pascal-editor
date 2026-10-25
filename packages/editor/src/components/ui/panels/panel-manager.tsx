@@ -42,8 +42,8 @@ import { getNodeDisplay, getTypeDisplay } from './node-display'
 import { InspectedNodesContext } from './panel-wrapper'
 import { ParametricInspector } from './parametric-inspector'
 import { ReferencePanel } from './reference-panel'
-import { formatSelectionBreakdown } from './selection-breakdown'
-import { useLocale, useT } from '../../../i18n'
+import { formatSelectionBreakdown, selectionKind } from './selection-breakdown'
+import { useT } from '../../../i18n'
 import { messages } from './messages'
 
 type MovableNode =
@@ -109,7 +109,7 @@ function MobilePanelLayer({
   panel: React.ReactNode
   isReference: boolean
 }) {
-  useLocale() // Node labels come from `translate`, so the layer re-renders with the language.
+  const t = useT(messages)
   const setSelection = useViewer((s) => s.setSelection)
   const setSelectedReferenceId = useEditor((s) => s.setSelectedReferenceId)
   const setMovingNode = useEditor((s) => s.setMovingNode)
@@ -149,7 +149,7 @@ function MobilePanelLayer({
 
   if (!(node || isReference)) return null
 
-  const display = getNodeDisplay(node)
+  const display = getNodeDisplay(node, t)
 
   return (
     <>
@@ -185,7 +185,7 @@ function MobileMultiPanelLayer({
 }) {
   const t = useT(messages)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const display = type ? getTypeDisplay(type) : { icon: '/icons/select.webp', label: t('nodeType.selection') }
+  const display = type ? getTypeDisplay(type, t) : { icon: '/icons/select.webp', label: t('nodeType.selection') }
   const title = breakdown || display.label
 
   useEffect(() => {
@@ -222,7 +222,7 @@ export function PanelManager({
   inspectorFooter?: React.ReactNode
   multiSelectionFooter?: React.ReactNode
 }) {
-  useLocale() // The selection breakdown below comes from `translate`.
+  const t = useT(messages)
   const isMobile = useIsMobile()
   const room = useSelectedRoom()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
@@ -247,7 +247,10 @@ export function PanelManager({
   )
   const multiBreakdown = useScene((s) =>
     selectedIds.length > 1
-      ? formatSelectionBreakdown(selectedIds.map((id) => s.nodes[id as AnyNodeId]?.type))
+      ? formatSelectionBreakdown(
+          selectedIds.map((id) => selectionKind(s.nodes[id as AnyNodeId])),
+          t,
+        )
       : '',
   )
 

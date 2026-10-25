@@ -31,7 +31,7 @@ import { MultiSelectionActions } from './multi-selection-panel'
 import { getTypeDisplay } from './node-display'
 import { ParametricFieldControl } from './parametric-field-control'
 import { PanelWrapper } from './panel-wrapper'
-import { formatSelectionBreakdown } from './selection-breakdown'
+import { formatSelectionBreakdown, selectionKind } from './selection-breakdown'
 import { useT } from '../../../i18n'
 import { messages } from './messages'
 
@@ -47,7 +47,7 @@ export function MultiParametricInspector({ footer }: { footer?: React.ReactNode 
     return first?.type ?? null
   })
   const breakdown = useScene((s) =>
-    formatSelectionBreakdown(nodeIds.map((id) => s.nodes[id]?.type)),
+    formatSelectionBreakdown(nodeIds.map((id) => selectionKind(s.nodes[id])), t),
   )
   const sessionGroups = useSessionGroups((s) => s.groups)
   const matchedGroup = useMemo(
@@ -65,7 +65,7 @@ export function MultiParametricInspector({ footer }: { footer?: React.ReactNode 
 
   if (nodeIds.length < 2 || !nodeType || !parametrics) return null
 
-  const display = getTypeDisplay(nodeType)
+  const display = getTypeDisplay(nodeType, t)
   const title = matchedGroup ? `${matchedGroup.label} · ${breakdown}` : breakdown || display.label
 
   return (

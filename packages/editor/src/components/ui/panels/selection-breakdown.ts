@@ -1,14 +1,8 @@
-import { type MessageKey, translate } from '../../../i18n'
-import { messages } from './messages'
+import { nodeRegistry } from '@pascal-app/core'
+import type { MessageKey } from '../../../i18n'
+import type { PanelT } from './node-display'
+import type { messages } from './messages'
 
-/**
- * "1 slab · 1 stair · 2 fences" — one entry per node type in first-appearance
- * order so the line stays stable while shift-clicking. Labels derive from the
- * type id ('roof-segment' → 'roof segment'); pluralization is a simple +s
- * (the codebase has no pluralize helper and no current kind needs one).
- * The kinds the panels name carry their own noun and plural per language.
- * Missing nodes (stale ids) are skipped.
- */
 const BREAKDOWN_KEYS: Record<string, MessageKey<typeof messages>> = {
   item: 'breakdown.item',
   wall: 'breakdown.wall',
@@ -26,9 +20,24 @@ const BREAKDOWN_KEYS: Record<string, MessageKey<typeof messages>> = {
   scan: 'breakdown.scan',
   guide: 'breakdown.guide',
   zone: 'breakdown.zone',
+  room: 'breakdown.room',
 }
 
-export function formatSelectionBreakdown(types: Array<string | null | undefined>): string {
+/** The kind a selected node is counted under: a zone that is a room is counted as a room. */
+export function selectionKind(node: { type: string; spaceRole?: string } | undefined) {
+  return node?.type === 'zone' && node.spaceRole === 'room' ? 'room' : node?.type
+}
+
+/**
+ * "1 slab · 1 stair · 2 fences" — one entry per kind in first-appearance order so the line stays
+ * stable while shift-clicking. The kinds the panels name carry their own noun and plural per
+ * language; any other kind reads "Label: count" from its definition. Missing nodes (stale ids)
+ * are skipped.
+ */
+export function formatSelectionBreakdown(
+  types: Array<string | null | undefined>,
+  t: PanelT,
+): string {
   const counts = new Map<string, number>()
   for (const type of types) {
     if (!type) continue
@@ -38,11 +47,10 @@ export function formatSelectionBreakdown(types: Array<string | null | undefined>
   for (const [type, count] of counts) {
     const key = BREAKDOWN_KEYS[type]
     if (key) {
-      parts.push(translate(messages, key, { count }))
+      parts.push(t(key, { count }))
       continue
     }
-    const label = type.replace(/-/g, ' ')
-    parts.push(`${count} ${count === 1 ? label : `${label}s`}`)
+    parts.push(`${nodeRegistry.get(type)?.presentation?.label ?? type}: ${count}`)
   }
   return parts.join(' · ')
 }

@@ -32,7 +32,7 @@ export function MobileSelectionBar({
   onEdit,
 }: MobileSelectionBarProps) {
   const t = useT(messages)
-  const display = getNodeDisplay(node)
+  const display = getNodeDisplay(node, t)
   const resolvedLabel = label ?? display.label
   const resolvedIcon = icon ?? display.icon
 

@@ -188,11 +188,10 @@ export function BuildToolTile({
 }
 
 /** The line under the Rooms tiles: what the armed shape does, lead in bold. */
-export function BuildPanelCaption({ lead, rest }: { lead?: string; rest: string }) {
+export function BuildPanelCaption({ children }: { children: ReactNode }) {
   return (
     <p className="mt-2 min-h-[2lh] px-0.5 text-[11px] text-muted-foreground leading-relaxed">
-      {lead ? <span className="font-medium text-foreground">{lead} </span> : null}
-      {rest}
+      {children}
     </p>
   )
 }
@@ -233,10 +232,13 @@ export function BuildPanelRoomsSection({
           />
         ))}
       </BuildToolGrid>
-      <BuildPanelCaption
-        lead={active ? t(`${active.id}.lead`) : undefined}
-        rest={active ? t(`${active.id}.rest`) : t('idleCaption')}
-      />
+      <BuildPanelCaption>
+        {active
+          ? t.rich(`${active.id}.caption`, {
+              lead: (text) => <span className="font-medium text-foreground">{text}</span>,
+            })
+          : t('idleCaption')}
+      </BuildPanelCaption>
     </BuildPanelSection>
   )
 }

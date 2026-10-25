@@ -8,16 +8,16 @@ export const messages = defineMessages({
     idleCaption: 'Pick a shape to start. Every room brings its own walls, floor and ceiling.',
     'rectangle.label': 'Rectangle',
     'rectangle.title': 'Rectangle room',
-    'rectangle.lead': 'Click two corners',
-    'rectangle.rest': 'on the grid. Walls, floor and ceiling are created together.',
+    'rectangle.caption':
+      '<lead>Click two corners</lead> on the grid. Walls, floor and ceiling are created together.',
     'polygon.label': 'Polygon',
     'polygon.title': 'Polygon room',
-    'polygon.lead': 'Click each corner,',
-    'polygon.rest': 'then the first one again to close. For L-shapes and angled rooms.',
+    'polygon.caption':
+      '<lead>Click each corner,</lead> then the first one again to close. For L-shapes and angled rooms.',
     'walls.label': 'Walls',
     'walls.title': 'Walls',
-    'walls.lead': 'Draw one wall at a time.',
-    'walls.rest': 'Close a loop and it becomes a room; leave it open for partitions.',
+    'walls.caption':
+      '<lead>Draw one wall at a time.</lead> Close a loop and it becomes a room; leave it open for partitions.',
   },
   sv: {
     advanced: 'Avancerat',
@@ -26,15 +26,15 @@ export const messages = defineMessages({
     idleCaption: 'Välj en form för att börja. Varje rum får egna väggar, golv och innertak.',
     'rectangle.label': 'Rektangel',
     'rectangle.title': 'Rektangulärt rum',
-    'rectangle.lead': 'Klicka på två hörn',
-    'rectangle.rest': 'på rutnätet. Väggar, golv och innertak skapas tillsammans.',
+    'rectangle.caption':
+      '<lead>Klicka på två hörn</lead> på rutnätet. Väggar, golv och innertak skapas tillsammans.',
     'polygon.label': 'Polygon',
     'polygon.title': 'Polygonrum',
-    'polygon.lead': 'Klicka på varje hörn,',
-    'polygon.rest': 'och sedan på det första igen för att sluta rummet. För L-former och rum med vinklar.',
+    'polygon.caption':
+      '<lead>Klicka på varje hörn</lead> och sedan på det första igen för att sluta rummet. För L-former och snedvinklade rum.',
     'walls.label': 'Väggar',
     'walls.title': 'Väggar',
-    'walls.lead': 'Rita en vägg i taget.',
-    'walls.rest': 'Sluter du en ring blir den ett rum. Lämna den öppen för mellanväggar.',
+    'walls.caption':
+      '<lead>Rita en vägg i taget.</lead> Sluter du en ring blir den ett rum. Lämna den öppen för mellanväggar.',
   },
 })

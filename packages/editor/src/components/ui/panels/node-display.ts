@@ -1,11 +1,14 @@
-import { type AnyNode, scriptImages } from '@pascal-app/core'
-import { type MessageKey, translate } from '../../../i18n'
+import { type AnyNode, nodeRegistry, scriptImages } from '@pascal-app/core'
+import type { MessageKey, MessageVars } from '../../../i18n'
 import { messages } from './messages'
 
 export type NodeDisplay = {
   icon: string
   label: string
 }
+
+/** `t` of `useT(messages)`: the helpers take it so a render never reads the global locale. */
+export type PanelT = (key: MessageKey<typeof messages>, vars?: MessageVars) => string
 
 type NodeTypeDefault = { icon: string; labelKey: MessageKey<typeof messages> }
 
@@ -28,20 +31,24 @@ const TYPE_DEFAULTS: Record<string, NodeTypeDefault> = {
   zone: { icon: '/icons/zone.webp', labelKey: 'nodeType.zone' },
 }
 
-function typeDefault(type: string): NodeDisplay {
+/** A kind the table does not know is named by its definition, else by its id. */
+function typeDefault(type: string, t: PanelT): NodeDisplay {
   const known = TYPE_DEFAULTS[type]
   return known
-    ? { icon: known.icon, label: translate(messages, known.labelKey) }
-    : { icon: '/icons/select.webp', label: type }
+    ? { icon: known.icon, label: t(known.labelKey) }
+    : {
+        icon: '/icons/select.webp',
+        label: nodeRegistry.get(type)?.presentation?.label ?? type,
+      }
 }
 
-export function getTypeDisplay(type: string): NodeDisplay {
-  return typeDefault(type)
+export function getTypeDisplay(type: string, t: PanelT): NodeDisplay {
+  return typeDefault(type, t)
 }
 
-export function getNodeDisplay(node: AnyNode | null | undefined): NodeDisplay {
-  if (!node) return { icon: '/icons/select.webp', label: translate(messages, 'nodeType.selection') }
-  const fallback = typeDefault(node.type)
+export function getNodeDisplay(node: AnyNode | null | undefined, t: PanelT): NodeDisplay {
+  if (!node) return { icon: '/icons/select.webp', label: t('nodeType.selection') }
+  const fallback = typeDefault(node.type, t)
   const scripted = scriptImages(node)?.thumbnail
   // Item nodes carry an asset with its own thumbnail/name
   if (node.type === 'item') {
@@ -51,7 +58,7 @@ export function getNodeDisplay(node: AnyNode | null | undefined): NodeDisplay {
     }
   }
   if (node.type === 'zone' && node.spaceRole === 'room') {
-    return { icon: '/icons/kitchen.webp', label: node.name || translate(messages, 'nodeType.room') }
+    return { icon: '/icons/kitchen.webp', label: node.name || t('nodeType.room') }
   }
   return {
     icon: scripted ?? fallback.icon,

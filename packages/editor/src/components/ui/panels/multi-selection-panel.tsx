@@ -27,10 +27,10 @@ import useSessionGroups, {
   ungroupCurrentSelection,
 } from '../../../store/use-session-groups'
 import { ActionButton, ActionGroup } from '../controls/action-button'
-import { getTypeDisplay } from './node-display'
+import { getTypeDisplay, type PanelT } from './node-display'
 import { PanelWrapper } from './panel-wrapper'
-import { formatSelectionBreakdown } from './selection-breakdown'
-import { translate, useLocale, useT } from '../../../i18n'
+import { formatSelectionBreakdown, selectionKind } from './selection-breakdown'
+import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 
 /** The building holding the level, when the selection is everything selectable on it. */
@@ -60,38 +60,39 @@ function mergeRefusalNote(
   refusal: { code: string; details: Record<string, unknown> },
   nodes: Record<string, AnyNode>,
   length: (meters: number) => string,
+  t: PanelT,
 ): string {
   const { blockingId, limit } = refusal.details as { blockingId?: string; limit?: number }
   const reach = length(limit ?? 0)
   const blocking = nodes[blockingId ?? '']
   const kind = !blocking
-    ? translate(messages, 'merge.kind.something')
+    ? t('merge.kind.something')
     : blocking.type === 'item'
-      ? translate(messages, 'merge.kind.item')
-      : translate(messages, 'merge.kind.other', {
-          type: getTypeDisplay(blocking.type).label.toLowerCase(),
+      ? t('merge.kind.item')
+      : t('merge.kind.other', {
+          type: getTypeDisplay(blocking.type, t).label.toLowerCase(),
         })
   switch (refusal.code) {
     case 'window_already_joined':
-      return translate(messages, 'merge.refusal.window_already_joined')
+      return t('merge.refusal.window_already_joined')
     case 'window_not_on_wall':
-      return translate(messages, 'merge.refusal.window_not_on_wall')
+      return t('merge.refusal.window_not_on_wall')
     case 'windows_not_adjacent':
-      return translate(messages, 'merge.refusal.windows_not_adjacent', { reach })
+      return t('merge.refusal.windows_not_adjacent', { reach })
     case 'opening_between':
-      return translate(messages, 'merge.refusal.opening_between', { kind })
+      return t('merge.refusal.opening_between', { kind })
     case 'walls_not_meeting':
-      return translate(messages, 'merge.refusal.walls_not_meeting')
+      return t('merge.refusal.walls_not_meeting')
     case 'corner_angle':
-      return translate(messages, 'merge.refusal.corner_angle')
+      return t('merge.refusal.corner_angle')
     case 'window_not_at_corner':
-      return translate(messages, 'merge.refusal.window_not_at_corner', { reach })
+      return t('merge.refusal.window_not_at_corner', { reach })
     case 'height_exceeds_wall':
-      return translate(messages, 'merge.refusal.height_exceeds_wall')
+      return t('merge.refusal.height_exceeds_wall')
     case 'opening_overlap':
-      return translate(messages, 'merge.refusal.opening_overlap', { kind })
+      return t('merge.refusal.opening_overlap', { kind })
     default:
-      return translate(messages, 'merge.refusal.default')
+      return t('merge.refusal.default')
   }
 }
 
@@ -131,8 +132,11 @@ function MergeWindowsAction() {
     )
   const { merge } = offer
   const note = offer.refusal
-    ? mergeRefusalNote(offer.refusal, nodes, (meters) =>
-        formatLinearMeasurement(meters, unit, metricNotation, locale),
+    ? mergeRefusalNote(
+        offer.refusal,
+        nodes,
+        (meters) => formatLinearMeasurement(meters, unit, metricNotation, locale),
+        t,
       )
     : null
   return (
@@ -238,7 +242,10 @@ export function MultiSelectionPanel({ footer }: { footer?: React.ReactNode }) {
   const setSelection = useViewer((s) => s.setSelection)
   const sessionGroups = useSessionGroups((s) => s.groups)
   const breakdown = useScene((s) =>
-    formatSelectionBreakdown(selectedIds.map((id) => s.nodes[id as AnyNodeId]?.type)),
+    formatSelectionBreakdown(
+      selectedIds.map((id) => selectionKind(s.nodes[id as AnyNodeId])),
+      t,
+    ),
   )
   const sceneNodes = useScene((s) => s.nodes)
   const liveIds = useMemo(() => new Set(Object.keys(sceneNodes)), [sceneNodes])
