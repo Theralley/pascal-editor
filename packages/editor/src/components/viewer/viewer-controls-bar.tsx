@@ -33,6 +33,7 @@ import { cn } from '../../lib/utils'
 import { VIEW_SHORTCUT_KEYS } from '../../lib/view-shortcuts'
 import { ActionButton } from '../ui/action-menu/action-button'
 import { FollowPascalToggle } from '../ui/action-menu/follow-pascal-toggle'
+import { CutHeightSlider } from '../ui/controls/cut-height-slider'
 import { SegmentedControl } from '../ui/controls/segmented-control'
 import {
   DropdownMenu,
@@ -164,6 +165,7 @@ function DisplayMenu() {
         </ActionButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="dark min-w-56" side="top">
+        <CutHeightSlider />
         <DropdownMenuItem
           onSelect={(e) => keepOpen(e, () => useViewer.getState().setShadows(!shadows))}
         >

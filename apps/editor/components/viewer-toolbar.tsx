@@ -2,6 +2,7 @@
 
 import { Icon as IconifyIcon } from '@iconify/react'
 import {
+  CutHeightSlider,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -294,6 +295,7 @@ function DisplayMenu() {
         side="bottom"
         sideOffset={8}
       >
+        <CutHeightSlider />
         <DropdownMenuItem onSelect={(e) => keepOpen(e, () => setShowGrid(!showGrid))}>
           <Grid2X2 className="h-4 w-4" />
           <span>Grid</span>

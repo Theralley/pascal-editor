@@ -23,6 +23,8 @@ const resetMeasurementPreferences = () => {
     levelModeDefault: 'stacked',
     showRoofs: true,
     showRoofsDefault: true,
+    wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
+    wallCutHeightDefault: WALL_CUT_HEIGHT_DEFAULT,
     projectPresentation: undefined,
     unit: 'metric',
     metricNotation: 'meters',
@@ -148,6 +150,37 @@ describe('view display preferences', () => {
     useViewer.getState().setProjectId('view-b')
     useViewer.getState().setProjectId('view-a')
     expect(useViewer.getState()).toMatchObject({ wallMode: 'cutaway', showRoofs: false })
+  })
+})
+
+describe('the cut height of low walls', () => {
+  test('is saved per project, clamped, over the browser-wide default', () => {
+    useViewer.getState().setProjectId('cut-a')
+    useViewer.getState().setWallCutHeight(0.6)
+    useViewer.getState().setProjectId('cut-b')
+    expect(useViewer.getState().wallCutHeight).toBe(0.6)
+    useViewer.getState().setWallCutHeight(99)
+    expect(useViewer.getState().wallCutHeight).toBe(WALL_CUT_HEIGHT_MAX)
+    useViewer.getState().setWallCutHeight(0)
+    expect(useViewer.getState().projectPreferences['cut-b']?.wallCutHeight).toBe(
+      WALL_CUT_HEIGHT_MIN,
+    )
+
+    useViewer.getState().setProjectId('cut-a')
+    expect(useViewer.getState().wallCutHeight).toBe(0.6)
+  })
+
+  test('a preview while dragging changes the live height only, and restoring gives the saved one back', () => {
+    useViewer.getState().setProjectId('cut-a')
+    useViewer.getState().setWallCutHeight(0.4)
+    useViewer.getState().overrideView({ wallCutHeight: 0.9 })
+    expect(useViewer.getState().wallCutHeight).toBe(0.9)
+    expect(useViewer.getState().projectPreferences['cut-a']?.wallCutHeight).toBe(0.4)
+    expect(useViewer.getState().wallCutHeightDefault).toBe(0.4)
+    useViewer.getState().overrideView({ wallCutHeight: 50 })
+    expect(useViewer.getState().wallCutHeight).toBe(WALL_CUT_HEIGHT_MAX)
+    useViewer.getState().restoreView()
+    expect(useViewer.getState().wallCutHeight).toBe(0.4)
   })
 })
 

@@ -234,6 +234,7 @@ export {
 } from './components/ui/build-panel/build-panel'
 export { useCommandPalette } from './components/ui/command-palette'
 export { ActionButton, ActionGroup } from './components/ui/controls/action-button'
+export { CutHeightSlider } from './components/ui/controls/cut-height-slider'
 export {
   MaterialPaintPanel,
   type MaterialPaintPanelProps,

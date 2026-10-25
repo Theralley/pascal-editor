@@ -97,4 +97,14 @@ describe('stored viewer preferences', () => {
     useViewer.getState().setProjectId('scene-9')
     expect(useViewer.getState()).toMatchObject({ wallMode: 'down', showRoofs: false })
   })
+
+  test('a cut height is stored once it is picked, and a preview never reaches storage', () => {
+    useViewer.getState().setProjectId('scene-1')
+    useViewer.getState().overrideView({ wallCutHeight: 0.9 })
+    const stored = () => JSON.parse(items.get('viewer-preferences') ?? '{}').state
+    expect(stored().wallCutHeight).toBe(0.25)
+    useViewer.getState().setWallCutHeight(0.6)
+    expect(stored().wallCutHeight).toBe(0.6)
+    expect(stored().projectPreferences['scene-1'].wallCutHeight).toBe(0.6)
+  })
 })

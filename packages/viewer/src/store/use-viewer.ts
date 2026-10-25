@@ -258,13 +258,21 @@ type ViewerState = {
    * it changes what is shown without touching the person's saved picks, so the saved view
    * survives and comes back when the override is lifted.
    */
-  overrideView: (view: { wallMode?: WallMode; levelMode?: LevelMode; showRoofs?: boolean }) => void
+  overrideView: (view: {
+    wallMode?: WallMode
+    levelMode?: LevelMode
+    showRoofs?: boolean
+    wallCutHeight?: number
+  }) => void
   /** Lifts every override: the view goes back to this project's saved picks, else the browser-wide defaults. */
   restoreView: () => void
 
   /** The height (m) walls stand at in `low` mode. */
   wallCutHeight: number
+  /** The person's pick, clamped: saved for this project and kept as the browser-wide default. */
   setWallCutHeight: (height: number) => void
+  /** The browser-wide cut height a project without a saved pick starts from. */
+  wallCutHeightDefault: number
 
   showScans: boolean
   setShowScans: (show: boolean) => void
@@ -307,6 +315,7 @@ type ViewerState = {
       wallMode?: WallMode
       levelMode?: LevelMode
       showRoofs?: boolean
+      wallCutHeight?: number
     }
   >
 
@@ -511,6 +520,9 @@ function normalizeProjectPreferences(value: unknown): ViewerState['projectPrefer
         ? { levelMode: record.levelMode as LevelMode }
         : {}),
       ...(typeof record.showRoofs === 'boolean' ? { showRoofs: record.showRoofs } : {}),
+      ...(typeof record.wallCutHeight === 'number'
+        ? { wallCutHeight: clampWallCutHeight(record.wallCutHeight) }
+        : {}),
     }
   }
   return next
@@ -835,7 +847,12 @@ const useViewer = create<ViewerState>()(
           projectPreferences: withProjectPreference(state, { showRoofs: show }),
         })),
 
-      overrideView: (view) => set(view),
+      overrideView: (view) =>
+        set(
+          view.wallCutHeight === undefined
+            ? view
+            : { ...view, wallCutHeight: clampWallCutHeight(view.wallCutHeight) },
+        ),
       restoreView: () =>
         set((state) => {
           const saved = state.projectId ? state.projectPreferences[state.projectId] : undefined
@@ -843,10 +860,20 @@ const useViewer = create<ViewerState>()(
             wallMode: saved?.wallMode ?? state.wallModeDefault,
             levelMode: saved?.levelMode ?? state.levelModeDefault,
             showRoofs: saved?.showRoofs ?? state.showRoofsDefault,
+            wallCutHeight: saved?.wallCutHeight ?? state.wallCutHeightDefault,
           }
         }),
       wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
-      setWallCutHeight: (height) => set({ wallCutHeight: clampWallCutHeight(height) }),
+      wallCutHeightDefault: WALL_CUT_HEIGHT_DEFAULT,
+      setWallCutHeight: (height) =>
+        set((state) => {
+          const wallCutHeight = clampWallCutHeight(height)
+          return {
+            wallCutHeight,
+            wallCutHeightDefault: wallCutHeight,
+            projectPreferences: withProjectPreference(state, { wallCutHeight }),
+          }
+        }),
 
       showScans: true,
       setShowScans: (show) =>
@@ -930,6 +957,7 @@ const useViewer = create<ViewerState>()(
             wallMode: prefs.wallMode ?? state.wallModeDefault,
             levelMode: prefs.levelMode ?? state.levelModeDefault,
             showRoofs: prefs.showRoofs ?? state.showRoofsDefault,
+            wallCutHeight: prefs.wallCutHeight ?? state.wallCutHeightDefault,
           })
         }),
       projectPreferences: {},
@@ -998,6 +1026,7 @@ const useViewer = create<ViewerState>()(
           levelModeDefault: persisted.levelMode ?? currentState.levelModeDefault,
           wallModeDefault: persisted.wallMode ?? currentState.wallModeDefault,
           showRoofsDefault: persisted.showRoofs ?? currentState.showRoofsDefault,
+          wallCutHeightDefault: persisted.wallCutHeight ?? currentState.wallCutHeightDefault,
           ...resolveLook(currentState, {
             ...persisted,
             lookDefaults: {
@@ -1022,7 +1051,7 @@ const useViewer = create<ViewerState>()(
         levelMode: state.levelModeDefault,
         wallMode: state.wallModeDefault,
         showRoofs: state.showRoofsDefault,
-        wallCutHeight: state.wallCutHeight,
+        wallCutHeight: state.wallCutHeightDefault,
         projectPreferences: Object.fromEntries(
           Object.entries(state.projectPreferences).filter(([key]) => key !== ''),
         ),
