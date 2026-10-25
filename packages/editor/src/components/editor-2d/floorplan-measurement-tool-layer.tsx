@@ -20,6 +20,7 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale, useT } from '../../i18n'
 import { measurementPolygonLabelAnchor } from '../../lib/measurement-label'
 import {
   buildMeasurementAngleArcPoints,
@@ -46,6 +47,7 @@ import {
 import { formatAngleRadians } from '../tools/shared/segment-angle'
 import { FloorplanQuickMeasureLayer } from './floorplan-quick-measure-layer'
 import { useFloorplanRender } from './floorplan-render-context'
+import { messages } from './messages'
 import { resolveFloorplanLabelAngle } from './renderers/floorplan-label-angle'
 
 const DRAFT_COLOR = MEASUREMENT_ACTIVE_COLOR
@@ -635,6 +637,7 @@ function FloorplanExtrusionControl({
   sceneRotationDeg: number
   unitsPerPixel: number
 }) {
+  const t = useT(messages)
   const unit = useViewer((state) => state.unit)
   const extrusionHeight = useMeasurementDraft((state) => state.extrusionHeight)
   const points = useMeasurementDraft((state) => state.points)
@@ -696,14 +699,14 @@ function FloorplanExtrusionControl({
           }}
         >
           <label className="sr-only" htmlFor="measurement-extrusion-height">
-            Extrusion height
+            {t('measure.extrusionHeight')}
           </label>
           <div className="relative min-w-0 flex-1">
             <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center font-medium text-muted-foreground text-xs">
-              H
+              {t('measure.heightPrefix')}
             </span>
             <input
-              aria-label="Extrusion height"
+              aria-label={t('measure.extrusionHeight')}
               className="h-8 w-full rounded-md border border-border bg-background pr-7 pl-6 text-sm outline-none focus:border-cyan-400"
               id="measurement-extrusion-height"
               inputMode="decimal"
@@ -736,7 +739,7 @@ function FloorplanExtrusionControl({
             </span>
           </div>
           <span className="shrink-0 font-mono font-semibold text-[11px] tabular-nums text-foreground">
-            V {volumeLabel}
+            {t('measure.volumePrefix')} {volumeLabel}
           </span>
           <button
             className="h-8 shrink-0 rounded-full bg-cyan-500 px-3 font-medium text-black text-xs disabled:cursor-not-allowed disabled:opacity-40"
@@ -744,7 +747,7 @@ function FloorplanExtrusionControl({
             onClick={commit}
             type="button"
           >
-            Create
+            {t('measure.create')}
           </button>
         </div>
       </foreignObject>
@@ -753,6 +756,8 @@ function FloorplanExtrusionControl({
 }
 
 export function FloorplanMeasurementToolLayer() {
+  const t = useT(messages)
+  const locale = useLocale()
   const groupRef = useRef<SVGGElement>(null)
   const vertexGesture = useRef<{
     pointerId: number
@@ -1225,7 +1230,12 @@ export function FloorplanMeasurementToolLayer() {
         angle: Math.atan2(end[2] - start[2], end[0] - start[0]),
         point: [(start[0] + end[0]) / 2, 0, (start[2] + end[2]) / 2],
         screenUpright: false,
-        text: formatLinearMeasurement(measurementDistance(start, end), unit, metricNotation),
+        text: formatLinearMeasurement(
+          measurementDistance(start, end),
+          unit,
+          metricNotation,
+          locale,
+        ),
       }
     } else if (kind === 'angle' && livePoints.length >= 3) {
       const anglePoints = livePoints.slice(0, 3) as [
@@ -1248,8 +1258,8 @@ export function FloorplanMeasurementToolLayer() {
           screenUpright: true,
           text:
             kind === 'area'
-              ? `A ${formatAreaLabel(measurementArea(livePoints), unit)}`
-              : `P ${formatLinearMeasurement(measurementPerimeter(livePoints), unit, metricNotation)}`,
+              ? `${t('measure.areaPrefix')} ${formatAreaLabel(measurementArea(livePoints), unit, 1, locale)}`
+              : `${t('measure.perimeterPrefix')} ${formatLinearMeasurement(measurementPerimeter(livePoints), unit, metricNotation, locale)}`,
         }
       }
     } else if (kind === 'volume' && center && baseNormal) {
@@ -1263,7 +1273,7 @@ export function FloorplanMeasurementToolLayer() {
           angle: 0,
           point: center,
           screenUpright: true,
-          text: `V ${formatVolumeLabel(measurementPrismVolume(points, extrusion), unit)}`,
+          text: `${t('measure.volumePrefix')} ${formatVolumeLabel(measurementPrismVolume(points, extrusion), unit, 1, locale)}`,
         }
       }
     }
@@ -1285,6 +1295,7 @@ export function FloorplanMeasurementToolLayer() {
             measurementDistance(segmentStart, segmentEnd),
             unit,
             metricNotation,
+            locale,
           ),
         }
       }
@@ -1309,9 +1320,11 @@ export function FloorplanMeasurementToolLayer() {
     extrusionHeight,
     hover,
     kind,
+    locale,
     metricNotation,
     points,
     stage,
+    t,
     unit,
     vertexDrag,
   ])
@@ -1486,7 +1499,7 @@ export function FloorplanMeasurementToolLayer() {
             x={axisGuide.to[0]}
             y={axisGuide.to[2] - 24 * unitsPerPixel}
           >
-            {axisGuide.proximity ? 'ALIGN ' : ''}
+            {axisGuide.proximity ? `${t('measure.align')} ` : ''}
             {axisGuide.axis.toUpperCase()}
           </text>
           {axisGuide.snapped ? (

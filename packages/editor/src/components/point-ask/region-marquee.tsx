@@ -6,7 +6,7 @@ import { EASE_OUT, REGION_FLASH_MS } from '../../lib/point-ask/choreography'
 import type { Rect } from '../../lib/point-ask/types'
 import { usePointAsk } from '../../store/use-point-ask'
 
-const CORNERS = ['tl', 'tr', 'bl', 'br'] as const
+const CORNERS = ['tl', 'tr', 'bl', 'br'] as const // i18n-ignore
 
 type RegionMarqueeProps = {
   /** The rectangle in viewport pixels, or null when no region is being drawn. */

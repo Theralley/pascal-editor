@@ -3,6 +3,7 @@
 import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useT } from '../../i18n'
 import {
   BUBBLE_CLOSE_MS,
   BUBBLE_OPEN_BLUR_PX,
@@ -29,6 +30,7 @@ import {
 } from '../../lib/point-ask/suggestions'
 import { pointRoomHasContents } from '../../lib/point-ask/target-scope'
 import { asksWait, type PointBubble, usePointAsk } from '../../store/use-point-ask'
+import { messages } from './messages'
 import { finishOptionalAnimations, pointMotionCalm, usePointMotionCalm } from './optional-motion'
 
 const ARROW = (
@@ -128,6 +130,7 @@ function BubbleView({
   exiting: boolean
   fold: boolean
 }) {
+  const t = useT(messages)
   const wrap = useRef<HTMLDivElement>(null)
   const bub = useRef<HTMLDivElement>(null)
   const tail = useRef<HTMLSpanElement>(null)
@@ -382,7 +385,7 @@ function BubbleView({
 
   return (
     <div className="pa-bwrap" ref={wrap}>
-      <div aria-label="Ask Pascal" className="pa-bub" ref={bub} role="dialog">
+      <div aria-label={t('bubble.title')} className="pa-bub" ref={bub} role="dialog">
         <span className="pa-tail" ref={tail} />
         <div
           className="pa-ctx"
@@ -402,7 +405,7 @@ function BubbleView({
             window.addEventListener('pointermove', move)
             window.addEventListener('pointerup', up)
           }}
-          title="Drag to move it aside"
+          title={t('bubble.dragAside')}
         >
           {bubble.area ? (
             <span
@@ -413,7 +416,7 @@ function BubbleView({
               <i />
               <span>{regionLabel(bubble.area.ids.length + bubble.area.more)}</span>
               <button
-                aria-label="Remove the area"
+                aria-label={t('bubble.removeArea')}
                 className="tx"
                 onClick={() => {
                   useViewer.getState().setPointedIds(null)
@@ -425,23 +428,23 @@ function BubbleView({
               </button>
             </span>
           ) : null}
-          {targets.map((t) => (
+          {targets.map((target) => (
             <span
               className="pa-tchip"
-              key={t.id}
-              onPointerEnter={() => useViewer.getState().setPointedIds([t.id as never])}
+              key={target.id}
+              onPointerEnter={() => useViewer.getState().setPointedIds([target.id as never])}
               onPointerLeave={() => useViewer.getState().setPointedIds(bubbleIds(bubble))}
             >
               <i />
               <span>
-                {t.name}
-                {t.size ? ` · ${t.size}` : ''}
+                {target.name}
+                {target.size ? ` · ${target.size}` : ''}
               </span>
               <button
-                aria-label={`Remove ${t.name}`}
+                aria-label={t('bubble.removeTarget', { name: target.name })}
                 className="tx"
                 onClick={() => {
-                  const rest = targets.filter((x) => x.id !== t.id)
+                  const rest = targets.filter((x) => x.id !== target.id)
                   useViewer
                     .getState()
                     .setPointedIds(rest.length ? (rest.map((x) => x.id) as never) : null)
@@ -456,9 +459,9 @@ function BubbleView({
           ))}
           {bubble.crop.state === 'ready' && bubble.crop.dataUrl ? (
             // biome-ignore lint/performance/noImgElement: a data URL the capture just made
-            <img alt="What Pascal will see" className="pa-thumb" src={bubble.crop.dataUrl} />
+            <img alt={t('bubble.pictureAlt')} className="pa-thumb" src={bubble.crop.dataUrl} />
           ) : bubble.crop.state === 'failed' ? (
-            <span className="pa-nopic">No picture</span>
+            <span className="pa-nopic">{t('bubble.noPicture')}</span>
           ) : null}
         </div>
         <form
@@ -469,7 +472,7 @@ function BubbleView({
           }}
         >
           <textarea
-            aria-label="Ask Pascal"
+            aria-label={t('bubble.title')}
             onChange={(event) => patch({ draft: event.target.value, error: null })}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -506,7 +509,7 @@ function BubbleView({
           />
           {isDictationSupported() ? (
             <button
-              aria-label={listening ? 'Stop dictating' : 'Dictate'}
+              aria-label={listening ? t('bubble.stopDictating') : t('bubble.dictate')}
               aria-pressed={listening}
               className={`pa-dict${listening ? ' on' : ''}`}
               onClick={toggleDictation}
@@ -516,12 +519,12 @@ function BubbleView({
             </button>
           ) : null}
           <button
-            aria-label={busy ? 'Queue' : 'Send'}
+            aria-label={busy ? t('bubble.queue') : t('bubble.send')}
             className={`pa-send${busy ? ' queue' : ''}`}
             disabled={empty}
             type="submit"
           >
-            {busy ? 'Queue' : ARROW}
+            {busy ? t('bubble.queue') : ARROW}
           </button>
         </form>
         {bubble.error ? <div className="pa-err">{bubble.error}</div> : null}

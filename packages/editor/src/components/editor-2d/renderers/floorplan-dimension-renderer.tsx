@@ -1,6 +1,8 @@
 import type { FloorplanGeometry, FloorplanPoint } from '@pascal-app/core'
+import { useT } from '../../../i18n'
 import { useDimensionEditAllowed } from './floorplan-dimension-edit-overlay'
 import { resolveFloorplanLabelAngle } from './floorplan-label-angle'
+import { messages } from './messages'
 
 const EXTENSION_START_GAP = 0.075
 const TICK_HALF_LENGTH = 0.09
@@ -544,6 +546,7 @@ function DimensionLabel({
   /** Draws the "override" badge when the value could not drive geometry. */
   overridden?: boolean
 }) {
+  const t = useT(messages)
   const width = Math.max(fontSize, text.length * fontSize * LABEL_CHARACTER_WIDTH_RATIO)
   const plateWidth = width + fontSize * 0.5
   const plateHeight = fontSize * 1.2
@@ -595,7 +598,7 @@ function DimensionLabel({
           x={0}
           y={y + fontSize * 0.86}
         >
-          override
+          {t('dimension.override')}
         </text>
       ) : null}
       {renderMode === 'pdf' || !editable ? null : (

@@ -4,6 +4,7 @@ import { emitter, sceneRegistry } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { type PointerEvent, useEffect, useRef, useState } from 'react'
 import { Vector3 } from 'three'
+import { type MessageKey, useT } from '../../i18n'
 import {
   CARD_AUTO_MS,
   CARD_CARRIED_MS,
@@ -37,13 +38,14 @@ import {
   undoAsk,
 } from '../../lib/point-ask/session'
 import { type PinRecord, usePointAsk } from '../../store/use-point-ask'
+import { messages } from './messages'
 import { finishOptionalAnimations, pointMotionCalm, usePointMotionCalm } from './optional-motion'
 
-const COMPARE_REFUSAL_WORDS = {
-  'history-held': 'Another change is in progress. Try again in a moment.',
-  'no-before': 'The scene has changed too much since to show how it was.',
-  'turn-working': "Pascal is still working. Try again when it's done.",
-} as const
+const COMPARE_REFUSAL_KEYS = {
+  'history-held': 'refusal.historyHeld',
+  'no-before': 'refusal.noBefore',
+  'turn-working': 'refusal.turnWorking',
+} as const satisfies Record<string, MessageKey<typeof messages>>
 
 const SETTLED = new Set(['done', 'answered', 'no-change', 'undone'])
 const scratch = new Vector3()
@@ -107,6 +109,7 @@ export function PointAskPins() {
 }
 
 function PinView({ askId }: { askId: string }) {
+  const t = useT(messages)
   const pin = usePointAsk((s) => s.pins[askId])
   // "Change more" in flight: this pin gives way to the ask that will stand where it stood.
   const gaveWay = usePointAsk(
@@ -328,14 +331,14 @@ function PinView({ askId }: { askId: string }) {
   const changes = model.changedTargetIds.length
   const overHere =
     model.state === 'needs-input'
-      ? 'Pascal needs you over here'
+      ? t('pin.needsInput')
       : model.state === 'error'
-        ? 'Something failed over here'
+        ? t('pin.failed')
         : changes > 0
-          ? `${changes} change${changes === 1 ? '' : 's'} over here`
+          ? t('pin.changes', { count: changes })
           : model.state === 'working'
-            ? 'Pascal is working over here'
-            : 'Over here'
+            ? t('pin.working')
+            : t('pin.overHere')
   return (
     <>
       <button
@@ -417,7 +420,7 @@ function PinView({ askId }: { askId: string }) {
           el.current = node
           arcs.current = node?.querySelector<SVGGElement>('.pa-parcs') ?? null
         }}
-        title={model.state === 'working' && model.sentence ? model.sentence : 'Sent to Pascal'}
+        title={model.state === 'working' && model.sentence ? model.sentence : t('pin.title')}
       >
         {PIN_SVG}
       </div>
@@ -442,6 +445,7 @@ const pinHover: { askId: string | null } = { askId: null }
 
 /** The pin's card: what Pascal did, and Keep or Undo; it rises from the pin. */
 function PinCard() {
+  const t = useT(messages)
   const askId = usePointAsk((s) => s.cardFor)
   const pin = usePointAsk((s) => (askId ? s.pins[askId] : undefined))
   const wrap = useRef<HTMLDivElement>(null)
@@ -528,14 +532,14 @@ function PinCard() {
       : model.state === 'answered'
         ? (model.answer ?? '').split('\n').slice(0, 2).join(' ')
         : model.state === 'no-change'
-          ? `Pascal didn't change ${pin.label}.`
+          ? t('card.noChange', { label: pin.label })
           : model.state === 'error'
-            ? (model.error ?? 'Pascal could not do this.')
+            ? (model.error ?? t('card.error'))
             : model.state === 'needs-input'
-              ? (model.question ?? 'Pascal needs a word from you.')
+              ? (model.question ?? t('card.question'))
               : model.state === 'undone'
-                ? 'Undone'
-                : model.sentence || 'Pascal is on it'
+                ? t('card.undone')
+                : model.sentence || t('card.onIt')
   const also = alsoChangedLine(model)
   const edits = handEditsSince(askId)
   const keepOpen = () => {
@@ -573,9 +577,9 @@ function PinCard() {
           <div className="pa-card-head">
             <div className="pa-card-t">{title}</div>
             {pin.after?.dataUrl || pin.before?.dataUrl ? (
-              <div className="pa-card-thumb" title="After">
+              <div className="pa-card-thumb" title={t('card.after')}>
                 {/* biome-ignore lint/performance/noImgElement: data URLs the capture just made */}
-                <img alt="After" src={pin.after?.dataUrl ?? pin.before?.dataUrl} />
+                <img alt={t('card.after')} src={pin.after?.dataUrl ?? pin.before?.dataUrl} />
               </div>
             ) : null}
           </div>
@@ -596,11 +600,9 @@ function PinCard() {
         ) : null}
         {note ? <div className="pa-card-s">{note}</div> : null}
         {model.state === 'done' && edits > 0 && warn ? (
-          <div className="pa-card-s">
-            You've changed the scene since. Undoing also removes those changes.
-          </div>
+          <div className="pa-card-s">{t('card.editedSince')}</div>
         ) : null}
-        {refusal ? <div className="pa-card-s">{COMPARE_REFUSAL_WORDS[refusal]}</div> : null}
+        {refusal ? <div className="pa-card-s">{t(COMPARE_REFUSAL_KEYS[refusal])}</div> : null}
         {model.state === 'done' ? (
           <button
             aria-pressed={comparing}
@@ -622,7 +624,7 @@ function PinCard() {
             onPointerUp={() => endCompare()}
             type="button"
           >
-            {comparing ? 'Showing before' : 'Hold to see before'}
+            {comparing ? t('card.showingBefore') : t('card.holdToSeeBefore')}
           </button>
         ) : null}
         <div className="pa-card-row">
@@ -636,7 +638,7 @@ function PinCard() {
                 }}
                 type="button"
               >
-                Keep
+                {t('card.keep')}
               </button>
               <button
                 className="pa-btn"
@@ -645,19 +647,18 @@ function PinCard() {
                 }}
                 type="button"
               >
-                Change more
+                {t('card.changeMore')}
               </button>
               <button
                 className="pa-btn"
                 onClick={async () => {
                   const result = await undoAsk(askId, { force: edits > 0 && warn })
                   if (result === 'needs-confirm') setWarn(true)
-                  else if (result === 'unavailable')
-                    setNote("This can't be undone from here: the scene's history has moved on.")
+                  else if (result === 'unavailable') setNote(t('card.cannotUndo'))
                 }}
                 type="button"
               >
-                {edits > 0 && warn ? 'Undo anyway' : 'Undo'}
+                {edits > 0 && warn ? t('card.undoAnyway') : t('card.undo')}
               </button>
             </>
           ) : null}
@@ -670,7 +671,7 @@ function PinCard() {
               }}
               type="button"
             >
-              Redo
+              {t('card.redo')}
             </button>
           ) : null}
           {model.state === 'error' ? (
@@ -682,14 +683,14 @@ function PinCard() {
                 }}
                 type="button"
               >
-                Try again
+                {t('card.tryAgain')}
               </button>
               <button
                 className="pa-btn"
                 onClick={() => emitter.emit('point-ask:pin', { askId, action: 'open' })}
                 type="button"
               >
-                Open in chat
+                {t('card.openInChat')}
               </button>
             </>
           ) : null}
@@ -701,7 +702,7 @@ function PinCard() {
               onClick={() => emitter.emit('point-ask:pin', { askId, action: 'open' })}
               type="button"
             >
-              {model.state === 'no-change' ? 'See why' : 'Open in chat'}
+              {model.state === 'no-change' ? t('card.seeWhy') : t('card.openInChat')}
             </button>
           ) : null}
         </div>

@@ -1,8 +1,10 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useT } from '../i18n'
 import { cn } from '../lib/utils'
 import type { WalkthroughInteract } from '../store/use-first-person-hud'
+import { messages } from './messages'
 
 export type { WalkthroughInteract } from '../store/use-first-person-hud'
 
@@ -46,12 +48,9 @@ export function WalkthroughHud({
   const kbdClass = 'rounded border border-border/60 bg-white/10 px-1.5 py-0.5 font-mono text-[10px]'
   const pillClass =
     'flex items-center gap-1.5 rounded-full border border-border/40 bg-background/70 px-3 py-1 text-muted-foreground text-xs backdrop-blur-xl'
-  const exitContent = (
-    <>
-      <kbd className={kbdClass}>Esc</kbd>
-      to exit
-    </>
-  )
+  const t = useT(messages)
+  const keyTag = (text: string) => <kbd className={kbdClass}>{text}</kbd>
+  const exitContent = t.rich('walkthrough.toExit', { key: keyTag })
 
   return (
     <div className="dark pointer-events-none absolute inset-0 z-30 text-foreground">
@@ -74,19 +73,16 @@ export function WalkthroughHud({
       <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-2">
         {suspended ? (
           <div className={pillClass}>
-            <span className="font-medium text-foreground">Click</span>
-            <span>or</span>
-            <kbd className={kbdClass}>P</kbd>
-            <span>to resume</span>
+            {t.rich('walkthrough.resume', {
+              strong: (text) => <span className="font-medium text-foreground">{text}</span>,
+              key: keyTag,
+            })}
             <span className="text-muted-foreground/60">·</span>
             {exitContent}
           </div>
         ) : (
           <>
-            <div className={pillClass}>
-              <kbd className={kbdClass}>P</kbd>
-              free cursor
-            </div>
+            <div className={pillClass}>{t.rich('walkthrough.freeCursor', { key: keyTag })}</div>
             {onExit ? (
               <button
                 className={cn(pillClass, 'pointer-events-auto')}
@@ -105,10 +101,10 @@ export function WalkthroughHud({
       {interact && (
         <div className="absolute top-1/2 left-1/2 mt-7 -translate-x-1/2 whitespace-nowrap">
           <div className="corner-smooth flex items-center gap-1.5 rounded-full border border-border/40 bg-background/80 px-3 py-1 text-xs shadow-elevation-3 backdrop-blur-xl">
-            <kbd className="rounded border border-border/60 bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">
-              E
-            </kbd>
-            <span className="text-muted-foreground">or click to</span>
+            {t.rich('walkthrough.interact', {
+              key: keyTag,
+              muted: (text) => <span className="text-muted-foreground">{text}</span>,
+            })}
             <span className="font-medium">
               {interact.verb} {interact.label}
             </span>

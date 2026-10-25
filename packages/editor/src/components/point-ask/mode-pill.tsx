@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useT } from '../../i18n'
 import { EASE_OUT, ENTER_MS } from '../../lib/point-ask/choreography'
 import { canvasRect, freeViewport } from '../../lib/point-ask/projector'
 import { usePointAsk } from '../../store/use-point-ask'
+import { messages } from './messages'
 import { finishOptionalAnimations, pointMotionCalm, usePointMotionCalm } from './optional-motion'
 
 /** The mode's presence in the viewport: a faint edge tint while it is on. */
@@ -17,6 +19,7 @@ export function ModeVignette() {
  * the 3D view (not of the page: the panels beside it are not part of the view) and enters 8 px up.
  */
 export function ModePill() {
+  const t = useT(messages)
   const active = usePointAsk((s) => s.active)
   const latched = usePointAsk((s) => s.latched)
   const el = useRef<HTMLDivElement>(null)
@@ -59,13 +62,15 @@ export function ModePill() {
   if (!shown) return null
   return (
     <div className="pa-pill" ref={el} role="status">
-      <b>Point at anything to ask Pascal</b> · Esc to leave
+      <b>{t('pill.hint')}</b>
+      {t('pill.leave')}
     </div>
   )
 }
 
 /** While a compare control is held and the scene shows what it was before the turn: a small tag says so. */
 export function BeforeTag() {
+  const t = useT(messages)
   const comparing = usePointAsk((s) => s.comparing)
   const el = useRef<HTMLDivElement>(null)
 
@@ -86,7 +91,7 @@ export function BeforeTag() {
   return (
     <div className="pa-before" ref={el} role="status">
       <i />
-      Before
+      {t('before.tag')}
     </div>
   )
 }

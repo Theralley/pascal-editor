@@ -5,6 +5,7 @@ import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { translate, useT } from '../../../i18n'
 import {
   parseDimensionInput,
   planDimensionDrive,
@@ -12,6 +13,7 @@ import {
 } from '../../../lib/floorplan/dimension-drive'
 import { formatScheduleLength } from '../../../lib/floorplan/schedules'
 import useEditor from '../../../store/use-editor'
+import { messages } from './messages'
 
 /**
  * Click-to-type dimensions — WS3.
@@ -75,6 +77,7 @@ const CLICK_SLOP_PX = 4
 export function FloorplanDimensionEditOverlay(): React.ReactElement | null {
   const [target, setTarget] = useState<EditTarget | null>(null)
   const [draft, setDraft] = useState('')
+  const t = useT(messages)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const unit = useViewer((state) => state.unit)
@@ -156,7 +159,7 @@ export function FloorplanDimensionEditOverlay(): React.ReactElement | null {
     if (!target) return
     const nextLength = parseDimensionInput(draft, unit)
     if (nextLength === null) {
-      setError(`Cannot read "${draft.trim()}"`)
+      setError(t('dimension.cannotRead', { value: draft.trim() }))
       return
     }
     const outcome = commitDimensionValue({ target, nextLength, unit })
@@ -166,7 +169,7 @@ export function FloorplanDimensionEditOverlay(): React.ReactElement | null {
     }
     setTarget(null)
     setError(null)
-  }, [draft, target, unit])
+  }, [draft, t, target, unit])
 
   if (!target) return null
   if (typeof document === 'undefined') return null
@@ -238,7 +241,10 @@ export function commitDimensionValue(args: {
     // node can carry an override — anything else has nowhere to put it.
     const owner = nodes[args.target.ownerNodeId]
     if (owner?.type !== 'construction-dimension') {
-      return { ok: false, reason: `Not drivable — ${resolution.reason}` }
+      return {
+        ok: false,
+        reason: translate(messages, 'dimension.notDrivable', { reason: resolution.reason }),
+      }
     }
     store.updateNode(args.target.ownerNodeId, {
       textOverride: formatScheduleLength(args.nextLength, args.unit ?? 'imperial'),
@@ -252,7 +258,7 @@ export function commitDimensionValue(args: {
     currentLength: args.target.value,
     nextLength: args.nextLength,
   })
-  if (!plan) return { ok: false, reason: 'Value would collapse the geometry' }
+  if (!plan) return { ok: false, reason: translate(messages, 'dimension.collapse') }
   if (plan.updates.length === 0) return { ok: true }
 
   const changes = plan.updates.map((update) => ({

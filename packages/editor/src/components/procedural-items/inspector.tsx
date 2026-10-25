@@ -7,12 +7,14 @@ import {
 } from '@pascal-app/core/procedural-items'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useState } from 'react'
+import { useT } from '../../i18n'
 import { useHandleGroup } from '../../store/use-handle-group'
 import { PanelSection } from '../ui/controls/panel-section'
 import { SegmentedControl } from '../ui/controls/segmented-control'
 import { SliderControl } from '../ui/controls/slider-control'
 import { ToggleControl } from '../ui/controls/toggle-control'
 import { PanelWrapper } from '../ui/panels/panel-wrapper'
+import { messages } from './messages'
 export function ProceduralInspector({
   nodeId,
   partId,
@@ -34,6 +36,7 @@ export function ProceduralInspector({
         useHandleGroup.setState({ active: null })
     }
   }, [nodeId, partId])
+  const t = useT(messages)
   const [error, setError] = useState('')
   useEffect(() => () => useLiveNodeOverrides.getState().clear(nodeId as AnyNodeId), [nodeId])
   if (!node || !committed) return null
@@ -42,14 +45,14 @@ export function ProceduralInspector({
     const parameters = commit ? snapParameters(node.recipe, values) : values
     const parsed = ProceduralItemNode.safeParse({ ...node, parameters })
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Invalid edit')
+      setError(parsed.error.issues[0]?.message ?? t('adjust.invalidEdit'))
       if (commit) useLiveNodeOverrides.getState().clear(nodeId as AnyNodeId)
       return
     }
     try {
       validateProceduralRelations({ ...node, parameters }, useScene.getState().nodes)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid attachment')
+      setError(e instanceof Error ? e.message : t('adjust.invalidAttachment'))
       if (commit) useLiveNodeOverrides.getState().clear(nodeId as AnyNodeId)
       return
     }
@@ -64,7 +67,7 @@ export function ProceduralInspector({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-lg">
-          {partId ? node.recipe.parts.find((p) => p.id === partId)?.label : 'Adjust design'}
+          {partId ? node.recipe.parts.find((p) => p.id === partId)?.label : t('adjust.title')}
         </h2>
         {partId && (
           <button
@@ -72,7 +75,7 @@ export function ProceduralInspector({
             onClick={() => onPartChange(null)}
             type="button"
           >
-            Back
+            {t('adjust.back')}
           </button>
         )}
       </div>
@@ -128,11 +131,11 @@ export function ProceduralInspector({
               useScene.getState().updateNode(nodeId as AnyNodeId, { parameters } as never)
               setError('')
             } catch (e) {
-              setError(e instanceof Error ? e.message : 'Invalid reset')
+              setError(e instanceof Error ? e.message : t('adjust.invalidReset'))
             }
           }}
         >
-          Reset this part
+          {t('adjust.resetPart')}
         </button>
       )}
       {error && (
@@ -142,7 +145,7 @@ export function ProceduralInspector({
       )}
       {!partId && node.recipe.parameters.some((p) => p.part) && (
         <div>
-          <h3 className="mb-2 font-medium text-sm">Edit parts</h3>
+          <h3 className="mb-2 font-medium text-sm">{t('adjust.editParts')}</h3>
           <div className="flex flex-wrap gap-2">
             {node.recipe.parts
               .filter((part) => node.recipe.parameters.some((p) => p.part === part.id))
@@ -188,13 +191,14 @@ function ProceduralPanel({ node }: { node: ProceduralItemNode }) {
 }
 
 function ProceduralPlacementControls({ node }: { node: ProceduralItemNode }) {
+  const t = useT(messages)
   const [error, setError] = useState('')
   const update = (patch: Partial<ProceduralItemNode>) => {
     try {
       useScene.getState().updateNode(node.id as AnyNodeId, patch as never)
       setError('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid placement')
+      setError(e instanceof Error ? e.message : t('position.invalidPlacement'))
     }
   }
   const changePosition = (index: number, value: number, commit: boolean) => {
@@ -213,18 +217,18 @@ function ProceduralPlacementControls({ node }: { node: ProceduralItemNode }) {
       setError('')
     } catch (e) {
       if (commit) useLiveNodeOverrides.getState().clear(node.id as AnyNodeId)
-      setError(e instanceof Error ? e.message : 'Invalid position')
+      setError(e instanceof Error ? e.message : t('position.invalidPosition'))
     }
   }
   return (
-    <PanelSection title="Position">
+    <PanelSection title={t('position.title')}>
       {(['X', 'Y', 'Z'] as const).map((axis, index) => (
         <SliderControl
           key={axis}
           label={
             <>
               {axis}
-              <sub className="ml-[1px] text-[11px] opacity-70">pos</sub>
+              <sub className="ml-[1px] text-[11px] opacity-70">{t('position.short')}</sub>
             </>
           }
           value={node.position[index]!}

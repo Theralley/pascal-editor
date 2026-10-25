@@ -9,6 +9,7 @@ import {
   useOpenWallEnds,
   useOpenWallEndsSuppressed,
 } from '../../hooks/use-open-wall-ends'
+import { useT } from '../../i18n'
 import { openWallEndKey, openWallEndLabel } from '../../lib/floorplan/open-wall-ends'
 import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
 import useEditor from '../../store/use-editor'
@@ -16,6 +17,7 @@ import { isViewVisible, VIEW_2D } from '../../store/view-layout'
 import { JoinWallsPill } from '../editor/join-walls-pill'
 import { OpenWallEndsHint } from '../editor/open-wall-ends-hint'
 import { useFloorplanRender } from './floorplan-render-context'
+import { messages } from './messages'
 import { resolveFloorplanLabelAngle } from './renderers/floorplan-label-angle'
 
 function sceneScreenPoint(point: [number, number]): { left: number; top: number } | null {
@@ -117,6 +119,7 @@ function OpenWallEndMarker({
   sceneRotationDeg: number
   unitsPerPixel: number
 }) {
+  const t = useT(messages)
   const [x, z] = end.point
   const candidate = end.candidate
   const labelAnchor = candidate
@@ -161,7 +164,7 @@ function OpenWallEndMarker({
       />
       {/* Hit target larger than the dot so it is easy to catch at any zoom. */}
       <circle
-        aria-label={label ?? 'Wall end not joined'}
+        aria-label={label ?? t('openWallEnd.label')}
         cx={x}
         cy={z}
         data-open-wall-end=""

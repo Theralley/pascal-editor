@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useT } from '../../i18n'
 import { CHIP_OFFSET, DWELL_MS } from '../../lib/point-ask/choreography'
 import { subscribeFrame } from '../../lib/point-ask/frame-loop'
 import { getPointer, subscribePointer } from '../../lib/point-ask/pointer-tracker'
 import { usePointAsk } from '../../store/use-point-ask'
+import { messages } from './messages'
 
 /**
  * The label chip at the cursor: what the click will send, named before the click (the hover is
@@ -12,6 +14,7 @@ import { usePointAsk } from '../../store/use-point-ask'
  * appearance waits 120 ms then fades in, and target substitutions are instant (the tooltip rule).
  */
 export function HoverChip() {
+  const t = useT(messages)
   const wrap = useRef<HTMLDivElement>(null)
   const label = useRef<HTMLDivElement>(null)
   const hover = usePointAsk((s) => s.hover)
@@ -75,13 +78,13 @@ export function HoverChip() {
       <div className="pa-hlabel" ref={label}>
         {hover ? (
           busy ? (
-            'Pascal is working on this'
+            t('hover.working')
           ) : (
             <>
               {plus}
               {hover.target.name}
               {hover.target.size ? <span className="sz">{hover.target.size}</span> : null}
-              {hover.ambiguous ? <span className="sub">⌥ the wall</span> : null}
+              {hover.ambiguous ? <span className="sub">{t('hover.wallHint')}</span> : null}
             </>
           )
         ) : null}

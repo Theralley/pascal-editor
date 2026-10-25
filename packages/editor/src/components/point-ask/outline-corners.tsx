@@ -8,7 +8,7 @@ import { SpringPair } from '../../lib/point-ask/spring'
 import { usePointAsk } from '../../store/use-point-ask'
 import { pointMotionCalm } from './optional-motion'
 
-const CORNERS = ['tl', 'tr', 'bl', 'br'] as const
+const CORNERS = ['tl', 'tr', 'bl', 'br'] as const // i18n-ignore
 /** How far outside its place a corner starts when the outline first draws itself. */
 const DRAW_IN_PX = 12
 

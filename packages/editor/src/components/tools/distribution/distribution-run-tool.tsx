@@ -37,7 +37,10 @@ import { chooseScreenDirection, screenDirectionScore } from './run-screen-direct
 
 export type { RunPoint, RunSurfaceFrame } from './distribution-run-contract'
 
+import { translate, useT } from '../../../i18n'
+import { formatDecimal } from '../../../lib/measurements'
 import type { RunPoint, RunSurfaceFrame } from './distribution-run-contract'
+import { messages } from './messages'
 
 type RunPointerEvent = GridEvent
 
@@ -848,9 +851,14 @@ export function useDistributionRunTool(config: DistributionRunToolConfig) {
         currentStart &&
           typed &&
           (!Number.isFinite(Number.parseFloat(typed)) || Number.parseFloat(typed) <= 0)
-          ? 'Enter a positive length'
+          ? translate(messages, 'run.enterPositive')
           : currentStart && length < minimumLength
-            ? `Run must be at least ${minimumLength.toFixed(2)} m`
+            ? translate(messages, 'run.tooShort', {
+                length: formatDecimal(minimumLength, {
+                  minFractionDigits: 2,
+                  maxFractionDigits: 2,
+                }),
+              })
             : null,
       )
       setCursor(resolved.point)
@@ -904,7 +912,7 @@ export function useDistributionRunTool(config: DistributionRunToolConfig) {
         surfaceTarget,
       })
       if (!result) {
-        setValidationMessage('Fitting clearance is too small for this connection')
+        setValidationMessage(translate(messages, 'run.clearanceTooSmall'))
         return
       }
       const lockedWallTarget = lockedWallTargetRef.current
@@ -1197,6 +1205,7 @@ export function DistributionRunCursor({
   onLengthInputChange?: (value: string) => void
   onDirectionSelect?: (direction: RunPoint) => void
 }) {
+  const t = useT(messages)
   const lengthFieldRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (start) lengthFieldRef.current?.focus()
@@ -1284,7 +1293,7 @@ export function DistributionRunCursor({
             <DimensionPill parts={parts} primary={primary} unit={unit} />
             {start ? (
               <label className="rounded-full border border-border/60 bg-background/90 px-3 py-1 text-[11px] tabular-nums text-muted-foreground shadow-sm backdrop-blur">
-                Length:{' '}
+                {t('run.lengthLabel')}{' '}
                 <input
                   className="w-20 bg-transparent text-center text-foreground outline-none"
                   data-run-length-input
@@ -1301,13 +1310,13 @@ export function DistributionRunCursor({
                   }}
                   onChange={(event) => onLengthInputChange?.(event.target.value)}
                   onPointerDown={(event) => event.stopPropagation()}
-                  placeholder="type a length"
+                  placeholder={t('run.lengthPlaceholder')}
                   ref={lengthFieldRef}
                   style={{ pointerEvents: 'auto' }}
                   type="text"
                   value={lengthInput ?? ''}
                 />{' '}
-                m<span className="ml-2">Tab: direction</span>
+                m<span className="ml-2">{t('run.tabDirection')}</span>
               </label>
             ) : null}
             {validationMessage ? (
