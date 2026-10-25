@@ -310,6 +310,33 @@ function DisplayMenu() {
         sideOffset={8}
       >
         <CutHeightSlider />
+        {wallMode === 'low' ? (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <DoorOpen className="h-4 w-4" />
+              <span>Openings</span>
+              <span className="ml-auto text-muted-foreground text-xs">{activeOpenings?.label}</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
+              {OPENING_DISPLAY_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onSelect={() => setOpeningDisplay(option.value)}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-foreground">{option.label}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {OPENING_DISPLAY_DETAIL[option.value]}
+                    </span>
+                  </div>
+                  {openingDisplay === option.value ? (
+                    <Check className="ml-auto h-4 w-4 text-foreground" />
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        ) : null}
         <DropdownMenuItem onSelect={(e) => keepOpen(e, () => setShowGrid(!showGrid))}>
           <Grid2X2 className="h-4 w-4" />
           <span>Grid</span>
@@ -505,34 +532,6 @@ function DisplayMenu() {
             ) : null}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-
-        {wallMode === 'low' ? (
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <DoorOpen className="h-4 w-4" />
-              <span>Openings</span>
-              <span className="ml-auto text-muted-foreground text-xs">{activeOpenings?.label}</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className={SUBMENU_CONTENT_CLASS}>
-              {OPENING_DISPLAY_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onSelect={() => setOpeningDisplay(option.value)}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-foreground">{option.label}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {OPENING_DISPLAY_DETAIL[option.value]}
-                    </span>
-                  </div>
-                  {openingDisplay === option.value ? (
-                    <Check className="ml-auto h-4 w-4 text-foreground" />
-                  ) : null}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        ) : null}
 
         <DropdownMenuSeparator />
 
