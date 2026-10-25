@@ -1,9 +1,11 @@
 import type { ToolHint } from '@pascal-app/core'
+import { translate } from '../../../i18n'
 import type { ContinuationContext } from '../../../lib/continuation'
 import type { HudTitle } from '../../../lib/hud-title'
 import type { SnapContext } from '../../../lib/snapping-mode'
 import { useVisibleToolHints } from '../../../lib/panel-tool-options'
 import { ContextualHelperPanel } from './contextual-helper-panel'
+import { messages } from './messages'
 
 /**
  * Generic helper panel rendered from `def.toolHints` data. Matches the
@@ -44,7 +46,7 @@ export function RegisteredToolHelper({
         const isBypassHint = hint.key === 'Shift'
         return {
           keys: [hint.key],
-          label: shiftPressed && isBypassHint ? 'Guided constraints bypassed' : hint.label,
+          label: shiftPressed && isBypassHint ? translate(messages, 'bypassed') : hint.label,
           active: shiftPressed && isBypassHint,
         }
       })}

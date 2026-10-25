@@ -11,6 +11,7 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { create } from 'zustand'
+import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
 import { CROSSING_MESSAGE, floorRegionSelfIntersects } from './floor-region-geometry'
 import {
@@ -22,6 +23,7 @@ import {
 } from './floor-region-session'
 import { type FloorRegionPoint, floorRegionSnapTargets } from './floor-region-snap'
 import { beginGesture, type GestureHandle } from './gesture-lifecycle'
+import { messages } from './help-messages'
 import { applyRoomPlan } from './room-structure-commands'
 import { sfxEmitter } from './sfx-bus'
 
@@ -202,13 +204,24 @@ export function toggleTerraceShape() {
 /** The HUD's shape chip (T). */
 export const TERRACE_SHAPE_HINT: ToolHint = {
   key: 'T',
-  label: 'Shape',
+  get label() {
+    return translate(messages, 'terrace.shape')
+  },
   chip: {
     subscribe: (onChange) => useTerraceDraft.subscribe(onChange),
     value: () => useTerraceDraft.getState().shape,
     cycle: toggleTerraceShape,
-    labels: { rectangle: 'Shape: Rectangle', polygon: 'Shape: Polygon' },
+    labels: {
+      get rectangle() {
+        return translate(messages, 'terrace.rectangle')
+      },
+      get polygon() {
+        return translate(messages, 'terrace.polygon')
+      },
+    },
     icons: { rectangle: 'lucide:square', polygon: 'lucide:pentagon' },
-    tooltip: 'Outline shape — click or press T to switch',
+    get tooltip() {
+      return translate(messages, 'terrace.tooltip')
+    },
   },
 }

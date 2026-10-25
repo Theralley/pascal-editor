@@ -1,3 +1,6 @@
+import { translate } from '../i18n'
+import { messages } from './help-messages'
+
 export type ContextualShortcutHint = {
   // A combo of keys pressed together (rendered joined by "+"). An entry may
   // itself be an array of alternatives (rendered joined by "/"), e.g.
@@ -33,7 +36,7 @@ export function resolveRotateHandleHelpHints(altPressed: boolean): ContextualSho
   return [
     {
       keys: [ALT_KEY],
-      label: altPressed ? 'Rotating freely (no angle step)' : 'Hold to rotate freely',
+      label: translate(messages, altPressed ? 'rotate.free' : 'rotate.holdFree'),
       active: altPressed,
     },
   ]
@@ -77,7 +80,7 @@ export function resolveSelectModeHelpHints({
 
     hints.push({
       keys: [[COMMAND_KEY, SHIFT_KEY], LEFT_CLICK],
-      label: 'Add or remove objects from the selection',
+      label: translate(messages, 'select.addRemove'),
       active: true,
     })
     return hints
@@ -89,23 +92,23 @@ export function resolveSelectModeHelpHints({
   if (selectedCount > 1) {
     hints.push({
       keys: [LEFT_CLICK],
-      label: 'Click or drag the selection to move it as one',
+      label: translate(messages, 'select.moveGroup'),
     })
-    hints.push({ keys: [ROTATE_KEYS], label: 'Rotate the selection ±45°' })
+    hints.push({ keys: [ROTATE_KEYS], label: translate(messages, 'select.rotateGroup') })
     hints.push({
       keys: [COMMAND_KEY, 'G'],
-      label: 'Group selection (session only)',
+      label: translate(messages, 'select.group'),
     })
     hints.push({
       keys: [COMMAND_KEY, SHIFT_KEY, 'G'],
-      label: 'Ungroup session selection',
+      label: translate(messages, 'select.ungroup'),
     })
     hints.push({
       keys: [[COMMAND_KEY, SHIFT_KEY], LEFT_CLICK],
-      label: 'Add or remove objects from the selection',
+      label: translate(messages, 'select.addRemove'),
       active: commandPressed || shiftPressed,
     })
-    hints.push({ keys: [ESC_KEY], label: 'Clear the selection (or click outside)' })
+    hints.push({ keys: [ESC_KEY], label: translate(messages, 'select.clear') })
     return hints
   }
 
@@ -115,12 +118,12 @@ export function resolveSelectModeHelpHints({
   // detaches the joint mid-drag; a fitting's cluster adds rotate arcs, with
   // R / T (and Alt to switch axis) for keyboard rotation.
   if (mepSelection === 'run') {
-    hints.push({ keys: [CLICK], label: 'Click a handle dot to show move arrows' })
-    hints.push({ keys: [ALT_KEY], label: 'Detach the joint while dragging an arrow' })
+    hints.push({ keys: [CLICK], label: translate(messages, 'select.runHandle') })
+    hints.push({ keys: [ALT_KEY], label: translate(messages, 'select.detach') })
   } else if (mepSelection === 'fitting') {
-    hints.push({ keys: [CLICK], label: 'Click the handle dot to show move + rotate handles' })
-    hints.push({ keys: [ROTATE_KEYS], label: 'Rotate ±45°' })
-    hints.push({ keys: [ALT_KEY], label: 'Switch the rotation axis (Y → X → Z)' })
+    hints.push({ keys: [CLICK], label: translate(messages, 'select.fittingHandle') })
+    hints.push({ keys: [ROTATE_KEYS], label: translate(messages, 'select.rotateStep') })
+    hints.push({ keys: [ALT_KEY], label: translate(messages, 'select.switchAxis') })
   }
 
   // The rows are the same whatever modifier is held — guides/snapping are
@@ -130,28 +133,28 @@ export function resolveSelectModeHelpHints({
   if (hasMovableSelection) {
     hints.push({
       keys: [LEFT_CLICK],
-      label: 'Drag selected movable object',
+      label: translate(messages, 'select.dragMovable'),
     })
   }
 
   if (hasRotatableSelection) {
     hints.push({
       keys: [COMMAND_KEY, RIGHT_CLICK],
-      label: 'Drag left or right to rotate selected object',
+      label: translate(messages, 'select.dragRotate'),
     })
   }
 
   if (hasOpeningRadiusSelection) {
     hints.push({
       keys: [SHIFT_KEY],
-      label: 'Adjust one side’s corner radius',
+      label: translate(messages, 'select.cornerRadius'),
       active: shiftPressed,
     })
   }
 
   hints.push({
     keys: [[COMMAND_KEY, SHIFT_KEY], LEFT_CLICK],
-    label: 'Add or remove objects from the selection',
+    label: translate(messages, 'select.addRemove'),
     active: commandPressed || shiftPressed,
   })
 

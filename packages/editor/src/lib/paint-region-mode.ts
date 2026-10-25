@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { translate } from '../i18n'
+import { messages } from './help-messages'
 import type { ActivePaintMaterial } from './material-paint'
 import { isTypingTarget } from './typing-target'
 
@@ -104,7 +106,7 @@ export function paintRegionTargets(mode: PaintMode): { wall: boolean; floor: boo
 
 /** What the HUD asks for while the pointer is over nothing the sub-mode draws on. */
 export function paintRegionHoverHint(mode: 'rectangle' | 'polygon'): string {
-  return mode === 'polygon' ? 'Hover a floor or ceiling' : 'Hover a wall, floor or ceiling'
+  return translate(messages, mode === 'polygon' ? 'paint.hoverFloorCeiling' : 'paint.hoverSurface')
 }
 
 /**

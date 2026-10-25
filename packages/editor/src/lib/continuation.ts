@@ -1,3 +1,6 @@
+import { translate } from '../i18n'
+import { messages } from './help-messages'
+
 export type ContinuationContext = 'wall' | 'fence' | 'point' | 'cabinet' | 'canopy'
 export type ContinuationMode = string
 
@@ -21,7 +24,18 @@ export const CONTINUATION_PROFILES: Record<
   wall: {
     options: ['room', 'single', 'rectangle'],
     default: 'room',
-    labels: { room: 'Polygon room', single: 'Walls', rectangle: 'Rectangle room' },
+    // The labels are read when the card renders, so they follow the language.
+    labels: {
+      get room() {
+        return translate(messages, 'continuation.wallRoom')
+      },
+      get single() {
+        return translate(messages, 'continuation.wallSingle')
+      },
+      get rectangle() {
+        return translate(messages, 'continuation.wallRectangle')
+      },
+    },
     icons: { room: 'lucide:pentagon', single: 'lucide:minus', rectangle: 'lucide:square' },
     chosenInPanel: true,
   },
@@ -29,10 +43,18 @@ export const CONTINUATION_PROFILES: Record<
     options: ['single', 'continuous', 'curved', 'freehand'],
     default: 'continuous',
     labels: {
-      continuous: 'Continuous',
-      single: 'Single fence',
-      curved: 'Curved fence',
-      freehand: 'Freehand fence',
+      get continuous() {
+        return translate(messages, 'continuation.continuous')
+      },
+      get single() {
+        return translate(messages, 'continuation.fenceSingle')
+      },
+      get curved() {
+        return translate(messages, 'continuation.fenceCurved')
+      },
+      get freehand() {
+        return translate(messages, 'continuation.fenceFreehand')
+      },
     },
     icons: {
       continuous: 'lucide:waypoints',
@@ -44,19 +66,40 @@ export const CONTINUATION_PROFILES: Record<
   point: {
     options: ['once', 'repeat'],
     default: 'once',
-    labels: { once: 'Place once', repeat: 'Place multiple' },
+    labels: {
+      get once() {
+        return translate(messages, 'continuation.once')
+      },
+      get repeat() {
+        return translate(messages, 'continuation.repeat')
+      },
+    },
     icons: { once: 'lucide:target', repeat: 'lucide:copy-plus' },
   },
   cabinet: {
     options: ['single', 'continuous'],
     default: 'single',
-    labels: { single: 'Single cabinet', continuous: 'Continuous run' },
+    labels: {
+      get single() {
+        return translate(messages, 'continuation.cabinetSingle')
+      },
+      get continuous() {
+        return translate(messages, 'continuation.cabinetRun')
+      },
+    },
     icons: { single: 'lucide:minus', continuous: 'lucide:waypoints' },
   },
   canopy: {
     options: ['single', 'continuous'],
     default: 'single',
-    labels: { single: 'Single canopy', continuous: 'Continuous canopy' },
+    labels: {
+      get single() {
+        return translate(messages, 'continuation.canopySingle')
+      },
+      get continuous() {
+        return translate(messages, 'continuation.canopyContinuous')
+      },
+    },
     icons: { single: 'lucide:minus', continuous: 'lucide:waypoints' },
   },
 }

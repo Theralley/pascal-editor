@@ -1,5 +1,7 @@
+import { translate } from '../../../i18n'
 import type { HudTitle } from '../../../lib/hud-title'
 import { ContextualHelperPanel } from './contextual-helper-panel'
+import { messages } from './messages'
 
 interface BuildingHelperProps {
   showRotate?: boolean
@@ -13,9 +15,9 @@ export function BuildingHelper({ showRotate, title = null }: BuildingHelperProps
     <ContextualHelperPanel
       title={title}
       hints={[
-        { keys: ['Left click'], label: 'Place building' },
-        ...(showRotate ? [{ keys: ['R', 'T'], label: 'Rotate' }] : []),
-        { keys: ['Esc'], label: 'Cancel' },
+        { keys: ['Left click'], label: translate(messages, 'building.place') },
+        ...(showRotate ? [{ keys: ['R', 'T'], label: translate(messages, 'rotate') }] : []),
+        { keys: ['Esc'], label: translate(messages, 'cancel') },
       ]}
     />
   )

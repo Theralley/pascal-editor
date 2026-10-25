@@ -5,6 +5,7 @@ import {
   CONTINUATION_PROFILES,
   type ContinuationContext,
 } from '../../../lib/continuation'
+import { useT } from '../../../i18n'
 import type { ContextualShortcutHint } from '../../../lib/contextual-help'
 import type { HudTitle } from '../../../lib/hud-title'
 import { hasActivePaintMaterial } from '../../../lib/material-paint'
@@ -23,6 +24,7 @@ import { IconRefGlyph } from '../icon-ref'
 import { ShortcutToken } from '../primitives/shortcut-token'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip'
 import { useInRightStack } from '../right-stack'
+import { messages } from './messages'
 
 // One muted container holds every row — passive key hints and interactive chips
 // alike — so the HUD reads as a single panel, not a stack of floating pills. It
@@ -169,10 +171,10 @@ const SNAPPING_MODE_ICONS = {
 } as const
 
 const SNAPPING_MODE_LABELS = {
-  grid: 'Grid',
-  lines: 'Lines',
-  angles: 'Angles',
-  off: 'Off',
+  grid: 'snap.grid',
+  lines: 'snap.lines',
+  angles: 'snap.angles',
+  off: 'snap.off',
 } as const
 
 const GRID_SNAP_STEPS: GridSnapStep[] = [0.5, 0.25, 0.1, 0.05]
@@ -185,38 +187,40 @@ function nextGridSnapStep(step: GridSnapStep): GridSnapStep {
 // The active interaction's snapping controls, scoped to its context (wall / item
 // / polygon) so each action shows only the modes that make sense for it.
 function SnappingChips({ context }: { context: SnapContext }) {
+  const t = useT(messages)
   const snappingMode = useEditor((s) => s.snappingModeByContext[context])
   const setSnappingMode = useEditor((s) => s.setSnappingMode)
   const gridSnapStep = useEditor((s) => s.gridSnapStep)
   const setGridSnapStep = useEditor((s) => s.setGridSnapStep)
 
   const gridActive = resolveSnapFlags(snappingMode).grid
+  const snapLabel = t('snap.mode', { mode: t(SNAPPING_MODE_LABELS[snappingMode]) })
 
   return (
     <>
       <ChipRow
-        ariaLabel={`Snapping: ${SNAPPING_MODE_LABELS[snappingMode]}`}
+        ariaLabel={snapLabel}
         guideTarget="snap-mode"
         icon={SNAPPING_MODE_ICONS[snappingMode]}
-        label={`Snapping: ${SNAPPING_MODE_LABELS[snappingMode]}`}
+        label={snapLabel}
         onClick={() => {
           setSnappingMode(context, cycleSnappingModeIn(context, snappingMode))
           sfxEmitter.emit('sfx:grid-snap')
         }}
         shortcut="Shift"
-        tooltip="Snapping mode — click or press Shift to cycle"
+        tooltip={t('snap.modeTooltip')}
       />
       {gridActive ? (
         <ChipRow
-          ariaLabel={`Grid step: ${gridSnapStep.toFixed(2)} m`}
+          ariaLabel={t('snap.gridStepAria', { step: gridSnapStep.toFixed(2) })}
           guideTarget="snap-grid-step"
-          label={`Grid: ${gridSnapStep.toFixed(2)} m`}
+          label={t('snap.gridStep', { step: gridSnapStep.toFixed(2) })}
           onClick={() => {
             setGridSnapStep(nextGridSnapStep(gridSnapStep))
             sfxEmitter.emit('sfx:grid-snap')
           }}
           shortcut="Ctrl"
-          tooltip="Grid step — click or tap Ctrl to cycle"
+          tooltip={t('snap.gridTooltip')}
         />
       ) : null}
     </>
@@ -244,6 +248,7 @@ function ToolHintChipRow({ hint }: { hint: ToolHint & { chip: NonNullable<ToolHi
 }
 
 function ContinuationChip({ context }: { context: ContinuationContext }) {
+  const t = useT(messages)
   const mode = useEditor((s) => s.getContinuation(context))
   const cycleContinuation = useEditor((s) => s.cycleContinuation)
   const profile = CONTINUATION_PROFILES[context]
@@ -252,17 +257,18 @@ function ContinuationChip({ context }: { context: ContinuationContext }) {
 
   return (
     <ChipRow
-      ariaLabel={`Continuation: ${label}`}
+      ariaLabel={t('continuation.aria', { label })}
       icon={icon}
       label={label}
       onClick={() => cycleContinuation(context)}
       shortcut="C"
-      tooltip="Continuation — click or press C to cycle"
+      tooltip={t('continuation.tooltip')}
     />
   )
 }
 
 function FenceContinuationChips() {
+  const t = useT(messages)
   const mode = useEditor((s) => s.getContinuation('fence'))
   const setContinuation = useEditor((s) => s.setContinuation)
   const curveStarted = useFenceCurveDraft((s) => s.pointCount > 0)
@@ -270,7 +276,11 @@ function FenceContinuationChips() {
   const isCurved = mode === 'curved'
   const isFreehand = mode === 'freehand'
   const straightMode = isCurved ? 'continuous' : mode
-  const typeLabel = isFreehand ? 'Type: Freehand' : isCurved ? 'Type: Curved' : 'Type: Straight'
+  const typeLabel = isFreehand
+    ? t('fence.typeFreehand')
+    : isCurved
+      ? t('fence.typeCurved')
+      : t('fence.typeStraight')
   const typeIcon = isFreehand ? 'lucide:scribble' : isCurved ? 'lucide:spline' : 'lucide:minus'
   const nextType =
     mode === 'continuous' || mode === 'single'
@@ -282,18 +292,24 @@ function FenceContinuationChips() {
   return (
     <>
       <ChipRow
-        ariaLabel={`Fence type: ${typeLabel.replace('Type: ', '')}`}
+        ariaLabel={t('fence.typeAria', {
+          type: isFreehand ? t('fence.freehand') : isCurved ? t('fence.curved') : t('fence.straight'),
+        })}
         icon={typeIcon}
         label={typeLabel}
         onClick={() => setContinuation('fence', nextType)}
         shortcut="T"
-        tooltip="Fence type — click or press T to switch between straight, curved and freehand"
+        tooltip={t('fence.typeTooltip')}
       />
       <ChipRow
-        ariaLabel={`Fence continuation: ${straightMode === 'single' ? 'Single' : 'Continuous'}`}
+        ariaLabel={t('fence.continuationAria', {
+          mode: straightMode === 'single' ? t('fence.single') : t('fence.continuous'),
+        })}
         disabled={isCurved || isFreehand}
         icon={straightMode === 'single' ? 'lucide:minus' : 'lucide:waypoints'}
-        label={straightMode === 'single' ? 'Straight: Single' : 'Straight: Continuous'}
+        label={
+          straightMode === 'single' ? t('fence.straightSingle') : t('fence.straightContinuous')
+        }
         onClick={
           isCurved || isFreehand
             ? undefined
@@ -302,8 +318,8 @@ function FenceContinuationChips() {
         shortcut="C"
         tooltip={
           isCurved || isFreehand
-            ? 'Straight continuation is unavailable for curved or freehand fences'
-            : 'Straight fence continuation — click or press C to toggle'
+            ? t('fence.straightUnavailable')
+            : t('fence.straightTooltip')
         }
       />
       {/* Curved fences are committed by a closing gesture rather than per-click,
@@ -312,7 +328,7 @@ function FenceContinuationChips() {
       {(isCurved || isFreehand) && curveStarted ? (
         <ChipRow
           icon="lucide:circle-check"
-          label={isFreehand ? 'Drag to draw fence' : 'Finish curve (or double-click)'}
+          label={isFreehand ? t('fence.dragToDraw') : t('fence.finishCurve')}
           shortcut={isFreehand ? 'Release' : 'Enter'}
         />
       ) : null}
@@ -340,6 +356,7 @@ function PaintNotice() {
 // derived `paintHover` (scopes + labels), so it works for any kind without a
 // per-target table.
 function PaintScopeChip() {
+  const t = useT(messages)
   // What the cursor is over (that's what the next click paints). `null` when not
   // over a paintable surface — including an item with no slots.
   const paintHover = useEditor((s) => s.paintHover)
@@ -349,12 +366,16 @@ function PaintScopeChip() {
   const paintMode = usePaintRegionMode((s) => s.mode)
   const paintEraser = paintMode === 'erase'
   const picking = paintMode === 'pick'
-  const verb = picking ? 'Pick' : paintEraser ? 'Erase' : 'Paint'
+  const verb = picking
+    ? t('paintScope.pick')
+    : paintEraser
+      ? t('paintScope.erase')
+      : t('paintScope.paint')
 
   // Nothing to paint with yet (no material picked, not erasing) → the first step
   // is choosing a material, so say that before anything about scope or hovering.
   if (!(paintEraser || picking || hasActivePaintMaterial(activePaintMaterial))) {
-    return <ChipRow icon="lucide:palette" label="Select a material to paint" />
+    return <ChipRow icon="lucide:palette" label={t('paintScope.selectMaterial')} />
   }
 
   // Not over anything paintable → guide the user to hover, still teaching Shift.
@@ -364,10 +385,10 @@ function PaintScopeChip() {
         icon="lucide:mouse-pointer-click"
         label={
           picking
-            ? 'Hover a surface to pick its material'
+            ? t('paintScope.hoverPick')
             : paintEraser
-              ? 'Hover a painted surface to erase'
-              : 'Hover a surface to paint'
+              ? t('paintScope.hoverErase')
+              : t('paintScope.hoverPaint')
         }
         shortcut={picking ? undefined : 'Shift'}
       />
@@ -385,19 +406,22 @@ function PaintScopeChip() {
     return (
       <ChipRow
         icon={picking ? 'lucide:pipette' : PAINT_SCOPE_ICONS[effective]}
-        label={`${verb}: ${paintScopeLabel(picking ? 'single' : effective, paintHover)}`}
+        label={t('paintScope.row', {
+          verb,
+          scope: paintScopeLabel(picking ? 'single' : effective, paintHover),
+        })}
       />
     )
   }
 
   return (
     <ChipRow
-      ariaLabel={`${verb} scope: ${paintScopeLabel(effective, paintHover)}`}
+      ariaLabel={t('paintScope.aria', { verb, scope: paintScopeLabel(effective, paintHover) })}
       icon={PAINT_SCOPE_ICONS[effective]}
-      label={`${verb}: ${paintScopeLabel(effective, paintHover)}`}
+      label={t('paintScope.row', { verb, scope: paintScopeLabel(effective, paintHover) })}
       onClick={() => cyclePaintScope()}
       shortcut="Shift"
-      tooltip={`${verb} scope — click or press Shift to cycle`}
+      tooltip={t('paintScope.tooltip', { verb })}
     />
   )
 }
@@ -475,6 +499,7 @@ export function ContextualHelperPanel({
   // A warning about what is in hand (a floor item in a door's way), in the "!" row.
   notice?: string | null
 }) {
+  const t = useT(messages)
   const inStack = useInRightStack()
   const [showAllHints, setShowAllHints] = useState(false)
   const hintsId = useId()
@@ -486,8 +511,8 @@ export function ContextualHelperPanel({
   if (fenceFeature === 'gate' || fenceFeature === 'opening') return (
     <div className={cn(CARD_CLASS, !inStack && FLOATING_CLASS)} data-hud-card>
       {title ? <HudHeader title={title} /> : null}
-      <ChipRow shortcut="Left click" label={fenceFeature === 'gate' ? 'Place gate on a fence' : 'Place passage on a fence'} />
-      <ChipRow shortcut="Esc" label="Cancel placement" />
+      <ChipRow shortcut="Left click" label={fenceFeature === 'gate' ? t('fence.placeGate') : t('fence.placePassage')} />
+      <ChipRow shortcut="Esc" label={t('fence.cancelPlacement')} />
     </div>
   )
   if (hints.length === 0 && !hasChips && !notice) return null
@@ -518,7 +543,7 @@ export function ContextualHelperPanel({
           onClick={() => setShowAllHints((value) => !value)}
           type="button"
         >
-          {showAllHints ? 'Fewer shortcuts' : 'More shortcuts'}
+          {showAllHints ? t('hints.fewer') : t('hints.more')}
         </button>
       ) : null}
       {notice ? <HintRow hint={{ keys: ['!'], label: notice, active: true }} /> : null}

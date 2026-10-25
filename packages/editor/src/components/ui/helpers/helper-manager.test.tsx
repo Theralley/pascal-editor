@@ -1,6 +1,8 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { setLocale } from '../../../i18n'
 import { SELECT_HUD_TITLE, toolHudTitle } from '../../../lib/hud-title'
+import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
 import { snapContextOf } from '../../../lib/snapping-mode'
 import { cornerHintRows } from '../../../store/use-corner-snap-hint'
 import { TooltipProvider } from '../primitives/tooltip'
@@ -117,5 +119,25 @@ describe('HUD header', () => {
 
   test('select mode is titled Select with its V key', () => {
     expect(SELECT_HUD_TITLE).toMatchObject({ label: 'Select', shortcut: 'V' })
+  })
+})
+
+describe('Helper card in the active language', () => {
+  afterEach(() => setLocale('en'))
+
+  test('shows Swedish chips, hints and title when the locale is sv', () => {
+    setLocale('sv')
+    const html = renderCurrentMarkup(
+      <TooltipProvider>
+        <ContextualHelperPanel
+          hints={ROOM_DIVIDE_HINTS}
+          snapContext="wall"
+          title={SELECT_HUD_TITLE}
+        />
+      </TooltipProvider>,
+    )
+    for (const text of ['Markera', 'Fäst: Rutnät', 'Rutnät: 0.50 m', 'Lägg till punkt', 'Fler genvägar', 'Avbryt'])
+      expect(html).toContain(text)
+    expect(html).not.toContain('Snapping')
   })
 })

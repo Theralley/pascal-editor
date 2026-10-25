@@ -1,5 +1,7 @@
 import type { CornerBlockReason } from '@pascal-app/core'
 import { create } from 'zustand'
+import { translate } from '../i18n'
+import { messages } from '../lib/help-messages'
 
 /**
  * What the window being placed or dragged near a wall end says: `join` when a window already waits
@@ -18,16 +20,32 @@ export const useCornerSnapHint = create<{
 }))
 
 /** One line each, in the HUD's voice: what is in the way, not what to do about it. */
-export const CORNER_BLOCK_NOTES: Record<CornerBlockReason, string> = {
-  free_end: 'No wall meets here',
-  several_walls: 'Three or more walls meet here',
-  angle: 'The walls meet at too sharp or too flat an angle',
-  curved: 'A curved wall takes no corner window',
-  curtain: 'A curtain wall takes no corner window',
-  no_room: 'No room for the matching window on the other wall',
-  in_the_way: 'Another opening is in the way at the corner',
-  too_tall: 'The window waiting there is taller than this wall',
-}
+export const CORNER_BLOCK_NOTES = {
+  get free_end() {
+    return translate(messages, 'corner.free_end')
+  },
+  get several_walls() {
+    return translate(messages, 'corner.several_walls')
+  },
+  get angle() {
+    return translate(messages, 'corner.angle')
+  },
+  get curved() {
+    return translate(messages, 'corner.curved')
+  },
+  get curtain() {
+    return translate(messages, 'corner.curtain')
+  },
+  get no_room() {
+    return translate(messages, 'corner.no_room')
+  },
+  get in_the_way() {
+    return translate(messages, 'corner.in_the_way')
+  },
+  get too_tall() {
+    return translate(messages, 'corner.too_tall')
+  },
+} satisfies Record<CornerBlockReason, string>
 
 export type CornerHintRow = { keys: string[]; label: string }
 
@@ -38,9 +56,9 @@ export function cornerHintRows(hint: CornerSnapHint): CornerHintRow[] {
     return [
       {
         keys: ['Left click'],
-        label: hint === 'join' ? 'Join as a corner window' : 'Corner window',
+        label: translate(messages, hint === 'join' ? 'corner.join' : 'corner.new'),
       },
-      { keys: ['Alt'], label: 'Place without the corner snap' },
+      { keys: ['Alt'], label: translate(messages, 'corner.withoutSnap') },
     ]
   // The HUD's notice row, as for a placement that does not fit: a note, not a key to press.
   return [{ keys: ['!'], label: CORNER_BLOCK_NOTES[hint] }]
