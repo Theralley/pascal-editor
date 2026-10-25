@@ -26,8 +26,19 @@ import {
 
 export type RenderContext = 'editor' | 'viewer'
 export type MetricNotation = 'meters' | 'millimeters'
-export type WallMode = 'up' | 'cutaway' | 'down' | 'translucent'
+/** `down` hides the walls; `low` stands them as short stubs (see `wallCutHeight`). */
+export type WallMode = 'up' | 'cutaway' | 'down' | 'low' | 'translucent'
 export type LevelMode = 'stacked' | 'exploded' | 'solo' | 'manual'
+
+/** Where `low` cuts the walls (m above the level), and the range the slider may take. */
+export const WALL_CUT_HEIGHT_DEFAULT = 0.25
+export const WALL_CUT_HEIGHT_MIN = 0.05
+export const WALL_CUT_HEIGHT_MAX = 1.5
+
+export function clampWallCutHeight(height: number): number {
+  if (!Number.isFinite(height)) return WALL_CUT_HEIGHT_DEFAULT
+  return Math.min(WALL_CUT_HEIGHT_MAX, Math.max(WALL_CUT_HEIGHT_MIN, height))
+}
 
 type SelectionPath = {
   buildingId: BuildingNode['id'] | null
@@ -251,6 +262,10 @@ type ViewerState = {
   /** Lifts every override: the view goes back to this project's saved picks, else the browser-wide defaults. */
   restoreView: () => void
 
+  /** The height (m) walls stand at in `low` mode. */
+  wallCutHeight: number
+  setWallCutHeight: (height: number) => void
+
   showScans: boolean
   setShowScans: (show: boolean) => void
 
@@ -353,6 +368,7 @@ type PersistedViewerState = Partial<
     | 'levelMode'
     | 'wallMode'
     | 'showRoofs'
+    | 'wallCutHeight'
     | 'projectPreferences'
   >
 >
@@ -364,7 +380,7 @@ const EDGE_MODES = ['off', 'soft', 'strong'] as const
 const UNITS = ['metric', 'imperial'] as const
 const METRIC_NOTATIONS = ['meters', 'millimeters'] as const
 const LEVEL_MODES = ['stacked', 'exploded', 'solo', 'manual'] as const
-const WALL_MODES = ['up', 'cutaway', 'down', 'translucent'] as const
+const WALL_MODES = ['up', 'cutaway', 'down', 'low', 'translucent'] as const
 
 // Countries still on imperial/US customary units: United States, Liberia, Myanmar.
 const IMPERIAL_REGIONS = ['US', 'LR', 'MM']
@@ -531,6 +547,9 @@ function normalizePersistedViewerState(value: unknown): PersistedViewerState {
     levelMode: pickString<ViewerState['levelMode']>(state.levelMode, LEVEL_MODES, 'stacked'),
     wallMode: pickString<ViewerState['wallMode']>(state.wallMode, WALL_MODES, 'up'),
     showRoofs: typeof state.showRoofs === 'boolean' ? state.showRoofs : true,
+    wallCutHeight: clampWallCutHeight(
+      typeof state.wallCutHeight === 'number' ? state.wallCutHeight : WALL_CUT_HEIGHT_DEFAULT,
+    ),
     projectPreferences: normalizeProjectPreferences(state.projectPreferences),
   }
 }
@@ -826,6 +845,8 @@ const useViewer = create<ViewerState>()(
             showRoofs: saved?.showRoofs ?? state.showRoofsDefault,
           }
         }),
+      wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
+      setWallCutHeight: (height) => set({ wallCutHeight: clampWallCutHeight(height) }),
 
       showScans: true,
       setShowScans: (show) =>
@@ -1001,6 +1022,7 @@ const useViewer = create<ViewerState>()(
         levelMode: state.levelModeDefault,
         wallMode: state.wallModeDefault,
         showRoofs: state.showRoofsDefault,
+        wallCutHeight: state.wallCutHeight,
         projectPreferences: Object.fromEntries(
           Object.entries(state.projectPreferences).filter(([key]) => key !== ''),
         ),

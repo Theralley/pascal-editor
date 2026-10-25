@@ -78,5 +78,5 @@ test('a system override never becomes a saved pick', () => {
 test('the view keys save the pick', () => {
   savePicks()
   runViewShortcut('wallsDown')
-  expect(saved()?.wallMode).toBe('down')
+  expect(saved()?.wallMode).toBe('low')
 })

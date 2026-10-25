@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import {
   BuildingNode,
+  holdHiddenWallPointerEvents,
   LevelNode,
   MaterialPresetPayloadSchema,
   registerLibraryMaterials,
@@ -20,11 +21,13 @@ import {
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
+  Raycaster,
   Texture,
   TextureLoader,
   Vector3,
 } from 'three'
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { cutMaterials } from '../../lib/display-cut'
 import { applyMaterialPresetToMaterials } from '../../lib/materials'
 import {
   getWallHideState,
@@ -91,6 +94,7 @@ beforeEach(() => {
   useScene.setState({ nodes: {}, materials: {} })
   viewerStore = createStore<WallCutoutViewerState>(() => ({
     wallMode: 'cutaway',
+    wallCutHeight: 0.25,
     shading: 'solid',
     textures: false,
     colorPreset: 'clay',
@@ -157,6 +161,17 @@ describe('WallCutoutCache', () => {
     viewerStore.setState({ wallMode: 'down', nodesRevealing: [node.id] })
     cache.update(camera, 1)
     expect(mesh.userData.wallHidden).toBe(true)
+  })
+
+  test('low stands the walls cut, not hidden, whether or not they play', () => {
+    const { node, mesh } = addWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    expect(mesh.userData.wallHidden).toBe(false)
+    viewerStore.setState({ nodesRevealing: [node.id] })
+    cache.update(camera, 1.01)
+    expect(mesh.userData.wallHidden).toBe(false)
+    expect(cache.walls.get(node.id)?.variantKey).toBe('visible:cut')
   })
 
   test('camera orbit in full height never iterates cached walls or reads camera direction', () => {
@@ -590,6 +605,7 @@ describe('WallCutoutCache', () => {
     for (const [mode, hidden] of [
       ['up', false],
       ['down', true],
+      ['low', false],
       ['translucent', false],
       ['cutaway', true],
     ] as const) {
@@ -597,7 +613,13 @@ describe('WallCutoutCache', () => {
       cache.update(camera, 1.01)
       expect(mesh.userData.wallHidden).toBe(hidden)
       expect(cache.walls.values().next().value!.variantKey).toBe(
-        mode === 'translucent' ? 'translucent' : hidden ? 'invisible' : 'visible',
+        mode === 'translucent'
+          ? 'translucent'
+          : mode === 'low'
+            ? 'visible:cut'
+            : hidden
+              ? 'invisible'
+              : 'visible',
       )
     }
   })
@@ -842,7 +864,7 @@ describe('WallCutoutCache', () => {
     for (const front of ['interior', 'exterior'])
       for (const back of ['interior', 'exterior']) {
         const { node, mesh } = addWall(front, back)
-        for (const mode of ['up', 'cutaway', 'down', 'translucent'] as const) {
+        for (const mode of ['up', 'cutaway', 'down', 'low', 'translucent'] as const) {
           viewerStore.setState({ wallMode: mode })
           for (const angle of [0, Math.PI]) {
             camera.rotation.y = angle
@@ -917,5 +939,143 @@ describe('walls for a capture', () => {
     expect(mesh.material).toBe(cutaway)
     restore()
     expect(mesh.material).toBe(cutaway)
+  })
+})
+
+describe('walls low', () => {
+  const LEVEL = 'level_walls_down'
+
+  /** A 4 m long, 2.5 m tall wall standing on a level root at y = 0 (the wall's base is its origin). */
+  function addStandingWall() {
+    const root = new Group()
+    sceneRegistry.nodes.set(LEVEL as never, root)
+    const { node, mesh } = addWall()
+    mesh.geometry = new BoxGeometry(4, 2.5, 0.1).translate(2, 1.25, 0)
+    mesh.geometry.clearGroups()
+    mesh.geometry.addGroup(0, mesh.geometry.getIndex()!.count, 0)
+    node.parentId = LEVEL as never
+    root.add(mesh)
+    root.updateMatrixWorld(true)
+    return { node, mesh, root }
+  }
+
+  const shoot = (root: Group, from: Vector3, direction: Vector3) =>
+    new Raycaster(from, direction.normalize()).intersectObject(root, true)
+
+  test('the wall wears masked clones, the scene materials stay as they are, and a hit above the cut is dropped', () => {
+    const { node, mesh, root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1)
+    const upMaterials = mesh.material as Material[]
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1.01)
+    const cut = mesh.material as Material[]
+    expect(cut).not.toBe(upMaterials)
+    expect(cut.every((material) => (material as { maskNode?: unknown }).maskNode)).toBe(true)
+    expect(upMaterials.some((material) => (material as { maskNode?: unknown }).maskNode)).toBe(
+      false,
+    )
+    expect(cache.walls.get(node.id)?.variantKey).toBe('visible:cut')
+
+    // From above: the wall's own top at 2.5 m is above the cut, so the wall is not hit there
+    // (the stub's cap takes the pick, see wall-cut-caps).
+    const down = new Vector3(0, -1, 0)
+    expect(shoot(root, new Vector3(1.5, 5, 0), down)).toHaveLength(0)
+    // From the side: under the cut it hits, above it it passes.
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 0.1, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1.02)
+    expect(mesh.material).toBe(upMaterials)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 5, 0), down)[0]?.point.y).toBeCloseTo(2.5, 5)
+  })
+
+  test('a tool that follows the cursor along the whole wall gets the full height while it runs', () => {
+    const { root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+    const release = holdHiddenWallPointerEvents()
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(1)
+    release()
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+  })
+
+  test('a moulding on the wall is cut with it, and a node hosted on the wall is not', () => {
+    const { mesh } = addStandingWall()
+    const moulding = new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()])
+    const hosted = new Mesh(new BoxGeometry(1, 1, 0.1), [new MeshBasicMaterial()])
+    mesh.add(moulding, hosted)
+    sceneRegistry.nodes.set('window_hosted' as never, hosted)
+    const hostedMaterial = hosted.material
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeDefined()
+    expect(hosted.material).toBe(hostedMaterial)
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1.01)
+    expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeUndefined()
+  })
+
+  test('a texture that arrives after the cut is on the clone the wall wears', () => {
+    const { mesh } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const source = new MeshBasicMaterial()
+    mesh.material = [source]
+    const map = new Texture()
+    const dressed = cutMaterials([source])
+    source.map = map
+    source.needsUpdate = true
+    expect(cutMaterials([source])[0]).not.toBe(dressed[0])
+    expect((cutMaterials([source])[0] as MeshBasicMaterial).map).toBe(map)
+  })
+
+  test('the cut height moves the cut and rebuilds no material', () => {
+    const { mesh, root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const cut = mesh.material
+    const writes = trackWrites(mesh)
+    viewerStore.setState({ wallCutHeight: 0.8 })
+    cache.update(camera, 1.01)
+    expect(mesh.material).toBe(cut)
+    expect(writes).toEqual({ material: 0, stamp: 0 })
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 0.7, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 0.9, 5), along)).toHaveLength(0)
+  })
+
+  test('a lifted level cuts at its own height', () => {
+    const { mesh, root } = addStandingWall()
+    root.position.y = 3
+    root.updateMatrixWorld(true)
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 3.2, 5), along)[0]?.object).toBe(mesh)
+    expect(shoot(root, new Vector3(1.5, 3.4, 5), along)).toHaveLength(0)
+  })
+
+  test('selection still shows on a cut wall', () => {
+    const { node, mesh } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const plain = mesh.material
+    viewerStore.setState({
+      selection: { buildingId: null, levelId: null, zoneId: null, selectedIds: [node.id] },
+    })
+    cache.update(camera, 1.01)
+    expect(cache.walls.get(node.id)?.variantKey).toBe('selection-visible:cut')
+    expect(mesh.material).not.toBe(plain)
+    expect(
+      (mesh.material as Material[]).every(
+        (material) => (material as { maskNode?: unknown }).maskNode,
+      ),
+    ).toBe(true)
   })
 })

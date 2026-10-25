@@ -55,6 +55,7 @@ const levelModeIcons = {
 const wallModeIcons = {
   up: '/icons/room.webp',
   cutaway: '/icons/wallcut.webp',
+  low: '/icons/walllow.webp',
   down: '/icons/walllow.webp',
   translucent: '/icons/wall.webp',
 }

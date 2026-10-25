@@ -4,7 +4,8 @@ import type { LevelMode, WallMode } from '../store/use-viewer'
 export const WALL_MODE_OPTIONS: readonly { value: WallMode; label: string }[] = [
   { value: 'up', label: 'Up' },
   { value: 'cutaway', label: 'Cutaway' },
-  { value: 'down', label: 'Down' },
+  { value: 'low', label: 'Low' },
+  { value: 'down', label: 'Hidden' },
   { value: 'translucent', label: 'Translucent' },
 ]
 
@@ -16,7 +17,7 @@ export const LEVEL_MODE_OPTIONS: readonly { value: Exclude<LevelMode, 'manual'>;
     { value: 'solo', label: 'Solo' },
   ]
 
-const WALL_STEPS: readonly WallMode[] = ['down', 'cutaway', 'up']
+const WALL_STEPS: readonly WallMode[] = ['down', 'low', 'cutaway', 'up']
 
 /** Translucent walls stand at the cutaway's height, so a step from it goes the same way. */
 export function stepWallMode(mode: WallMode, direction: 'up' | 'down'): WallMode {

@@ -1,7 +1,14 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // include Bun ambient types in its production declaration build.
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import useViewer, { anyGroundVeiled, groundVeiled, siteGroundShown } from './use-viewer'
+import useViewer, {
+  anyGroundVeiled,
+  groundVeiled,
+  siteGroundShown,
+  WALL_CUT_HEIGHT_DEFAULT,
+  WALL_CUT_HEIGHT_MAX,
+  WALL_CUT_HEIGHT_MIN,
+} from './use-viewer'
 
 const resetMeasurementPreferences = () => {
   useViewer.setState({
@@ -248,6 +255,21 @@ describe('scene theme', () => {
 
     expect(useViewer.getState().sceneTheme).toBe('sunset')
     expect(useViewer.getState().savedSceneTheme).toBe('sunset')
+  })
+})
+
+describe('the wall cut height', () => {
+  afterEach(() => useViewer.getState().setWallCutHeight(WALL_CUT_HEIGHT_DEFAULT))
+
+  test.each([
+    [0.4, 0.4],
+    [0, WALL_CUT_HEIGHT_MIN],
+    [-3, WALL_CUT_HEIGHT_MIN],
+    [9, WALL_CUT_HEIGHT_MAX],
+    [Number.NaN, WALL_CUT_HEIGHT_DEFAULT],
+  ])('%p is kept as %p', (height, kept) => {
+    useViewer.getState().setWallCutHeight(height)
+    expect(useViewer.getState().wallCutHeight).toBe(kept)
   })
 })
 

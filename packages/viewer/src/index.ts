@@ -102,6 +102,14 @@ export {
   prepareBrushForCSG,
   SUBTRACTION,
 } from './lib/csg-utils'
+export {
+  cutLike,
+  cutMaterials,
+  displayCutLimitY,
+  setDisplayCutRaycast,
+  setDisplayCutRoot,
+  uncutMaterials,
+} from './lib/display-cut'
 export type { DisplayState } from './lib/display-state'
 export { disposeObject3DResources } from './lib/dispose-object3d'
 export type { EdgeMode } from './lib/edge-style'
@@ -314,6 +322,7 @@ export { catalogLightSource, useItemLightPool } from './store/use-item-light-poo
 export {
   anyGroundVeiled,
   applyCountryUnitDefault,
+  clampWallCutHeight,
   DEFAULT_UNDERGROUND_LOOK,
   default as useViewer,
   type GroundMode,
@@ -324,6 +333,9 @@ export {
   type UndergroundEdge,
   type UndergroundLook,
   type UndergroundTransition,
+  WALL_CUT_HEIGHT_DEFAULT,
+  WALL_CUT_HEIGHT_MAX,
+  WALL_CUT_HEIGHT_MIN,
   type WallMode,
 } from './store/use-viewer'
 export {
@@ -441,7 +453,12 @@ export {
   getOpeningCutoutBottomPadding,
   hasFlatOpeningCutoutBottom,
 } from './systems/wall/opening-cutout-geometry'
-export { getWallHideState, WallCutout } from './systems/wall/wall-cutout'
+export { wallCutApplies } from './systems/wall/wall-cut-eligibility'
+export {
+  getWallHideState,
+  presentWallsLowForCapture,
+  WallCutout,
+} from './systems/wall/wall-cutout'
 export {
   WallCutoutCache,
   type WallCutoutViewerState,

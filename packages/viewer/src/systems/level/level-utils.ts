@@ -16,6 +16,8 @@ import {
   temporarilyShowShadowOnly,
 } from '../../lib/scene-visibility'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
+import useViewer from '../../store/use-viewer'
+import { presentWallsLowForCapture } from '../wall/wall-cutout'
 import { shadowOnlyLevels } from './shadow-only-levels'
 
 export { EXPLODED_GAP } from '@pascal-app/core'
@@ -169,6 +171,13 @@ export function presentLevelsForCapture(presentation: SceneViewPresentation): ()
       ? []
       : [presentRoofsForCapture(presentation.showRoofs)]),
     snapLevelsToTruePositions({ readOnly: true }),
+    ...(presentation.walls?.mode === 'low'
+      ? [
+          presentWallsLowForCapture(
+            presentation.walls.cutHeight ?? useViewer.getState().wallCutHeight,
+          ),
+        ]
+      : []),
   ]
   for (const levelId of sceneRegistry.byType.level ?? []) {
     const obj = sceneRegistry.nodes.get(levelId)

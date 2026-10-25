@@ -31,6 +31,17 @@ describe('stored viewer preferences', () => {
     useViewer.setState(original, true)
   })
 
+  test('a saved hidden mode stays hidden, a saved low mode and its cut height come back clamped', async () => {
+    await rehydrateFrom({ wallMode: 'down' })
+    expect(useViewer.getState()).toMatchObject({ wallMode: 'down', wallCutHeight: 0.25 })
+    await rehydrateFrom({ wallMode: 'low', wallCutHeight: 0.6 })
+    expect(useViewer.getState()).toMatchObject({ wallMode: 'low', wallCutHeight: 0.6 })
+    await rehydrateFrom({ wallMode: 'low', wallCutHeight: 40 })
+    expect(useViewer.getState().wallCutHeight).toBe(1.5)
+    await rehydrateFrom({ wallMode: 'sideways', wallCutHeight: 'tall' })
+    expect(useViewer.getState()).toMatchObject({ wallMode: 'up', wallCutHeight: 0.25 })
+  })
+
   test('a unit saved under the old keys becomes the personal default', async () => {
     await rehydrateFrom({ unit: 'imperial', metricNotation: 'millimeters' })
     expect(useViewer.getState()).toMatchObject({

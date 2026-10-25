@@ -1,0 +1,364 @@
+import {
+  type AnyNodeId,
+  getEffectiveNode,
+  getWallPlanFootprint,
+  isCurvedWall,
+  type Point2D,
+  sceneRegistry,
+  useScene,
+  type WallNode,
+} from '@pascal-app/core'
+import {
+  BufferGeometry,
+  Float32BufferAttribute,
+  type Intersection,
+  type Material,
+  Mesh,
+  type Object3D,
+  type Raycaster,
+  ShapeUtils,
+  Vector2,
+} from 'three'
+import { createDefaultMaterial, type RenderShading } from '../../lib/materials'
+import { getCachedLevelMiters } from './level-miter-cache'
+import { wallCutApplies } from './wall-cut-eligibility'
+
+export const WALL_CUT_CAPS_NAME = 'wall-cut-caps'
+const WALL_COLLISION_MESH = 'collision-mesh'
+
+const CAP_COLOR = '#e9e7e3'
+const EPS = 1e-4
+
+/** A stretch of a wall (metres from its start) the cut plane passes through empty: a doorway. */
+type Gap = readonly [from: number, to: number]
+
+/** What a wall contributes to the cap: its footprint, less the gaps its openings leave at the cut. */
+export type WallCapInput = { wall: WallNode; gaps: readonly Gap[] }
+
+type Cut = Point2D[]
+
+/** `polygon` kept where `along(point)` is above `min` (or below, with `above` false); convex clip, any subject. */
+function clipHalf(
+  polygon: Cut,
+  along: (point: Point2D) => number,
+  limit: number,
+  above: boolean,
+): Cut {
+  const out: Cut = []
+  const inside = (value: number) => (above ? value >= limit : value <= limit)
+  for (let i = 0; i < polygon.length; i++) {
+    const current = polygon[i]!
+    const next = polygon[(i + 1) % polygon.length]!
+    const a = along(current)
+    const b = along(next)
+    if (inside(a)) out.push(current)
+    if (inside(a) !== inside(b) && a !== b) {
+      const t = (limit - a) / (b - a)
+      out.push({ x: current.x + (next.x - current.x) * t, y: current.y + (next.y - current.y) * t })
+    }
+  }
+  return out
+}
+
+/** The footprint pieces of a wall that remain once its gaps are taken out. */
+function wallPieces(footprint: Cut, wall: WallNode, gaps: readonly Gap[]): Cut[] {
+  if (gaps.length === 0 || isCurvedWall(wall)) return [footprint]
+  const dx = wall.end[0] - wall.start[0]
+  const dz = wall.end[1] - wall.start[1]
+  const length = Math.hypot(dx, dz)
+  if (length < 1e-9) return [footprint]
+  const along = (point: Point2D) =>
+    ((point.x - wall.start[0]) * dx + (point.y - wall.start[1]) * dz) / length
+  const solid: Gap[] = []
+  let at = Number.NEGATIVE_INFINITY
+  for (const [from, to] of [...gaps].sort((a, b) => a[0] - b[0])) {
+    if (from > at) solid.push([at, from])
+    at = Math.max(at, to)
+  }
+  solid.push([at, Number.POSITIVE_INFINITY])
+  const pieces: Cut[] = []
+  for (const [from, to] of solid) {
+    let piece = footprint
+    if (Number.isFinite(from)) piece = clipHalf(piece, along, from, true)
+    if (Number.isFinite(to)) piece = clipHalf(piece, along, to, false)
+    if (piece.length >= 3) pieces.push(piece)
+  }
+  return pieces
+}
+
+/**
+ * One flat mesh of the walls' footprints at the cut, in the plan's own frame (x, z at y = 0), facing
+ * up, with the wall each triangle belongs to. The cut moves it by its transform, so changing the
+ * height rebuilds nothing.
+ */
+export function buildWallCapGeometry(
+  inputs: readonly WallCapInput[],
+  miters: Parameters<typeof getWallPlanFootprint>[1],
+): { geometry: BufferGeometry; triangleWalls: string[] } | null {
+  const positions: number[] = []
+  const indices: number[] = []
+  const triangleWalls: string[] = []
+  for (const { wall, gaps } of inputs) {
+    const footprint = getWallPlanFootprint(wall, miters)
+    if (footprint.length < 3) continue
+    for (const piece of wallPieces(footprint, wall, gaps)) {
+      const contour = piece.map((point) => new Vector2(point.x, point.y))
+      const triangles = ShapeUtils.triangulateShape(contour, [])
+      if (triangles.length === 0) continue
+      const base = positions.length / 3
+      for (const point of contour) positions.push(point.x, 0, point.y)
+      // In the plan y is world z: wind each triangle so it faces up, whatever the triangulator did.
+      for (const [a, b, c] of triangles) {
+        const pa = contour[a!]!
+        const pb = contour[b!]!
+        const pc = contour[c!]!
+        const up = (pb.y - pa.y) * (pc.x - pa.x) - (pb.x - pa.x) * (pc.y - pa.y)
+        if (up >= 0) indices.push(base + a!, base + b!, base + c!)
+        else indices.push(base + a!, base + c!, base + b!)
+        triangleWalls.push(wall.id)
+      }
+    }
+  }
+  if (indices.length === 0) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.setAttribute(
+    'normal',
+    new Float32BufferAttribute(
+      Array.from({ length: positions.length / 3 }, () => [0, 1, 0]).flat(),
+      3,
+    ),
+  )
+  geometry.setIndex(indices)
+  return { geometry, triangleWalls }
+}
+
+type OpeningLike = { id: string; position: number[]; width: number; height: number }
+
+const isOpeningLike = (node: unknown): node is OpeningLike => {
+  const candidate = node as Partial<OpeningLike> | undefined
+  return (
+    Array.isArray(candidate?.position) &&
+    typeof candidate.width === 'number' &&
+    typeof candidate.height === 'number'
+  )
+}
+
+/** The stretches of `wall` where one of its openings is open at the cut plane (level-local height). */
+function gapsAt(
+  wall: WallNode,
+  nodes: ReturnType<typeof useScene.getState>['nodes'],
+  height: number,
+): Gap[] {
+  const gaps: Gap[] = []
+  for (const childId of wall.children ?? []) {
+    const child = getEffectiveNode(nodes[childId as AnyNodeId] as never) as unknown
+    if (!isOpeningLike(child)) continue
+    const bottom = child.position[1]! - child.height / 2
+    const top = child.position[1]! + child.height / 2
+    if (bottom >= height - EPS || top <= height + EPS) continue
+    gaps.push([child.position[0]! - child.width / 2, child.position[0]! + child.width / 2])
+  }
+  return gaps
+}
+
+/** Where the wall stands over its level: null while it has no geometry yet. */
+function wallExtent(wallId: string): { base: number; top: number } | null {
+  const mesh = sceneRegistry.nodes.get(wallId as AnyNodeId) as Mesh | undefined
+  const geometry = mesh?.geometry
+  if (!(mesh && geometry?.getAttribute('position'))) return null
+  if (!geometry.boundingBox) geometry.computeBoundingBox()
+  const box = geometry.boundingBox
+  if (!box || box.isEmpty()) return null
+  return { base: mesh.position.y + box.min.y, top: mesh.position.y + box.max.y }
+}
+
+type Cap = {
+  mesh: Mesh | null
+  root: Object3D
+  signature: string
+  triangleWalls: string[]
+}
+
+/**
+ * The tops of the walls that stand cut: a cap per level, flat at the cut, so what depth, outlines
+ * and picks see at the cut is a surface and not the open end of a hollow wall. Real geometry, merged
+ * per level, that follows the walls' footprints and moves with the cut height by its transform.
+ * A wall that does not reach the cut, or stands wholly above it, has none; a doorway the cut passes
+ * through stays open. A level is rebuilt when what the cap is made of changes, and not otherwise.
+ */
+export class WallCutCaps {
+  private static readonly live = new Set<WallCutCaps>()
+  private readonly caps = new Map<string, Cap>()
+  private readonly dirty = new Set<string>()
+  private material: Material | null = null
+  private shading: RenderShading | undefined
+
+  constructor() {
+    WallCutCaps.live.add(this)
+  }
+
+  /** Takes every cap out of the picture until the returned function brings them back (a capture draws its own). */
+  static hideAll(): () => void {
+    const hidden: Mesh[] = []
+    for (const caps of WallCutCaps.live)
+      for (const cap of caps.caps.values()) {
+        if (cap.mesh?.visible) {
+          cap.mesh.visible = false
+          hidden.push(cap.mesh)
+        }
+      }
+    return () => {
+      for (const mesh of hidden) mesh.visible = true
+    }
+  }
+
+  /** A wall was rebuilt: its level's cap is made again. */
+  markWall(wallId: string): void {
+    const node = useScene.getState().nodes[wallId as AnyNodeId]
+    if (node?.parentId) this.dirty.add(node.parentId)
+  }
+
+  /** Brings the caps up to the walls (`enabled`), or takes them away. */
+  update(enabled: boolean, height: number, shading: RenderShading): void {
+    if (!enabled) {
+      this.clear()
+      return
+    }
+    if (this.shading !== shading) {
+      this.material?.dispose()
+      this.material = createDefaultMaterial(CAP_COLOR, 0.9, shading)
+      this.shading = shading
+      for (const cap of this.caps.values()) if (cap.mesh) cap.mesh.material = this.material
+    }
+    const { nodes } = useScene.getState()
+    const levelIds = sceneRegistry.byType.level ?? new Set<string>()
+    for (const [levelId, cap] of this.caps) {
+      if (!levelIds.has(levelId) || sceneRegistry.nodes.get(levelId as AnyNodeId) !== cap.root)
+        this.remove(levelId)
+    }
+    for (const levelId of levelIds) {
+      const level = nodes[levelId as AnyNodeId]
+      const root = sceneRegistry.nodes.get(levelId as AnyNodeId)
+      if (level?.type !== 'level' || !root) continue
+      const cap = this.caps.get(levelId)
+      const signature = this.signature(level.children, nodes, height)
+      if (!cap || cap.root !== root || cap.signature !== signature || this.dirty.delete(levelId)) {
+        this.build(levelId, root, level.children, signature, height)
+      }
+      const mesh = this.caps.get(levelId)?.mesh
+      if (mesh && mesh.position.y !== height) mesh.position.y = height
+    }
+    this.dirty.clear()
+  }
+
+  dispose(): void {
+    this.clear()
+    this.material?.dispose()
+    this.material = null
+    WallCutCaps.live.delete(this)
+  }
+
+  /** What the cap of a level is made of at this height: change it and the cap is made again. */
+  private signature(
+    childIds: readonly string[],
+    nodes: ReturnType<typeof useScene.getState>['nodes'],
+    height: number,
+  ): string {
+    const parts: string[] = []
+    for (const childId of childIds) {
+      const wall = nodes[childId as AnyNodeId]
+      if (wall?.type !== 'wall') continue
+      const extent = wallExtent(wall.id)
+      const capped = this.capped(wall, extent, height)
+      parts.push(
+        capped
+          ? `${wall.id}:${gapsAt(wall, nodes, height)
+              .map((gap) => gap.map((v) => v.toFixed(3)).join('-'))
+              .join(',')}`
+          : `${wall.id}:-`,
+      )
+    }
+    return parts.join('|')
+  }
+
+  private capped(wall: WallNode, extent: { base: number; top: number } | null, height: number) {
+    return (
+      wall.visible !== false &&
+      wallCutApplies(wall) &&
+      extent !== null &&
+      extent.top > height + EPS &&
+      extent.base < height - EPS
+    )
+  }
+
+  private build(
+    levelId: string,
+    root: Object3D,
+    childIds: readonly string[],
+    signature: string,
+    height: number,
+  ): void {
+    const { nodes } = useScene.getState()
+    const previous = this.caps.get(levelId)
+    const effective: WallNode[] = []
+    const inputs: WallCapInput[] = []
+    for (const childId of childIds) {
+      const node = nodes[childId as AnyNodeId]
+      if (node?.type !== 'wall') continue
+      const wall = getEffectiveNode(node as WallNode)
+      effective.push(wall)
+      if (this.capped(node as WallNode, wallExtent(node.id), height))
+        inputs.push({ wall, gaps: gapsAt(wall, nodes, height) })
+    }
+    const built =
+      inputs.length > 0
+        ? buildWallCapGeometry(inputs, getCachedLevelMiters(levelId, effective))
+        : null
+    if (!built) {
+      this.remove(levelId)
+      this.caps.set(levelId, { mesh: null, root, signature, triangleWalls: [] })
+      return
+    }
+    let mesh = previous?.root === root ? previous.mesh : null
+    if (mesh) {
+      mesh.geometry.dispose()
+      mesh.geometry = built.geometry
+    } else {
+      this.remove(levelId)
+      mesh = new Mesh(built.geometry, this.material!)
+      mesh.name = WALL_CUT_CAPS_NAME
+      mesh.userData.pascalExport = 'strip'
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+      root.add(mesh)
+    }
+    const cap: Cap = { mesh, root, signature, triangleWalls: built.triangleWalls }
+    // A pick lands on the stub's top as on the wall it belongs to.
+    mesh.raycast = function raycast(raycaster: Raycaster, intersects: Intersection[]) {
+      const hits: Intersection[] = []
+      Mesh.prototype.raycast.call(this, raycaster, hits)
+      for (const hit of hits) {
+        const wallId = cap.triangleWalls[hit.faceIndex ?? -1]
+        const owner = wallId
+          ? (sceneRegistry.nodes.get(wallId as AnyNodeId)?.getObjectByName(WALL_COLLISION_MESH) ??
+            sceneRegistry.nodes.get(wallId as AnyNodeId))
+          : null
+        if (owner) intersects.push({ ...hit, object: owner })
+      }
+    }
+    this.caps.set(levelId, cap)
+  }
+
+  private remove(levelId: string): void {
+    const cap = this.caps.get(levelId)
+    if (!cap) return
+    cap.mesh?.removeFromParent()
+    cap.mesh?.geometry.dispose()
+    this.caps.delete(levelId)
+  }
+
+  private clear(): void {
+    for (const levelId of [...this.caps.keys()]) this.remove(levelId)
+  }
+}

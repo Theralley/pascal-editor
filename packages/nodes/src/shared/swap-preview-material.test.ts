@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { hasMaterialsForGroups } from '@pascal-app/viewer'
+import { hasMaterialsForGroups, setDisplayCutRaycast } from '@pascal-app/viewer'
 import { BufferGeometry, Mesh, MeshBasicMaterial } from 'three'
 import { swapPreviewMaterial } from './swap-preview-material'
 
@@ -58,4 +58,20 @@ test('a preview never restores a shorter palette over groups a rebuild gave the 
   expect(mesh.geometry.groups[0]!.materialIndex).toBe(3)
   expect(mesh.material).toBe(preview)
   expect(hasMaterialsForGroups(mesh)).toBe(true)
+})
+
+test('a preview over a cut mesh is cut like the mesh, and gives the cut palette back', () => {
+  const base = new MeshBasicMaterial()
+  const preview = new MeshBasicMaterial()
+  const palette = [base]
+  const mesh = new Mesh(new BufferGeometry(), palette)
+  setDisplayCutRaycast(mesh, true)
+
+  const undo = swapPreviewMaterial(mesh, [preview])
+  const shown = mesh.material as MeshBasicMaterial[]
+  expect(shown[0]).not.toBe(preview)
+  expect((shown[0] as unknown as { maskNode?: unknown }).maskNode).toBeDefined()
+  expect((preview as unknown as { maskNode?: unknown }).maskNode).toBeUndefined()
+  undo()
+  expect(mesh.material).toBe(palette)
 })

@@ -16,13 +16,17 @@ describe('canBatchWalls', () => {
     expect(canBatchWalls('cutaway', false)).toBe(true)
   })
 
-  test('stands down in the modes that make walls see-through', () => {
+  test('stays live in low: the cut is a mask the merged mesh wears', () => {
+    expect(canBatchWalls('low', false)).toBe(true)
+  })
+
+  test('stands down in the modes that make walls see-through or hide them', () => {
     expect(canBatchWalls('down', false)).toBe(false)
     expect(canBatchWalls('translucent', false)).toBe(false)
   })
 
   test('stands down under isolation whatever the wall mode', () => {
-    const modes: WallMode[] = ['up', 'cutaway', 'down', 'translucent']
+    const modes: WallMode[] = ['up', 'cutaway', 'down', 'low', 'translucent']
     for (const mode of modes) {
       expect(canBatchWalls(mode, true)).toBe(false)
     }

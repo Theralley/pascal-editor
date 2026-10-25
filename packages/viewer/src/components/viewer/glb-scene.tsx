@@ -25,7 +25,7 @@ import * as THREE from 'three'
 import { lerp } from 'three/src/math/MathUtils.js'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import { useGLTFKTX2 } from '../../hooks/use-gltf-ktx2'
-import { createSurfaceRoleMaterial } from '../../lib/materials'
+import { createDefaultMaterial, createSurfaceRoleMaterial } from '../../lib/materials'
 import { isBakedRoof, syncRoofVisibility } from '../../lib/roof-visibility'
 import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import useViewer from '../../store/use-viewer'
@@ -35,6 +35,7 @@ import { GlbInteractive, type GlbInteractiveItem } from './glb-interactive'
 import { bakedLoopMechanisms } from './glb-mechanisms'
 import { GlbReferenceNodes } from './glb-reference-nodes'
 import { GlbReplaceInstances } from './glb-replace-instances'
+import { type BakedWallCut, cutBakedWalls } from './glb-wall-cut'
 
 /** Baked `kind` → surface role, so monochrome can recolor by role like the
  *  parametric viewer (textures-off collapses each face to its themed clay). */
@@ -104,6 +105,8 @@ type PascalExtras = {
   polygon?: [number, number][]
   holes?: [number, number][][]
   color?: string
+  /** False on a node the display cut leaves whole (a curtain wall). */
+  displayCut?: boolean
   camera?: { position: [number, number, number]; target: [number, number, number] }
 }
 
@@ -351,6 +354,9 @@ export function GlbScene({
   const walkthroughMode = useViewer((s) => s.walkthroughMode)
   const textures = useViewer((s) => s.textures)
   const sceneTheme = useViewer((s) => s.sceneTheme)
+  const wallsDown = useViewer((s) => s.wallMode === 'low')
+  const wallCutHeight = useViewer((s) => s.wallCutHeight)
+  const wallCut = useRef<BakedWallCut | null>(null)
 
   // Monochrome: strip the baked textures and recolor every building mesh with a
   // flat themed-clay material by surface role — mirrors the parametric viewer's
@@ -481,6 +487,33 @@ export function GlbScene({
         levelsWithZones: new Set(zoneList.map((zone) => zone.levelId)),
       }
     }, [gltf.scene])
+  // Walls low: the baked walls stand as stubs with a cap at the cut, like the live viewer's.
+  // Dressed after the monochrome pass above, so a theme or texture switch re-cuts what it set.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: textures and sceneTheme re-dress the walls this cuts
+  useEffect(() => {
+    if (!wallsDown) return
+    const walls: { object: THREE.Object3D; level: THREE.Object3D }[] = []
+    gltf.scene.traverse((object) => {
+      const extras = object.userData as PascalExtras
+      if (extras.kind !== 'wall') return
+      const levelId = findAncestorLevelId(object)
+      const level = levelId ? identity.get(levelId) : undefined
+      if (level) walls.push({ object, level })
+    })
+    const capMaterial = createDefaultMaterial('#e9e7e3', 0.9, textures ? 'rendered' : 'solid')
+    const cut = cutBakedWalls(walls, useViewer.getState().wallCutHeight, capMaterial)
+    wallCut.current = cut
+    return () => {
+      cut.dispose()
+      capMaterial.dispose()
+      wallCut.current = null
+    }
+  }, [wallsDown, gltf.scene, identity, textures, sceneTheme])
+
+  useEffect(() => {
+    wallCut.current?.setHeight(wallCutHeight)
+  }, [wallCutHeight])
+
   // Level pascalIds bottom-to-top, for the interactive light pool's level factor.
   const levelOrder = useMemo(() => levels.map((entry) => entry.id), [levels])
   // Loop clips no other controller plays (a plugin kind's mechanism) run on

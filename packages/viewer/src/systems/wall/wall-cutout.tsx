@@ -1,14 +1,27 @@
 import { type AnyNodeId, emitter, sceneRegistry, useScene, type WallNode } from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
-import type { Camera, Material } from 'three'
+import type { Camera, Material, Object3D } from 'three'
 import { type Mesh, Vector3 } from 'three/webgpu'
+import {
+  cutMaterial,
+  cutMaterials,
+  getDisplayCutHeight,
+  getDisplayCutRoot,
+  setDisplayCutHeight,
+  setDisplayCutRoot,
+  uncutMaterial,
+  uncutMaterials,
+} from '../../lib/display-cut'
 import useViewer, { type WallMode } from '../../store/use-viewer'
+import { WallCutCaps } from './wall-cut-caps'
+import { wallCutApplies } from './wall-cut-eligibility'
 import {
   sameMaterialArray,
   WallCutoutCache,
   type WallCutoutViewerStore,
   wallHiddenFromFacing,
+  wallParts,
 } from './wall-cutout-cache'
 import { getWallFinishRefs } from './wall-finish-data'
 import {
@@ -43,7 +56,7 @@ export function getWallHideState(
   wallMode: WallMode,
   cameraDir: Vector3,
 ): boolean {
-  if (wallMode === 'up') return false
+  if (wallMode === 'up' || wallMode === 'low') return false
   if (wallMode === 'down') return true
   wallMesh.getWorldDirection(v)
   return wallHiddenFromFacing(wallNode, wallMode, v.dot(cameraDir) < 0)
@@ -95,6 +108,48 @@ export function wallsForCapture(
   }
 }
 
+/**
+ * The walls as one picture draws them low: each cut at `height` over its level, with its own caps,
+ * until the returned function puts everything back exactly as it was (the live cut included). A
+ * capture renders inside one callback, so the cut is laid on the meshes themselves instead of
+ * waiting on the wall mode and a frame, and what the live view cut stays out of the picture.
+ */
+export function presentWallsLowForCapture(height: number): () => void {
+  const restores: (() => void)[] = []
+  const previousHeight = getDisplayCutHeight()
+  setDisplayCutHeight(height)
+  restores.push(() => setDisplayCutHeight(previousHeight))
+  restores.push(WallCutCaps.hideAll())
+  const nodes = useScene.getState().nodes
+  const dress = (mesh: Mesh, root: Object3D | null) => {
+    const material = mesh.material
+    const previousRoot = getDisplayCutRoot(mesh)
+    setDisplayCutRoot(mesh, root)
+    mesh.material = Array.isArray(material)
+      ? cutMaterials(uncutMaterials(material))
+      : cutMaterial(uncutMaterial(material))
+    restores.push(() => {
+      setDisplayCutRoot(mesh, previousRoot)
+      mesh.material = material
+    })
+  }
+  sceneRegistry.byType.wall!.forEach((wallId) => {
+    const mesh = sceneRegistry.nodes.get(wallId) as Mesh | undefined
+    const node = nodes[wallId as AnyNodeId] as WallNode | undefined
+    if (!mesh || node?.type !== 'wall' || !wallCutApplies(node)) return
+    const root =
+      (sceneRegistry.nodes.get(node.parentId as AnyNodeId) as Object3D | undefined) ?? mesh.parent
+    dress(mesh, root)
+    for (const part of wallParts(mesh)) dress(part, root)
+  })
+  const caps = new WallCutCaps()
+  caps.update(true, height, useViewer.getState().shading)
+  restores.push(() => caps.dispose())
+  return () => {
+    for (const restore of restores.reverse()) restore()
+  }
+}
+
 export const WallCutout = ({
   viewerStore = useViewer,
   materialResolver = getMaterialsForWall,
@@ -111,9 +166,17 @@ export const WallCutout = ({
 
   useEffect(() => cache.subscribeLiveTransforms(), [cache])
 
+  const caps = useMemo(() => new WallCutCaps(), [])
+  useEffect(() => () => caps.dispose(), [caps])
+  useEffect(() => subscribeWallRebuilds((id) => caps.markWall(id)), [caps])
+
   // Camera changes reach PostProcessing (1) in this frame. WallSystem (4)
   // notifies the next frame; WallBatchSystem (5) reads this frame's stamps.
-  useFrame((state) => runWallCutoutFrame(cache, state), WALL_CUTOUT_FRAME_PRIORITY)
+  useFrame((state) => {
+    runWallCutoutFrame(cache, state)
+    const viewer = viewerStore.getState()
+    caps.update(viewer.wallMode === 'low', viewer.wallCutHeight, viewer.shading)
+  }, WALL_CUTOUT_FRAME_PRIORITY)
 
   useEffect(() => {
     let restore: (() => void) | null = null

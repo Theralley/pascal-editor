@@ -9,11 +9,14 @@ import {
   type WallNode,
 } from '@pascal-app/core'
 import {
+  cutMaterials,
   drainRebuiltWalls,
   getPendingWallRebuildCount,
   isIsolationActive,
   isNodeRevealing,
   SCENE_LAYER,
+  setDisplayCutRoot,
+  uncutMaterials,
   useViewer,
   type WallMode,
 } from '@pascal-app/viewer'
@@ -39,6 +42,8 @@ const BATCH_SETTLE_MS = 180
 type BatchRecord = {
   levelId: string
   mesh: Mesh
+  /** The materials the mesh wears when nothing is cut: its masked clones are made from these. */
+  base: Material[]
   batch: WallBatch
   hidden: Set<string>
   nodeIds: string[]
@@ -108,6 +113,7 @@ let lastCutawayHiddenWalls: ReadonlySet<string> = EMPTY_IDS
 let knownWallCount = -1
 let lastWallChangeAtMs = 0
 let batchingSuspended = false
+let batchesCut = false
 
 /**
  * Batched walls are drawn by the merged mesh but still picked, measured and
@@ -123,11 +129,23 @@ function showOwnGeometry(nodeId: string) {
   if (mesh) revealBatchedWall(mesh)
 }
 
-export function revealBatchedWallsForCapture(): void {
+/** The merged meshes a walls-low capture left out of the picture: the walls it cuts draw themselves. */
+let setAside: Mesh[] = []
+
+export function revealBatchedWallsForCapture(event?: { wallsLow?: boolean }): void {
   for (const nodeId of batchByNode.keys()) showOwnGeometry(nodeId)
+  if (!event?.wallsLow) return
+  for (const records of batchesByLevel.values()) {
+    for (const { mesh } of records) {
+      mesh.visible = false
+      setAside.push(mesh)
+    }
+  }
 }
 
 export function holdBatchedWallsAfterCapture(): void {
+  for (const mesh of setAside) mesh.visible = true
+  setAside = []
   for (const nodeId of batchByNode.keys()) {
     const mesh = sceneRegistry.nodes.get(nodeId)
     if (mesh) hideBatchedWall(mesh)
@@ -201,12 +219,14 @@ function toCandidate(
  * re-reads it, so batching is only sound while every batched wall's materials
  * hold still. That is true in `up`; in `cutaway`, walls stamped `wallHidden`
  * are released per wall in the same frame because WallCutout runs at priority
- * 0 and this system at 5. `down` and `translucent` make every wall see-through.
+ * 0 and this system at 5. `low` keeps the batch too: the cut is a mask on the
+ * materials, which the merged mesh wears as masked clones (see `swapBatchCut`).
+ * `translucent` makes every wall see-through.
  * Isolation is the other stand-down: it hides the level root the merged mesh
  * hangs off, which would leave a focused batched wall drawn by nobody.
  */
 export function canBatchWalls(wallMode: WallMode, isolationActive: boolean): boolean {
-  return !isolationActive && (wallMode === 'up' || wallMode === 'cutaway')
+  return !isolationActive && (wallMode === 'up' || wallMode === 'cutaway' || wallMode === 'low')
 }
 
 /**
@@ -337,6 +357,19 @@ function unbatchedWallCount(
   return count
 }
 
+/**
+ * Entering or leaving `low` hands every merged mesh the other set of materials: the walls that
+ * draw themselves are re-dressed by WallCutout, but a merged mesh keeps what it was sewn with.
+ */
+function swapBatchCut(cut: boolean) {
+  for (const records of batchesByLevel.values()) {
+    for (const record of records) {
+      const next = cut ? cutMaterials(record.base) : record.base
+      if (record.mesh.material !== next) record.mesh.material = next
+    }
+  }
+}
+
 const localMatrix = new Matrix4()
 const rootInverse = new Matrix4()
 
@@ -355,6 +388,7 @@ function mergeLevel(levelId: string, excludedNodeIds: ReadonlySet<string> = EMPT
     if (candidates.length < MIN_BATCH_WALLS) continue
 
     const canonical = canonicalWallMaterials(candidates[0]!.mesh, candidates[0]!.materials)
+    const base = uncutMaterials(canonical)
     const sources = candidates.map((candidate) => {
       candidate.mesh.updateWorldMatrix(true, false)
       return {
@@ -371,7 +405,8 @@ function mergeLevel(levelId: string, excludedNodeIds: ReadonlySet<string> = EMPT
     const batch = buildWallBatch(sources)
     if (!batch) continue
 
-    const mesh = new Mesh(batch.geometry, canonical)
+    const mesh = new Mesh(batch.geometry, batchesCut ? cutMaterials(base) : base)
+    setDisplayCutRoot(mesh, root)
     mesh.name = 'wall-batch'
     mesh.userData.pascalExport = 'strip'
     mesh.castShadow = true
@@ -383,6 +418,7 @@ function mergeLevel(levelId: string, excludedNodeIds: ReadonlySet<string> = EMPT
     const record: BatchRecord = {
       levelId,
       mesh,
+      base,
       batch,
       hidden: new Set(),
       nodeIds: candidates.map((candidate) => candidate.nodeId),
@@ -455,6 +491,7 @@ export const WallBatchSystem = () => {
       lastCutawayHiddenWalls = EMPTY_IDS
       knownWallCount = -1
       batchingSuspended = false
+      batchesCut = false
       lastAppearance.shading = undefined
       lastAppearance.textures = undefined
       lastAppearance.colorPreset = undefined
@@ -580,7 +617,14 @@ export function runBatchFrame(
     }
   }
 
-  // Isolation, `down` and `translucent` make batching unsound, so the batch
+  const cut = useViewer.getState().wallMode === 'low'
+  // While cut, a source material remade since (a texture arrived) has a new clone to wear.
+  if (cut !== batchesCut || cut) {
+    batchesCut = cut
+    swapBatchCut(cut)
+  }
+
+  // Isolation and `translucent` make batching unsound, so the batch
   // stands down while they hold and sews the floors back together once they
   // lift. `cutaway` stays live because WallCutout stamps hidden walls at
   // priority 0 and this system releases them per wall at priority 5 in the

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { LevelNode, useScene, WallNode } from '@pascal-app/core'
-import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three'
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
+import { displayCutLimitY, setDisplayCutHeight, setDisplayCutRoot } from '../../lib/display-cut'
 import { hasMaterialsForGroups } from '../../lib/pointer-events'
 import useViewer from '../../store/use-viewer'
 import { visibleMaterialsOf } from '../wall/wall-cutout-cache'
@@ -109,5 +110,24 @@ describe('the picture of a deleted wall', () => {
     const worn = clone.material
     dressDeletionGhost(source, clone)
     expect(clone.material).toBe(worn)
+  })
+
+  // The deletion of a wall that stood low plays out as the stub, not as a wall rising to full height.
+  test('is cut where its source was cut, part for part', () => {
+    const level = new Group()
+    level.position.y = 2
+    level.updateMatrixWorld(true)
+    setDisplayCutHeight(0.25)
+    const { source } = cutAway(wall(), false)
+    const moulding = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial())
+    source.add(moulding)
+    setDisplayCutRoot(source, level)
+    setDisplayCutRoot(moulding, level)
+    const copy = source.clone(true)
+    expect(displayCutLimitY(copy)).toBeGreaterThan(1e8)
+
+    dressDeletionGhost(source, copy)
+    expect(displayCutLimitY(copy)).toBeCloseTo(2.25, 5)
+    expect(displayCutLimitY(copy.children[0]!)).toBeCloseTo(2.25, 5)
   })
 })

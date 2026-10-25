@@ -1,4 +1,4 @@
-import { hasMaterialsForGroups } from '@pascal-app/viewer'
+import { cutLike, hasMaterialsForGroups } from '@pascal-app/viewer'
 import type { BufferGeometry, Material, Mesh } from 'three'
 
 /**
@@ -9,7 +9,8 @@ import type { BufferGeometry, Material, Mesh } from 'three'
  * a rebuild or commit replaced meanwhile stay, and the original material goes
  * back only over groups it can draw — restoring an older, shorter array over a
  * rebuilt geometry's groups would leave a group with no material, which the
- * next raycast trips over on `material.side`.
+ * next raycast trips over on `material.side`. A mesh under a display cut (walls
+ * down) shows the preview cut like the rest of it.
  */
 export function swapPreviewMaterial(
   mesh: Mesh,
@@ -20,12 +21,13 @@ export function swapPreviewMaterial(
   const previous = mesh.material
   const previousGroups = geometry.groups
   if (groups) geometry.groups = groups
-  mesh.material = preview
+  const shown = cutLike(mesh, preview)
+  mesh.material = shown
   return () => {
     if (groups && mesh.geometry === geometry && geometry.groups === groups) {
       geometry.groups = previousGroups
     }
-    if (mesh.material === preview && hasMaterialsForGroups(mesh, previous)) {
+    if (mesh.material === shown && hasMaterialsForGroups(mesh, previous)) {
       mesh.material = previous
     }
   }

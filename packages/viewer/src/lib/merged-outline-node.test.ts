@@ -23,6 +23,12 @@ import RenderObject from 'three/src/renderers/common/RenderObject.js'
 import RenderObjects from 'three/src/renderers/common/RenderObjects.js'
 import { pass } from 'three/tsl'
 import { NodeFrame } from 'three/webgpu'
+import {
+  cutMaterial,
+  displayCutLimitY,
+  setDisplayCutHeight,
+  setDisplayCutRoot,
+} from './display-cut'
 import { mergedOutline } from './merged-outline-node'
 
 describe('merged outline rendering', () => {
@@ -452,5 +458,36 @@ test('selection masks retain cutout coverage and release it when alpha testing i
   f.tick()
   expect(f.renderer.draws[0].material.alphaTest).toBe(0)
   map.dispose()
+  f.dispose()
+})
+
+test('outline masks and the occluding depth follow a display cut', () => {
+  const f = makeOutlineFixture(false)
+  const level = new Group()
+  level.position.y = 2
+  level.updateMatrixWorld(true)
+  setDisplayCutHeight(0.25)
+  const cut = cutMaterial(f.material)
+  f.mesh.material = cut
+  setDisplayCutRoot(f.mesh, level)
+  const neighbour = new Mesh(f.geometry, cut)
+  setDisplayCutRoot(neighbour, level)
+  f.scene.add(neighbour)
+  f.tick()
+
+  const drawn = (object: Object3D) => f.renderer.draws.filter((draw) => draw.object === object)
+  const maskDraws = f.renderer.draws.filter((draw) => draw.object !== neighbour)
+  expect(maskDraws.length).toBeGreaterThan(0)
+  for (const draw of maskDraws) {
+    expect((draw.material as { maskNode?: unknown }).maskNode).toBe(
+      (cut as unknown as { maskNode: unknown }).maskNode,
+    )
+    // The silhouette is cut where the mesh is, whether it is drawn itself or through its proxy.
+    expect(displayCutLimitY(draw.object)).toBe(2.25)
+  }
+  expect(drawn(neighbour)).toHaveLength(1)
+  expect((drawn(neighbour)[0]!.material as { maskNode?: unknown }).maskNode).toBe(
+    (cut as unknown as { maskNode: unknown }).maskNode,
+  )
   f.dispose()
 })

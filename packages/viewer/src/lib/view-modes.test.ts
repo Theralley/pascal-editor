@@ -9,6 +9,7 @@ describe('view modes', () => {
     expect(WALL_MODE_OPTIONS.map((option) => option.value).sort()).toEqual([
       'cutaway',
       'down',
+      'low',
       'translucent',
       'up',
     ])
@@ -23,14 +24,16 @@ describe('view modes', () => {
   })
 
   test.each<[WallMode, 'up' | 'down', WallMode]>([
-    ['down', 'up', 'cutaway'],
+    ['down', 'up', 'low'],
+    ['low', 'up', 'cutaway'],
     ['cutaway', 'up', 'up'],
     ['up', 'up', 'up'],
     ['up', 'down', 'cutaway'],
-    ['cutaway', 'down', 'down'],
+    ['cutaway', 'down', 'low'],
+    ['low', 'down', 'down'],
     ['down', 'down', 'down'],
     ['translucent', 'up', 'up'],
-    ['translucent', 'down', 'down'],
+    ['translucent', 'down', 'low'],
   ])('%s stepped %s is %s', (mode, direction, expected) => {
     expect(stepWallMode(mode, direction)).toBe(expected)
   })
