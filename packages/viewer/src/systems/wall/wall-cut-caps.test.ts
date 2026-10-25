@@ -29,7 +29,7 @@ import {
   setDisplayCutHeight,
   setDisplayCutRoot,
 } from '../../lib/display-cut'
-import { hideFromScene, showInScene } from '../../lib/scene-visibility'
+import { hideFromScene, showInScene, temporarilyShowPresentation } from '../../lib/scene-visibility'
 import { WALL_CUT_CAPS_NAME, WallCutCaps } from './wall-cut-caps'
 import { presentWallsLowForCapture } from './wall-cutout'
 import { WallCutoutCache, type WallCutoutViewerState } from './wall-cutout-cache'
@@ -463,6 +463,45 @@ describe('WallCutCaps', () => {
       showInScene(held, 'isolated')
       caps.update(true, 0.25, 'solid')
       expect(shown(root)).toBe(true)
+      caps.dispose()
+    })
+
+    test('a part whose draw range or index changes is capped again from what it now draws', () => {
+      const { root, mesh } = level()
+      const part = casing()
+      mesh.add(part)
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      part.geometry.setDrawRange(0, 0)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      part.geometry.setDrawRange(0, Number.POSITIVE_INFINITY)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      const index = part.geometry.getIndex()!
+      part.geometry.setIndex(Array.from({ length: 6 }, (_, i) => index.getX(i)))
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      caps.dispose()
+    })
+
+    test('a capture that shows a held part gets its cap, and the cap goes when the capture does', () => {
+      const { root, mesh } = level()
+      const part = casing()
+      mesh.add(part)
+      hideFromScene(part, 'isolated')
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      const restore = temporarilyShowPresentation(root)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      restore()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
       caps.dispose()
     })
 

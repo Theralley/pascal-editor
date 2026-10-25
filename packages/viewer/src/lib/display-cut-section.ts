@@ -41,6 +41,12 @@ const DEFAULT_JOIN = 1e-3
 /** A dropped loop longer than this is a piece of the section that is missing. */
 const REAL_LENGTH = 2e-3
 
+/**
+ * One number for a grid cell. Two cells far apart may share it, which only costs a few extra
+ * distance tests: every hit is checked against the geometry.
+ */
+const cellKey = (cx: number, cz: number) => cx * 67108864 + cz
+
 /** A piece of the outline, directed so the solid is on its right (the outward normal on its left). */
 type Segment = readonly [from: number, to: number]
 
@@ -169,24 +175,35 @@ function sectionBody(
   // A body that starts at or above the height keeps nothing: its base is not a stub's top.
   if (height <= body.min + ON_PLANE || height >= body.max + ON_PLANE) return NONE
   const { xyz, corners } = body
-  const cells = new Map<string, number[]>()
+  const cells = new Map<number, number[]>()
   const points: Vector2[] = []
   const segments: Segment[] = []
-  // A point within WELD of an existing one is that one, whichever side of a cell border it fell.
+  // A point within WELD of an existing one is that one, whichever side of a cell border it fell;
+  // the nearest, so which of a cluster it joins does not depend on the order they arrived in.
   const idOf = (x: number, z: number) => {
     const cx = Math.floor(x / WELD)
     const cz = Math.floor(z / WELD)
+    let nearest = -1
+    let nearestDistance = Number.POSITIVE_INFINITY
     for (let dx = -1; dx <= 1; dx++)
-      for (let dz = -1; dz <= 1; dz++)
-        for (const id of cells.get(`${cx + dx},${cz + dz}`) ?? []) {
-          const point = points[id]!
-          if (Math.abs(point.x - x) <= WELD && Math.abs(point.y - z) <= WELD) return id
+      for (let dz = -1; dz <= 1; dz++) {
+        const list = cells.get(cellKey(cx + dx, cz + dz))
+        if (!list) continue
+        for (let i = 0; i < list.length; i++) {
+          const point = points[list[i]!]!
+          const distance = Math.max(Math.abs(point.x - x), Math.abs(point.y - z))
+          if (distance <= WELD && distance < nearestDistance) {
+            nearest = list[i]!
+            nearestDistance = distance
+          }
         }
+      }
+    if (nearest >= 0) return nearest
     const id = points.length
     points.push(new Vector2(x, z))
-    const own = cells.get(`${cx},${cz}`)
+    const own = cells.get(cellKey(cx, cz))
     if (own) own.push(id)
-    else cells.set(`${cx},${cz}`, [id])
+    else cells.set(cellKey(cx, cz), [id])
     return id
   }
   const isOver = (vertex: number) => xyz[vertex * 3 + 1]! > height + ON_PLANE
@@ -235,18 +252,18 @@ function sectionBody(
  */
 function splitAtPoints(points: Vector2[], segments: Segment[]): Segment[] {
   const cell = 0.25
-  const grid = new Map<string, number[]>()
+  const grid = new Map<number, number[]>()
   // Each segment is filed in the cells it passes through, sampled at half a cell; a point looks in
   // its own cell and the eight round it, which covers the cells a segment only clips.
   segments.forEach(([from, to], s) => {
     const a = points[from]!
     const b = points[to]!
     const steps = Math.max(1, Math.ceil(a.distanceTo(b) / (cell / 2)))
-    let last = ''
+    let last = Number.NaN
     for (let i = 0; i <= steps; i++) {
       const x = Math.floor((a.x + ((b.x - a.x) * i) / steps) / cell)
       const z = Math.floor((a.y + ((b.y - a.y) * i) / steps) / cell)
-      const key = `${x},${z}`
+      const key = cellKey(x, z)
       if (key === last) continue
       last = key
       const list = grid.get(key)
@@ -263,7 +280,7 @@ function splitAtPoints(points: Vector2[], segments: Segment[]): Segment[] {
     const cz = Math.floor(point.y / cell)
     for (let dx = -1; dx <= 1; dx++)
       for (let dz = -1; dz <= 1; dz++)
-        for (const s of grid.get(`${cx + dx},${cz + dz}`) ?? []) {
+        for (const s of grid.get(cellKey(cx + dx, cz + dz)) ?? []) {
           if (looked[s] === id) continue
           looked[s] = id
           const [from, to] = segments[s]!
@@ -302,10 +319,10 @@ function closeOutlines(
   // the same piece twice the same way (overlapping solids) is one.
   // Counted per piece and direction first, so the result does not depend on the order the faces
   // came in: a piece met once more one way than the other stays, once each way is gone.
-  const net = new Map<string, { segment: Segment; count: number }>()
+  const net = new Map<number, { segment: Segment; count: number }>()
   for (const segment of segments) {
     const forward = segment[0] < segment[1]
-    const key = forward ? `${segment[0]},${segment[1]}` : `${segment[1]},${segment[0]}`
+    const key = forward ? segment[0] * 4194304 + segment[1] : segment[1] * 4194304 + segment[0]
     const entry = net.get(key) ?? {
       segment: forward ? segment : [segment[1], segment[0]],
       count: 0,
@@ -361,38 +378,58 @@ function closeOutlines(
     if (chain[chain.length - 1] === chain[0]) closed.push(chain.slice(1))
     else open.push(chain)
   }
-  // Past a few hundred loose chains the section is broken beyond a seam.
-  if (open.length > 200) return { loops: [], complete: false }
   const near = (a: number, b: number) => points[a]!.distanceTo(points[b]!) <= joinTolerance
   const length = (ids: number[]) =>
     ids.reduce((sum, id, i) => sum + points[id]!.distanceTo(points[ids[(i + 1) % ids.length]!]!), 0)
-  // A chain ends where another begins when they are a seam apart.
-  while (open.length > 0) {
-    const chain = open.pop()!
-    for (let again = true; again; ) {
-      again = false
-      for (let j = 0; j < open.length; j++) {
-        if (!near(chain[chain.length - 1]!, open[j]![0]!)) continue
-        chain.push(...open.splice(j, 1)[0]!.slice(1))
-        again = true
-        break
-      }
+  // A chain ends where another begins when they are a seam apart: each end claims the nearest
+  // unclaimed start in the cells round it, and the chains so linked are walked end to end.
+  const cell = Math.max(joinTolerance, 1e-4)
+  const starts = new Map<number, number[]>()
+  open.forEach((chain, c) => {
+    const p = points[chain[0]!]!
+    const key = cellKey(Math.floor(p.x / cell), Math.floor(p.y / cell))
+    const list = starts.get(key)
+    if (list) list.push(c)
+    else starts.set(key, [c])
+  })
+  const linked = new Int32Array(open.length).fill(-1)
+  const claimed = new Uint8Array(open.length)
+  open.forEach((chain, c) => {
+    const tail = points[chain[chain.length - 1]!]!
+    const cx = Math.floor(tail.x / cell)
+    const cz = Math.floor(tail.y / cell)
+    let best = -1
+    let bestDistance = Number.POSITIVE_INFINITY
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++)
+        for (const other of starts.get(cellKey(cx + dx, cz + dz)) ?? []) {
+          if (claimed[other]) continue
+          const distance = tail.distanceTo(points[open[other]![0]!]!)
+          if (distance <= joinTolerance && distance < bestDistance) {
+            best = other
+            bestDistance = distance
+          }
+        }
+    if (best >= 0) {
+      linked[c] = best
+      claimed[best] = 1
     }
-    for (let again = true; again; ) {
-      again = false
-      for (let j = 0; j < open.length; j++) {
-        const other = open[j]!
-        if (!near(other[other.length - 1]!, chain[0]!)) continue
-        chain.unshift(...open.splice(j, 1)[0]!.slice(0, -1))
-        again = true
-        break
-      }
+  })
+  const walked = new Uint8Array(open.length)
+  const walk = (first: number) => {
+    const chain: number[] = []
+    for (let c = first; c >= 0 && !walked[c]; c = linked[c]!) {
+      walked[c] = 1
+      chain.push(...(chain.length ? open[c]!.slice(1) : open[c]!))
     }
     if (near(chain[chain.length - 1]!, chain[0]!)) {
       // A closed chain of two or three points is a sliver the size of a seam: nothing to cap.
       if (chain.length >= 4) closed.push(chain.slice(1))
     } else complete = false
   }
+  // Chains no other leads into begin a walk; what is left is a ring of chains.
+  for (let c = 0; c < open.length; c++) if (!claimed[c]) walk(c)
+  for (let c = 0; c < open.length; c++) if (!walked[c]) walk(c)
   const loops: SectionLoop[] = []
   for (const ids of closed) {
     const loop = ids.map((id) => points[id]!.clone())

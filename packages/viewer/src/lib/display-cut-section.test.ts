@@ -272,6 +272,21 @@ describe('order and welding', () => {
     expect(sectionArea(section)).toBeCloseTo(2, 3)
   })
 
+  test('a hundred and one boxes, each with a half-millimetre seam, all close', () => {
+    const boxes = Array.from({ length: 101 }, (_, i) => {
+      const box = new BoxGeometry(1, 1, 1).translate(i * 2, 0.5, 0)
+      const position = box.getAttribute('position')
+      const normal = box.getAttribute('normal')
+      for (let v = 0; v < position.count; v++)
+        if (normal.getZ(v) === 1) position.setZ(v, position.getZ(v) + 5e-4)
+      return box
+    })
+    const section = sectionOfBody(joined(...boxes), 0.5, 1e-3)
+    expect(section.complete).toBe(true)
+    expect(loopCount(section)).toBe(101)
+    expect(sectionArea(section)).toBeCloseTo(101, 1)
+  })
+
   test('a body that begins at the cut has no section', () => {
     const body = new BoxGeometry(2, 1, 1).translate(0, 1.5, 0)
     expect(loopCount(sectionOfBody(body, 1))).toBe(0)

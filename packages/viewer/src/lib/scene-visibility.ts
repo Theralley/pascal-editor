@@ -68,14 +68,12 @@ export function showInScene(obj: Object3D, reason: HiddenReason): void {
 }
 
 /**
- * Whether `obj` is held off the scene layer for a reason other than `except` (a wall batch draws
- * the walls it holds, so those are not hidden). Read-only.
+ * Whether `obj` is drawn in the scene's colour pass now: on the scene layer, or on the batched one
+ * (a wall batch draws it). The layer mask is the one truth, so a capture that lifts a hold for its
+ * picture is seen as it does it, and as it gives the hold back. Read-only.
  */
-export function isHeldFromScene(obj: Object3D, except: readonly HiddenReason[] = []): boolean {
-  const hold = (obj as Holder)[HOLD]
-  if (!hold) return false
-  for (const reason of hold.reasons) if (!except.includes(reason)) return true
-  return false
+export function isDrawnInScene(obj: Object3D): boolean {
+  return obj.layers.isEnabled(SCENE_LAYER) || obj.layers.isEnabled(BATCHED_LAYER)
 }
 
 export function temporarilyShowShadowOnly(root: Object3D): () => void {

@@ -25,10 +25,10 @@ import {
   type Solid,
 } from '../../lib/display-cut-section'
 import { createDefaultMaterial, type RenderShading } from '../../lib/materials'
-import { isHeldFromScene } from '../../lib/scene-visibility'
+import { isDrawnInScene } from '../../lib/scene-visibility'
 import { getCachedLevelMiters } from './level-miter-cache'
 import { wallCutApplies } from './wall-cut-eligibility'
-import { forEachWallPart, wallParts } from './wall-cutout-cache'
+import { isWallPartCandidate, wallParts } from './wall-cutout-cache'
 
 export const WALL_CUT_CAPS_NAME = 'wall-cut-caps'
 const WALL_COLLISION_MESH = 'collision-mesh'
@@ -150,7 +150,7 @@ function footprintSolids(
 /** A wall's parts that are drawn: a hidden one (a stale curtain wall's glass) is no part of the cap. */
 function partShown(part: Mesh, wall: Object3D): boolean {
   for (let object: Object3D | null = part; object && object !== wall; object = object.parent)
-    if (!object.visible || isHeldFromScene(object, ['batched', 'wall-batched'])) return false
+    if (!object.visible || !isDrawnInScene(object)) return false
   return true
 }
 
@@ -167,11 +167,45 @@ const geometryId = (geometry: object): number => {
   return id
 }
 
-const mix = (hash: number, value: number) => Math.imul(hash ^ Math.round(value * 1e4), 16777619) | 0
+// A draw range that is all of it (Infinity) stays apart from none of it (0).
+const mix = (hash: number, value: number) =>
+  Math.imul(hash ^ (Number.isFinite(value) ? Math.round(value * 1e4) : -7919), 16777619) | 0
 
 const versionOf = (part: Mesh) => {
   const position = part.geometry.getAttribute('position')
   return !position ? 0 : 'version' in position ? position.version : position.data.version
+}
+
+const scratch = new Matrix4()
+let stamp = 0
+
+/**
+ * Mixes into `stamp` everything the cap of a wall takes from its parts: what each is made of
+ * (geometry, attribute and index identity and versions, draw range), where it stands relative to the
+ * wall, and whether it is drawn. Plain loops over the tree and numbers: it runs every frame.
+ */
+function stampParts(object: Object3D, wall: Object3D): void {
+  for (let i = 0; i < object.children.length; i++) {
+    const child = object.children[i]!
+    if (!isWallPartCandidate(child)) continue
+    const part = child as Mesh
+    if (part.isMesh && part.material) {
+      const geometry = part.geometry
+      const index = geometry.getIndex()
+      const position = geometry.getAttribute('position')
+      stamp = mix(stamp, geometryId(geometry))
+      stamp = mix(stamp, position ? geometryId(position) : 0)
+      stamp = mix(stamp, versionOf(part))
+      stamp = mix(stamp, index ? geometryId(index) : 0)
+      stamp = mix(stamp, index ? index.version : 0)
+      stamp = mix(stamp, geometry.drawRange.start)
+      stamp = mix(stamp, geometry.drawRange.count)
+      stamp = mix(stamp, partShown(part, wall) ? 1 : 0)
+      scratch.copy(wall.matrixWorld).invert().multiply(part.matrixWorld)
+      for (let k = 0; k < 16; k++) stamp = mix(stamp, scratch.elements[k]!)
+    }
+    stampParts(child, wall)
+  }
 }
 
 const EMPTY: Section = { solids: [], complete: true }
@@ -304,16 +338,10 @@ export class WallCutCaps {
       }
       this.watched = { revision: sceneRegistry.revision, meshes }
     }
-    let hash = 0
-    for (const wall of this.watched.meshes)
-      forEachWallPart(wall, (part) => {
-        hash = mix(hash, geometryId(part.geometry))
-        hash = mix(hash, versionOf(part))
-        hash = mix(hash, part.geometry.drawRange.count)
-        hash = mix(hash, partShown(part, wall) ? 1 : 0)
-        for (const element of part.matrixWorld.elements) hash = mix(hash, element)
-      })
-    return hash
+    stamp = 0
+    const { meshes } = this.watched
+    for (let i = 0; i < meshes.length; i++) stampParts(meshes[i]!, meshes[i]!)
+    return stamp
   }
 
   dispose(): void {
@@ -356,13 +384,19 @@ export class WallCutCaps {
     mesh.updateWorldMatrix(true, false)
     const relative = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
     // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
-    const parts = shownParts(mesh).flatMap((part) => [
-      geometryId(part.geometry),
-      versionOf(part),
-      part.geometry.drawRange.start,
-      part.geometry.drawRange.count,
-      ...new Matrix4().copy(root.matrixWorld).invert().multiply(part.matrixWorld).elements,
-    ])
+    const parts = shownParts(mesh).flatMap((part) => {
+      const index = part.geometry.getIndex()
+      return [
+        geometryId(part.geometry),
+        geometryId(part.geometry.getAttribute('position')),
+        versionOf(part),
+        index ? geometryId(index) : 0,
+        index ? index.version : 0,
+        part.geometry.drawRange.start,
+        part.geometry.drawRange.count,
+        ...new Matrix4().copy(root.matrixWorld).invert().multiply(part.matrixWorld).elements,
+      ]
+    })
     return [
       geometry.uuid,
       'version' in position ? position.version : position.data.version,

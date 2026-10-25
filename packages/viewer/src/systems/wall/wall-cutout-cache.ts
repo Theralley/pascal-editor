@@ -58,6 +58,11 @@ export function wallParts(wallMesh: Object3D): Mesh[] {
   return parts
 }
 
+/** Whether `child` (under a wall) can be one of its parts: not a hosted node, not the collision mesh. */
+export function isWallPartCandidate(child: Object3D): boolean {
+  return !registeredObjects().has(child) && child.name !== WALL_COLLISION_MESH
+}
+
 /** `wallParts`, without making a list: for what is looked at every frame. */
 export function forEachWallPart(wallMesh: Object3D, visit: (part: Mesh) => void): void {
   const hosted = registeredObjects()
