@@ -25,9 +25,9 @@ import {
 import {
   cancelOpeningDraft,
   describeOpeningHost,
-  OPENING_OUTSIDE_MESSAGE,
-  OPENING_TOO_SMALL_MESSAGE,
   openingDraftActive,
+  openingOutsideMessage,
+  openingTooSmallMessage,
   planFloorOpening,
   startOpeningDraft,
   useOpeningDraft,
@@ -112,10 +112,10 @@ describe('Cut opening (point 8)', () => {
   test('an outline outside the room or too small is refused, in words', () => {
     const host = describeOpeningHost(nodes(), upperRoom, 'floor')!
     expect(planFloorOpening(nodes(), host, 'floor', rect(20, 20, 22, 22))).toEqual({
-      message: OPENING_OUTSIDE_MESSAGE,
+      message: openingOutsideMessage(),
     })
     expect(planFloorOpening(nodes(), host, 'floor', rect(1, 1, 1.1, 1.1))).toEqual({
-      message: OPENING_TOO_SMALL_MESSAGE,
+      message: openingTooSmallMessage(),
     })
   })
 

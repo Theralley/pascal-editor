@@ -1,4 +1,4 @@
-import { translate } from '../../../i18n'
+import { useT } from '../../../i18n'
 import type { ContinuationContext } from '../../../lib/continuation'
 import type { HudTitle } from '../../../lib/hud-title'
 import type { SnapContext } from '../../../lib/snapping-mode'
@@ -35,17 +35,18 @@ export function ItemHelper({
   extraHints = [],
   replacesPlace = false,
 }: ItemHelperProps) {
+  const t = useT(messages)
   return (
     <ContextualHelperPanel
       continuationContext={continuationContext}
       notice={notice}
       hints={[
         // Where a click does something else (joining a corner), that row says so instead.
-        ...(replacesPlace ? [] : [{ keys: ['Left click'], label: translate(messages, 'place') }]),
+        ...(replacesPlace ? [] : [{ keys: ['Left click'], label: t('place') }]),
         ...extraHints,
-        { keys: ['R', 'T'], label: translate(messages, 'rotate') },
-        ...(showForce ? [{ keys: ['Alt'], label: translate(messages, 'item.forcePlace') }] : []),
-        { keys: [showEsc ? 'Esc' : 'Right click'], label: translate(messages, 'cancel') },
+        { keys: ['R', 'T'], label: t('rotate') },
+        ...(showForce ? [{ keys: ['Alt'], label: t('item.forcePlace') }] : []),
+        { keys: [showEsc ? 'Esc' : 'Right click'], label: t('cancel') },
       ]}
       snapContext={snapContext}
       title={title}

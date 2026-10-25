@@ -1,4 +1,5 @@
 import type { ContinuationMode } from './continuation'
+import { wallVariantLabel } from './hud-title'
 import { getWallDrawVariantInfo, wallDrawVariantOf } from './wall-draw-variant'
 
 /**
@@ -7,5 +8,5 @@ import { getWallDrawVariantInfo, wallDrawVariantOf } from './wall-draw-variant'
  */
 export function wallCursorIcon(mode: ContinuationMode): { label: string; iconSrc: string } {
   const variant = getWallDrawVariantInfo(wallDrawVariantOf(mode))
-  return { label: variant.title, iconSrc: variant.iconSrc }
+  return { label: wallVariantLabel(wallDrawVariantOf(mode)), iconSrc: variant.iconSrc }
 }

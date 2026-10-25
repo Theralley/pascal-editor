@@ -22,10 +22,6 @@ export const messages = defineMessages({
     'category.ground': 'Ground',
     'category.glass': 'Glass',
     'category.other': 'Other',
-    'source.pascal': 'Pascal',
-    'source.mine': 'Mine',
-    'source.workspace': 'Workspace',
-    'source.community': 'Community',
     'picker.newMaterial': 'New material',
 
     'material.color': 'Color',
@@ -102,10 +98,6 @@ export const messages = defineMessages({
     'category.ground': 'Mark',
     'category.glass': 'Glas',
     'category.other': 'Övrigt',
-    'source.pascal': 'Pascal',
-    'source.mine': 'Mina',
-    'source.workspace': 'Arbetsyta',
-    'source.community': 'Community',
     'picker.newMaterial': 'Nytt material',
 
     'material.color': 'Färg',
@@ -130,10 +122,9 @@ export const messages = defineMessages({
     'paint.polygon': 'Polygon: klicka ut hörnen på en form på ett golv eller ett innertak',
     'paint.erase':
       'Radera: klicka på en målad del för att ta bort den, eller på en målad yta för att återställa den',
-    'paint.pick':
-      'Plocka: klicka på en yta för att måla med dess material (eller håll in Alt / Option)',
+    'paint.pick': 'Hämta: klicka på en yta för att måla med dess material (eller håll in Alt / Option)',
     'paint.titleErase': 'Radera',
-    'paint.titlePick': 'Plocka material',
+    'paint.titlePick': 'Hämta material',
     'paint.title': 'Måla',
     'paint.eraseNote':
       'Klicka på en målad del av en vägg, ett golv eller ett innertak för att ta bort den, eller på en målad yta för att återställa den till standard.',
@@ -147,8 +138,8 @@ export const messages = defineMessages({
     'terrain.smooth': 'Mjuka upp',
     'terrain.raiseHint':
       'Dra för att höja marken. Ett drag höjer den upp till {metres} m – släpp och dra igen för att gå längre.',
-    'terrain.lowerHint': 'Dra för att sänka marken. Ett drag sänker den upp till {metres} m.',
-    'terrain.flattenHint': 'Dra för att jämna ut marken mot målhöjden. Den går aldrig förbi.',
+    'terrain.lowerHint': 'Dra för att sänka marken. Ett drag sänker den högst {metres} m.',
+    'terrain.flattenHint': 'Dra för att jämna ut marken mot målhöjden. Den går aldrig förbi målhöjden.',
     'terrain.smoothHint': 'Dra för att mjuka upp sluttningar och ta bort kullar. Plan mark förblir plan.',
     'terrain.size': 'Storlek',
     'terrain.strength': 'Styrka',

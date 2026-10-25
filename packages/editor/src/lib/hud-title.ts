@@ -2,7 +2,11 @@ import { type IconRef, nodeRegistry, type TerrainVerb } from '@pascal-app/core'
 import { translate } from '../i18n'
 import type { ContinuationMode } from './continuation'
 import { messages } from './help-messages'
-import { getWallDrawVariantInfo, wallDrawVariantOf } from './wall-draw-variant'
+import {
+  getWallDrawVariantInfo,
+  type WallDrawVariant,
+  wallDrawVariantOf,
+} from './wall-draw-variant'
 
 /** The contextual helper panel's header: what is in hand, and its key. */
 export type HudTitle = {
@@ -73,6 +77,17 @@ export function terrainHudTitle(verb: TerrainVerb): HudTitle {
   return hudTitle(key, url(`/icons/terrain-${verb}.webp`))
 }
 
+const WALL_VARIANT_KEYS = {
+  rectangle: 'continuation.wallRectangle',
+  polygon: 'continuation.wallRoom',
+  walls: 'continuation.wallSingle',
+} as const satisfies Record<WallDrawVariant, keyof (typeof messages)['en']>
+
+/** What the Build panel calls the wall tool's Rooms variant, in the active language. */
+export function wallVariantLabel(variant: WallDrawVariant): string {
+  return translate(messages, WALL_VARIANT_KEYS[variant])
+}
+
 /** A kind's registry name and icon, optionally behind a verb ("Move door"). */
 export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split'): HudTitle | null {
   const presentation = nodeRegistry.get(kind)?.presentation
@@ -92,7 +107,13 @@ export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split')
 export function toolHudTitle(tool: string, wallMode: ContinuationMode): HudTitle | null {
   if (tool === 'wall') {
     const variant = getWallDrawVariantInfo(wallDrawVariantOf(wallMode))
-    return { label: variant.title, icon: url(variant.iconSrc), shortcut: TOOL_SHORTCUTS.wall }
+    return {
+      get label() {
+        return wallVariantLabel(wallDrawVariantOf(wallMode))
+      },
+      icon: url(variant.iconSrc),
+      shortcut: TOOL_SHORTCUTS.wall,
+    }
   }
   return nodeKindHudTitle(tool)
 }

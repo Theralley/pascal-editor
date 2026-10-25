@@ -1,13 +1,15 @@
 import { area, containsPoint, intersection, type MultiPolygon } from '@pascal-app/core'
+import { translate } from '../i18n'
 import type { FloorRegionPoint } from './floor-region-snap'
+import { messages } from './help-messages'
 
 // Pure geometry for "Paint part of the floor": which room a plan point is in,
 // the box a rectangle drag draws, crossing edges, and the clip to the room.
 
 /** Smaller than this (m²) is a click, not a region. */
 export const MIN_FLOOR_REGION_AREA = 0.01
-export const CROSSING_MESSAGE = "Edges can't cross"
-export const OUTSIDE_MESSAGE = 'Draw inside the room'
+export const crossingMessage = () => translate(messages, 'notice.crossing')
+export const outsideMessage = () => translate(messages, 'notice.outside')
 
 /** The first room (in the given order) whose clear floor holds the point. */
 /**

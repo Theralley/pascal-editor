@@ -13,7 +13,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { create } from 'zustand'
 import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
-import { CROSSING_MESSAGE, floorRegionSelfIntersects } from './floor-region-geometry'
+import { crossingMessage, floorRegionSelfIntersects } from './floor-region-geometry'
 import {
   cancelFloorRegion,
   type FloorDraftCommit,
@@ -38,8 +38,8 @@ import { sfxEmitter } from './sfx-bus'
 
 export const TERRACE_DRAFT_HANDLE = 'terrace-draft'
 export const TERRACE_NAME = 'Terrace'
-export const TERRACE_TOO_SMALL_MESSAGE = 'Too small for a terrace.'
-export const TERRACE_FAILED_MESSAGE = "Can't place a terrace here."
+export const terraceTooSmallMessage = () => translate(messages, 'notice.terraceTooSmall')
+export const terraceFailedMessage = () => translate(messages, 'notice.terraceFailed')
 
 export type TerraceShape = 'rectangle' | 'polygon'
 
@@ -64,8 +64,8 @@ export function planTerrace(
   polygon: readonly FloorRegionPoint[],
 ): { plan: StructurePlan & { zoneId: string } } | { message: string } {
   const outline = polygon.map(([x, z]): [number, number] => [x, z])
-  if (floorRegionSelfIntersects(outline)) return { message: CROSSING_MESSAGE }
-  if (area([{ outer: outline, holes: [] }]) < 1) return { message: TERRACE_TOO_SMALL_MESSAGE }
+  if (floorRegionSelfIntersects(outline)) return { message: crossingMessage() }
+  if (area([{ outer: outline, holes: [] }]) < 1) return { message: terraceTooSmallMessage() }
   try {
     const plan = createZone(nodes, {
       levelId,
@@ -76,9 +76,9 @@ export function planTerrace(
       mintId: generateId,
     })
     const conflict = plan.conflicts?.[0]
-    return conflict ? { message: conflict.message || TERRACE_FAILED_MESSAGE } : { plan }
+    return conflict ? { message: conflict.message || terraceFailedMessage() } : { plan }
   } catch {
-    return { message: TERRACE_FAILED_MESSAGE }
+    return { message: terraceFailedMessage() }
   }
 }
 

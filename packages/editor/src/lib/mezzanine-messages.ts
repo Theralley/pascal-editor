@@ -1,4 +1,4 @@
-import { CROSSING_MESSAGE } from './floor-region-geometry'
+import { crossingMessage } from './floor-region-geometry'
 
 // Short labels for what core refuses a mezzanine — drawing, moving, turning,
 // copying, pushing an edge or adding its stair all read the same words.
@@ -15,12 +15,12 @@ const CONFLICT_MESSAGES: Record<string, string> = {
   'overlaps-mezzanine': MEZZANINE_OVERLAP_MESSAGE,
   'mezzanine-overlap': MEZZANINE_OVERLAP_MESSAGE,
   'too-small': MEZZANINE_TOO_SMALL_MESSAGE,
-  'self-intersecting': CROSSING_MESSAGE,
   'mezzanine-elevation': MEZZANINE_ELEVATION_MESSAGE,
   'no-room-for-stair': MEZZANINE_NO_STAIR_MESSAGE,
 }
 
 /** The label for a core mezzanine conflict code, or null when it is not one of them. */
 export function mezzanineConflictMessage(code: string | undefined): string | null {
+  if (code === 'self-intersecting') return crossingMessage()
   return (code && CONFLICT_MESSAGES[code]) || null
 }

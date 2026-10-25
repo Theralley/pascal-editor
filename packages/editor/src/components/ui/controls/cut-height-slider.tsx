@@ -3,7 +3,7 @@
 import { useViewer, WALL_CUT_HEIGHT_MAX, WALL_CUT_HEIGHT_MIN } from '@pascal-app/viewer'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createCutHeightGesture, cutHeightKeyTarget } from '../../../lib/cut-height-gesture'
-import { useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { formatLinearMeasurement } from '../../../lib/measurements'
 import { cn } from '../../../lib/utils'
 import { DropdownMenuItem } from '../primitives/dropdown-menu'
@@ -17,6 +17,7 @@ const ROW_CLASS = 'flex items-center gap-2 px-2 py-1.5 text-xs'
  */
 export function CutHeightControl({ className }: { className?: string }) {
   const t = useT(messages)
+  const locale = useLocale()
   const saved = useViewer((state) => state.wallCutHeight)
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
@@ -38,7 +39,7 @@ export function CutHeightControl({ className }: { className?: string }) {
   useEffect(() => () => void gesture.current?.commit(), [])
 
   const shown = dragging ?? saved
-  const text = formatLinearMeasurement(shown, unit, metricNotation)
+  const text = formatLinearMeasurement(shown, unit, metricNotation, locale)
 
   return (
     <div className={cn(ROW_CLASS, 'w-full', className)}>

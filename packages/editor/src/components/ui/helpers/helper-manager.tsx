@@ -300,7 +300,7 @@ export const MEZZANINE_GESTURE_HINTS: Record<MezzanineGesture, ContextualShortcu
 }
 
 export function HelperManager() {
-  useLocale() // the hints below are translated as they are built
+  const locale = useLocale() // the hints below are translated as they are built
   const mode = useEditor((s) => s.mode)
   const tool = useEditor((s) => s.tool)
   const terrainVerb = useEditor((s) => s.terrainVerb)
@@ -393,7 +393,7 @@ export function HelperManager() {
       shiftPressed: modifiers.shift,
       mepSelection,
     })
-  }, [modifiers.command, modifiers.shift, selectedNodes])
+  }, [modifiers.command, modifiers.shift, selectedNodes, locale])
 
   // Helpers are keyboard-driven hints (Esc, R, etc.) — irrelevant on touch.
   if (isMobile) return null

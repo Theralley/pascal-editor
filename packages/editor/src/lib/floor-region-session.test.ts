@@ -19,8 +19,8 @@ import {
 } from '../components/editor/floor-region-controls'
 import useEditor from '../store/use-editor'
 import {
-  CROSSING_MESSAGE,
   clipFloorRegion,
+  crossingMessage,
   floorRegionAxisAngle,
   floorRegionRectangle,
   floorRegionSelfIntersects,
@@ -356,14 +356,14 @@ describe('floor region draft', () => {
     click([0.5, 2.5])
     // The live edge back down crosses the first edge.
     pressFloorRegion('polygon', room, [2, 0.2], OFF, CLOSE)
-    expect(draft()).toMatchObject({ message: CROSSING_MESSAGE })
+    expect(draft()).toMatchObject({ message: crossingMessage() })
     releaseFloorRegion(CLOSE)
     expect(draftPoints()).toHaveLength(3)
     click([3, 2.5])
     expect(draftPoints()).toHaveLength(4)
     // Closing (3, 2.5) → (0.5, 0.5) crosses (3, 0.5) → (0.5, 2.5).
     expect(finishFloorRegion()).toBe(true)
-    expect(draft()).toMatchObject({ message: CROSSING_MESSAGE })
+    expect(draft()).toMatchObject({ message: crossingMessage() })
     expect(regions()).toEqual([])
     expect(history()).toBe(0)
   })

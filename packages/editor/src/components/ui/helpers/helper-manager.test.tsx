@@ -136,7 +136,7 @@ describe('Helper card in the active language', () => {
         />
       </TooltipProvider>,
     )
-    for (const text of ['Markera', 'Fäst: Rutnät', 'Rutnät: 0.50 m', 'Lägg till punkt', 'Fler genvägar', 'Avbryt'])
+    for (const text of ['Markera', 'Fäst: Rutnät', 'Rutnät: 0,50 m', 'Lägg till punkt', 'Fler genvägar', 'Avbryt'])
       expect(html).toContain(text)
     expect(html).not.toContain('Snapping')
   })

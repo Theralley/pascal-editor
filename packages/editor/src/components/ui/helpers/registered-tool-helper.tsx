@@ -1,5 +1,5 @@
 import type { ToolHint } from '@pascal-app/core'
-import { translate } from '../../../i18n'
+import { useT } from '../../../i18n'
 import type { ContinuationContext } from '../../../lib/continuation'
 import type { HudTitle } from '../../../lib/hud-title'
 import type { SnapContext } from '../../../lib/snapping-mode'
@@ -31,6 +31,7 @@ export function RegisteredToolHelper({
   title?: HudTitle | null
   notice?: string | null
 }) {
+  const t = useT(messages)
   const visible = useVisibleToolHints(hints)
   if (visible.length === 0 && !snapContext && !continuationContext && !notice) return null
   // Hints carrying a live-state `chip` render as mode chips next to the
@@ -46,7 +47,7 @@ export function RegisteredToolHelper({
         const isBypassHint = hint.key === 'Shift'
         return {
           keys: [hint.key],
-          label: shiftPressed && isBypassHint ? translate(messages, 'bypassed') : hint.label,
+          label: shiftPressed && isBypassHint ? t('bypassed') : hint.label,
           active: shiftPressed && isBypassHint,
         }
       })}

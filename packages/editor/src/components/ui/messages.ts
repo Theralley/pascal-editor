@@ -71,16 +71,14 @@ export const messages = defineMessages({
     'levels.groundCannotDelete': 'Bottenvåningen kan inte tas bort',
     'levels.groundLabel': 'Mark · {value}',
     'levels.groundLineHint': 'Marklinje: våningarna under den ligger under marknivån',
-    'levels.groundOver':
-      'Bottenvåningen ligger {amount} {unit} över marknivån. Placera bottenvåningen 8 tum över marknivån',
-    'levels.groundUnder':
-      'Bottenvåningen ligger {amount} {unit} under marknivån. Placera bottenvåningen 8 tum över marknivån',
+    'levels.groundOver': 'Bottenvåningen ligger {amount} {unit} över marknivån. Placera bottenvåningen 20 cm över marknivån',
+    'levels.groundUnder': 'Bottenvåningen ligger {amount} {unit} under marknivån. Placera bottenvåningen 20 cm över marknivån',
     'levels.unit': 'Enhet',
     'levels.exitUnitFocus': 'Lämna enhetsfokus',
     'levels.addUnderRoof': 'Lägg till en våning under taket',
     'levels.addAbove': 'Lägg till våning ovanför',
     'levels.addBelow': 'Lägg till våning nedanför',
-    'levels.insertHere': 'Lägg in en våning här',
+    'levels.insertHere': 'Infoga våning här',
     'levels.deleteDescription':
       'Är du säker på att du vill ta bort <name>{name}</name>? Alla väggar, golv och objekt på den här våningen tas bort för alltid.',
     'levels.cancel': 'Avbryt',
@@ -104,8 +102,8 @@ export const messages = defineMessages({
     'loader.failedBody': 'Inget har ändrats. Kontrollera din anslutning och försök igen.',
     'loader.retry': 'Försök igen',
 
-    'snap.wall': 'Fäst i vägg',
-    'snap.ceiling': 'Fäst i innertak',
-    'snap.roof': 'Fäst i tak',
+    'snap.wall': 'Monteras på vägg',
+    'snap.ceiling': 'Monteras i innertak',
+    'snap.roof': 'Monteras på tak',
   },
 })

@@ -5,9 +5,10 @@ import {
   CONTINUATION_PROFILES,
   type ContinuationContext,
 } from '../../../lib/continuation'
-import { useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import type { ContextualShortcutHint } from '../../../lib/contextual-help'
 import type { HudTitle } from '../../../lib/hud-title'
+import { formatDecimal } from '../../../lib/measurements'
 import { hasActivePaintMaterial } from '../../../lib/material-paint'
 import { usePaintRegionMode } from '../../../lib/paint-region-mode'
 import { paintScopeLabel, type PaintScope } from '../../../lib/paint-scope'
@@ -188,6 +189,7 @@ function nextGridSnapStep(step: GridSnapStep): GridSnapStep {
 // / polygon) so each action shows only the modes that make sense for it.
 function SnappingChips({ context }: { context: SnapContext }) {
   const t = useT(messages)
+  const locale = useLocale()
   const snappingMode = useEditor((s) => s.snappingModeByContext[context])
   const setSnappingMode = useEditor((s) => s.setSnappingMode)
   const gridSnapStep = useEditor((s) => s.gridSnapStep)
@@ -212,9 +214,9 @@ function SnappingChips({ context }: { context: SnapContext }) {
       />
       {gridActive ? (
         <ChipRow
-          ariaLabel={t('snap.gridStepAria', { step: gridSnapStep.toFixed(2) })}
+          ariaLabel={t('snap.gridStepAria', { step: formatDecimal(gridSnapStep, { minFractionDigits: 2, maxFractionDigits: 2 }, locale) })}
           guideTarget="snap-grid-step"
-          label={t('snap.gridStep', { step: gridSnapStep.toFixed(2) })}
+          label={t('snap.gridStep', { step: formatDecimal(gridSnapStep, { minFractionDigits: 2, maxFractionDigits: 2 }, locale) })}
           onClick={() => {
             setGridSnapStep(nextGridSnapStep(gridSnapStep))
             sfxEmitter.emit('sfx:grid-snap')

@@ -28,7 +28,7 @@ export const messages = defineMessages({
     'mouse.leftClick': 'Vänsterklick',
     'mouse.middleClick': 'Mittenklick',
     'mouse.rightClick': 'Högerklick',
-    'mouse.scroll': 'Scrolla',
+    'mouse.scroll': 'Skrolla',
     'gesture.Drag': 'Dra',
     'gesture.Hover': 'Håll över',
     'gesture.Release': 'Släpp',

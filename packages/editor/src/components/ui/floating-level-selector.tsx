@@ -63,10 +63,11 @@ import {
 import { addStoreyBelow, addStoreyOnTop, setGroundFloor } from '../../lib/add-storey'
 import { deleteLevelWithFallbackSelection } from '../../lib/level-selection'
 import { unitMemberLevels, leaveUnitFocus } from '../../lib/units'
+import { formatDecimal } from '../../lib/measurements'
 import { useLinearDisplay } from '../../lib/use-linear-display'
 import { cn } from '../../lib/utils'
 import { useIsMobile } from '../../hooks/use-mobile'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { ActionButton } from './controls/action-button'
 import { SliderControl } from './controls/slider-control'
 import { LevelDuplicateDialog } from './level-duplicate-dialog'
@@ -173,6 +174,7 @@ function LevelRow({
   isGround: boolean
 }) {
   const t = useT(messages)
+  const locale = useLocale()
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const updateNode = useScene((s) => s.updateNode)
@@ -180,7 +182,11 @@ function LevelRow({
 
   const storeyHeight = getStoredLevelHeight(level)
   // Decimal units keep the compact readout; integer millimeters must retain trailing zeroes.
-  const formattedStoreyHeight = toDisplay(storeyHeight).toFixed(displayPrecision)
+  const formattedStoreyHeight = formatDecimal(
+    toDisplay(storeyHeight),
+    { minFractionDigits: displayPrecision, maxFractionDigits: displayPrecision },
+    locale,
+  )
   const storeyHeightLabel = `${
     displayPrecision > 0 ? formattedStoreyHeight.replace(/0$/, '') : formattedStoreyHeight
   } ${displayUnit}`
@@ -468,10 +474,11 @@ type GroundLineState = {
  */
 function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () => void }) {
   const t = useT(messages)
+  const locale = useLocale()
   const { toDisplay, displayUnit, precision } = useLinearDisplay('m', 2)
   const over = toDisplay(ground.offset)
   const label = t('levels.groundLabel', {
-    value: `${over > 0 ? '+' : ''}${over.toFixed(precision)}`,
+    value: `${over > 0 ? '+' : ''}${formatDecimal(over, { minFractionDigits: precision, maxFractionDigits: precision }, locale)}`,
   })
   return (
     <div
@@ -490,7 +497,11 @@ function GroundLine({ ground, onSeat }: { ground: GroundLineState; onSeat: () =>
           className="shrink-0 rounded-full px-1.5 font-mono text-[10px] text-amber-400 tabular-nums transition-colors hover:bg-amber-400/10"
           onClick={onSeat}
           title={t(ground.offset > 0 ? 'levels.groundOver' : 'levels.groundUnder', {
-            amount: Math.abs(toDisplay(ground.offset)).toFixed(precision),
+            amount: formatDecimal(
+              Math.abs(toDisplay(ground.offset)),
+              { minFractionDigits: precision, maxFractionDigits: precision },
+              locale,
+            ),
             unit: displayUnit,
           })}
           type="button"

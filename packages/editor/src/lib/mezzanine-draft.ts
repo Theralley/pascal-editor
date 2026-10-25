@@ -16,8 +16,8 @@ import { create } from 'zustand'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
 import useEditor from '../store/use-editor'
 import {
-  CROSSING_MESSAGE,
   clipFloorRegion,
+  crossingMessage,
   floorRegionAxisAngle,
   floorRegionSelfIntersects,
 } from './floor-region-geometry'
@@ -129,7 +129,7 @@ export function planMezzanine(
   } catch {
     return {
       message: floorRegionSelfIntersects(outline)
-        ? CROSSING_MESSAGE
+        ? crossingMessage()
         : area([{ outer: outline, holes: [] }]) < 1
           ? MEZZANINE_TOO_SMALL_MESSAGE
           : MEZZANINE_FAILED_MESSAGE,

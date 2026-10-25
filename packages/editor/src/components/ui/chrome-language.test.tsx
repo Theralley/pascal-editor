@@ -41,7 +41,7 @@ const cases = [
     name: 'the snap target badge',
     element: <SnapTargetBadge target="wall" />,
     en: ['Wall attachment'],
-    sv: ['Fäst i vägg'],
+    sv: ['Monteras på vägg'],
   },
 ] as const
 

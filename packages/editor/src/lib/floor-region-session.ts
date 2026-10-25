@@ -13,13 +13,13 @@ import {
 import { create } from 'zustand'
 import useEditor, { isGridSnapActive, isMagneticSnapActive } from '../store/use-editor'
 import {
-  CROSSING_MESSAGE,
   clipFloorRegion,
+  crossingMessage,
   floorRegionAxisAngle,
   floorRegionEdgeCrosses,
   floorRegionRectangle,
   MIN_FLOOR_REGION_AREA,
-  OUTSIDE_MESSAGE,
+  outsideMessage,
 } from './floor-region-geometry'
 import {
   type FloorRegionPoint,
@@ -232,7 +232,7 @@ export function polygonLiveMessage(
   if (!cursor) return null
   const closing = closesOnFirst(points, cursor, closeRadius)
   if (points.length && floorRegionEdgeCrosses(points, closing ? points[0]! : cursor, closing))
-    return CROSSING_MESSAGE
+    return crossingMessage()
   return (!closing && room && purposeOf(room).pointMessage?.(room, cursor)) || null
 }
 
@@ -281,7 +281,7 @@ export function commitFloorRegion(room: FloorRegionRoom, polygon: readonly Floor
   }
   const clip = clipFloorRegion(polygon, room.clear)
   if (!clip) {
-    setNotice(OUTSIDE_MESSAGE)
+    setNotice(outsideMessage())
     return false
   }
   const result = addFloorRegion(room.zoneId, clip.polygon, paint)
@@ -321,7 +321,7 @@ export function commitCeilingRegion(room: FloorRegionRoom, polygon: readonly Flo
   }
   const clip = clipFloorRegion(polygon, room.clear)
   if (!(clip && room.ceilingId)) {
-    setNotice(OUTSIDE_MESSAGE)
+    setNotice(outsideMessage())
     return false
   }
   const result = addCeilingRegion(room.ceilingId, clip.polygon, paint)
@@ -549,7 +549,7 @@ export function finishFloorRegion() {
   if (draft?.kind !== 'polygon' || draft.points.length < 3) return false
   const { points } = draft
   if (floorRegionEdgeCrosses(points, points[0]!, true)) {
-    useFloorRegionDraft.setState({ draft: { ...draft, message: CROSSING_MESSAGE } })
+    useFloorRegionDraft.setState({ draft: { ...draft, message: crossingMessage() } })
     return true
   }
   finishPolygon(draft, points)

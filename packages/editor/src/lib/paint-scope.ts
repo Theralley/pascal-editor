@@ -23,6 +23,8 @@ import {
   type WallNode,
   wallRoomFinishRole,
 } from '@pascal-app/core'
+import { type MessageKey, translate } from '../i18n'
+import { messages } from './help-messages'
 
 /**
  * Painter application scope — how far one paint click spreads. The scope set is
@@ -57,11 +59,11 @@ function nodeOffersRoomScope(node: AnyNode): boolean {
 
 const isFloorPlate = (node: AnyNode): boolean => node.type === 'slab' && node.boundary === 'auto'
 
-const FOOTPRINT_FACE_LABELS: Record<string, string> = {
-  edge: 'Floor edge · all around this floor',
-  riser: 'Riser · all around this floor',
-  underside: 'Underside · all of this floor',
-  foundation: 'Foundation · all around this floor',
+const FOOTPRINT_FACE_LABELS: Record<string, MessageKey<typeof messages>> = {
+  edge: 'scope.floorEdge',
+  riser: 'scope.riser',
+  underside: 'scope.underside',
+  foundation: 'scope.foundation',
 }
 
 /**
@@ -79,11 +81,21 @@ export function platePaintScopes(
   if (parseFloorStepRole(role))
     return {
       scopes: ['single', 'room'],
-      labels: { single: 'This step', room: 'All steps in this room' },
+      labels: {
+        single: translate(messages, 'scope.thisStep'),
+        room: translate(messages, 'scope.allSteps'),
+      },
     }
   if (parseRoomFinishRole(role))
-    return { scopes: ['single', 'room'], labels: { single: 'This surface', room: 'Whole room' } }
-  const fixed = node.plateRole === 'base' ? FOOTPRINT_FACE_LABELS[role] : undefined
+    return {
+      scopes: ['single', 'room'],
+      labels: {
+        single: translate(messages, 'scope.thisSurface'),
+        room: translate(messages, 'scope.wholeRoom'),
+      },
+    }
+  const fixedKey = node.plateRole === 'base' ? FOOTPRINT_FACE_LABELS[role] : undefined
+  const fixed = fixedKey ? translate(messages, fixedKey) : undefined
   return { scopes: ['single'], labels: fixed ? { single: fixed } : {} }
 }
 
@@ -137,13 +149,13 @@ export function paintScopeLabel(scope: PaintScope, info: PaintHoverInfo): string
   if (own) return own
   switch (scope) {
     case 'object':
-      return `Whole ${info.nodeNoun}`
+      return translate(messages, 'scope.whole', { noun: info.nodeNoun })
     case 'matching':
-      return 'All matching'
+      return translate(messages, 'scope.allMatching')
     case 'room':
-      return 'Room'
+      return translate(messages, 'scope.room')
     default:
-      return info.slotLabel || 'This surface'
+      return info.slotLabel || translate(messages, 'scope.thisSurface')
   }
 }
 

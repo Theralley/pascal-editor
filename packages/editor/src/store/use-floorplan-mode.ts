@@ -2,11 +2,13 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { translate } from '../i18n'
 import {
   DEFAULT_FLOORPLAN_MODE,
   type FloorplanMode,
   normalizeFloorplanModesByProject,
 } from '../lib/floorplan/floorplan-mode'
+import { messages } from '../lib/help-messages'
 
 export type FloorplanModeNotice = {
   id: number
@@ -76,7 +78,7 @@ const useFloorplanMode = create<FloorplanModeState>()(
           notice: {
             id: ++nextNoticeId,
             kind: 'switch-to-expert',
-            message: `${toolLabel} is available in Expert mode.`,
+            message: translate(messages, 'notice.expertMode', { tool: toolLabel }),
           },
         }),
       showNotice: (message) =>

@@ -5,7 +5,7 @@ import { CircleGeometry, CylinderGeometry, type Group, SphereGeometry } from 'th
 import { furnishTools } from '../../../components/ui/action-menu/furnish-tools'
 import { messages as toolMessages } from '../../../components/ui/action-menu/messages'
 import { tools } from '../../../components/ui/action-menu/structure-tools'
-import { translate } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { EDITOR_LAYER } from '../../../lib/constants'
 import { wallCursorIcon } from '../../../lib/tool-cursor-icon'
 import useEditor from '../../../store/use-editor'
@@ -54,6 +54,8 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   ref,
 ) {
   const tool = useEditor((s) => s.tool)
+  useLocale() // the wall variant's name is read as the cursor renders
+  const tTools = useT(toolMessages)
   const mode = useEditor((s) => s.mode)
   const catalogCategory = useEditor((s) => s.catalogCategory)
   const isFloorplanHovered = useEditor((s) => s.isFloorplanHovered)
@@ -76,7 +78,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
           : tools.find((t) => t.id === tool)
       if (config)
         activeToolConfig = {
-          alt: translate(toolMessages, config.labelKey),
+          alt: tTools(config.labelKey),
           iconSrc: config.iconSrc,
         }
     }

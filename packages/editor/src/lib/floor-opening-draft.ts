@@ -14,10 +14,11 @@ import {
 import { useViewer } from '@pascal-app/viewer'
 import { create } from 'zustand'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
+import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
 import {
-  CROSSING_MESSAGE,
   clipFloorRegion,
+  crossingMessage,
   floorRegionAxisAngle,
   floorRegionSelfIntersects,
 } from './floor-region-geometry'
@@ -30,6 +31,7 @@ import {
 } from './floor-region-session'
 import { type FloorRegionPoint, floorRegionSnapTargets } from './floor-region-snap'
 import { beginGesture, type GestureHandle } from './gesture-lifecycle'
+import { messages } from './help-messages'
 import { resolveRoomAssemblyHeights } from './room-assembly-overlay'
 import { roomFloorElevation } from './room-handle-drag'
 import { sfxEmitter } from './sfx-bus'
@@ -42,9 +44,9 @@ import { sfxEmitter } from './sfx-bus'
 // or Delete returns to the room.
 
 export const OPENING_DRAFT_HANDLE = 'floor-opening-draft'
-export const OPENING_OUTSIDE_MESSAGE = 'Draw the opening inside the room.'
-export const OPENING_TOO_SMALL_MESSAGE = 'Too small for an opening.'
-export const OPENING_FAILED_MESSAGE = "Can't cut an opening here."
+export const openingOutsideMessage = () => translate(messages, 'notice.openingOutside')
+export const openingTooSmallMessage = () => translate(messages, 'notice.openingTooSmall')
+export const openingFailedMessage = () => translate(messages, 'notice.openingFailed')
 /** Smallest opening worth cutting, m². */
 const MIN_OPENING_AREA = 0.04
 
@@ -68,10 +70,10 @@ export function planFloorOpening(
   | { plan: StructurePlan & { openingIds: string[]; hints: FloorOpeningHint[] } }
   | { message: string } {
   const outline = polygon.map(([x, z]): [number, number] => [x, z])
-  if (floorRegionSelfIntersects(outline)) return { message: CROSSING_MESSAGE }
+  if (floorRegionSelfIntersects(outline)) return { message: crossingMessage() }
   if (area([{ outer: outline, holes: [] }]) < MIN_OPENING_AREA)
-    return { message: OPENING_TOO_SMALL_MESSAGE }
-  if (!clipFloorRegion(polygon, host.clear)) return { message: OPENING_OUTSIDE_MESSAGE }
+    return { message: openingTooSmallMessage() }
+  if (!clipFloorRegion(polygon, host.clear)) return { message: openingOutsideMessage() }
   try {
     const plan = cutFloorOpening(nodes, {
       zoneId: host.zoneId,
@@ -80,9 +82,9 @@ export function planFloorOpening(
       mintId: generateId,
     })
     const conflict = plan.conflicts?.[0]
-    return conflict ? { message: conflict.message || OPENING_FAILED_MESSAGE } : { plan }
+    return conflict ? { message: conflict.message || openingFailedMessage() } : { plan }
   } catch {
-    return { message: OPENING_FAILED_MESSAGE }
+    return { message: openingFailedMessage() }
   }
 }
 
