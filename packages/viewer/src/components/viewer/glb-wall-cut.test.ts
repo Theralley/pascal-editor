@@ -37,6 +37,7 @@ describe('cutBakedWalls', () => {
     expect(doorMesh.material).toBe(doorMaterial)
 
     const cap = level.getObjectByName(GLB_WALL_CAPS_NAME) as Mesh
+    level.updateMatrixWorld(true)
     expect(cap.position.y).toBe(0.25)
     const position = cap.geometry.getAttribute('position')
     let area = 0
@@ -51,10 +52,11 @@ describe('cutBakedWalls', () => {
     }
     expect(area).toBeCloseTo(4 * 0.2, 5)
 
-    // A ray from above lands on the stub at the level's cut; the door's own hitbox is untouched.
+    // A ray from above lands on the stub at the level's cut, as on the wall; the door's own hitbox is untouched.
     const down = new Vector3(0, -1, 0)
-    const top = shoot(level as unknown as Group, new Vector3(1, 9, 0.05), down)
-    expect(top.find((hit) => hit.object === body)?.point.y).toBeCloseTo(3.25, 5)
+    const top = shoot(level as unknown as Group, new Vector3(3, 9, 0.05), down)
+    expect(top[0]?.object).toBe(wall)
+    expect(top[0]?.point.y).toBeCloseTo(3.25, 5)
     expect(
       shoot(level as unknown as Group, new Vector3(1.5, 9, 0), down).some(
         (h) => h.object === doorMesh,
@@ -67,7 +69,16 @@ describe('cutBakedWalls', () => {
     cut.dispose()
     expect(body.material).toBe(material)
     expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
-    const restored = shoot(level as unknown as Group, new Vector3(1, 9, 0.05), down)
+    const restored = shoot(level as unknown as Group, new Vector3(3, 9, 0.05), down)
     expect(restored.find((hit) => hit.object === body)?.point.y).toBeCloseTo(5.5, 5)
+  })
+
+  test('a wall the bake marked as one the cut leaves whole stays whole', () => {
+    const { level, wall, body, material } = bakedLevel()
+    wall.userData.displayCut = false
+    const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+    expect(body.material).toBe(material)
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+    cut.dispose()
   })
 })

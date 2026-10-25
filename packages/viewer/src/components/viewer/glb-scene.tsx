@@ -102,6 +102,8 @@ type PascalExtras = {
   polygon?: [number, number][]
   holes?: [number, number][][]
   color?: string
+  /** False on a node the display cut leaves whole (a curtain wall). */
+  displayCut?: boolean
   camera?: { position: [number, number, number]; target: [number, number, number] }
 }
 
@@ -485,7 +487,8 @@ export function GlbScene({
     if (!wallsDown) return
     const walls: { object: THREE.Object3D; level: THREE.Object3D }[] = []
     gltf.scene.traverse((object) => {
-      if ((object.userData as PascalExtras).kind !== 'wall') return
+      const extras = object.userData as PascalExtras
+      if (extras.kind !== 'wall') return
       const levelId = findAncestorLevelId(object)
       const level = levelId ? identity.get(levelId) : undefined
       if (level) walls.push({ object, level })

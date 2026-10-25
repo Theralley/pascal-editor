@@ -1,6 +1,7 @@
 import {
   BufferGeometry,
   Float32BufferAttribute,
+  type Intersection,
   type Material,
   Matrix4,
   Mesh,
@@ -45,9 +46,14 @@ const c = new Vector3()
  * are the wall standing on the floor, so a doorway (no base there) stays open. In the level's
  * frame, flat at y = 0, facing up.
  */
-function pushBaseFootprint(mesh: Mesh, level: Object3D, positions: number[], indices: number[]) {
+function pushBaseFootprint(
+  mesh: Mesh,
+  level: Object3D,
+  positions: number[],
+  indices: number[],
+): number {
   const position = mesh.geometry.getAttribute('position')
-  if (!position) return
+  if (!position) return 0
   mesh.updateWorldMatrix(true, false)
   level.updateWorldMatrix(true, false)
   toLevel.copy(level.matrixWorld).invert().multiply(mesh.matrixWorld)
@@ -59,6 +65,7 @@ function pushBaseFootprint(mesh: Mesh, level: Object3D, positions: number[], ind
   for (let i = 0; i < position.count; i++) {
     lowest = Math.min(lowest, a.fromBufferAttribute(position, i).applyMatrix4(toLevel).y)
   }
+  let added = 0
   for (let i = 0; i + 2 < count; i += 3) {
     vertex(i, a)
     vertex(i + 1, b)
@@ -79,7 +86,9 @@ function pushBaseFootprint(mesh: Mesh, level: Object3D, positions: number[], ind
     // Seen from below the triangle winds one way; from above it winds the other.
     positions.push(a.x, 0, a.z, c.x, 0, c.z, b.x, 0, b.z)
     indices.push(base, base + 1, base + 2)
+    added += 1
   }
+  return added
 }
 
 export type BakedWallCut = {
@@ -99,20 +108,26 @@ export function cutBakedWalls(
 ): BakedWallCut {
   setDisplayCutHeight(height)
   const worn = new Map<Mesh, Material | Material[]>()
-  const perLevel = new Map<Object3D, { positions: number[]; indices: number[] }>()
+  const perLevel = new Map<
+    Object3D,
+    { positions: number[]; indices: number[]; owners: Object3D[] }
+  >()
   for (const { object, level } of walls) {
-    const footprint = perLevel.get(level) ?? { positions: [], indices: [] }
+    // A node the bake marked as one the cut leaves whole (a curtain wall).
+    if ((object.userData as { displayCut?: boolean }).displayCut === false) continue
+    const footprint = perLevel.get(level) ?? { positions: [], indices: [], owners: [] }
     perLevel.set(level, footprint)
     for (const mesh of ownMeshes(object)) {
       worn.set(mesh, mesh.material)
       setDisplayCutRoot(mesh, level)
       setDisplayCutRaycast(mesh, true)
       mesh.material = cutLike(mesh, mesh.material)
-      pushBaseFootprint(mesh, level, footprint.positions, footprint.indices)
+      const added = pushBaseFootprint(mesh, level, footprint.positions, footprint.indices)
+      for (let i = 0; i < added; i++) footprint.owners.push(object)
     }
   }
   const caps: Mesh[] = []
-  for (const [level, { positions, indices }] of perLevel) {
+  for (const [level, { positions, indices, owners }] of perLevel) {
     if (indices.length === 0) continue
     const geometry = new BufferGeometry()
     geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -129,7 +144,15 @@ export function cutBakedWalls(
     cap.userData.pascalExport = 'strip'
     cap.castShadow = true
     cap.receiveShadow = true
-    cap.raycast = () => {}
+    // A pick lands on the stub's top as on the wall it belongs to.
+    cap.raycast = function raycast(raycaster, intersects) {
+      const hits: Intersection[] = []
+      Mesh.prototype.raycast.call(this, raycaster, hits)
+      for (const hit of hits) {
+        const owner = owners[hit.faceIndex ?? -1]
+        if (owner) intersects.push({ ...hit, object: owner })
+      }
+    }
     cap.position.y = height
     level.add(cap)
     caps.push(cap)
