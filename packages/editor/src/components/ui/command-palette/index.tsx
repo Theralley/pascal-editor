@@ -11,8 +11,10 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { Dialog, DialogContent, DialogTitle } from './../../../components/ui/primitives/dialog'
 import { getLevelDisplayName } from '@pascal-app/core'
+import { type MessageKey, useT } from '../../../i18n'
 import { type CommandAction, useCommandRegistry } from '../../../store/use-command-registry'
 import { usePaletteViewRegistry } from '../../../store/use-palette-view-registry'
+import { messages } from './messages'
 
 // ---------------------------------------------------------------------------
 // Open + navigation state store
@@ -169,10 +171,10 @@ function OptionItem({
 // ---------------------------------------------------------------------------
 // Sub-page label map
 // ---------------------------------------------------------------------------
-const PAGE_LABEL: Record<string, string> = {
-  'wall-mode': 'Wall Mode',
-  'rename-level': 'Rename Level',
-  'goto-level': 'Go to Level',
+const PAGE_LABEL: Record<string, MessageKey<typeof messages>> = {
+  'wall-mode': 'page.wallMode',
+  'rename-level': 'page.renameLevel',
+  'goto-level': 'page.gotoLevel',
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +226,7 @@ function EmptyActionItem({ action }: { action: CommandPaletteEmptyAction }) {
 // Main component
 // ---------------------------------------------------------------------------
 export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEmptyAction }) {
+  const t = useT(messages)
   const { open, setOpen, mode, setMode, pages, inputValue, setInputValue, navigateTo, goBack } =
     useCommandPalette()
 
@@ -306,7 +309,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogContent className="max-w-lg gap-0 overflow-hidden p-0" showCloseButton={false}>
-        <DialogTitle className="sr-only">Command Palette</DialogTitle>
+        <DialogTitle className="sr-only">{t('palette.title')}</DialogTitle>
 
         {modeView && <modeView.Component onBack={onBack} onClose={onClose} />}
 
@@ -330,7 +333,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
                   onClick={goBack}
                   type="button"
                 >
-                  {PAGE_LABEL[page] ?? views.get(page)?.label ?? page}
+                  {PAGE_LABEL[page] ? t(PAGE_LABEL[page]) : (views.get(page)?.label ?? page)}
                 </button>
               )}
               <Command.Input
@@ -339,10 +342,10 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
                 onValueChange={setInputValue}
                 placeholder={
                   page === 'rename-level'
-                    ? 'Type a new name…'
+                    ? t('palette.renamePlaceholder')
                     : page
-                      ? 'Filter options…'
-                      : 'Search actions…'
+                      ? t('palette.filterPlaceholder')
+                      : t('palette.searchPlaceholder')
                 }
                 value={inputValue}
               />
@@ -351,7 +354,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
             <Command.List className="max-h-100 overflow-y-auto p-1.5" ref={listRef}>
               {(!emptyAction || page) && (
                 <Command.Empty className="py-8 text-center text-muted-foreground text-sm">
-                  No commands found.
+                  {t('palette.empty')}
                 </Command.Empty>
               )}
               {emptyAction && !page && <EmptyActionItem action={emptyAction} />}
@@ -390,12 +393,12 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
 
               {/* ── Wall Mode sub-page ────────────────────────────────────── */}
               {page === 'wall-mode' && (
-                <Command.Group heading="Wall Mode">
-                  {WALL_MODE_OPTIONS.map(({ value, label }) => (
+                <Command.Group heading={t('page.wallMode')}>
+                  {WALL_MODE_OPTIONS.map(({ value }) => (
                     <OptionItem
                       isActive={wallMode === value}
                       key={value}
-                      label={label}
+                      label={t(`wallMode.${value}`)}
                       onSelect={() => run(() => setWallMode(value))}
                     />
                   ))}
@@ -404,7 +407,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
 
               {/* ── Go to Level sub-page ──────────────────────────────────── */}
               {page === 'goto-level' && (
-                <Command.Group heading="Go to Level">
+                <Command.Group heading={t('page.gotoLevel')}>
                   {allLevels.map((level) => (
                     <OptionItem
                       isActive={level.id === activeLevelId}
@@ -425,7 +428,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
 
               {/* ── Rename Level sub-page ─────────────────────────────────── */}
               {page === 'rename-level' && (
-                <Command.Group heading="Rename Level">
+                <Command.Group heading={t('page.renameLevel')}>
                   <Command.Item
                     className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-foreground text-sm transition-colors data-[disabled=true]:cursor-not-allowed data-[selected=true]:bg-accent data-[disabled=true]:opacity-40"
                     disabled={!inputValue.trim()}
@@ -450,11 +453,13 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
                     </span>
                     <span className="flex-1 truncate">
                       {inputValue.trim() ? (
-                        <>
-                          Rename to <span className="font-medium">"{inputValue.trim()}"</span>
-                        </>
+                        t.rich(
+                          'palette.renameTo',
+                          { quoted: (text) => <span className="font-medium">{text}</span> },
+                          { name: inputValue.trim() },
+                        )
                       ) : (
-                        <span className="text-muted-foreground">Type a new name above…</span>
+                        <span className="text-muted-foreground">{t('palette.typeNewName')}</span>
                       )}
                     </span>
                   </Command.Item>
@@ -466,18 +471,18 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
             {/* Footer hint */}
             <div className="flex items-center justify-between border-border/50 border-t px-3 py-2">
               <span className="text-[11px] text-muted-foreground">
-                <Shortcut keys={['↑', '↓']} /> navigate
+                <Shortcut keys={['↑', '↓']} /> {t('palette.navigate')}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                <Shortcut keys={['↵']} /> select
+                <Shortcut keys={['↵']} /> {t('palette.select')}
               </span>
               {page ? (
                 <span className="text-[11px] text-muted-foreground">
-                  <Shortcut keys={['⌫']} /> back
+                  <Shortcut keys={['⌫']} /> {t('palette.back')}
                 </span>
               ) : (
                 <span className="text-[11px] text-muted-foreground">
-                  <Shortcut keys={['Esc']} /> close
+                  <Shortcut keys={['Esc']} /> {t('palette.close')}
                 </span>
               )}
             </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { type AnyNodeId, type LevelNode, type UnitNode, useScene } from '@pascal-app/core'
-import { useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
+import { useViewer } from '@pascal-app/viewer'
 import {
   AppWindow,
   ArrowRight,
@@ -37,6 +37,7 @@ import {
   Video,
 } from 'lucide-react'
 import { useEffect } from 'react'
+import { translate, useLocale } from '../../../i18n'
 import { addStoreyOnTop } from '../../../lib/add-storey'
 import { getHistoryCommandState, runRedo, runUndo } from '../../../lib/history'
 import { deleteLevelWithFallbackSelection } from '../../../lib/level-selection'
@@ -47,8 +48,10 @@ import { useCommandRegistry } from '../../../store/use-command-registry'
 import type { StructureTool } from '../../../store/use-editor'
 import useEditor from '../../../store/use-editor'
 import { useCommandPalette } from './index'
+import { messages } from './messages'
 
 export function EditorCommands() {
+  const locale = useLocale()
   const register = useCommandRegistry((s) => s.register)
   const { navigateTo, setInputValue, setOpen } = useCommandPalette()
 
@@ -86,72 +89,72 @@ export function EditorCommands() {
       // ── Scene ────────────────────────────────────────────────────────────
       {
         id: 'editor.tool.wall',
-        label: 'Wall Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.wallTool'),
+        group: translate(messages, 'group.scene'),
         icon: <Square className="h-4 w-4" />,
         keywords: ['draw', 'build', 'structure'],
         execute: () => activateTool('wall'),
       },
       {
         id: 'editor.tool.slab',
-        label: 'Slab Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.slabTool'),
+        group: translate(messages, 'group.scene'),
         icon: <Layers className="h-4 w-4" />,
         keywords: ['floor', 'build'],
         execute: () => activateTool('slab'),
       },
       {
         id: 'editor.tool.ceiling',
-        label: 'Ceiling Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.ceilingTool'),
+        group: translate(messages, 'group.scene'),
         icon: <Grid3X3 className="h-4 w-4" />,
         keywords: ['top', 'build'],
         execute: () => activateTool('ceiling'),
       },
       {
         id: 'editor.tool.door',
-        label: 'Door Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.doorTool'),
+        group: translate(messages, 'group.scene'),
         icon: <DoorOpen className="h-4 w-4" />,
         keywords: ['opening', 'entrance'],
         execute: () => activateTool('door'),
       },
       {
         id: 'editor.tool.window',
-        label: 'Window Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.windowTool'),
+        group: translate(messages, 'group.scene'),
         icon: <AppWindow className="h-4 w-4" />,
         keywords: ['opening', 'glass'],
         execute: () => activateTool('window'),
       },
       {
         id: 'editor.tool.item',
-        label: 'Item Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.itemTool'),
+        group: translate(messages, 'group.scene'),
         icon: <Package className="h-4 w-4" />,
         keywords: ['furniture', 'object', 'asset', 'furnish'],
         execute: () => activateTool('item'),
       },
       {
         id: 'editor.tool.stair',
-        label: 'Stair Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.stairTool'),
+        group: translate(messages, 'group.scene'),
         icon: <ArrowRight className="h-4 w-4" />,
         keywords: ['stairs', 'staircase', 'flight', 'landing', 'steps'],
         execute: () => activateTool('stair'),
       },
       {
         id: 'editor.tool.zone',
-        label: 'Zone Tool',
-        group: 'Scene',
+        label: translate(messages, 'cmd.zoneTool'),
+        group: translate(messages, 'group.scene'),
         icon: <Hexagon className="h-4 w-4" />,
         keywords: ['area', 'room', 'space'],
         execute: () => activateTool('zone'),
       },
       {
         id: 'editor.delete-selection',
-        label: 'Delete Selection',
-        group: 'Scene',
+        label: translate(messages, 'cmd.deleteSelection'),
+        group: translate(messages, 'group.scene'),
         icon: <Trash2 className="h-4 w-4" />,
         keywords: ['remove', 'erase'],
         shortcut: ['⌫'],
@@ -164,8 +167,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.mode.material-paint',
-        label: 'Material Paint',
-        group: 'Scene',
+        label: translate(messages, 'cmd.materialPaint'),
+        group: translate(messages, 'group.scene'),
         icon: <PaintBucket className="h-4 w-4" />,
         keywords: ['paint', 'material', 'texture', 'bucket', 'surface'],
         shortcut: ['P'],
@@ -174,8 +177,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.mode.terrain-sculpt',
-        label: 'Sculpt Terrain',
-        group: 'Scene',
+        label: translate(messages, 'cmd.sculptTerrain'),
+        group: translate(messages, 'group.scene'),
         icon: <Mountain className="h-4 w-4" />,
         keywords: ['terrain', 'ground', 'elevation', 'sculpt', 'hill', 'slope', 'grade', 'dig'],
         shortcut: ['G'],
@@ -186,8 +189,8 @@ export function EditorCommands() {
       // ── Levels ───────────────────────────────────────────────────────────
       {
         id: 'editor.level.goto',
-        label: 'Go to Level',
-        group: 'Levels',
+        label: translate(messages, 'page.gotoLevel'),
+        group: translate(messages, 'group.levels'),
         icon: <ArrowRight className="h-4 w-4" />,
         keywords: ['level', 'floor', 'go', 'navigate', 'switch', 'select'],
         navigate: true,
@@ -196,8 +199,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.level.add',
-        label: 'Add Level',
-        group: 'Levels',
+        label: translate(messages, 'cmd.addLevel'),
+        group: translate(messages, 'group.levels'),
         icon: <Plus className="h-4 w-4" />,
         keywords: ['level', 'floor', 'add', 'create', 'new'],
         execute: () =>
@@ -211,8 +214,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.level.rename',
-        label: 'Rename Level',
-        group: 'Levels',
+        label: translate(messages, 'page.renameLevel'),
+        group: translate(messages, 'group.levels'),
         icon: <PencilLine className="h-4 w-4" />,
         keywords: ['level', 'floor', 'rename', 'name'],
         navigate: true,
@@ -227,8 +230,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.level.delete',
-        label: 'Delete Level',
-        group: 'Levels',
+        label: translate(messages, 'cmd.deleteLevel'),
+        group: translate(messages, 'group.levels'),
         icon: <Trash2 className="h-4 w-4" />,
         keywords: ['level', 'floor', 'delete', 'remove'],
         when: () => {
@@ -248,8 +251,8 @@ export function EditorCommands() {
       // ── Units ────────────────────────────────────────────────────────────
       {
         id: 'editor.unit.new',
-        label: 'New unit',
-        group: 'Units',
+        label: translate(messages, 'cmd.newUnit'),
+        group: translate(messages, 'group.units'),
         icon: <Group className="h-4 w-4" />,
         keywords: ['unit', 'apartment', 'hotel', 'room', 'add', 'create', 'new'],
         when: () => Object.values(useScene.getState().nodes).some((n) => n.type === 'building'),
@@ -266,8 +269,10 @@ export function EditorCommands() {
       },
       ...focusableUnits.map((unit) => ({
         id: `editor.unit.focus.${unit.id}`,
-        label: `Focus unit: ${unit.name || 'Unit'}`,
-        group: 'Units',
+        label: translate(messages, 'cmd.focusUnit', {
+          name: unit.name || translate(messages, 'cmd.unitFallback'),
+        }),
+        group: translate(messages, 'group.units'),
         icon: <Group className="h-4 w-4" />,
         keywords: ['unit', 'focus', 'apartment', unit.name || 'Unit'],
         when: () => useViewer.getState().focusedUnitId !== unit.id,
@@ -275,8 +280,8 @@ export function EditorCommands() {
       })),
       {
         id: 'editor.unit.exit-focus',
-        label: 'Exit unit focus',
-        group: 'Units',
+        label: translate(messages, 'cmd.exitUnitFocus'),
+        group: translate(messages, 'group.units'),
         icon: <Group className="h-4 w-4" />,
         keywords: ['unit', 'focus', 'exit', 'leave', 'apartment'],
         when: () => !!useViewer.getState().focusedUnitId,
@@ -286,21 +291,22 @@ export function EditorCommands() {
       // ── Viewer Controls ──────────────────────────────────────────────────
       {
         id: 'editor.viewer.wall-mode',
-        label: 'Wall Mode',
-        group: 'Viewer Controls',
+        label: translate(messages, 'page.wallMode'),
+        group: translate(messages, 'group.viewerControls'),
         icon: <Layers className="h-4 w-4" />,
         keywords: ['wall', 'cutaway', 'up', 'low', 'down', 'hidden', 'translucent', 'view'],
         badge: () => {
           const mode = useViewer.getState().wallMode
-          return WALL_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode
+          return translate(messages, `wallMode.${mode}`)
         },
         navigate: true,
         execute: () => navigateTo('wall-mode'),
       },
       {
         id: 'editor.viewer.roofs',
-        label: () => `Roofs: ${useViewer.getState().showRoofs ? 'Hide' : 'Show'}`,
-        group: 'Viewer Controls',
+        label: () =>
+          translate(messages, useViewer.getState().showRoofs ? 'cmd.hideRoofs' : 'cmd.showRoofs'),
+        group: translate(messages, 'group.viewerControls'),
         icon: <House className="h-4 w-4" />,
         keywords: ['roof', 'roofs', 'hide', 'show', 'view'],
         shortcut: [VIEW_SHORTCUT_KEYS.roofs.toUpperCase()],
@@ -310,9 +316,12 @@ export function EditorCommands() {
         id: 'editor.viewer.camera-mode',
         label: () => {
           const mode = useViewer.getState().cameraMode
-          return `Camera: Switch to ${mode === 'perspective' ? 'Orthographic' : 'Perspective'}`
+          return translate(
+            messages,
+            mode === 'perspective' ? 'cmd.cameraOrthographic' : 'cmd.cameraPerspective',
+          )
         },
-        group: 'Viewer Controls',
+        group: translate(messages, 'group.viewerControls'),
         icon: <Video className="h-4 w-4" />,
         keywords: ['camera', 'ortho', 'perspective', '2d', '3d', 'view'],
         execute: () =>
@@ -323,24 +332,24 @@ export function EditorCommands() {
       },
       {
         id: 'editor.viewer.shading-solid',
-        label: 'Switch to Solid',
-        group: 'Viewer Controls',
+        label: translate(messages, 'cmd.solid'),
+        group: translate(messages, 'group.viewerControls'),
         icon: <Box className="h-4 w-4" />,
         keywords: ['solid', 'shading', 'render', 'mode', 'performance'],
         execute: () => run(() => useViewer.getState().setShading('solid')),
       },
       {
         id: 'editor.viewer.shading-rendered',
-        label: 'Switch to Rendered',
-        group: 'Viewer Controls',
+        label: translate(messages, 'cmd.rendered'),
+        group: translate(messages, 'group.viewerControls'),
         icon: <Sparkles className="h-4 w-4" />,
         keywords: ['rendered', 'shading', 'render', 'mode', 'quality'],
         execute: () => run(() => useViewer.getState().setShading('rendered')),
       },
       {
         id: 'editor.viewer.camera-snapshot',
-        label: 'Take Snapshot',
-        group: 'Viewer Controls',
+        label: translate(messages, 'cmd.snapshot'),
+        group: translate(messages, 'group.viewerControls'),
         icon: <Camera className="h-4 w-4" />,
         keywords: ['camera', 'snapshot', 'capture', 'save', 'view', 'bookmark'],
         execute: () => {
@@ -352,16 +361,17 @@ export function EditorCommands() {
       // ── View ─────────────────────────────────────────────────────────────
       {
         id: 'editor.view.preview',
-        label: () => (isPreviewMode ? 'Exit Preview' : 'Enter Preview'),
-        group: 'View',
+        label: () =>
+          translate(messages, isPreviewMode ? 'cmd.exitPreview' : 'cmd.enterPreview'),
+        group: translate(messages, 'group.view'),
         icon: isPreviewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />,
         keywords: ['preview', 'view', 'read-only', 'present'],
         execute: () => run(() => setPreviewMode(!isPreviewMode)),
       },
       {
         id: 'editor.view.fullscreen',
-        label: 'Toggle Fullscreen',
-        group: 'View',
+        label: translate(messages, 'cmd.fullscreen'),
+        group: translate(messages, 'group.view'),
         icon: <Maximize2 className="h-4 w-4" />,
         keywords: ['fullscreen', 'maximize', 'expand', 'window'],
         execute: () =>
@@ -374,8 +384,8 @@ export function EditorCommands() {
       // ── History ──────────────────────────────────────────────────────────
       {
         id: 'editor.history.undo',
-        label: 'Undo',
-        group: 'History',
+        label: translate(messages, 'cmd.undo'),
+        group: translate(messages, 'group.history'),
         icon: <Undo2 className="h-4 w-4" />,
         keywords: ['undo', 'revert', 'back'],
         when: () => getHistoryCommandState().canUndo,
@@ -383,8 +393,8 @@ export function EditorCommands() {
       },
       {
         id: 'editor.history.redo',
-        label: 'Redo',
-        group: 'History',
+        label: translate(messages, 'cmd.redo'),
+        group: translate(messages, 'group.history'),
         icon: <Redo2 className="h-4 w-4" />,
         keywords: ['redo', 'forward', 'repeat'],
         when: () => getHistoryCommandState().canRedo,
@@ -394,8 +404,8 @@ export function EditorCommands() {
       // ── Export & Share ───────────────────────────────────────────────────
       {
         id: 'editor.export.json',
-        label: 'Export Scene (JSON)',
-        group: 'Export & Share',
+        label: translate(messages, 'cmd.exportJson'),
+        group: translate(messages, 'group.exportShare'),
         icon: <FileJson className="h-4 w-4" />,
         keywords: ['export', 'download', 'json', 'save', 'data'],
         execute: () =>
@@ -416,8 +426,8 @@ export function EditorCommands() {
         ? [
             {
               id: 'editor.export.glb',
-              label: 'Export 3D Model (GLB)',
-              group: 'Export & Share',
+              label: translate(messages, 'cmd.exportGlb'),
+              group: translate(messages, 'group.exportShare'),
               icon: <Box className="h-4 w-4" />,
               keywords: ['export', 'glb', 'gltf', '3d', 'model', 'download'],
               execute: () => run(() => exportScene()),
@@ -426,16 +436,16 @@ export function EditorCommands() {
         : []),
       {
         id: 'editor.export.share-link',
-        label: 'Copy Share Link',
-        group: 'Export & Share',
+        label: translate(messages, 'cmd.shareLink'),
+        group: translate(messages, 'group.exportShare'),
         icon: <Copy className="h-4 w-4" />,
         keywords: ['share', 'copy', 'url', 'link'],
         execute: () => run(() => navigator.clipboard.writeText(window.location.href)),
       },
       {
         id: 'editor.export.screenshot',
-        label: 'Take Screenshot',
-        group: 'Export & Share',
+        label: translate(messages, 'cmd.screenshot'),
+        group: translate(messages, 'group.exportShare'),
         icon: <Camera className="h-4 w-4" />,
         keywords: ['screenshot', 'capture', 'image', 'photo', 'png'],
         execute: () =>
@@ -460,6 +470,7 @@ export function EditorCommands() {
     setPreviewMode,
     exportScene,
     unitListKey,
+    locale,
   ])
 
   return null
