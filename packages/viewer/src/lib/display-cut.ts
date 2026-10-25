@@ -1,11 +1,5 @@
-import {
-  type Intersection,
-  type Material,
-  Matrix4,
-  type Mesh,
-  type Object3D,
-  type Raycaster,
-} from 'three'
+import { hiddenWallPointerEventsHeld } from '@pascal-app/core'
+import type { Intersection, Material, Mesh, Object3D, Raycaster } from 'three'
 import { positionWorld, uniform } from 'three/tsl'
 import type { Node, NodeMaterial } from 'three/webgpu'
 
@@ -38,6 +32,18 @@ export function getDisplayCutHeight(): number {
 export function setDisplayCutRoot(object: Object3D, root: Object3D | null): void {
   if (root) roots.set(object, root)
   else roots.delete(object)
+}
+
+/** The root `object` is cut over, if any. */
+export function getDisplayCutRoot(object: Object3D): Object3D | null {
+  return roots.get(object) ?? null
+}
+
+/** `to` (a copy of `from`, a deletion's ghost) and every part of it cut where the part of `from` it copies does. */
+export function shareDisplayCutRootDeep(from: Object3D, to: Object3D): void {
+  shareDisplayCutRoot(from, to)
+  const count = Math.min(from.children.length, to.children.length)
+  for (let i = 0; i < count; i++) shareDisplayCutRootDeep(from.children[i]!, to.children[i]!)
 }
 
 /** `to` (a proxy that draws `from` in another scene) cuts where `from` does. */
@@ -120,43 +126,24 @@ export function uncutMaterials(materials: Material[]): Material[] {
 
 type RaycastFn = Mesh['raycast']
 const originals = new WeakMap<Mesh, { own: boolean; raycast: RaycastFn }>()
-const squash = new Matrix4()
-const lift = new Matrix4()
-const drop = new Matrix4()
-const saved = new Matrix4()
+const scratch: Intersection[] = []
 
 /**
- * A pick sees a mesh as it is drawn: the mesh is squeezed to the cut for the ray, so a ray from
- * above lands on the cap at the cut and nothing above it is ever hit. Meshes that stand under the
- * cut already are left as they are.
+ * A pick sees a mesh as it is drawn: what a ray hits above the cut is dropped, on the mesh's own
+ * geometry (an opening keeps its true place). A tool that tracks the cursor along the whole wall
+ * holds the full height for as long as it runs (`hiddenWallPointerEventsHeld`).
  */
 function cutRaycast(this: Mesh, raycaster: Raycaster, intersects: Intersection[]): void {
   const original = originals.get(this)!.raycast
-  if (!this.geometry.boundingBox) this.geometry.computeBoundingBox()
-  const box = this.geometry.boundingBox
-  if (!box) {
+  if (hiddenWallPointerEventsHeld()) {
     original.call(this, raycaster, intersects)
     return
   }
-  const bottom = this.matrixWorld.elements[13]! + box.min.y
-  const top = this.matrixWorld.elements[13]! + box.max.y
-  const scale = (displayCutLimitY(this) - bottom) / (top - bottom)
-  if (!(scale < 1)) {
-    original.call(this, raycaster, intersects)
-    return
-  }
-  if (!(scale > 0)) return
-  squash
-    .makeTranslation(0, box.min.y, 0)
-    .multiply(lift.makeScale(1, scale, 1))
-    .multiply(drop.makeTranslation(0, -box.min.y, 0))
-  saved.copy(this.matrixWorld)
-  this.matrixWorld.multiply(squash)
-  try {
-    original.call(this, raycaster, intersects)
-  } finally {
-    this.matrixWorld.copy(saved)
-  }
+  scratch.length = 0
+  original.call(this, raycaster, scratch)
+  const limit = displayCutLimitY(this) + 1e-6
+  for (const hit of scratch) if (hit.point.y <= limit) intersects.push(hit)
+  scratch.length = 0
 }
 
 /** Puts the cut on (or takes it off) how `mesh` is picked. Idempotent. */

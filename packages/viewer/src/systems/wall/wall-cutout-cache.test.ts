@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import {
   BuildingNode,
+  holdHiddenWallPointerEvents,
   LevelNode,
   MaterialPresetPayloadSchema,
   registerLibraryMaterials,
@@ -26,6 +27,7 @@ import {
   Vector3,
 } from 'three'
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { cutMaterials } from '../../lib/display-cut'
 import { applyMaterialPresetToMaterials } from '../../lib/materials'
 import {
   getWallHideState,
@@ -975,10 +977,10 @@ describe('walls low', () => {
     )
     expect(cache.walls.get(node.id)?.variantKey).toBe('visible:cut')
 
-    // From above: the ray lands on the stub's top, at the cut, not on the wall's top at 2.5 m.
+    // From above: the wall's own top at 2.5 m is above the cut, so the wall is not hit there
+    // (the stub's cap takes the pick, see wall-cut-caps).
     const down = new Vector3(0, -1, 0)
-    const top = shoot(root, new Vector3(1.5, 5, 0), down)[0]
-    expect(top?.point.y).toBeCloseTo(0.25, 5)
+    expect(shoot(root, new Vector3(1.5, 5, 0), down)).toHaveLength(0)
     // From the side: under the cut it hits, above it it passes.
     const along = new Vector3(0, 0, -1)
     expect(shoot(root, new Vector3(1.5, 0.1, 5), along)).toHaveLength(1)
@@ -991,6 +993,48 @@ describe('walls low', () => {
     expect(shoot(root, new Vector3(1.5, 5, 0), down)[0]?.point.y).toBeCloseTo(2.5, 5)
   })
 
+  test('a tool that follows the cursor along the whole wall gets the full height while it runs', () => {
+    const { root } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+    const release = holdHiddenWallPointerEvents()
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(1)
+    release()
+    expect(shoot(root, new Vector3(1.5, 1, 5), along)).toHaveLength(0)
+  })
+
+  test('a moulding on the wall is cut with it, and a node hosted on the wall is not', () => {
+    const { mesh } = addStandingWall()
+    const moulding = new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()])
+    const hosted = new Mesh(new BoxGeometry(1, 1, 0.1), [new MeshBasicMaterial()])
+    mesh.add(moulding, hosted)
+    sceneRegistry.nodes.set('window_hosted' as never, hosted)
+    const hostedMaterial = hosted.material
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeDefined()
+    expect(hosted.material).toBe(hostedMaterial)
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 1.01)
+    expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeUndefined()
+  })
+
+  test('a texture that arrives after the cut is on the clone the wall wears', () => {
+    const { mesh } = addStandingWall()
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const source = new MeshBasicMaterial()
+    mesh.material = [source]
+    const map = new Texture()
+    const dressed = cutMaterials([source])
+    source.map = map
+    source.needsUpdate = true
+    expect(cutMaterials([source])[0]).not.toBe(dressed[0])
+    expect((cutMaterials([source])[0] as MeshBasicMaterial).map).toBe(map)
+  })
+
   test('the cut height moves the cut and rebuilds no material', () => {
     const { mesh, root } = addStandingWall()
     viewerStore.setState({ wallMode: 'low' })
@@ -1001,8 +1045,9 @@ describe('walls low', () => {
     cache.update(camera, 1.01)
     expect(mesh.material).toBe(cut)
     expect(writes).toEqual({ material: 0, stamp: 0 })
-    const top = shoot(root, new Vector3(1.5, 5, 0), new Vector3(0, -1, 0))[0]
-    expect(top?.point.y).toBeCloseTo(0.8, 5)
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 0.7, 5), along)).toHaveLength(1)
+    expect(shoot(root, new Vector3(1.5, 0.9, 5), along)).toHaveLength(0)
   })
 
   test('a lifted level cuts at its own height', () => {
@@ -1011,9 +1056,9 @@ describe('walls low', () => {
     root.updateMatrixWorld(true)
     viewerStore.setState({ wallMode: 'low' })
     cache.update(camera, 1)
-    const top = shoot(root, new Vector3(1.5, 9, 0), new Vector3(0, -1, 0))[0]
-    expect(top?.object).toBe(mesh)
-    expect(top?.point.y).toBeCloseTo(3.25, 5)
+    const along = new Vector3(0, 0, -1)
+    expect(shoot(root, new Vector3(1.5, 3.2, 5), along)[0]?.object).toBe(mesh)
+    expect(shoot(root, new Vector3(1.5, 3.4, 5), along)).toHaveLength(0)
   })
 
   test('selection still shows on a cut wall', () => {

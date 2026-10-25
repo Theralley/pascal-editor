@@ -12,14 +12,17 @@ import {
 } from '@pascal-app/core'
 import { type Camera, type Material, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
 import {
+  cutMaterial,
   cutMaterials,
   setDisplayCutHeight,
   setDisplayCutRaycast,
   setDisplayCutRoot,
+  uncutMaterial,
 } from '../../lib/display-cut'
 import { getMaterialTextureVersion } from '../../lib/materials'
 import { hasMaterialsForGroups } from '../../lib/pointer-events'
 import useViewer, { type WallMode } from '../../store/use-viewer'
+import { wallCutApplies } from './wall-cut-eligibility'
 import { getWallFinishRefs } from './wall-finish-data'
 import { resolveWallMaterialVariant, type WallMaterialVariant } from './wall-material-variant'
 import {
@@ -31,6 +34,36 @@ import {
 } from './wall-materials'
 
 const WALL_COLLISION_MESH = 'collision-mesh'
+
+let registered = new Set<Object3D>()
+let registeredRevision = -1
+
+/** Every object a node is registered under: where a wall's own parts end and hosted nodes begin. */
+function registeredObjects(): ReadonlySet<Object3D> {
+  if (registeredRevision !== sceneRegistry.revision) {
+    registered = new Set(sceneRegistry.nodes.values())
+    registeredRevision = sceneRegistry.revision
+  }
+  return registered
+}
+
+/**
+ * The meshes a wall carries as its own (mouldings, scripted finishes), not its collision mesh and
+ * not the nodes hosted on it, which are registered themselves and are not the wall's to cut.
+ */
+export function wallParts(wallMesh: Object3D): Mesh[] {
+  const hosted = registeredObjects()
+  const parts: Mesh[] = []
+  const visit = (object: Object3D) => {
+    for (const child of object.children) {
+      if (hosted.has(child) || child.name === WALL_COLLISION_MESH) continue
+      if ((child as Mesh).isMesh && (child as Mesh).material) parts.push(child as Mesh)
+      visit(child)
+    }
+  }
+  visit(wallMesh)
+  return parts
+}
 
 export function sameMaterialArray(a: Material | Material[], b: Material[]): boolean {
   return Array.isArray(a) && a.length === b.length && a.every((material, i) => material === b[i])
@@ -247,7 +280,8 @@ export class WallCutoutCache {
       highlightChanged ||
       this.materials !== scene.materials ||
       this.libraryVersion !== libraryVersion ||
-      (this.textureVersion !== textureVersion && this.selected.size > 0) ||
+      (this.textureVersion !== textureVersion &&
+        (this.selected.size > 0 || viewer.wallMode === 'low')) ||
       previous.wallMode !== viewer.wallMode ||
       previous.shading !== viewer.shading ||
       previous.textures !== viewer.textures ||
@@ -286,7 +320,11 @@ export class WallCutoutCache {
       playChanged.size > 0
 
     const cutaway = viewer.wallMode === 'cutaway'
-    if (!invalidated && !cutaway) return
+    // What a wall carries (mouldings, scripted finishes) is re-dressed by its own renderer at any time.
+    if (!invalidated && !cutaway) {
+      this.cutParts(viewer.wallMode === 'low')
+      return
+    }
 
     camera.getWorldDirection(this.cameraDirection)
     this.cameraTarget.copy(this.cameraDirection).add(camera.position)
@@ -295,7 +333,10 @@ export class WallCutoutCache {
       time - this.lastUpdateTime > 0.1 &&
       (camera.position.distanceTo(this.lastCameraPosition) > 0.5 ||
         this.cameraTarget.distanceTo(this.lastCameraTarget) > 0.3)
-    if (!(invalidated || cameraChanged)) return
+    if (!(invalidated || cameraChanged)) {
+      this.cutParts(viewer.wallMode === 'low')
+      return
+    }
 
     if (registryChanged || nodesChanged) {
       for (const [id, wall] of this.walls) {
@@ -371,6 +412,7 @@ export class WallCutoutCache {
     } else {
       for (const wall of this.walls.values()) this.apply(wall, viewer.wallMode, false)
     }
+    this.cutParts(viewer.wallMode === 'low')
     this.rebuilt.clear()
     this.transformed.clear()
     this.overrides = overrides
@@ -469,7 +511,7 @@ export class WallCutoutCache {
     // false on stamp lift; translucent walls must continue receiving events.
     const stamp = mode !== 'translucent' && hidden
     if (wall.mesh.userData.wallHidden !== stamp) wall.mesh.userData.wallHidden = stamp
-    const cut = mode === 'low' && wall.node.wallType !== 'curtain'
+    const cut = mode === 'low' && wallCutApplies(wall.node)
     this.setCut(wall, cut)
     const variant = hidden ? wall.hiddenVariant : wall.visibleVariant
     // The cut wears a masked clone of the variant, so selection, hover and delete still show.
@@ -505,12 +547,42 @@ export class WallCutoutCache {
     }
   }
 
+  private partsCut = false
+
+  /**
+   * The meshes a wall carries as its own, cut like the wall (or given back): its mouldings and
+   * finishes, not the nodes hosted on it (openings, items), which are registered themselves.
+   */
+  private cutParts(on: boolean): void {
+    if (!on && !this.partsCut) return
+    this.partsCut = on
+    for (const wall of this.walls.values()) {
+      const root = on && wallCutApplies(wall.node) ? this.cutRootOf(wall) : null
+      for (const part of wallParts(wall.mesh)) {
+        setDisplayCutRoot(part, root)
+        setDisplayCutRaycast(part, root !== null)
+        const material = part.material
+        if (Array.isArray(material)) {
+          const next = root ? cutMaterials(material) : material.map(uncutMaterial)
+          if (!sameMaterialArray(material, next)) part.material = next
+        } else {
+          const next = root ? cutMaterial(material) : uncutMaterial(material)
+          if (next !== material) part.material = next
+        }
+      }
+    }
+  }
+
+  private cutRootOf(wall: CachedWall): Object3D | null {
+    return (
+      (sceneRegistry.nodes.get(wall.node.parentId as AnyNodeId) as Object3D | undefined) ??
+      wall.mesh.parent
+    )
+  }
+
   /** Puts the cut on how a wall is picked (its drawn mesh and its collision mesh), or takes it off. */
   private setCut(wall: CachedWall, on: boolean): void {
-    const root = on
-      ? ((sceneRegistry.nodes.get(wall.node.parentId as AnyNodeId) as Object3D | undefined) ??
-        wall.mesh.parent)
-      : null
+    const root = on ? this.cutRootOf(wall) : null
     for (const mesh of [wall.mesh, wall.mesh.getObjectByName(WALL_COLLISION_MESH)]) {
       if (!mesh) continue
       setDisplayCutRoot(mesh, root)

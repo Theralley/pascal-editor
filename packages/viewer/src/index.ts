@@ -442,6 +442,7 @@ export {
   getOpeningCutoutBottomPadding,
   hasFlatOpeningCutoutBottom,
 } from './systems/wall/opening-cutout-geometry'
+export { wallCutApplies } from './systems/wall/wall-cut-eligibility'
 export {
   getWallHideState,
   presentWallsLowForCapture,
