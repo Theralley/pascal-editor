@@ -5,13 +5,17 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 // The store only gains its persist API when a storage exists at creation, so one is installed
 // before the store module is first evaluated.
 const items = new Map<string, string>()
+let writes = 0
 const target = globalThis as { window?: unknown }
 const hadWindow = 'window' in target
 const previousWindow = target.window
 target.window = {
   localStorage: {
     getItem: (name: string) => items.get(name) ?? null,
-    setItem: (name: string, value: string) => void items.set(name, value),
+    setItem: (name: string, value: string) => {
+      writes++
+      items.set(name, value)
+    },
     removeItem: (name: string) => void items.delete(name),
   },
 }
@@ -106,5 +110,14 @@ describe('stored viewer preferences', () => {
     useViewer.getState().setWallCutHeight(0.6)
     expect(stored().wallCutHeight).toBe(0.6)
     expect(stored().projectPreferences['scene-1'].wallCutHeight).toBe(0.6)
+  })
+
+  test('a preview that changes nothing persisted writes nothing to storage', () => {
+    useViewer.getState().setProjectId('scene-1')
+    useViewer.getState().setWallCutHeight(0.6)
+    const before = writes
+    for (const height of [0.7, 0.8, 0.9])
+      useViewer.getState().overrideView({ wallCutHeight: height })
+    expect(writes).toBe(before)
   })
 })

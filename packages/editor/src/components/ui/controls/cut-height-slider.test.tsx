@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { useViewer } from '@pascal-app/viewer'
 import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
-import { CutHeightSlider } from './cut-height-slider'
+import { CutHeightControl, CutHeightSlider } from './cut-height-slider'
 
 const saved = useViewer.getState()
 afterEach(() => useViewer.setState(saved, true))
@@ -14,7 +14,7 @@ describe('the cut height slider', () => {
 
   test('is a named slider whose value reads in metres', () => {
     useViewer.setState({ wallMode: 'low', wallCutHeight: 0.25, unit: 'metric' })
-    const markup = renderCurrentMarkup(<CutHeightSlider />)
+    const markup = renderCurrentMarkup(<CutHeightControl />)
     expect(markup).toContain('type="range"')
     expect(markup).toContain('aria-valuetext="0.25m"')
     expect(markup).toContain('>Cut height</label>')
@@ -24,8 +24,8 @@ describe('the cut height slider', () => {
 
   test('reads in millimetres and in feet and inches in the units the person chose', () => {
     useViewer.setState({ wallMode: 'low', wallCutHeight: 0.25, unit: 'metric', metricNotation: 'millimeters' })
-    expect(renderCurrentMarkup(<CutHeightSlider />)).toContain('aria-valuetext="250mm"')
+    expect(renderCurrentMarkup(<CutHeightControl />)).toContain('aria-valuetext="250mm"')
     useViewer.setState({ unit: 'imperial' })
-    expect(renderCurrentMarkup(<CutHeightSlider />)).toContain('aria-valuetext="0&#x27;10&quot;"')
+    expect(renderCurrentMarkup(<CutHeightControl />)).toContain('aria-valuetext="0&#x27;10&quot;"')
   })
 })

@@ -14,7 +14,7 @@ import type {
 import type { Object3D } from 'three'
 
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import type { EdgeMode } from '../lib/edge-style'
 import type { ColorPreset, RenderShading } from '../lib/materials'
 import {
@@ -269,8 +269,11 @@ type ViewerState = {
 
   /** The height (m) walls stand at in `low` mode. */
   wallCutHeight: number
-  /** The person's pick, clamped: saved for this project and kept as the browser-wide default. */
-  setWallCutHeight: (height: number) => void
+  /**
+   * The person's pick, clamped: saved for the project and kept as the browser-wide default. A
+   * gesture that outlives the open project saves to the project it began on.
+   */
+  setWallCutHeight: (height: number, projectId?: string | null) => void
   /** The browser-wide cut height a project without a saved pick starts from. */
   wallCutHeightDefault: number
 
@@ -674,6 +677,26 @@ function withProjectPreference(
   }
 }
 
+/**
+ * The browser's storage, except that a write of what it already holds is skipped: a preview that
+ * changes nothing persisted (a drag's live values) rewrites nothing.
+ */
+function unchangedWritesSkipped(): Storage {
+  const base = window.localStorage
+  return {
+    get length() {
+      return base.length
+    },
+    clear: () => base.clear(),
+    key: (index) => base.key(index),
+    getItem: (name) => base.getItem(name),
+    removeItem: (name) => base.removeItem(name),
+    setItem: (name, value) => {
+      if (base.getItem(name) !== value) base.setItem(name, value)
+    },
+  }
+}
+
 const useViewer = create<ViewerState>()(
   persist(
     (set) => ({
@@ -865,13 +888,19 @@ const useViewer = create<ViewerState>()(
         }),
       wallCutHeight: WALL_CUT_HEIGHT_DEFAULT,
       wallCutHeightDefault: WALL_CUT_HEIGHT_DEFAULT,
-      setWallCutHeight: (height) =>
+      setWallCutHeight: (height, projectId) =>
         set((state) => {
           const wallCutHeight = clampWallCutHeight(height)
+          const target = projectId === undefined ? state.projectId : projectId
           return {
-            wallCutHeight,
             wallCutHeightDefault: wallCutHeight,
-            projectPreferences: withProjectPreference(state, { wallCutHeight }),
+            projectPreferences: target
+              ? {
+                  ...state.projectPreferences,
+                  [target]: { ...state.projectPreferences[target], wallCutHeight },
+                }
+              : state.projectPreferences,
+            ...(target === state.projectId ? { wallCutHeight } : {}),
           }
         }),
 
@@ -1018,6 +1047,7 @@ const useViewer = create<ViewerState>()(
     }),
     {
       name: 'viewer-preferences',
+      storage: createJSONStorage(unchangedWritesSkipped),
       merge: (persistedState, currentState) => {
         const persisted = normalizePersistedViewerState(persistedState)
         return {

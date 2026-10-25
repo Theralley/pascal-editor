@@ -170,6 +170,16 @@ describe('the cut height of low walls', () => {
     expect(useViewer.getState().wallCutHeight).toBe(0.6)
   })
 
+  test('a save for the project a gesture began on lands there after the project is gone', () => {
+    useViewer.getState().setProjectId('cut-a')
+    useViewer.getState().setProjectId(null)
+    useViewer.getState().setWallCutHeight(0.7, 'cut-a')
+    expect(useViewer.getState().projectPreferences['cut-a']?.wallCutHeight).toBe(0.7)
+    expect(useViewer.getState().wallCutHeight).not.toBe(0.7)
+    useViewer.getState().setProjectId('cut-a')
+    expect(useViewer.getState().wallCutHeight).toBe(0.7)
+  })
+
   test('a preview while dragging changes the live height only, and restoring gives the saved one back', () => {
     useViewer.getState().setProjectId('cut-a')
     useViewer.getState().setWallCutHeight(0.4)
