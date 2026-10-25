@@ -58,7 +58,7 @@ test('roofs go with the toggle, a roof built while they are off is held, and a c
     await renderer.advanceFrames(1, 1 / 60)
     expect([shown(mesh), shown(second)]).toEqual([false, false])
 
-    emitter.emit('thumbnail:before-capture', undefined)
+    emitter.emit('thumbnail:before-capture', { exporting: true })
     expect([shown(first), shown(mesh), shown(second)]).toEqual([true, true, true])
     emitter.emit('thumbnail:after-capture', undefined)
     expect([shown(first), shown(mesh), shown(second)]).toEqual([false, false, false])
@@ -82,6 +82,44 @@ test('a capture that never reports its end does not leave the roofs shown', asyn
     expect(shown(roof)).toBe(true)
     await renderer.advanceFrames(1, 1 / 60)
     expect(shown(roof)).toBe(false)
+  } finally {
+    await renderer.unmount()
+  }
+})
+
+test.each([
+  ['an export', { exporting: true }, true],
+  ['a capture of whole walls', { wholeWalls: true }, true],
+  ['the finished-house picture', { finished: true }, true],
+  ["the person's own snapshot", undefined, false],
+  ['an evidence crop', {}, false],
+])('%s shows the roofs: %p', async (_, event, lifted) => {
+  const roof = addRoof('roof_a')
+  useViewer.setState({ showRoofs: false })
+  const renderer = await create(createElement(RoofVisibilitySystem))
+  try {
+    await renderer.advanceFrames(1, 1 / 60)
+    emitter.emit('thumbnail:before-capture', event)
+    expect(shown(roof)).toBe(lifted)
+    emitter.emit('thumbnail:after-capture', undefined)
+    expect(shown(roof)).toBe(false)
+  } finally {
+    await renderer.unmount()
+  }
+})
+
+test('a roof mounted as another object unregisters is held too', async () => {
+  const other = new Object3D()
+  sceneRegistry.nodes.set('chair', other)
+  const first = addRoof('roof_a')
+  useViewer.setState({ showRoofs: false })
+  const renderer = await create(createElement(RoofVisibilitySystem))
+  try {
+    await renderer.advanceFrames(1, 1 / 60)
+    sceneRegistry.nodes.delete('chair')
+    const second = addRoof('roof_b')
+    await renderer.advanceFrames(1, 1 / 60)
+    expect([shown(first), shown(second)]).toEqual([false, false])
   } finally {
     await renderer.unmount()
   }

@@ -979,7 +979,11 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               // authored pose is not the user's view, an interior is cut below.
               emitter.emit(
                 'thumbnail:before-capture',
-                cameraPose || interior ? { wholeWalls: true } : undefined,
+                cameraPose || interior
+                  ? { wholeWalls: true }
+                  : snapLevels
+                    ? { finished: true }
+                    : undefined,
               )
               if (cameraPose) {
                 restore(snapLevelsToTruePositions())

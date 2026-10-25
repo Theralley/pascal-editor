@@ -1724,11 +1724,12 @@ function EditorContent({
     const viewer = useViewer.getState()
     const previousLevelId = firstPersonPreviousLevelRef.current
     firstPersonPreviousLevelRef.current = null
-    viewer.overrideView(firstPersonPreviousViewRef.current)
+    // Leaving Preview with the walkthrough has already put the editor's view and selection back.
+    const leavingPreview = wasPreviewMode && !isPreviewMode
+    if (!leavingPreview) viewer.overrideView(firstPersonPreviousViewRef.current)
     viewer.setWalkthroughMode(false)
 
-    // Leaving Preview has already restored the editor's complete selection.
-    if ((wasPreviewMode && !isPreviewMode) || !previousLevelId) return
+    if (leavingPreview || !previousLevelId) return
 
     const previousLevelNode = useScene.getState().nodes[previousLevelId]
     if (previousLevelNode?.type === 'level') {

@@ -1,5 +1,4 @@
 import { stepWallMode, useViewer } from '@pascal-app/viewer'
-import useEditor from '../store/use-editor'
 import { isTypingTarget } from './typing-target'
 
 /** The plain letter keys that change what the viewer shows. */
@@ -51,16 +50,9 @@ export function viewShortcutOf(
   return shortcut ?? null
 }
 
-/** Preview is a visitor's view: its picks last until Preview ends and never become the saved ones. */
+/** The person's pick: saved for the project, in Preview as in the editor. */
 export function runViewShortcut(shortcut: ViewShortcut): void {
   const viewer = useViewer.getState()
-  const visiting = useEditor.getState().isPreviewMode
-  if (shortcut === 'roofs') {
-    if (visiting) viewer.overrideView({ showRoofs: !viewer.showRoofs })
-    else viewer.setShowRoofs(!viewer.showRoofs)
-    return
-  }
-  const wallMode = stepWallMode(viewer.wallMode, shortcut === 'wallsUp' ? 'up' : 'down')
-  if (visiting) viewer.overrideView({ wallMode })
-  else viewer.setWallMode(wallMode)
+  if (shortcut === 'roofs') viewer.setShowRoofs(!viewer.showRoofs)
+  else viewer.setWallMode(stepWallMode(viewer.wallMode, shortcut === 'wallsUp' ? 'up' : 'down'))
 }

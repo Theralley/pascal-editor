@@ -7,7 +7,7 @@ import {
   useScene,
 } from '@pascal-app/core'
 import type { Object3D } from 'three'
-import { hideFromScene, showInScene, temporarilyHideFromScene } from './scene-visibility'
+import { hideFromScene, showInScene } from './scene-visibility'
 
 /** A roof surface role in the registry, or retained roof geometry. */
 export function isRoofNode(node: AnyNode): boolean {
@@ -100,7 +100,7 @@ class LiveRoofs {
   private held = new Set<Object3D>()
   private roots: RoofRoot[] = []
   private ids = new Set<string>()
-  private rootsFor: { nodes: unknown; size: number } | undefined
+  private rootsFor: { nodes: unknown; revision: number } | undefined
   private lifts = 0
 
   /** Reconciles the holds with the toggle and the roofs the scene has now. */
@@ -127,25 +127,30 @@ class LiveRoofs {
     }
   }
 
-  /** For one capture: the roofs left out of the picture, whatever the toggle says. */
+  /**
+   * For one capture: the roofs left out of the picture, whatever the toggle says. A real hold, so
+   * the level presentation laid over it composes through the reasons instead of replacing it.
+   */
   hideForCapture(): () => void {
-    const restores = this.currentRoots().map((root) =>
-      temporarilyHideFromScene(root.object, 'roof-hidden'),
-    )
+    const added: Object3D[] = []
+    for (const root of this.currentRoots()) {
+      root.object.traverse((object) => {
+        // Already held by the toggle, and not lifted for this capture.
+        if (this.lifts === 0 && this.held.has(object)) return
+        hideFromScene(object, 'roof-hidden')
+        added.push(object)
+      })
+    }
     return () => {
-      for (const restore of restores.reverse()) restore()
+      for (const object of added) showInScene(object, 'roof-hidden')
     }
   }
 
   private currentRoots(): RoofRoot[] {
     const nodes = useScene.getState().nodes
-    const size = sceneRegistry.nodes.size
-    const unchanged =
-      this.rootsFor?.nodes === nodes &&
-      this.rootsFor.size === size &&
-      this.roots.every((root) => sceneRegistry.nodes.get(root.id) === root.object)
-    if (unchanged) return this.roots
-    this.rootsFor = { nodes, size }
+    const revision = sceneRegistry.revision
+    if (this.rootsFor?.nodes === nodes && this.rootsFor.revision === revision) return this.roots
+    this.rootsFor = { nodes, revision }
     this.roots = []
     this.ids = new Set()
     for (const [id, object] of sceneRegistry.nodes) {

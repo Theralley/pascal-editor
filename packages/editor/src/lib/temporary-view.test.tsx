@@ -37,7 +37,7 @@ function EditorDisplay({ wholeBuilding }: { wholeBuilding: boolean }) {
   return null
 }
 
-test('Preview shows the saved level pick, keeps what the visitor changes to itself, and editing gets the saved picks back', async () => {
+test("a pick made in Preview is the person's: it survives leaving and coming back, and the editor's stacked levels are never saved", async () => {
   const picks = savePicks()
   const renderer = await create(<EditorDisplay wholeBuilding={false} />)
   try {
@@ -49,23 +49,33 @@ test('Preview shows the saved level pick, keeps what the visitor changes to itse
     await renderer.update(<EditorDisplay wholeBuilding />)
     expect(view().levelMode).toBe('exploded')
 
-    // The visitor's own changes, as the Preview controls and keys make them.
-    useViewer.getState().overrideView({ wallMode: 'down', showRoofs: true })
-    useEditor.setState({ isPreviewMode: true })
+    useViewer.getState().setLevelMode('solo')
     runViewShortcut('wallsUp')
     runViewShortcut('roofs')
-    expect(saved()).toEqual(picks)
+    expect(saved()).toEqual({ wallMode: 'up', levelMode: 'solo', showRoofs: true })
 
     useEditor.getState().setPreviewMode(false)
     await act(async () => renderer.update(<EditorDisplay wholeBuilding={false} />))
-    expect(view()).toEqual({ wallMode: 'cutaway', levelMode: 'stacked', showRoofs: false })
-    expect(saved()).toEqual(picks)
+    expect(view()).toEqual({ wallMode: 'up', levelMode: 'stacked', showRoofs: true })
+    expect(saved()?.levelMode).toBe('solo')
+
+    useEditor.getState().setPreviewMode(true)
+    await act(async () => renderer.update(<EditorDisplay wholeBuilding />))
+    expect(view().levelMode).toBe('solo')
   } finally {
     await renderer.unmount()
   }
 })
 
-test('the view keys save the pick outside Preview', () => {
+test('a system override never becomes a saved pick', () => {
+  const picks = savePicks()
+  useViewer.getState().overrideView({ wallMode: 'up', levelMode: 'stacked', showRoofs: true })
+  expect(saved()).toEqual(picks)
+  useViewer.getState().restoreView()
+  expect(view()).toEqual({ wallMode: 'cutaway', levelMode: 'exploded', showRoofs: false })
+})
+
+test('the view keys save the pick', () => {
   savePicks()
   runViewShortcut('wallsDown')
   expect(saved()?.wallMode).toBe('down')

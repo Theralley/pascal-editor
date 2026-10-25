@@ -12,6 +12,7 @@ import {
 import { create } from '@react-three/test-renderer'
 import { createElement } from 'react'
 import { Object3D } from 'three'
+import { applyShadowOnly, clearShadowOnly } from '../../lib/shadow-only'
 import useViewer from '../../store/use-viewer'
 import { releaseLevel, setHeldLevelY } from './level-hold'
 import { LevelSystem } from './level-system'
@@ -428,6 +429,45 @@ describe('snapLevelsToTruePositions', () => {
     restore()
     expect(roofs.map((roof) => roof.layers.isEnabled(SCENE_LAYER))).toEqual([false, false])
     liveRoofs.update(true)
+  })
+
+  test('a Stacked capture without roofs, taken from live Solo, leaves the roofs of every level out', () => {
+    const { levels, objects } = setupLevels([0, 0])
+    const roofs = objects.map((level, index) => {
+      const roof = new Object3D()
+      roof.layers.set(SCENE_LAYER)
+      level.add(roof)
+      sceneRegistry.nodes.set(`roof_${index}`, roof)
+      return roof
+    })
+    useScene.setState({
+      nodes: {
+        ...useScene.getState().nodes,
+        ...Object.fromEntries(
+          roofs.map((_, index) => [
+            `roof_${index}`,
+            {
+              object: 'node',
+              id: `roof_${index}`,
+              type: 'roof',
+              parentId: levels[index]!.id,
+              visible: true,
+              metadata: {},
+              children: [],
+            },
+          ]),
+        ),
+      } as unknown as Record<AnyNodeId, AnyNode>,
+    })
+    // Live Solo on level 0: level 1 and what stands on it are held as shadow casters.
+    applyShadowOnly(objects[1]!)
+    const live = roofs.map((roof) => roof.layers.mask)
+
+    const restore = presentLevelsForCapture({ mode: 'stacked', showRoofs: false })
+    expect(roofs.map((roof) => roof.layers.isEnabled(SCENE_LAYER))).toEqual([false, false])
+    restore()
+    expect(roofs.map((roof) => roof.layers.mask)).toEqual(live)
+    clearShadowOnly(objects[1]!)
   })
 
   test('bakes offset-aware stacked positions and restores the prior presentation', () => {

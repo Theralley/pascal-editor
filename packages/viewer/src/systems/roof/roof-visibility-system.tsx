@@ -12,8 +12,8 @@ export const ROOF_VISIBILITY_FRAME_PRIORITY = 3
 
 /**
  * Holds the roofs off the scene layer while `showRoofs` is false. It reconciles every frame while
- * roofs are off, so a roof built or remounted meanwhile is held too. A capture or an export sees
- * the roofs whatever the toggle says.
+ * roofs are off, so a roof built or remounted meanwhile is held too. An export, a capture of whole
+ * walls and the finished-house picture see the roofs whatever the toggle says.
  */
 export const RoofVisibilitySystem = () => {
   const endCapture = useRef<(() => void) | null>(null)
@@ -26,8 +26,12 @@ export const RoofVisibilitySystem = () => {
   }, ROOF_VISIBILITY_FRAME_PRIORITY)
 
   useEffect(() => {
-    const before = () => {
-      endCapture.current ??= liveRoofs.lift()
+    // An export, a capture of whole walls and the project's finished-house picture see the roofs;
+    // any other capture shows what the person's view shows, as it does for walls.
+    const before = (event?: { wholeWalls?: boolean; exporting?: boolean; finished?: boolean }) => {
+      if (event?.wholeWalls || event?.exporting || event?.finished) {
+        endCapture.current ??= liveRoofs.lift()
+      }
     }
     const after = () => {
       endCapture.current?.()
