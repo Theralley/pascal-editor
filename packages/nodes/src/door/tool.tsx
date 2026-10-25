@@ -813,7 +813,7 @@ const DoorTool: React.FC = () => {
       else if (lastFloorPoint) showGhostAt(lastFloorPoint)
     })
     // Placement tracks the cursor through wall events; keep walls hidden by
-    // the wall-mode pass (X-ray 'down' mode) pointer-targetable while the
+    // the wall-mode pass pointer-targetable while the
     // tool is active so a new door still snaps onto them (see the wall
     // renderer's pointer transparency).
     const releaseHiddenWallHold = holdHiddenWallPointerEvents()

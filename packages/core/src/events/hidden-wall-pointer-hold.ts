@@ -1,7 +1,7 @@
 /**
  * Hidden-wall pointer hold.
  *
- * Walls hidden by the wall-mode pass ('down' mode, cutaway-hidden faces,
+ * Walls hidden by the wall-mode pass (cutaway-hidden faces,
  * auto-mode interior partitions) are pointer-TRANSPARENT: their invisible
  * full-height collision meshes early-return every pointer event so clicks
  * aimed at visible objects behind them (wall-mounted plugin device boxes,

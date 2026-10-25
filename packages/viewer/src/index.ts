@@ -103,8 +103,10 @@ export {
   SUBTRACTION,
 } from './lib/csg-utils'
 export {
+  cutLike,
   cutMaterials,
   displayCutLimitY,
+  setDisplayCutRaycast,
   setDisplayCutRoot,
   uncutMaterials,
 } from './lib/display-cut'

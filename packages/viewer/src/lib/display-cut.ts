@@ -103,6 +103,17 @@ export function cutMaterials(materials: Material[]): Material[] {
   return next
 }
 
+/** Whether `mesh` is under the cut now: what is drawn on it from here on is cut too. */
+export function isDisplayCut(mesh: Mesh): boolean {
+  return originals.has(mesh)
+}
+
+/** A material meant for a mesh that is under the cut (a paint preview), cut like the rest of it. */
+export function cutLike(mesh: Mesh, material: Material | Material[]): Material | Material[] {
+  if (!isDisplayCut(mesh)) return material
+  return Array.isArray(material) ? cutMaterials(material) : cutMaterial(material)
+}
+
 export function uncutMaterials(materials: Material[]): Material[] {
   return materials.map(uncutMaterial)
 }

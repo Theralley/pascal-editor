@@ -459,8 +459,7 @@ export class WallCutoutCache {
         wall.negativeFacing,
       )
     }
-    // A wall in play is seen whatever the cutaway says (walls down is the person's own choice, and
-    // stays); `mode` itself is the person's, untouched.
+    // A wall in play is seen whatever the cutaway says; `mode` itself is the person's, untouched.
     const hidden =
       wallHiddenFromFacing(wall.node, mode, wall.negativeFacing ?? false) &&
       !(mode === 'cutaway' && this.inPlay.has(wall.node.id))

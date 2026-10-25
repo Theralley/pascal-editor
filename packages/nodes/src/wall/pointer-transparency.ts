@@ -1,7 +1,7 @@
 /**
  * Should a wall's pointer handlers swallow (early-return) this event?
  *
- * Hidden walls ('down' wall mode, cutaway-hidden faces, auto-mode interior
+ * Hidden walls (cutaway-hidden faces, auto-mode interior
  * partitions) keep invisible full-height collision meshes that raycast for
  * every pointer event. #683 made them blanket pointer-TRANSPARENT so clicks
  * reached the visible objects behind them (wall-mounted plugin device /
@@ -44,7 +44,7 @@
  * longer outrank it: the wall in front highlights, which is what the ray
  * visually strikes when the Bones framing renders there. Trade-off
  * (deliberate, host-side only — no plugin presence flag): in a plain manual
- * 'down' mode with NO overlay rendering at the wall, that wall strip is
+ * cutaway with NO overlay rendering at the wall, that wall strip is
  * hover/selectable even though it draws nothing.
  *
  * Two pre-existing exceptions keep ALL events flowing unconditionally:

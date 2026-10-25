@@ -36,7 +36,7 @@ export const resolveWallMaterialVariant = ({
 }: {
   /** wallMode === 'translucent' (overrides the hide state). */
   translucentMode: boolean
-  /** The wall-mode pass hides this wall ('down', cutaway, auto-interior). */
+  /** The wall-mode pass hides this wall (cutaway, auto-interior). */
   hidden: boolean
   /** Delete-mode hover on this wall (deleteInvisible flow). */
   deleteHighlighted: boolean

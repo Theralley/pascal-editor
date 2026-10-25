@@ -158,8 +158,8 @@ const MoveWindowTool: React.FC<{ node: WindowNode }> = ({ node: movingWindowNode
     // paths run their single tracked write through `history.commitStep`.
     const history = beginOpeningMoveHistorySession()
     // This tool's whole cursor model is the wall surface (`wall:enter` /
-    // `wall:move` / `wall:click`). Walls hidden by the wall-mode pass (X-ray
-    // 'down' mode) are pointer-transparent for selection; hold their pointer
+    // `wall:move` / `wall:click`). Walls hidden by the wall-mode pass
+    // are pointer-transparent for selection; hold their pointer
     // events for the move's lifetime so the window keeps sliding along its
     // wall instead of detaching into the floor free-follow.
     const releaseHiddenWallHold = holdHiddenWallPointerEvents()

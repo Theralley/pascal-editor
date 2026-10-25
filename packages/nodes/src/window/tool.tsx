@@ -1200,7 +1200,7 @@ const WindowTool: React.FC = () => {
       else if (lastFloorPoint) showGhostAt(lastFloorPoint.pos, lastFloorPoint.floorY)
     })
     // Placement tracks the cursor through wall events; keep walls hidden by
-    // the wall-mode pass (X-ray 'down' mode) pointer-targetable while the
+    // the wall-mode pass pointer-targetable while the
     // tool is active so a new window still snaps onto them (see the wall
     // renderer's pointer transparency).
     const releaseHiddenWallHold = holdHiddenWallPointerEvents()

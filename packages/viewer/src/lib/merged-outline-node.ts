@@ -57,6 +57,7 @@ import {
   SpriteNodeMaterial,
   TempNode,
 } from 'three/webgpu'
+import { shareDisplayCutRoot } from './display-cut'
 import { hasDrawableGeometry } from './drawable-geometry'
 
 const _quadMesh = new QuadMesh()
@@ -180,6 +181,7 @@ export class MergedOutlineNode extends TempNode {
   private readonly _proxiesA = new Map<Object3D, Mesh | Sprite>()
   private readonly _proxiesB = new Map<Object3D, Mesh | Sprite>()
   private readonly _proxyMaskMaterials = new WeakMap<Mesh | Sprite, NodeMaterial>()
+  private readonly _depthMasks = new Map<any, NodeMaterial>()
   private readonly _cutoutMasksA = new Map<any, NodeMaterial>()
   private readonly _cutoutMasksB = new Map<any, NodeMaterial>()
   private readonly _usedCutoutMasksA = new Set<any>()
@@ -383,7 +385,8 @@ export class MergedOutlineNode extends TempNode {
       for (const object of cache) {
         if (!(object instanceof Mesh)) continue
         const materials = Array.isArray(object.material) ? object.material : [object.material]
-        for (const source of materials) if (source?.alphaTest > 0) used.add(source)
+        for (const source of materials)
+          if (source?.alphaTest > 0 || source?.maskNode) used.add(source)
       }
     }
 
@@ -405,7 +408,7 @@ export class MergedOutlineNode extends TempNode {
         (obj: any, sc: any, cam: any, geo: any, _mat: any, grp: any, lights: any, clip: any) => {
           if (!hasDrawableGeometry(geo)) return
           if (!(this._cacheA.has(obj) || this._cacheB.has(obj))) {
-            const m = obj.isSprite ? this._depthSpriteMaterial : this._depthMaterial
+            const m = obj.isSprite ? this._depthSpriteMaterial : this._depthMaterialFor(_mat)
             renderer.renderObject(obj, sc, cam, geo, m, grp, lights, clip)
           }
         },
@@ -458,16 +461,20 @@ export class MergedOutlineNode extends TempNode {
         if (!hasDrawableGeometry(geo)) return
         if (useProxies || cache.has(obj)) {
           let maskMaterial = obj.isSprite ? spriteMaterial : material
-          if (!obj.isSprite && sourceMaterial?.alphaTest > 0) {
+          if (!obj.isSprite && (sourceMaterial?.alphaTest > 0 || sourceMaterial?.maskNode)) {
+            // A mask (a display cut) draws the same silhouette the scene does.
+            const maskNode = sourceMaterial.maskNode ?? null
+            const cutout = sourceMaterial.alphaTest > 0
             let cutoutMask = cutoutMasks.get(sourceMaterial)
-            const opacityNode =
-              sourceMaterial.opacityNode ??
-              (sourceMaterial.map
-                ? cutoutMask?.userData.sourceMap === sourceMaterial.map
-                  ? cutoutMask.opacityNode
-                  : texture(sourceMaterial.map).a
-                : null)
-            if (opacityNode) {
+            const opacityNode = cutout
+              ? (sourceMaterial.opacityNode ??
+                (sourceMaterial.map
+                  ? cutoutMask?.userData.sourceMap === sourceMaterial.map
+                    ? cutoutMask.opacityNode
+                    : texture(sourceMaterial.map).a
+                  : null))
+              : null
+            if (opacityNode || maskNode) {
               if (!cutoutMask) {
                 cutoutMask = material.clone()
                 cutoutMasks.set(sourceMaterial, cutoutMask)
@@ -475,12 +482,14 @@ export class MergedOutlineNode extends TempNode {
               const positionNode = sourceMaterial.positionNode ?? null
               const changed =
                 cutoutMask.opacityNode !== opacityNode ||
+                cutoutMask.maskNode !== maskNode ||
                 cutoutMask.positionNode !== positionNode ||
-                cutoutMask.side !== sourceMaterial.side
+                (cutout && cutoutMask.side !== sourceMaterial.side)
               cutoutMask.opacityNode = opacityNode
+              cutoutMask.maskNode = maskNode
               cutoutMask.positionNode = positionNode
-              cutoutMask.alphaTest = sourceMaterial.alphaTest
-              cutoutMask.side = sourceMaterial.side
+              cutoutMask.alphaTest = cutout ? sourceMaterial.alphaTest : 0
+              if (cutout) cutoutMask.side = sourceMaterial.side
               cutoutMask.userData.sourceMap = sourceMaterial.map
               if (changed) cutoutMask.needsUpdate = true
               maskMaterial = cutoutMask
@@ -498,12 +507,14 @@ export class MergedOutlineNode extends TempNode {
             if (
               ownedMaterial.colorNode !== maskMaterial.colorNode ||
               ownedMaterial.opacityNode !== maskMaterial.opacityNode ||
+              ownedMaterial.maskNode !== maskMaterial.maskNode ||
               ownedMaterial.positionNode !== maskMaterial.positionNode ||
               ownedMaterial.alphaTest !== maskMaterial.alphaTest ||
               ownedMaterial.side !== maskMaterial.side
             ) {
               ownedMaterial.colorNode = maskMaterial.colorNode
               ownedMaterial.opacityNode = maskMaterial.opacityNode
+              ownedMaterial.maskNode = maskMaterial.maskNode
               ownedMaterial.positionNode = maskMaterial.positionNode
               ownedMaterial.alphaTest = maskMaterial.alphaTest
               ownedMaterial.side = maskMaterial.side
@@ -553,6 +564,7 @@ export class MergedOutlineNode extends TempNode {
       }
       proxy.geometry = source.geometry
       proxy.material = source.material
+      shareDisplayCutRoot(source, proxy)
       proxy.matrixWorld.copy(source.matrixWorld)
       proxy.layers.mask = source.layers.mask
       proxy.visible = visible && attached
@@ -586,6 +598,26 @@ export class MergedOutlineNode extends TempNode {
       }
     }
     return true
+  }
+
+  /** The depth material, masked like `source` is: a cut wall occludes no more than it draws. */
+  private _depthMaterialFor(source: any): NodeMaterial {
+    const maskNode = source?.maskNode
+    if (!maskNode) return this._depthMaterial
+    let masked = this._depthMasks.get(source)
+    if (!masked) {
+      masked = this._depthMaterial.clone()
+      this._depthMasks.set(source, masked)
+      source.addEventListener('dispose', () => {
+        masked.dispose()
+        this._depthMasks.delete(source)
+      })
+    }
+    if (masked.maskNode !== maskNode) {
+      masked.maskNode = maskNode
+      masked.needsUpdate = true
+    }
+    return masked
   }
 
   private _disposeProxyMaterial(proxy: Mesh | Sprite) {
@@ -848,6 +880,8 @@ export class MergedOutlineNode extends TempNode {
     this._groupA.dispose()
     this._groupB.dispose()
     this._depthMaterial.dispose()
+    for (const mask of this._depthMasks.values()) mask.dispose()
+    this._depthMasks.clear()
     this._depthSpriteMaterial.dispose()
     this._prepareMaskMatA.dispose()
     this._prepareMaskSpriteMatA.dispose()
