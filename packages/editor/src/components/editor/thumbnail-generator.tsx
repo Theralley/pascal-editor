@@ -18,6 +18,7 @@ import {
   holdLiveFrame,
   pendingSceneBuildCount,
   presentLevelsForCapture,
+  presentWallsDownForCapture,
   refreshIsolation,
   SNAPSHOT_MAX_EDGE,
   SNAPSHOT_MIME,
@@ -61,6 +62,7 @@ export interface SnapshotCameraData {
   captureMode?: 'standard' | 'viewport' | 'area'
   resolution?: { w: number; h: number }
   presentation?: ThumbnailGenerateEvent['presentation']
+  walls?: ThumbnailGenerateEvent['walls']
 }
 
 interface ThumbnailGeneratorProps {
@@ -973,7 +975,7 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               // authored pose is not the user's view, an interior is cut below.
               emitter.emit(
                 'thumbnail:before-capture',
-                cameraPose || interior ? { wholeWalls: true } : undefined,
+                cameraPose || interior ? { wholeWalls: event.walls?.mode !== 'down' } : undefined,
               )
               if (cameraPose) {
                 restore(snapLevelsToTruePositions())
@@ -988,6 +990,13 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               if (event.presentation) {
                 restore(presentLevelsForCapture(event.presentation))
                 cameraData.presentation = event.presentation
+              }
+              if (event.walls) {
+                if (event.walls.mode === 'down') {
+                  const cutHeight = event.walls.cutHeight ?? useViewer.getState().wallCutHeight
+                  restore(presentWallsDownForCapture(cutHeight))
+                  cameraData.walls = { mode: 'down', cutHeight }
+                } else cameraData.walls = { mode: 'up' }
               }
               if (interior) {
                 interiorCutaway(interior.levelId, restore, thumbnailCamera)

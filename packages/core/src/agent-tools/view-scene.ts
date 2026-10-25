@@ -70,6 +70,19 @@ export const viewSceneTool = {
       .describe(
         'Verify the actual level presentation: stacked (default), exploded, or solo with a levelId. Solo keeps full-height geometry, including ceilings and any roofs incorrectly owned by that floor; it is not the clipped interior view. Does not change the live view. Do not combine with interior.',
       ),
+    walls: z
+      .object({
+        mode: z.enum(['up', 'down']),
+        cutHeight: measurement('length', 'm', {
+          min: 0.05,
+          max: 1.5,
+          description: 'With down: the height the walls stand at, in metres. Default 0.25.',
+        }).optional(),
+      })
+      .optional()
+      .describe(
+        'Walls down, as in The Sims: with mode down every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows keep their frames. up is the walls whole (the default). Does not change the live view; can be combined with a level presentation, not with interior.',
+      ),
     from: z
       .enum(VIEW_SIDES)
       .optional()

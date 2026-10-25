@@ -1,11 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import {
   confirmSceneViewPresentation,
+  confirmSceneViewWalls,
   type SceneViewCrop,
   type SceneViewInterior,
   type SceneViewLighting,
   type SceneViewPose,
   type SceneViewPresentation,
+  type SceneViewWalls,
   sceneViewNote,
   sceneViewPlan,
 } from '@pascal-app/core/agent-operations'
@@ -26,6 +28,7 @@ export type SceneViewCapture = {
   tab: string
   capturedAt: string
   presentation?: SceneViewPresentation
+  walls?: SceneViewWalls
   /** The host's id of the picture it kept, these exact pixels: a later call can name the frame. */
   viewId?: string
 }
@@ -42,6 +45,8 @@ export type SceneViewHost = {
     /** A look inside this floor: the editor leaves the rest out and cuts everything on it. */
     interior?: SceneViewInterior
     presentation?: SceneViewPresentation
+    /** Walls down for this picture: stubs at a cut height; the live view stays as it is. */
+    walls?: SceneViewWalls
     /** The light to render it in; the scene's own when absent. */
     lighting?: SceneViewLighting
   }): Promise<SceneViewCapture>
@@ -75,7 +80,7 @@ export function registerViewScene(
         if (!projectId)
           refuse('no_project', 'This session has no project open to look at: load or create one.')
         // No view of the person's here: core refuses camera 'current' without one.
-        const { pose, size, crop, interior, presentation, lighting } = sceneViewPlan(
+        const { pose, size, crop, interior, presentation, walls, lighting } = sceneViewPlan(
           operations.getNodes() as Record<string, AnyNode>,
           input,
         )
@@ -91,11 +96,13 @@ export function registerViewScene(
             size,
             ...(interior ? { interior } : {}),
             ...(presentation ? { presentation } : {}),
+            ...(walls ? { walls } : {}),
             ...(lighting ? { lighting } : {}),
           }),
           crop ? views!.crop!(crop) : undefined,
         ])
         confirmSceneViewPresentation(presentation, shot.presentation)
+        confirmSceneViewWalls(walls, shot.walls)
         const payload = {
           status: 'viewed',
           camera: pose,
@@ -104,6 +111,7 @@ export function registerViewScene(
           capturedAt: shot.capturedAt,
           ...(shot.viewId ? { viewId: shot.viewId } : {}),
           ...(shot.presentation ? { presentation: shot.presentation } : {}),
+          ...(shot.walls ? { walls: shot.walls } : {}),
           note: sceneViewNote(operations.getNodes() as Record<string, AnyNode>, interior, pose),
           ...(crop && cropped
             ? {

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { LevelNode, sceneRegistry, useScene, WallNode } from '@pascal-app/core'
-import { Group, type Mesh, Raycaster, Vector3 } from 'three'
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
 import { buildWallCapGeometry, WALL_CUT_CAPS_NAME, WallCutCaps } from './wall-cut-caps'
+import { presentWallsDownForCapture } from './wall-cutout'
 
 const sceneBefore = useScene.getState()
 
@@ -102,5 +103,30 @@ describe('WallCutCaps', () => {
 describe('buildWallCapGeometry', () => {
   test('is nothing for no walls', () => {
     expect(buildWallCapGeometry([], { junctionData: new Map() } as never)).toBeNull()
+  })
+})
+
+describe('presentWallsDownForCapture', () => {
+  test('cuts the registered walls and caps their level for one picture, then puts them back', () => {
+    const wall = WallNode.parse({ start: [0, 0], end: [4, 0], thickness: 0.2 })
+    const { root } = level([wall])
+    const mesh = new Mesh(new BoxGeometry(4, 2.5, 0.2).translate(2, 1.25, 0), [
+      new MeshBasicMaterial(),
+    ])
+    mesh.geometry.clearGroups()
+    mesh.geometry.addGroup(0, mesh.geometry.getIndex()!.count, 0)
+    sceneRegistry.nodes.set(wall.id, mesh)
+    sceneRegistry.byType.wall!.add(wall.id)
+    root.add(mesh)
+    const whole = mesh.material
+
+    const restore = presentWallsDownForCapture(0.3)
+    expect(mesh.material).not.toBe(whole)
+    expect((mesh.material as { maskNode?: unknown }[])[0]?.maskNode).toBeDefined()
+    expect(capsOf(root)?.position.y).toBe(0.3)
+
+    restore()
+    expect(mesh.material).toBe(whole)
+    expect(capsOf(root)).toBeUndefined()
   })
 })

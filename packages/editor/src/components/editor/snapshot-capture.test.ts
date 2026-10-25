@@ -462,6 +462,25 @@ describe('an ephemeral capture', () => {
     }
   })
 
+  test('an ephemeral frame says which wall view it was rendered in', async () => {
+    const received: unknown[] = []
+    const onCaptured = (event: unknown) => received.push(event)
+    emitter.on('snapshot:captured', onCaptured)
+    try {
+      await deliverSnapshot(
+        { requestId: 'view-2', ephemeral: true },
+        new Blob(['frame']),
+        { ...cameraData, resolution: { w: 640, h: 400 }, walls: { mode: 'down', cutHeight: 0.4 } },
+        () => {},
+      )
+      expect(received).toMatchObject([
+        { requestId: 'view-2', walls: { mode: 'down', cutHeight: 0.4 } },
+      ])
+    } finally {
+      emitter.off('snapshot:captured', onCaptured)
+    }
+  })
+
   test('an ephemeral frame with no caller to answer is stored nowhere', async () => {
     const stored: Blob[] = []
     await deliverSnapshot({ ephemeral: true }, new Blob(['frame']), cameraData, (frame) => {

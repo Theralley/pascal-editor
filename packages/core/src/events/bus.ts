@@ -2,7 +2,11 @@ import type { ThreeEvent } from '@react-three/fiber'
 import mitt from 'mitt'
 import type { Object3D } from 'three'
 import type { PointAskPin, PointAskStatus } from '../agent-operations/point-context'
-import type { SceneViewInterior, SceneViewPresentation } from '../agent-operations/scene-view'
+import type {
+  SceneViewInterior,
+  SceneViewPresentation,
+  SceneViewWalls,
+} from '../agent-operations/scene-view'
 import type {
   BlockNode,
   BoxVentNode,
@@ -227,6 +231,7 @@ export interface SnapshotCapturedEvent {
   width: number
   height: number
   presentation?: SceneViewPresentation
+  walls?: SceneViewWalls
 }
 
 export interface ThumbnailGenerateEvent {
@@ -285,6 +290,8 @@ export interface ThumbnailGenerateEvent {
   interior?: SceneViewInterior
   /** The actual Solo/Exploded/Stacked presentation, without interior clipping. */
   presentation?: SceneViewPresentation
+  /** Walls down for the frame: every wall a stub with a cap, the live view untouched. */
+  walls?: SceneViewWalls
   /** Render the canvas at this multiple of its size for the frame (print-scale pictures). */
   supersample?: number
 }

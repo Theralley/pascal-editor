@@ -153,6 +153,7 @@ export function deliverSnapshot<
   T extends object & {
     resolution?: { w: number; h: number }
     presentation?: ThumbnailGenerateEvent['presentation']
+    walls?: ThumbnailGenerateEvent['walls']
   },
 >(
   event: Pick<ThumbnailGenerateEvent, 'requestId' | 'ephemeral'>,
@@ -169,6 +170,7 @@ export function deliverSnapshot<
         width: cameraData.resolution?.w ?? 0,
         height: cameraData.resolution?.h ?? 0,
         ...(cameraData.presentation ? { presentation: cameraData.presentation } : {}),
+        ...(cameraData.walls ? { walls: cameraData.walls } : {}),
       })
     return
   }

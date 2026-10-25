@@ -442,7 +442,11 @@ export {
   getOpeningCutoutBottomPadding,
   hasFlatOpeningCutoutBottom,
 } from './systems/wall/opening-cutout-geometry'
-export { getWallHideState, WallCutout } from './systems/wall/wall-cutout'
+export {
+  getWallHideState,
+  presentWallsDownForCapture,
+  WallCutout,
+} from './systems/wall/wall-cutout'
 export {
   WallCutoutCache,
   type WallCutoutViewerState,

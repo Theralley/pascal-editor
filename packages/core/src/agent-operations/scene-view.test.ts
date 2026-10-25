@@ -27,6 +27,7 @@ import {
 import { VIEW_SCENE_CASES, viewSceneCaseProblems } from './__fixtures__/view-scene-cases'
 import { pointInPolygon } from './plan-geometry'
 import {
+  confirmSceneViewWalls,
   photoCropSize,
   type SceneViewBox,
   sceneViewBounds,
@@ -98,6 +99,31 @@ function building(): Record<string, AnyNode> {
 }
 
 const box: SceneViewBox = { min: [0, 0, 0], max: [20, 6, 10] }
+
+test('a walls-down view is planned for the renderer and checked against what it applied', () => {
+  const nodes = building()
+  const input = z.object(viewSceneTool.input)
+  expect(input.safeParse({ walls: { mode: 'down', cutHeight: 0.4 } }).success).toBe(true)
+  expect(input.safeParse({ walls: { mode: 'down', cutHeight: 3 } }).success).toBe(false)
+  expect(input.safeParse({ walls: { mode: 'sideways' } }).success).toBe(false)
+  const plan = sceneViewPlan(nodes, { walls: { mode: 'down', cutHeight: 0.4 } })
+  expect(plan.walls).toEqual({ mode: 'down', cutHeight: 0.4 })
+  expect(sceneViewPlan(nodes, {})).not.toHaveProperty('walls')
+  expect(() =>
+    sceneViewPlan(nodes, { walls: { mode: 'down' }, interior: { levelId: 'level_0' } }),
+  ).toThrow('Choose walls down')
+  confirmSceneViewWalls(undefined, undefined)
+  confirmSceneViewWalls({ mode: 'down' }, { mode: 'down', cutHeight: 0.25 })
+  confirmSceneViewWalls({ mode: 'down', cutHeight: 0.4 }, { mode: 'down', cutHeight: 0.4 })
+  for (const applied of [
+    undefined,
+    { mode: 'up' as const },
+    { mode: 'down' as const, cutHeight: 0.25 },
+  ])
+    expect(() => confirmSceneViewWalls({ mode: 'down', cutHeight: 0.4 }, applied)).toThrow(
+      'did not confirm the requested wall view',
+    )
+})
 
 test('level captures frame the settled Solo and Exploded geometry without changing the graph', () => {
   const nodes = building()

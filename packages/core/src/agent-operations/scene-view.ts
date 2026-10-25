@@ -41,10 +41,14 @@ type StreetSide = (typeof STREET_SIDES)[number]
 /** The light a host renders a view in; the scene's own when absent. */
 export type SceneViewLighting = Exclude<(typeof VIEW_LIGHTING)[number], 'current'>
 
+/** How the walls stand in a picture: whole, or cut down to stubs at `cutHeight` metres (default per host). */
+export type SceneViewWalls = { mode: 'up' | 'down'; cutHeight?: number }
+
 export type SceneViewInput = {
   target?: string
   interior?: SceneViewInteriorInput
   presentation?: SceneViewPresentation
+  walls?: SceneViewWalls
   from?: SceneViewSide
   position?: number[]
   elevation?: number
@@ -117,6 +121,25 @@ export function confirmSceneViewPresentation(
     refuse(
       'view_presentation_unconfirmed',
       'The renderer did not confirm the requested level view. Refresh the renderer and retry; this picture cannot verify Solo or Exploded behavior.',
+      { requested, applied: applied ?? null },
+    )
+}
+
+/** Older renderers may ignore the walls option; their frames cannot verify a walls-down view. */
+export function confirmSceneViewWalls(
+  requested: SceneViewWalls | undefined,
+  applied: SceneViewWalls | undefined,
+): void {
+  if (
+    requested &&
+    (applied?.mode !== requested.mode ||
+      (requested.cutHeight !== undefined &&
+        requested.mode === 'down' &&
+        applied.cutHeight !== requested.cutHeight))
+  )
+    refuse(
+      'view_walls_unconfirmed',
+      'The renderer did not confirm the requested wall view. Refresh the renderer and retry; this picture cannot verify walls down.',
       { requested, applied: applied ?? null },
     )
 }
@@ -1108,10 +1131,17 @@ export function sceneViewPlan(
   crop?: SceneViewCrop
   interior?: SceneViewInterior
   presentation?: SceneViewPresentation
+  walls?: SceneViewWalls
   lighting?: SceneViewLighting
 } {
   const { camera } = input
   const presentation = input.presentation
+  const walls = input.walls
+  if (walls?.mode === 'down' && input.interior)
+    refuse(
+      'walls_and_interior',
+      'Choose walls down or a clipped interior view: an interior cuts the walls itself.',
+    )
   if (presentation && input.interior)
     refuse('presentation_and_interior', 'Choose a level presentation or a clipped interior view.')
   const solo = sceneViewPresentationLevel(nodes, presentation)
@@ -1136,6 +1166,7 @@ export function sceneViewPlan(
     ...(crop ? { crop } : {}),
     ...(interior ? { interior } : {}),
     ...(presentation ? { presentation } : {}),
+    ...(walls ? { walls } : {}),
     ...(lighting ? { lighting } : {}),
   }
   // An interior view shows this floor alone, without its roofs and ceilings: a target left out of

@@ -3,6 +3,12 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import type { Camera, Material } from 'three'
 import { type Mesh, Vector3 } from 'three/webgpu'
+import {
+  cutMaterials,
+  setDisplayCutHeight,
+  setDisplayCutRoot,
+  uncutMaterials,
+} from '../../lib/display-cut'
 import useViewer, { type WallMode } from '../../store/use-viewer'
 import { WallCutCaps } from './wall-cut-caps'
 import {
@@ -92,6 +98,37 @@ export function wallsForCapture(
     snapshot.forEach((material, mesh) => {
       mesh.material = material
     })
+  }
+}
+
+/**
+ * The walls as one picture draws them down: each cut at `height` over its level, with the caps, until
+ * the returned function puts them back. A capture renders inside one callback, so the cut is laid on
+ * the meshes themselves instead of waiting on the wall mode and a frame.
+ */
+export function presentWallsDownForCapture(height: number): () => void {
+  setDisplayCutHeight(height)
+  const worn = new Map<Mesh, Material | Material[]>()
+  const nodes = useScene.getState().nodes
+  sceneRegistry.byType.wall!.forEach((wallId) => {
+    const mesh = sceneRegistry.nodes.get(wallId) as Mesh | undefined
+    const node = nodes[wallId as AnyNodeId] as WallNode | undefined
+    if (!mesh || node?.type !== 'wall' || node.wallType === 'curtain') return
+    worn.set(mesh, mesh.material)
+    setDisplayCutRoot(
+      mesh,
+      (sceneRegistry.nodes.get(node.parentId as AnyNodeId) as Mesh) ?? mesh.parent,
+    )
+    if (Array.isArray(mesh.material)) mesh.material = cutMaterials(uncutMaterials(mesh.material))
+  })
+  const caps = new WallCutCaps()
+  caps.update(true, height, useViewer.getState().shading)
+  return () => {
+    caps.dispose()
+    for (const [mesh, material] of worn) {
+      setDisplayCutRoot(mesh, null)
+      mesh.material = material
+    }
   }
 }
 
