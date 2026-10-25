@@ -27,7 +27,7 @@ import {
   Vector3,
 } from 'three'
 import { createStore, type StoreApi } from 'zustand/vanilla'
-import { cutMaterials } from '../../lib/display-cut'
+import { cutMaterials, getDisplayCutRoot, uncutMaterial } from '../../lib/display-cut'
 import { applyMaterialPresetToMaterials } from '../../lib/materials'
 import {
   getWallHideState,
@@ -1019,6 +1019,61 @@ describe('walls low', () => {
     viewerStore.setState({ wallMode: 'up' })
     cache.update(camera, 1.01)
     expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeUndefined()
+  })
+
+  test('a part is dressed once: frames after the first keep its material, and leaving low gives it back', () => {
+    const { mesh } = addStandingWall()
+    const moulding = new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()])
+    mesh.add(moulding)
+    const original = moulding.material
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const worn = moulding.material as Material[]
+    const chain = (material: Material) => {
+      let depth = 0
+      for (
+        let m: Material | undefined = material;
+        m;
+        m = uncutMaterial(m) === m ? undefined : uncutMaterial(m)
+      )
+        depth++
+      return depth
+    }
+    expect(chain(worn[0]!)).toBe(2)
+    for (let frame = 0; frame < 10; frame++) cache.update(camera, 2 + frame)
+    expect(moulding.material).toBe(worn)
+    expect(chain((moulding.material as Material[])[0]!)).toBe(2)
+    viewerStore.setState({ wallMode: 'up' })
+    cache.update(camera, 20)
+    expect(moulding.material).toEqual(original)
+    expect((moulding.material as Material[])[0]).toBe(original[0] as Material)
+  })
+
+  test('a frame in low with nothing changed walks no part and remakes no clone', () => {
+    const { mesh } = addStandingWall()
+    mesh.add(new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()]))
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    cache.update(camera, 2)
+    const registry = spyOn(sceneRegistry.nodes, 'values')
+    for (let frame = 0; frame < 5; frame++) cache.update(camera, 3 + frame)
+    expect(registry).not.toHaveBeenCalled()
+    registry.mockRestore()
+  })
+
+  test('whole walls are whole in their parts too, and a low view gets them back', () => {
+    const { mesh } = addStandingWall()
+    const moulding = new Mesh(new BoxGeometry(4, 0.1, 0.12), [new MeshBasicMaterial()])
+    mesh.add(moulding)
+    viewerStore.setState({ wallMode: 'low' })
+    cache.update(camera, 1)
+    const worn = moulding.material
+    const restore = wallsForCapture(getMaterialsForWall, viewerStore, true)
+    expect((moulding.material as { maskNode?: unknown }[])[0]?.maskNode).toBeUndefined()
+    expect(getDisplayCutRoot(moulding)).toBeNull()
+    restore()
+    expect(moulding.material).toBe(worn)
+    expect(getDisplayCutRoot(moulding)).not.toBeNull()
   })
 
   test('a texture that arrives after the cut is on the clone the wall wears', () => {

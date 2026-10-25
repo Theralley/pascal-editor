@@ -46,6 +46,7 @@ import villaAurelia from '../../lib/__fixtures__/owner-villa-aurelia-basement.js
 import {
   atCaptureSize,
   captureDimensions,
+  captureLift,
   capturesOrthographically,
   exteriorGroundForCapture,
   interiorCutaway,
@@ -661,5 +662,26 @@ describe("a capture's projection", () => {
     expect(capturesOrthographically({}, user.ortho)).toBe(true)
     expect(capturesOrthographically({}, user.perspective)).toBe(false)
     expect(capturesOrthographically({ snapLevels: true }, user.ortho)).toBe(false)
+  })
+})
+
+describe('what a capture tells the scene before it draws', () => {
+  test.each([
+    [{ wholeWalls: false, finished: false, wallsLow: false }, undefined],
+    [{ wholeWalls: true, finished: false, wallsLow: false }, { wholeWalls: true }],
+    [{ wholeWalls: false, finished: true, wallsLow: false }, { finished: true }],
+    [{ wholeWalls: true, finished: true, wallsLow: false }, { wholeWalls: true }],
+    // A pose-less picture of low walls still sets the batch aside.
+    [{ wholeWalls: false, finished: false, wallsLow: true }, { wallsLow: true }],
+    [
+      { wholeWalls: true, finished: false, wallsLow: true },
+      { wholeWalls: true, wallsLow: true },
+    ],
+    [
+      { wholeWalls: false, finished: true, wallsLow: true },
+      { finished: true, wallsLow: true },
+    ],
+  ])('%j is %j', (input, expected) => {
+    expect(captureLift(input)).toEqual(expected)
   })
 })

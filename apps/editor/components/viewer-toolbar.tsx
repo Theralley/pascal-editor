@@ -151,6 +151,9 @@ function CollapseSidebarButton() {
 }
 
 const SEGMENTS = 'h-8 min-h-0 w-auto rounded-none border-0 bg-transparent p-1 [&>button]:min-h-0'
+// Five wall modes: each segment is as wide as its word, with room around it, and the row scrolls
+// before it overflows the toolbar.
+const WALL_SEGMENTS = `${SEGMENTS} max-w-full overflow-x-auto [&>button]:flex-none [&>button]:px-2.5 [&>button]:whitespace-nowrap [&>button>span]:whitespace-nowrap`
 
 function LevelModeToggle() {
   const levelMode = useViewer((state) => state.levelMode)
@@ -177,7 +180,7 @@ function WallModeToggle() {
   return (
     <SegmentedControl
       aria-label="Walls"
-      className={SEGMENTS}
+      className={WALL_SEGMENTS}
       onChange={setWallMode}
       options={[...WALL_MODE_OPTIONS]}
       radio

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import {
   DoorNode,
   LevelNode,
@@ -181,6 +181,29 @@ describe('WallCutCaps', () => {
     // The window's sill is at 1.0 m: a cut above it passes through the window's opening too.
     caps.update(true, 1.2, 'solid')
     expect(area(capsOf(root)!)).toBeCloseTo((4 - 1 - 1) * 0.2, 5)
+    caps.dispose()
+  })
+
+  test("an opening is measured from the wall's base: a doorway on a slab", () => {
+    // The window's wall-local bottom is 0.1 (under the 0.25 cut); on a wall standing 0.2 up it is at 0.3, over it.
+    const window = WindowNode.parse({ position: [2, 0.6, 0], width: 1, height: 1 })
+    const { root } = level({ base: 0.2, children: [window] })
+    const caps = new WallCutCaps()
+    caps.update(true, 0.25, 'solid')
+    expect(area(capsOf(root)!)).toBeCloseTo(4 * 0.2, 5)
+    caps.dispose()
+  })
+
+  test('an update with nothing changed looks at nothing', () => {
+    const { root } = level()
+    const caps = new WallCutCaps()
+    caps.update(true, 0.25, 'solid')
+    const geometry = capsOf(root)!.geometry
+    const nodes = spyOn(sceneRegistry.nodes, 'get')
+    for (let frame = 0; frame < 5; frame++) caps.update(true, 0.25, 'solid')
+    expect(nodes).not.toHaveBeenCalled()
+    expect(capsOf(root)!.geometry).toBe(geometry)
+    nodes.mockRestore()
     caps.dispose()
   })
 

@@ -14,6 +14,7 @@ import { type Camera, type Material, Matrix4, type Mesh, type Object3D, Vector3 
 import {
   cutMaterial,
   cutMaterials,
+  getDisplayCutRoot,
   setDisplayCutHeight,
   setDisplayCutRaycast,
   setDisplayCutRoot,
@@ -280,8 +281,7 @@ export class WallCutoutCache {
       highlightChanged ||
       this.materials !== scene.materials ||
       this.libraryVersion !== libraryVersion ||
-      (this.textureVersion !== textureVersion &&
-        (this.selected.size > 0 || viewer.wallMode === 'low')) ||
+      (this.textureVersion !== textureVersion && this.selected.size > 0) ||
       previous.wallMode !== viewer.wallMode ||
       previous.shading !== viewer.shading ||
       previous.textures !== viewer.textures ||
@@ -302,6 +302,21 @@ export class WallCutoutCache {
       for (const id of this.inPlay) if (!next.has(id)) playChanged.add(id)
       this.inPlay = next
       this.revealing = revealing
+    }
+    // A texture that arrives while the walls are low reaches the clones they wear: the materials the
+    // resolver gave are the same objects, so only the clones are remade, not every wall's palette.
+    const recut =
+      this.textureVersion !== textureVersion &&
+      this.selected.size === 0 &&
+      !appearanceChanged &&
+      viewer.wallMode === 'low'
+    if (recut) {
+      this.textureVersion = textureVersion
+      this.partsStale = true
+      for (const wall of this.walls.values()) {
+        wall.variantKey = undefined
+        this.apply(wall, viewer.wallMode, false)
+      }
     }
     // After the stamps are current: a deferred wall is applied with the walls in play it stands among.
     for (const id of this.deferred.size > 0 ? Array.from(this.deferred) : []) {
@@ -548,29 +563,58 @@ export class WallCutoutCache {
   }
 
   private partsCut = false
+  /** A source material was remade: the parts wear their clones again even if they look dressed. */
+  private partsStale = false
+  private readonly partLists = new WeakMap<
+    Object3D,
+    { revision: number; count: number; parts: Mesh[] }
+  >()
+  /** What a part was last dressed in: while it still wears that, there is nothing to do. */
+  private readonly dressed = new WeakMap<Mesh, Material | Material[]>()
 
   /**
    * The meshes a wall carries as its own, cut like the wall (or given back): its mouldings and
-   * finishes, not the nodes hosted on it (openings, items), which are registered themselves.
+   * finishes, not the nodes hosted on it (openings, items), which are registered themselves. A
+   * renderer may set their materials again at any time, so each is checked, but only against what
+   * it was dressed in: nothing is traversed or remade while nothing changed.
    */
   private cutParts(on: boolean): void {
     if (!on && !this.partsCut) return
     this.partsCut = on
+    const force = this.partsStale
+    this.partsStale = false
+    const revision = sceneRegistry.revision
     for (const wall of this.walls.values()) {
       const root = on && wallCutApplies(wall.node) ? this.cutRootOf(wall) : null
-      for (const part of wallParts(wall.mesh)) {
-        setDisplayCutRoot(part, root)
-        setDisplayCutRaycast(part, root !== null)
-        const material = part.material
-        if (Array.isArray(material)) {
-          const next = root ? cutMaterials(material) : material.map(uncutMaterial)
-          if (!sameMaterialArray(material, next)) part.material = next
-        } else {
-          const next = root ? cutMaterial(material) : uncutMaterial(material)
-          if (next !== material) part.material = next
-        }
+      let list = this.partLists.get(wall.mesh)
+      if (!list || list.revision !== revision || list.count !== wall.mesh.children.length) {
+        list = { revision, count: wall.mesh.children.length, parts: wallParts(wall.mesh) }
+        this.partLists.set(wall.mesh, list)
       }
+      for (const part of list.parts) this.dressPart(part, root, force)
     }
+  }
+
+  private dressPart(part: Mesh, root: Object3D | null, force: boolean): void {
+    const material = part.material
+    if (root && !force && getDisplayCutRoot(part) === root && this.dressed.get(part) === material)
+      return
+    if (!root && !this.dressed.has(part) && getDisplayCutRoot(part) === null) return
+    setDisplayCutRoot(part, root)
+    setDisplayCutRaycast(part, root !== null)
+    // From the source, always: a clone of a clone would nest its mask a level deeper every frame.
+    let next: Material | Material[]
+    if (Array.isArray(material)) {
+      const source = material.map(uncutMaterial)
+      next = root ? cutMaterials(source) : source
+      if (sameMaterialArray(material, next)) next = material
+    } else {
+      const source = uncutMaterial(material)
+      next = root ? cutMaterial(source) : source
+    }
+    if (next !== material) part.material = next
+    if (root) this.dressed.set(part, part.material)
+    else this.dressed.delete(part)
   }
 
   private cutRootOf(wall: CachedWall): Object3D | null {

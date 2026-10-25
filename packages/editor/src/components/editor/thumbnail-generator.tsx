@@ -448,6 +448,27 @@ const FINISHED_PRESENTATION = {
 } as const
 
 /** The viewer switched to FINISHED_PRESENTATION; the returned function puts the user's view back. */
+/**
+ * What a capture tells the scene before it draws: whole walls for an authored pose or an interior,
+ * the finished house for a hero picture, and, whatever else, that the walls are low (the merged
+ * batch is set aside, the followers stay down).
+ */
+export function captureLift({
+  wholeWalls,
+  finished,
+  wallsLow,
+}: {
+  wholeWalls: boolean
+  finished: boolean
+  wallsLow: boolean
+}): { wholeWalls?: boolean; finished?: boolean; wallsLow?: boolean } | undefined {
+  const lift = {
+    ...(wholeWalls ? { wholeWalls: true } : finished ? { finished: true } : {}),
+    ...(wallsLow ? { wallsLow: true } : {}),
+  }
+  return Object.keys(lift).length > 0 ? lift : undefined
+}
+
 export function presentFinished(): () => void {
   const viewer = useViewer.getState()
   const restores: (() => void)[] = []
@@ -979,11 +1000,11 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
               // authored pose is not the user's view, an interior is cut below.
               emitter.emit(
                 'thumbnail:before-capture',
-                cameraPose || interior
-                  ? { wholeWalls: true, wallsLow: event.presentation?.walls?.mode === 'low' }
-                  : snapLevels
-                    ? { finished: true }
-                    : undefined,
+                captureLift({
+                  wholeWalls: Boolean(cameraPose || interior),
+                  finished: snapLevels,
+                  wallsLow: event.presentation?.walls?.mode === 'low',
+                }),
               )
               if (cameraPose) {
                 restore(snapLevelsToTruePositions())

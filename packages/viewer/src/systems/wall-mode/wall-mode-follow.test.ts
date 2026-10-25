@@ -274,6 +274,20 @@ describe('WallModeFollowCache', () => {
     expect(shown(mesh)).toBe(false)
   })
 
+  test('a capture of low walls leaves the followers down, an export still sees them', () => {
+    const { mesh } = addScene('gable')
+    setMode('low')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    cache.beforeCapture({ wholeWalls: true, wallsLow: true })
+    expect(shown(mesh)).toBe(false)
+    cache.afterCapture()
+    cache.beforeCapture({ exporting: true, wallsLow: true })
+    expect(shown(mesh)).toBe(true)
+    cache.afterCapture()
+    expect(shown(mesh)).toBe(false)
+  })
+
   test('announces when the mode starts and stops hiding a node', () => {
     const { id } = addScene('gable')
     const events: Array<[string, boolean]> = []

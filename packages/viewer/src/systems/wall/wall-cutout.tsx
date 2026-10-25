@@ -73,6 +73,7 @@ export function wallsForCapture(
   wholeWalls: boolean,
 ): () => void {
   const snapshot = new Map<Mesh, Material | Material[]>()
+  const cutParts = new Map<Mesh, { material: Material | Material[]; root: Object3D | null }>()
   const viewer = viewerStore.getState()
   sceneRegistry.byType.wall!.forEach((wallId) => {
     const wallMesh = sceneRegistry.nodes.get(wallId) as Mesh | undefined
@@ -88,6 +89,18 @@ export function wallsForCapture(
       useScene.getState().materials,
       getWallFinishRefs(wallMesh.geometry),
     )
+    // Whole walls are whole in what they carry too: a low view cut their parts, and a part is not a wall.
+    if (wholeWalls) {
+      for (const part of wallParts(wallMesh)) {
+        const root = getDisplayCutRoot(part)
+        if (!root) continue
+        cutParts.set(part, { material: part.material, root })
+        setDisplayCutRoot(part, null)
+        part.material = Array.isArray(part.material)
+          ? uncutMaterials(part.material)
+          : uncutMaterial(part.material)
+      }
+    }
     const current = wallMesh.material as Material | Material[]
     snapshot.set(wallMesh, current)
     if (wholeWalls || current === mats.deleteVisible) {
@@ -104,6 +117,10 @@ export function wallsForCapture(
   return () => {
     snapshot.forEach((material, mesh) => {
       mesh.material = material
+    })
+    cutParts.forEach(({ material, root }, part) => {
+      setDisplayCutRoot(part, root)
+      part.material = material
     })
   }
 }

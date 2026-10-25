@@ -207,9 +207,14 @@ export class WallModeFollowCache {
     this.nodes = undefined
   }
 
-  /** A capture of whole walls, or an export, sees every followed node. */
-  beforeCapture(event: { wholeWalls?: boolean; exporting?: boolean } | undefined): void {
-    if (!(event?.wholeWalls || event?.exporting)) return
+  /**
+   * A capture of whole walls, or an export, sees every followed node. A capture of low walls does
+   * not: its followers stay hidden as they are while the walls are low, until the cut reaches them.
+   */
+  beforeCapture(
+    event: { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean } | undefined,
+  ): void {
+    if (!(event?.wholeWalls || event?.exporting) || (event.wallsLow && !event.exporting)) return
     for (const [id, follower] of this.tracked) {
       if (!follower.hidden) continue
       const group = sceneRegistry.nodes.get(id)
@@ -394,7 +399,7 @@ export const WallModeFollowSystem = ({
   useFrame((state) => cache.update(state.camera), WALL_MODE_FOLLOW_FRAME_PRIORITY)
 
   useEffect(() => {
-    const before = (event?: { wholeWalls?: boolean; exporting?: boolean }) =>
+    const before = (event?: { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean }) =>
       cache.beforeCapture(event)
     const after = () => cache.afterCapture()
     emitter.on('thumbnail:before-capture', before)

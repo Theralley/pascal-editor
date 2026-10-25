@@ -144,18 +144,22 @@ const isOpeningLike = (node: unknown): node is OpeningLike => {
   )
 }
 
-/** The stretches of `wall` where one of its openings is open at the cut plane (level-local height). */
+/**
+ * The stretches of `wall` where one of its openings is open at the cut plane (level-local height).
+ * An opening's height is the wall's own, which starts at the wall's base over its level.
+ */
 function gapsAt(
   wall: WallNode,
   nodes: ReturnType<typeof useScene.getState>['nodes'],
   height: number,
 ): Gap[] {
   const gaps: Gap[] = []
+  const base = (sceneRegistry.nodes.get(wall.id as AnyNodeId)?.position.y ?? 0) as number
   for (const childId of wall.children ?? []) {
     const child = getEffectiveNode(nodes[childId as AnyNodeId] as never) as unknown
     if (!isOpeningLike(child)) continue
-    const bottom = child.position[1]! - child.height / 2
-    const top = child.position[1]! + child.height / 2
+    const bottom = base + child.position[1]! - child.height / 2
+    const top = base + child.position[1]! + child.height / 2
     if (bottom >= height - EPS || top <= height + EPS) continue
     gaps.push([child.position[0]! - child.width / 2, child.position[0]! + child.width / 2])
   }
@@ -193,6 +197,8 @@ export class WallCutCaps {
   private readonly dirty = new Set<string>()
   private material: Material | null = null
   private shading: RenderShading | undefined
+  /** What the caps were last made from; while it holds, an update does nothing. */
+  private inputs: { nodes: unknown; revision: number; height: number } | null = null
 
   constructor() {
     WallCutCaps.live.add(this)
@@ -232,6 +238,16 @@ export class WallCutCaps {
       for (const cap of this.caps.values()) if (cap.mesh) cap.mesh.material = this.material
     }
     const { nodes } = useScene.getState()
+    const last = this.inputs
+    if (
+      last &&
+      last.nodes === nodes &&
+      last.revision === sceneRegistry.revision &&
+      last.height === height &&
+      this.dirty.size === 0
+    )
+      return
+    this.inputs = { nodes, revision: sceneRegistry.revision, height }
     const levelIds = sceneRegistry.byType.level ?? new Set<string>()
     for (const [levelId, cap] of this.caps) {
       if (!levelIds.has(levelId) || sceneRegistry.nodes.get(levelId as AnyNodeId) !== cap.root)
@@ -359,6 +375,7 @@ export class WallCutCaps {
   }
 
   private clear(): void {
+    this.inputs = null
     for (const levelId of [...this.caps.keys()]) this.remove(levelId)
   }
 }
