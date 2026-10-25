@@ -586,6 +586,24 @@ describe('WallCutCaps', () => {
       caps.dispose()
     })
 
+    test('a part moved before the world matrices catch up is capped from where it stands, not stale', () => {
+      const { root, mesh } = level()
+      const part = casing()
+      mesh.add(part)
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      // The local matrix moves first; the renderer propagates the world ones later.
+      part.position.y = 1
+      part.updateMatrix()
+      caps.update(true, 0.25, 'solid')
+      root.updateMatrixWorld(true)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      caps.dispose()
+    })
+
     test('a part added late, then moved above the cut, is capped and then not', () => {
       const { root, mesh } = level()
       const caps = new WallCutCaps()

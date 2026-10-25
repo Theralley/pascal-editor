@@ -444,7 +444,12 @@ export class WallCutCaps {
         record.refs.length = refAt
         differs = true
       }
-      if (differs) changed = true
+      if (differs) {
+        changed = true
+        // The key and the section read world matrices: bring the wall's own up to the local ones the
+        // scan just recorded, so they never lag behind it.
+        wall.updateWorldMatrix(false, true)
+      }
     }
     return changed
   }
