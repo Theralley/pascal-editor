@@ -289,7 +289,7 @@ export function EditorCommands() {
         label: 'Wall Mode',
         group: 'Viewer Controls',
         icon: <Layers className="h-4 w-4" />,
-        keywords: ['wall', 'cutaway', 'up', 'down', 'translucent', 'view'],
+        keywords: ['wall', 'cutaway', 'up', 'low', 'down', 'hidden', 'translucent', 'view'],
         badge: () => {
           const mode = useViewer.getState().wallMode
           return WALL_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode
