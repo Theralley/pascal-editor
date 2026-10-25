@@ -9,9 +9,12 @@ import {
   DialogTrigger,
 } from '../../../../../components/ui/primitives/dialog'
 import { Slider } from '../../../../../components/ui/slider'
+import { useT } from '../../../../../i18n'
 import useAudio from '../../../../../store/use-audio'
+import { messages } from './messages'
 
 export function AudioSettingsDialog() {
+  const t = useT(messages)
   const {
     masterVolume,
     sfxVolume,
@@ -28,21 +31,19 @@ export function AudioSettingsDialog() {
       <DialogTrigger asChild>
         <Button className="w-full justify-start gap-2" variant="outline">
           {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-          Audio settings
+          {t('audio.title')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Audio settings</DialogTitle>
-          <DialogDescription>
-            Volume levels apply to every tab. Muting applies to this tab only.
-          </DialogDescription>
+          <DialogTitle>{t('audio.title')}</DialogTitle>
+          <DialogDescription>{t('audio.description')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           {/* Master Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-medium text-sm">Master volume</label>
+              <label className="font-medium text-sm">{t('audio.master')}</label>
               <span className="text-muted-foreground text-sm">{masterVolume}%</span>
             </div>
             <Slider
@@ -56,7 +57,7 @@ export function AudioSettingsDialog() {
           {/* Radio Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-medium text-sm">Radio volume</label>
+              <label className="font-medium text-sm">{t('audio.radio')}</label>
               <span className="text-muted-foreground text-sm">{radioVolume}%</span>
             </div>
             <Slider
@@ -70,7 +71,7 @@ export function AudioSettingsDialog() {
           {/* SFX Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-medium text-sm">Sound effects</label>
+              <label className="font-medium text-sm">{t('audio.effects')}</label>
               <span className="text-muted-foreground text-sm">{sfxVolume}%</span>
             </div>
             <Slider
@@ -89,7 +90,7 @@ export function AudioSettingsDialog() {
               variant={muted ? 'default' : 'outline'}
             >
               {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-              {muted ? 'Unmute this tab' : 'Mute this tab'}
+              {muted ? t('audio.unmute') : t('audio.mute')}
             </Button>
           </div>
         </div>

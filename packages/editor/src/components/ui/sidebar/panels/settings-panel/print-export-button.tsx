@@ -16,7 +16,9 @@ import {
   isPrintExportReport,
   type PrintExportReport,
 } from '../../../../../lib/print-export'
+import { translate, useT } from '../../../../../i18n'
 import useEditor from '../../../../../store/use-editor'
+import { messages } from './messages'
 
 type PreparedPrintExport = {
   artifact: ModelExportArtifact
@@ -53,13 +55,13 @@ export async function preparePrintExport(
     !artifact ||
     (!isPrintExportReport(artifact.metadata) && !isPrintLevelBundleReport(artifact.metadata))
   ) {
-    throw new Error('The 3D print exporter did not return a valid file.')
+    throw new Error(translate(messages, 'print.invalidFile'))
   }
 
   if (artifact.metadata.status === 'blocked') {
     throw new Error(
       firstBlockingMessage(artifact.metadata) ??
-        'This project cannot be exported as printable parts.',
+        translate(messages, 'print.blocked'),
     )
   }
 
@@ -67,6 +69,7 @@ export async function preparePrintExport(
 }
 
 export function PrintExportButton({ onlyVisible }: { onlyVisible: boolean }) {
+  const t = useT(messages)
   const modelExport = useEditor((state) => state.modelExport)
   const [exportingFormat, setExportingFormat] = useState<PrintModelExportFormat | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +84,7 @@ export function PrintExportButton({ onlyVisible }: { onlyVisible: boolean }) {
       const prepared = await preparePrintExport(modelExport, onlyVisible, format)
       await downloadProjectFile(prepared.artifact.blob, prepared.artifact.filename, fileSink)
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '3D print export failed.')
+      setError(reason instanceof Error ? reason.message : t('print.failed'))
     } finally {
       setExportingFormat(null)
     }
@@ -99,7 +102,7 @@ export function PrintExportButton({ onlyVisible }: { onlyVisible: boolean }) {
         variant="outline"
       >
         <Printer className="size-4" />
-        Export 3D print 3MF
+        {t('print.threeMf')}
       </Button>
       <Button
         aria-busy={exportingFormat === 'print-stl'}
@@ -109,7 +112,7 @@ export function PrintExportButton({ onlyVisible }: { onlyVisible: boolean }) {
         variant="outline"
       >
         <Printer className="size-4" />
-        Export 3D print STL
+        {t('print.stl')}
       </Button>
       {error && (
         <div className="col-span-full flex gap-2 text-destructive text-xs">

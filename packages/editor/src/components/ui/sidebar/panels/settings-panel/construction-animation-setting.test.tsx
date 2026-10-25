@@ -15,12 +15,13 @@ import useConstructionReveal, {
   FRAMING_KIND,
   resolveConstructionLevel,
 } from '../../../../../store/use-construction-reveal'
+import { translate } from '../../../../../i18n'
 import { AnimationSpeedSetting } from './animation-speed-setting'
 import {
   ConstructionAnimationSetting,
   constructionLevelOptions,
-  FRAMING_NEEDS_ARCHITECT,
 } from './construction-animation-setting'
+import { messages } from './messages'
 
 // The framing plugin carries the Framing level: without it in the project the choice is greyed out with the
 // reason as its tip, and the level that plays is Full.
@@ -76,8 +77,8 @@ describe('the levels the control offers', () => {
   test('without the plugin, Framing is disabled and its tip says it needs the Architect plugin', () => {
     const framingOption = constructionLevelOptions(false).find((o) => o.value === 'framing')!
     expect(framingOption.disabled).toBe(true)
-    expect(framingOption.title).toBe(FRAMING_NEEDS_ARCHITECT)
-    expect(FRAMING_NEEDS_ARCHITECT).toBe('Framing needs the Architect plugin.')
+    expect(framingOption.titleKey).toBe('construction.framingNeedsArchitect')
+    expect(translate(messages, framingOption.titleKey)).toBe('Framing needs the Architect plugin.')
     for (const option of constructionLevelOptions(false).filter((o) => o.value !== 'framing'))
       expect(option.disabled).toBe(false)
   })

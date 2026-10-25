@@ -303,6 +303,7 @@ export type { FunctionTreeNode } from './components/ui/sidebar/panels/items-pane
 export {
   type InterfaceTheme,
   InterfaceThemeRow,
+  LanguageRow,
   type ProjectVisibility,
   SettingsPanel,
   type SettingsPanelProps,
@@ -367,6 +368,24 @@ export { usePlacementNotice } from './hooks/use-placement-notice'
 export { useReducedMotion } from './hooks/use-reduced-motion'
 export { useSelectedRoom } from './hooks/use-selected-room'
 export { type Selection, useSelection } from './hooks/use-selection'
+export {
+  defineMessages,
+  detectLocale,
+  getLocale,
+  LOCALE_NAMES,
+  LOCALES,
+  type Locale,
+  type Message,
+  type MessageCatalog,
+  type MessageKey,
+  type MessageVars,
+  type PluralMessage,
+  setLocale,
+  translate,
+  useApplyLocale,
+  useLocale,
+  useT,
+} from './i18n'
 export {
   clearPlacementSurface,
   getPlacementSurface,
@@ -682,6 +701,7 @@ export {
   buildMeasurementAngleArcPoints,
   cubicMetersToVolumeUnit,
   formatAreaLabel,
+  formatDecimal,
   formatLinearMeasurement,
   formatVolumeLabel,
   getAreaUnitLabel,

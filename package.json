@@ -9,7 +9,7 @@
     "lint:fix": "biome lint --write",
     "format": "biome format --write",
     "format:check": "biome format",
-    "check": "biome check",
+    "check": "biome check && bun scripts/check-i18n.ts && bun test scripts/check-i18n.test.ts",
     "checks": "bun run check && bun run check-types",
     "check:fix": "biome check --write",
     "check-types": "turbo run check-types",

@@ -1,4 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
+import { formatRoomArea } from '../components/editor/room-labels'
+import { setLocale } from '../i18n'
 import { measurementHint, parseMeasurement } from '../index'
 import {
   buildMeasurementAngleArcPoints,
@@ -211,5 +213,52 @@ describe('typed measurement fields', () => {
     }
     expect(measurementHint('180cm', length)).toBe('= 1.80 m')
     expect(measurementHint('6', length)).toBeNull()
+  })
+})
+
+describe('measurements in the active language', () => {
+  afterEach(() => setLocale('en'))
+
+  test('Swedish writes a decimal comma and a space before the unit', () => {
+    const cases = [
+      [formatAreaLabel(818.7, 'metric', 1, 'sv'), '818,7 m²'],
+      [formatAreaLabel(12, 'metric', 2, 'sv'), '12,00 m²'],
+      [formatAreaLabel(12, 'imperial', 1, 'sv'), '129,2 ft²'],
+      [formatVolumeLabel(3.456, 'metric', 2, 'sv'), '3,46 m³'],
+      [formatLinearMeasurement(3.5, 'metric', 'meters', 'sv'), '3,5 m'],
+      [formatLinearMeasurement(-2.25, 'metric', 'meters', 'sv'), '-2,25 m'],
+      [formatLinearMeasurement(1.234, 'metric', 'millimeters', 'sv'), '1234 mm'],
+      [formatLinearMeasurement(1000, 'metric', 'meters', 'sv'), '1000 m'],
+    ]
+    for (const [actual, expected] of cases) expect(actual).toBe(expected)
+  })
+
+  test('English keeps the point and the unit attached', () => {
+    expect(formatAreaLabel(818.7, 'metric', 1, 'en')).toBe('818.7m²')
+    expect(formatLinearMeasurement(3.5, 'metric', 'meters', 'en')).toBe('3.5m')
+    expect(formatLinearMeasurement(1.234, 'metric', 'millimeters', 'en')).toBe('1234mm')
+  })
+
+  test('feet and inches read the same in both languages', () => {
+    expect(formatLinearMeasurement(5.8, 'imperial', 'meters', 'sv')).toBe(`19'0"`)
+    expect(formatLinearMeasurement(5.8, 'imperial', 'meters', 'en')).toBe(`19'0"`)
+  })
+
+  test('without a language argument the formatters follow the stored preference', () => {
+    expect(formatAreaLabel(818.7, 'metric')).toBe('818.7m²')
+    setLocale('sv')
+    expect(formatAreaLabel(818.7, 'metric')).toBe('818,7 m²')
+    expect(formatRoomArea(33, 'metric')).toBe('33,0 m²')
+  })
+
+  test('a comma decimal is read in Swedish, and a point in both', () => {
+    const length = { kind: 'length', unitId: 'm' } as const
+    expect(parseMeasurement('1,5', length, { locale: 'sv' })).toBeCloseTo(1.5)
+    expect(parseMeasurement('1,5 m', length, { locale: 'sv' })).toBeCloseTo(1.5)
+    expect(parseMeasurement('1,500', length, { locale: 'sv' })).toBeCloseTo(1.5)
+    expect(parseMeasurement('180 cm', length, { locale: 'sv' })).toBeCloseTo(1.8)
+    expect(parseMeasurement('1.5', length, { locale: 'sv' })).toBeCloseTo(1.5)
+    expect(parseMeasurement('1.5', length, { locale: 'en' })).toBeCloseTo(1.5)
+    expect(parseMeasurement('1,500', length, { locale: 'en' })).toBeCloseTo(1500)
   })
 })

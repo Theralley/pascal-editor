@@ -70,6 +70,15 @@ import {
 } from './../../../../../components/ui/primitives/dialog'
 import { Input } from './../../../../../components/ui/primitives/input'
 import { Switch } from './../../../../../components/ui/primitives/switch'
+import {
+  LOCALE_NAMES,
+  LOCALES,
+  type Locale,
+  type MessageKey,
+  setLocale,
+  useLocale,
+  useT,
+} from './../../../../../i18n'
 import { cn } from './../../../../../lib/utils'
 import { refusedObjectsNotice } from './../../../../../components/editor/group-actions'
 import { addStoreyBelow, addStoreyOnTop } from './../../../../../lib/add-storey'
@@ -83,6 +92,7 @@ import { AnimationSpeedSetting } from './animation-speed-setting'
 import { ConstructionAnimationSetting } from './construction-animation-setting'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { LoadBuildDialog, type PendingImport } from './load-build-dialog'
+import { messages } from './messages'
 import { PrintExportButton } from './print-export-button'
 
 type SceneNode = Record<string, unknown> & {
@@ -118,12 +128,12 @@ const MODEL_EXPORT_FORMATS = [
 
 type ModelExportFormat = (typeof MODEL_EXPORT_FORMATS)[number]['format']
 
-const SEND_TO_BLENDER_STEP_LABEL: Record<SendToAppStep, string> = {
-  probing: 'Looking for Blender…',
-  exporting: 'Preparing the scene…',
-  sending: 'Sending to Blender…',
-  importing: 'Blender is importing…',
-}
+const SEND_TO_BLENDER_STEP_LABEL = {
+  probing: 'blender.probing',
+  exporting: 'blender.exporting',
+  sending: 'blender.sending',
+  importing: 'blender.importing',
+} as const satisfies Record<SendToAppStep, MessageKey<typeof messages>>
 
 const BLENDER_ADDON_URL = 'https://github.com/pascalorg/blender-addon#install'
 
@@ -312,35 +322,11 @@ export function SettingsSwitchRow({
 
 export type InterfaceTheme = 'system' | 'light' | 'dark'
 
-const INTERFACE_THEME_OPTIONS: { label: ReactNode; value: InterfaceTheme }[] = [
-  {
-    label: (
-      <>
-        <Monitor className="size-3.5" />
-        System
-      </>
-    ),
-    value: 'system',
-  },
-  {
-    label: (
-      <>
-        <Sun className="size-3.5" />
-        Light
-      </>
-    ),
-    value: 'light',
-  },
-  {
-    label: (
-      <>
-        <Moon className="size-3.5" />
-        Dark
-      </>
-    ),
-    value: 'dark',
-  },
-]
+const INTERFACE_THEME_OPTIONS = [
+  { icon: <Monitor className="size-3.5" />, labelKey: 'theme.system', value: 'system' },
+  { icon: <Sun className="size-3.5" />, labelKey: 'theme.light', value: 'light' },
+  { icon: <Moon className="size-3.5" />, labelKey: 'theme.dark', value: 'dark' },
+] as const satisfies { icon: ReactNode; labelKey: MessageKey<typeof messages>; value: InterfaceTheme }[]
 
 /**
  * The interface theme as a System / Light / Dark row. The editor applies no theme itself: its
@@ -353,17 +339,48 @@ export function InterfaceThemeRow({
   onChange: (value: InterfaceTheme) => void
   value: InterfaceTheme
 }) {
+  const t = useT(messages)
   const labelId = useId()
+  const options = INTERFACE_THEME_OPTIONS.map(({ icon, labelKey, value }) => ({
+    label: (
+      <>
+        {icon}
+        {t(labelKey)}
+      </>
+    ),
+    value,
+  }))
   return (
     <div className="flex flex-col gap-2 py-1 @sm:flex-row @sm:items-center @sm:justify-between @sm:gap-4">
       <div className="min-w-0 space-y-0.5">
         <p className="font-medium text-sm" id={labelId}>
-          Interface theme
+          {t('theme.label')}
         </p>
-        <p className="text-muted-foreground text-xs">System follows your device’s appearance.</p>
+        <p className="text-muted-foreground text-xs">{t('theme.hint')}</p>
       </div>
       <div aria-labelledby={labelId} className="w-full shrink-0 @sm:w-60" role="group">
-        <SegmentedControl onChange={onChange} options={INTERFACE_THEME_OPTIONS} value={value} />
+        <SegmentedControl onChange={onChange} options={options} value={value} />
+      </div>
+    </div>
+  )
+}
+
+/** The editor's language, each name in its own language. It is the editor's own setting, kept per viewer. */
+export function LanguageRow() {
+  const t = useT(messages)
+  const locale = useLocale()
+  const labelId = useId()
+  const options = LOCALES.map((value: Locale) => ({ label: LOCALE_NAMES[value], value }))
+  return (
+    <div className="flex flex-col gap-2 py-1 @sm:flex-row @sm:items-center @sm:justify-between @sm:gap-4">
+      <div className="min-w-0 space-y-0.5">
+        <p className="font-medium text-sm" id={labelId}>
+          {t('language.label')}
+        </p>
+        <p className="text-muted-foreground text-xs">{t('language.hint')}</p>
+      </div>
+      <div aria-labelledby={labelId} className="w-full shrink-0 @sm:w-60" role="group">
+        <SegmentedControl onChange={setLocale} options={options} value={locale} />
       </div>
     </div>
   )
@@ -371,14 +388,15 @@ export function InterfaceThemeRow({
 
 type ProjectUnitsChoice = 'none' | 'metric' | 'imperial'
 
-const PROJECT_UNIT_OPTIONS: { label: ReactNode; value: ProjectUnitsChoice }[] = [
-  { label: 'Not set', value: 'none' },
-  { label: 'Metric', value: 'metric' },
-  { label: 'Imperial', value: 'imperial' },
-]
+const PROJECT_UNIT_OPTIONS = [
+  { labelKey: 'units.notSet', value: 'none' },
+  { labelKey: 'units.metric', value: 'metric' },
+  { labelKey: 'units.imperial', value: 'imperial' },
+] as const satisfies { labelKey: MessageKey<typeof messages>; value: ProjectUnitsChoice }[]
 
 /** The project's display units, saved on the site so everyone who opens the project reads the same. */
 function ProjectUnitsRow() {
+  const t = useT(messages)
   const labelId = useId()
   const site = useScene((state) => {
     for (const id of state.rootNodeIds) {
@@ -408,20 +426,25 @@ function ProjectUnitsRow() {
     <div className="flex flex-col gap-2 py-1 @sm:flex-row @sm:items-center @sm:justify-between @sm:gap-4">
       <div className="min-w-0 space-y-0.5">
         <p className="font-medium text-sm" id={labelId}>
-          Units
+          {t('units.label')}
         </p>
         <p className="text-muted-foreground text-xs">
           {projectUnits
             ? unitSource === 'local'
-              ? 'You are showing different units than the project. Use project units in the Display menu.'
-              : 'Everyone who opens the project reads these units.'
-            : `Not set: using ${unit === 'imperial' ? 'imperial' : 'metric'} (your default).`}
+              ? t('units.differsFromProject')
+              : t('units.fromProject')
+            : unit === 'imperial'
+              ? t('units.usingImperial')
+              : t('units.usingMetric')}
         </p>
       </div>
       <div aria-labelledby={labelId} className="w-full shrink-0 @sm:w-60" role="group">
         <SegmentedControl
           onChange={setProjectUnits}
-          options={PROJECT_UNIT_OPTIONS}
+          options={PROJECT_UNIT_OPTIONS.map(({ labelKey, value }) => ({
+            label: t(labelKey),
+            value,
+          }))}
           value={projectUnits?.system ?? 'none'}
         />
       </div>
@@ -450,6 +473,7 @@ export interface SettingsPanelProps {
 }
 
 function FloorSettingsSection() {
+  const t = useT(messages)
   const selectedBuildingId = useViewer((state) => state.selection.buildingId)
   const selectedLevelId = useViewer((state) => state.selection.levelId)
   const setSelection = useViewer((state) => state.setSelection)
@@ -493,11 +517,11 @@ function FloorSettingsSection() {
 
   return (
     <div className="space-y-3">
-      <label className="font-medium text-muted-foreground text-xs uppercase">Floors</label>
+      <label className="font-medium text-muted-foreground text-xs uppercase">{t('floors.heading')}</label>
       <div className="grid grid-cols-2 gap-2">
         <Button className="justify-start" onClick={addFloor} size="sm" type="button" variant="outline">
           <ArrowUp className="size-3.5" />
-          Add floor
+          {t('floors.add')}
         </Button>
         <Button
           className="justify-start"
@@ -507,13 +531,13 @@ function FloorSettingsSection() {
           variant="outline"
         >
           <ArrowDown className="size-3.5" />
-          Add basement
+          {t('floors.addBasement')}
         </Button>
       </div>
 
       <div className="space-y-1 rounded-md border p-1">
         {levels.length === 0 ? (
-          <div className="px-2 py-2 text-muted-foreground text-xs">No floors yet</div>
+          <div className="px-2 py-2 text-muted-foreground text-xs">{t('floors.none')}</div>
         ) : (
           levels.map((level) => {
             const isSelected = level.id === selectedLevelId
@@ -538,11 +562,11 @@ function FloorSettingsSection() {
                   </span>
                 </button>
                 <button
-                  aria-label={`Remove ${getLevelDisplayName(level)}`}
+                  aria-label={t('floors.remove', { name: getLevelDisplayName(level) })}
                   className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
                   disabled={!canDelete}
                   onClick={() => deleteLevelWithFallbackSelection(level.id)}
-                  title={canDelete ? 'Remove floor' : 'The ground floor cannot be removed'}
+                  title={canDelete ? t('floors.removeTitle') : t('floors.groundLocked')}
                   type="button"
                 >
                   <Trash2 className="size-3.5" />
@@ -553,7 +577,7 @@ function FloorSettingsSection() {
         )}
       </div>
       <p className="text-muted-foreground text-xs">
-        Select a floor to make it active. The ground floor is always kept as the building datum.
+        {t('floors.help')}
       </p>
     </div>
   )
@@ -568,6 +592,7 @@ export function SettingsPanel({
   preferences,
   projectSection,
 }: SettingsPanelProps = {}) {
+  const t = useT(messages)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyResetTimeoutRef = useRef<number | null>(null)
   const nodes = useScene((state) => state.nodes)
@@ -691,7 +716,7 @@ export function SettingsPanel({
     const date = new Date().toISOString().split('T')[0]
     setModelExportError(null)
     void downloadProjectFile(blob, `layout_${date}.json`).catch((error: unknown) => {
-      setModelExportError(error instanceof Error ? error.message : 'Could not save the file')
+      setModelExportError(error instanceof Error ? error.message : t('saveLoad.saveFailed'))
     })
   }
 
@@ -718,7 +743,7 @@ export function SettingsPanel({
               {
                 severity: 'error',
                 code: 'invalid_json',
-                message: 'File could not be parsed as JSON.',
+                message: t('saveLoad.invalidJson'),
               },
             ],
             warnings: [],
@@ -733,7 +758,9 @@ export function SettingsPanel({
         try {
           await fileSink?.({ blob: file, name: file.name })
         } catch (error) {
-          setModelExportError(error instanceof Error ? error.message : 'Could not save the source file')
+          setModelExportError(
+            error instanceof Error ? error.message : t('saveLoad.sourceFailed'),
+          )
           return
         }
         if (fileSink !== getProjectFileSink()) return
@@ -866,12 +893,12 @@ export function SettingsPanel({
             : [],
       })
       if (!artifact) {
-        throw new Error('Model export did not produce a file')
+        throw new Error(t('export.noFile'))
       }
       if (artifact.warnings?.length) setModelExportWarning(artifact.warnings.join(' '))
     } catch (error) {
       setModelExportError(
-        error instanceof Error ? error.message : `Couldn’t export ${label}. Try again.`,
+        error instanceof Error ? error.message : t('export.failed', { format: label }),
       )
     } finally {
       setActiveModelExport(null)
@@ -888,14 +915,14 @@ export function SettingsPanel({
       if (probe.status === 'unreachable') {
         setSendToBlenderMessage({
           tone: 'error',
-          text: 'Blender isn’t listening. Open Blender with the Pascal add-on installed and enabled, then try again.',
+          text: t('blender.unreachable'),
         })
         return
       }
       if (probe.status === 'refused') {
         setSendToBlenderMessage({
           tone: 'error',
-          text: `Blender is open but hasn’t allowed ${window.location.origin} yet. In Blender, open the Pascal tab in the 3D viewport sidebar (N) and click Allow.`,
+          text: t('blender.refused', { origin: window.location.origin }),
         })
         return
       }
@@ -909,7 +936,7 @@ export function SettingsPanel({
         ),
         download: false,
       })
-      if (!artifact) throw new Error('Model export did not produce a file')
+      if (!artifact) throw new Error(t('export.noFile'))
 
       setSendToBlenderStep('sending')
       const queued = await sendGlbToLocalApp(probe.base, artifact.blob, {
@@ -921,13 +948,15 @@ export function SettingsPanel({
       const done = await waitForLocalImport(probe.base, queued.id)
       setSendToBlenderMessage({
         tone: 'info',
-        text: done.summary ? `Sent to Blender. ${done.summary}.` : 'Sent to Blender.',
+        text: done.summary
+          ? t('blender.sentWithSummary', { summary: done.summary })
+          : t('blender.sent'),
       })
     } catch (error) {
       const text =
         error instanceof LocalAppError || error instanceof Error
           ? error.message
-          : 'Couldn’t send the scene to Blender. Try again.'
+          : t('blender.failed')
       setSendToBlenderMessage({ tone: 'error', text })
     } finally {
       setSendToBlenderStep(null)
@@ -943,7 +972,9 @@ export function SettingsPanel({
       await exportFloorplanPdf(scope)
     } catch (error) {
       setFloorplanExportError(
-        `Couldn’t export the floor plan. ${error instanceof Error ? error.message : 'Try again.'}`,
+        t('floorPlan.failed', {
+          reason: error instanceof Error ? error.message : t('floorPlan.tryAgain'),
+        }),
       )
     } finally {
       setActiveFloorplanExport(null)
@@ -963,19 +994,19 @@ export function SettingsPanel({
         </section>
         {projectId && (
           <SettingsSection
-            description="Reference this project from the API, MCP tools, or support."
-            title="Project"
+            description={t('project.description')}
+            title={t('project.title')}
           >
             <div className="flex items-center gap-2">
               <Input
-                aria-label="Project ID"
+                aria-label={t('project.idLabel')}
                 className="font-mono text-xs"
                 readOnly
                 value={projectId}
               />
               <Button
                 aria-label={
-                  projectIdCopyState === 'copied' ? 'Project ID copied' : 'Copy project ID'
+                  projectIdCopyState === 'copied' ? t('project.idCopied') : t('project.idCopy')
                 }
                 className="rounded-full"
                 onClick={() => void handleCopyProjectId()}
@@ -989,10 +1020,10 @@ export function SettingsPanel({
                   <Copy className="size-3.5" />
                 )}
                 {projectIdCopyState === 'copied'
-                  ? 'Copied'
+                  ? t('copy.copied')
                   : projectIdCopyState === 'error'
-                    ? 'Try again'
-                    : 'Copy'}
+                    ? t('copy.retry')
+                    : t('copy.copy')}
               </Button>
             </div>
           </SettingsSection>
@@ -1002,51 +1033,49 @@ export function SettingsPanel({
 
         {/* Sharing (only for cloud projects) */}
         {projectId && !isLocalProject && (
-          <SettingsSection description="Control who can open this project." title="Sharing">
+          <SettingsSection description={t('sharing.description')} title={t('sharing.title')}>
             <SettingsSwitchRow
               checked={!(projectVisibility?.isPrivate ?? false)}
               description={
-                projectVisibility?.isPrivate
-                  ? 'Only you can view it.'
-                  : 'Anyone with the link can view it.'
+                projectVisibility?.isPrivate ? t('sharing.privateHint') : t('sharing.publicHint')
               }
-              label="Public project"
+              label={t('sharing.public')}
               onCheckedChange={(checked) => handleVisibilityChange('isPrivate', !checked)}
             />
             <SettingsSwitchRow
               checked={projectVisibility?.showScansPublic ?? true}
-              description="Visible in the public viewer."
-              label="Show 3D scans"
+              description={t('sharing.publicViewerHint')}
+              label={t('sharing.scans')}
               onCheckedChange={(checked) => handleVisibilityChange('showScansPublic', checked)}
             />
             <SettingsSwitchRow
               checked={projectVisibility?.showGuidesPublic ?? true}
-              description="Visible in the public viewer."
-              label="Show floor plans"
+              description={t('sharing.publicViewerHint')}
+              label={t('sharing.floorPlans')}
               onCheckedChange={(checked) => handleVisibilityChange('showGuidesPublic', checked)}
             />
           </SettingsSection>
         )}
 
         <SettingsSection
-          description="Saved with this project for everyone who opens it."
-          title="Project units"
+          description={t('projectUnits.description')}
+          title={t('projectUnits.title')}
         >
           <ProjectUnitsRow />
         </SettingsSection>
 
-        <SettingsSection description="Rendering options for this editor session." title="Viewer">
+        <SettingsSection description={t('viewer.description')} title={t('viewer.title')}>
           <SettingsSwitchRow
             checked={shadows}
-            description="Cast shadows from lights."
-            label="Shadows"
+            description={t('viewer.shadowsHint')}
+            label={t('viewer.shadows')}
             onCheckedChange={(checked) => useViewer.getState().setShadows(checked)}
           />
         </SettingsSection>
 
-        <SettingsSection description="Download the scene or hand it to another app." title="Export">
+        <SettingsSection description={t('export.description')} title={t('export.title')}>
           <div className="space-y-3">
-            <SettingsSubheading>3D model</SettingsSubheading>
+            <SettingsSubheading>{t('export.model')}</SettingsSubheading>
             <details
               className="group"
               onKeyDownCapture={(event) => {
@@ -1055,21 +1084,21 @@ export function SettingsPanel({
               }}
             >
               <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between rounded-md border px-3 font-medium text-sm focus-visible:outline-2 focus-visible:outline-ring">
-                Export options
+                {t('export.options')}
                 <ChevronDown aria-hidden="true" className="size-4 group-open:rotate-180" />
               </summary>
               <div className="space-y-3 pt-3">
                 <div className="flex items-center justify-between gap-4 rounded-md border p-3">
                   <div className="min-w-0">
                     <label className="font-medium text-sm" htmlFor={visibleOnlySwitchId}>
-                      Visible nodes only
+                      {t('export.visibleOnly')}
                     </label>
                     <div className="text-muted-foreground text-xs">
-                      Exclude hidden furniture and other hidden scene nodes
+                      {t('export.visibleOnlyHint')}
                     </div>
                   </div>
                   <Switch
-                    aria-label="Export visible nodes only"
+                    aria-label={t('export.visibleOnlyAria')}
                     checked={exportOnlyVisible}
                     id={visibleOnlySwitchId}
                     onCheckedChange={setExportOnlyVisible}
@@ -1077,11 +1106,8 @@ export function SettingsPanel({
                 </div>
 
                 <fieldset className="space-y-2 rounded-md border p-3">
-                  <legend className="px-1 font-medium text-sm">Include in file</legend>
-                  <p className="text-muted-foreground text-xs">
-                    Choose which procedural content is baked into model files. GLB and USDZ use the
-                    textured portable path; STL, OBJ and IFC remain geometry-only.
-                  </p>
+                  <legend className="px-1 font-medium text-sm">{t('export.include')}</legend>
+                  <p className="text-muted-foreground text-xs">{t('export.includeHint')}</p>
                   {exportableNodeTypes.length > 0 ? (
                     <div className="space-y-2 pt-1">
                       {exportableNodeTypes.map(({ type, label, supportsGeometryOnly }, index) => {
@@ -1093,12 +1119,12 @@ export function SettingsPanel({
                               {!supportsGeometryOnly && (
                                 <span className="text-muted-foreground text-xs">
                                   {' '}
-                                  (GLB/USDZ only)
+                                  {t('export.geometryOnlyNote')}
                                 </span>
                               )}
                             </label>
                             <Switch
-                              aria-label={`Include ${label} in model files`}
+                              aria-label={t('export.includeAria', { label })}
                               checked={!excludedNodeTypes.includes(type)}
                               id={switchId}
                               onCheckedChange={(included) =>
@@ -1110,20 +1136,16 @@ export function SettingsPanel({
                       })}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-xs">
-                      No optional procedural content is present.
-                    </p>
+                    <p className="text-muted-foreground text-xs">{t('export.noOptional')}</p>
                   )}
                   <p className="text-muted-foreground text-xs">
-                    Viewer surroundings are excluded unless selected separately below.
+                    {t('export.surroundingsExcluded')}
                   </p>
                 </fieldset>
                 {exportablePresentations.length > 0 ? (
                   <fieldset className="space-y-2 rounded-md border p-3">
-                    <legend className="px-1 font-medium text-sm">Viewer surroundings</legend>
-                    <p className="text-muted-foreground text-xs">
-                      Optional static surroundings are included only in GLB and USDZ.
-                    </p>
+                    <legend className="px-1 font-medium text-sm">{t('export.surroundings')}</legend>
+                    <p className="text-muted-foreground text-xs">{t('export.surroundingsHint')}</p>
                     <div className="space-y-2 pt-1">
                       {exportablePresentations.map((contribution, index) => {
                         const switchId = `${includePresentationIdPrefix}-${index}`
@@ -1137,7 +1159,7 @@ export function SettingsPanel({
                               {label}
                             </label>
                             <Switch
-                              aria-label={`Include ${label} in GLB and USDZ`}
+                              aria-label={t('export.includeSurroundingAria', { label })}
                               checked={includedPresentationIds.includes(contribution.id)}
                               id={switchId}
                               onCheckedChange={(included) =>
@@ -1168,7 +1190,7 @@ export function SettingsPanel({
                     variant="outline"
                   >
                     <Download aria-hidden="true" className="size-4" />
-                    {isActive ? `Exporting ${label}…` : `Export ${label}`}
+                    {isActive ? t('export.busy', { format: label }) : t('export.button', { format: label })}
                   </Button>
                 )
               })}
@@ -1184,20 +1206,20 @@ export function SettingsPanel({
               >
                 <Send aria-hidden="true" className="size-4" />
                 {sendToBlenderStep
-                  ? SEND_TO_BLENDER_STEP_LABEL[sendToBlenderStep]
-                  : 'Send to Blender'}
+                  ? t(SEND_TO_BLENDER_STEP_LABEL[sendToBlenderStep])
+                  : t('blender.send')}
               </Button>
               <p className="text-muted-foreground text-xs">
-                Needs the{' '}
+                {t('blender.needsBefore')}{' '}
                 <a
                   className="underline underline-offset-2"
                   href={BLENDER_ADDON_URL}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Pascal add-on for Blender
+                  {t('blender.addon')}
                 </a>{' '}
-                running in an open Blender.
+                {t('blender.needsAfter')}
               </p>
             </div>
             {sendToBlenderMessage ? (
@@ -1215,7 +1237,7 @@ export function SettingsPanel({
 
             {activeModelExport ? (
               <p className="text-muted-foreground text-xs" role="status">
-                Preparing {activeModelExport.toUpperCase()} file…
+                {t('export.preparing', { format: activeModelExport.toUpperCase() })}
               </p>
             ) : null}
             {modelExportError ? (
@@ -1225,7 +1247,7 @@ export function SettingsPanel({
             ) : null}
             {modelExportWarning ? (
               <p className="text-foreground text-xs" role="status">
-                Warning: {modelExportWarning}
+                {t('export.warning', { message: modelExportWarning })}
               </p>
             ) : null}
 
@@ -1236,9 +1258,9 @@ export function SettingsPanel({
 
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <SettingsSubheading>Floor plan</SettingsSubheading>
+              <SettingsSubheading>{t('floorPlan.title')}</SettingsSubheading>
               <span className="text-muted-foreground text-xs">
-                {floorplanMode === 'default' ? 'Default mode' : 'Expert mode'}
+                {floorplanMode === 'default' ? t('floorPlan.modeDefault') : t('floorPlan.modeExpert')}
               </span>
             </div>
             <div className="grid gap-2 @sm:grid-cols-2">
@@ -1250,7 +1272,7 @@ export function SettingsPanel({
                 variant="outline"
               >
                 <MapIcon className="size-4" />
-                Full floor plan
+                {t('floorPlan.full')}
               </Button>
               <Button
                 aria-busy={activeFloorplanExport === 'structure'}
@@ -1260,12 +1282,12 @@ export function SettingsPanel({
                 variant="outline"
               >
                 <MapIcon className="size-4" />
-                Structure only
+                {t('floorPlan.structure')}
               </Button>
             </div>
             {activeFloorplanExport ? (
               <p className="text-muted-foreground text-xs" role="status">
-                Preparing floor-plan PDF…
+                {t('floorPlan.preparing')}
               </p>
             ) : null}
             {floorplanExportError ? (
@@ -1279,8 +1301,8 @@ export function SettingsPanel({
         {/* Thumbnail (only for cloud projects) */}
         {projectId && !isLocalProject && (
           <SettingsSection
-            description="Refresh the preview shown in your project list."
-            title="Thumbnail"
+            description={t('thumbnail.description')}
+            title={t('thumbnail.title')}
           >
             <div className="grid gap-2 @sm:grid-cols-2">
               <Button
@@ -1290,15 +1312,15 @@ export function SettingsPanel({
                 variant="outline"
               >
                 <Camera className="size-4" />
-                {isGeneratingThumbnail ? 'Generating…' : 'Generate thumbnail'}
+                {isGeneratingThumbnail ? t('thumbnail.generating') : t('thumbnail.generate')}
               </Button>
             </div>
           </SettingsSection>
         )}
 
         <SettingsSection
-          description="Keep a JSON copy of the scene, or restore one."
-          title="Save and load"
+          description={t('saveLoad.description')}
+          title={t('saveLoad.title')}
         >
           <div className="grid gap-2 @sm:grid-cols-2">
             <Button
@@ -1307,7 +1329,7 @@ export function SettingsPanel({
               variant="outline"
             >
               <Save className="size-4" />
-              Save build
+              {t('saveLoad.save')}
             </Button>
             <Button
               className="w-full justify-start gap-2"
@@ -1315,7 +1337,7 @@ export function SettingsPanel({
               variant="outline"
             >
               <Upload className="size-4" />
-              Load build
+              {t('saveLoad.load')}
             </Button>
           </div>
 
@@ -1335,11 +1357,12 @@ export function SettingsPanel({
         </SettingsSection>
 
         <SettingsSection
-          description="Sound levels, the construction animation and keyboard shortcuts."
-          title="Preferences"
+          description={t('preferences.description')}
+          title={t('preferences.title')}
         >
           <ConstructionAnimationSetting />
           <AnimationSpeedSetting />
+          <LanguageRow />
           {preferences}
           <div className="grid gap-2 @sm:grid-cols-2">
             <AudioSettingsDialog />
@@ -1348,20 +1371,20 @@ export function SettingsPanel({
         </SettingsSection>
 
         <SettingsSection
-          description="Inspect how nodes are nested in this scene."
-          title="Scene graph"
+          description={t('sceneGraph.description')}
+          title={t('sceneGraph.title')}
         >
           <Dialog>
             <DialogTrigger asChild>
               <div className="grid gap-2 @sm:grid-cols-2">
                 <Button className="w-full justify-start gap-2" variant="outline">
                   <ListTree className="size-4" />
-                  Explore scene graph
+                  {t('sceneGraph.open')}
                 </Button>
               </div>
             </DialogTrigger>
             <DialogContent className="dark h-[80vh] max-w-[95vw] gap-0 overflow-hidden border-0 bg-[#1e1e1e] p-0 shadow-none sm:max-w-5xl">
-              <DialogTitle className="sr-only">Scene Graph</DialogTitle>
+              <DialogTitle className="sr-only">{t('sceneGraph.dialogTitle')}</DialogTitle>
               <div
                 className="flex h-full min-h-0 w-full min-w-0 *:h-full *:w-full *:overflow-y-auto"
                 onContextMenuCapture={blockSceneGraphMutations}
@@ -1378,8 +1401,8 @@ export function SettingsPanel({
         </SettingsSection>
 
         <SettingsSection
-          description="Removes every node from this scene. This cannot be undone."
-          title="Danger zone"
+          description={t('danger.description')}
+          title={t('danger.title')}
           tone="destructive"
         >
           <div className="grid gap-2 @sm:grid-cols-2">
@@ -1389,7 +1412,7 @@ export function SettingsPanel({
               variant="destructive"
             >
               <Trash2 className="size-4" />
-              Clear and start new
+              {t('danger.clear')}
             </Button>
           </div>
         </SettingsSection>

@@ -8,211 +8,148 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './../../../../../components/ui/primitives/dialog'
+import { type MessageKey, useT } from './../../../../../i18n'
 import { VIEW_SHORTCUT_KEYS } from './../../../../../lib/view-shortcuts'
 import {
   ShortcutToken,
   shortcutDisplayValue,
 } from './../../../../../components/ui/primitives/shortcut-token'
+import { messages } from './messages'
+
+type MessageId = MessageKey<typeof messages>
 
 type Shortcut = {
   keys: string[]
-  action: string
-  note?: string
+  action: MessageId
+  note?: MessageId
 }
 
 type ShortcutCategory = {
-  title: string
+  title: MessageId
   shortcuts: Shortcut[]
 }
 
 const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
   {
-    title: 'Editor Navigation',
+    title: 'shortcuts.navigation',
     shortcuts: [
-      { keys: ['1'], action: 'Switch to Site' },
-      { keys: ['2'], action: 'Switch to Building' },
-      { keys: ['\\'], action: 'Open or close the split view' },
-      { keys: ['F'], action: 'Open the items catalog with the item tool' },
-      { keys: ['Z'], action: 'Draw a zone' },
-      {
-        keys: ['Cmd/Ctrl', 'Arrow Up'],
-        action: 'Select next level in the active building',
-      },
-      {
-        keys: ['Cmd/Ctrl', 'Arrow Down'],
-        action: 'Select previous level in the active building',
-      },
-      { keys: ['Cmd/Ctrl', 'B'], action: 'Toggle sidebar' },
+      { keys: ['1'], action: 'shortcut.goSite' },
+      { keys: ['2'], action: 'shortcut.goBuilding' },
+      { keys: ['\\'], action: 'shortcut.splitView' },
+      { keys: ['F'], action: 'shortcut.itemsCatalog' },
+      { keys: ['Z'], action: 'shortcut.drawZone' },
+      { keys: ['Cmd/Ctrl', 'Arrow Up'], action: 'shortcut.levelNext' },
+      { keys: ['Cmd/Ctrl', 'Arrow Down'], action: 'shortcut.levelPrevious' },
+      { keys: ['Cmd/Ctrl', 'B'], action: 'shortcut.toggleSidebar' },
     ],
   },
   {
-    title: 'Modes & History',
+    title: 'shortcuts.modes',
     shortcuts: [
-      { keys: ['V'], action: 'Switch to Select mode' },
-      { keys: ['B'], action: 'Switch to Build mode' },
-      { keys: ['M'], action: 'Activate the last measurement tool' },
-      { keys: ['X'], action: 'Switch to Delete mode' },
-      {
-        keys: ['Esc'],
-        action: 'Cancel the active tool and return to Select mode',
-        note: 'Mid-draw it cancels only the chain in progress and keeps the tool armed; press it again to leave the tool.',
-      },
-      { keys: ['Delete / Backspace'], action: 'Delete selected objects' },
-      { keys: ['Cmd/Ctrl', 'Z'], action: 'Undo' },
-      { keys: ['Cmd/Ctrl', 'Shift', 'Z'], action: 'Redo' },
-      { keys: ['Cmd/Ctrl', 'S'], action: 'Save' },
+      { keys: ['V'], action: 'shortcut.selectMode' },
+      { keys: ['B'], action: 'shortcut.buildMode' },
+      { keys: ['M'], action: 'shortcut.lastMeasurement' },
+      { keys: ['X'], action: 'shortcut.deleteMode' },
+      { keys: ['Esc'], action: 'shortcut.cancelTool', note: 'shortcut.cancelTool.note' },
+      { keys: ['Delete / Backspace'], action: 'shortcut.deleteSelected' },
+      { keys: ['Cmd/Ctrl', 'Z'], action: 'shortcut.undo' },
+      { keys: ['Cmd/Ctrl', 'Shift', 'Z'], action: 'shortcut.redo' },
+      { keys: ['Cmd/Ctrl', 'S'], action: 'shortcut.save' },
     ],
   },
   {
-    title: 'Selection',
+    title: 'shortcuts.selection',
     shortcuts: [
-      {
-        keys: ['Cmd/Ctrl', 'C'],
-        action: 'Copy the selected objects',
-        note: 'The copied selection can be pasted into another level, project, or browser tab.',
-      },
-      {
-        keys: ['Cmd/Ctrl', 'X'],
-        action: 'Cut the selected objects',
-        note: 'Copies the selection to the clipboard, then removes it from this scene.',
-      },
-      {
-        keys: ['Cmd/Ctrl', 'V'],
-        action: 'Paste and place copied objects',
-        note:
-          'Carries a preview under the cursor. Click to place it, or press Escape to cancel.',
-      },
+      { keys: ['Cmd/Ctrl', 'C'], action: 'shortcut.copy', note: 'shortcut.copy.note' },
+      { keys: ['Cmd/Ctrl', 'X'], action: 'shortcut.cut', note: 'shortcut.cut.note' },
+      { keys: ['Cmd/Ctrl', 'V'], action: 'shortcut.paste', note: 'shortcut.paste.note' },
       {
         keys: ['Cmd/Ctrl', 'Left click'],
-        action: 'Add or remove an object from multi-selection',
-        note: 'Works in Select mode on the 3D canvas, the 2D floor plan, and the scene graph.',
+        action: 'shortcut.multiToggle',
+        note: 'shortcut.multiToggle.note',
       },
       {
         keys: ['Shift', 'Left click'],
-        action: 'Add or remove an object from canvas multi-selection',
-        note: 'In the scene graph, Shift-click selects the visible range like a file browser.',
+        action: 'shortcut.canvasMultiToggle',
+        note: 'shortcut.canvasMultiToggle.note',
       },
-      {
-        keys: ['Left click'],
-        action: 'Move the whole multi-selection',
-        note:
-          'With 2+ objects selected, in 2D and 3D alike: drag the selection (or its dashed box) to slide it; click it to pick it up and place with the next click.',
-      },
-      {
-        keys: ['R', 'T'],
-        action: 'Rotate a multi-selection ±45° around its center',
-        note: 'Also works mid-move while carrying the selection.',
-      },
-      {
-        keys: ['Cmd/Ctrl', 'G'],
-        action: 'Group the multi-selection (session only)',
-        note:
-          'Editor-only. Plain click a member later to reselect the whole group. Not saved with the project.',
-      },
+      { keys: ['Left click'], action: 'shortcut.moveMulti', note: 'shortcut.moveMulti.note' },
+      { keys: ['R', 'T'], action: 'shortcut.rotateMulti', note: 'shortcut.rotateMulti.note' },
+      { keys: ['Cmd/Ctrl', 'G'], action: 'shortcut.group', note: 'shortcut.group.note' },
       {
         keys: ['Cmd/Ctrl', 'Shift', 'G'],
-        action: 'Ungroup the session selection',
-        note: 'Keeps the current selection; only dissolves the session group.',
+        action: 'shortcut.ungroup',
+        note: 'shortcut.ungroup.note',
       },
-      {
-        keys: ['Esc'],
-        action: 'Clear the selection',
-        note: 'Clicking empty space does the same.',
-      },
+      { keys: ['Esc'], action: 'shortcut.clearSelection', note: 'shortcut.clearSelection.note' },
     ],
   },
   {
-    title: 'Direct Manipulation',
+    title: 'shortcuts.directManipulation',
     shortcuts: [
       {
         keys: ['Cmd/Ctrl', 'Left click'],
-        action: 'Move the selected movable object under the cursor',
-        note: 'Drag in Select mode with a single object selected. Guided snapping and guides are enabled by default.',
+        action: 'shortcut.moveUnderCursor',
+        note: 'shortcut.moveUnderCursor.note',
       },
       {
         keys: ['Cmd/Ctrl', 'Right click'],
-        action: 'Rotate the selected object under the cursor',
-        note: 'Drag left or right in Select mode with a single object selected. Rotation snaps to 15° increments by default.',
+        action: 'shortcut.rotateUnderCursor',
+        note: 'shortcut.rotateUnderCursor.note',
       },
       {
         keys: ['Cmd/Ctrl', 'Shift', 'Right click'],
-        action: 'Rotate freely',
-        note: 'Hold Shift during the drag to bypass the 15° rotation increment.',
+        action: 'shortcut.rotateFreely',
+        note: 'shortcut.rotateFreely.note',
       },
     ],
   },
   {
-    title: 'Drawing Tools',
+    title: 'shortcuts.drawing',
     shortcuts: [
       // Shift and Ctrl each mean one thing held and another tapped, and only
       // the hold was documented — which read as the taps not existing. Both
       // taps are listed first because they are the ones nobody discovers.
+      { keys: ['Shift'], action: 'shortcut.cycleSnapping', note: 'shortcut.cycleSnapping.note' },
+      { keys: ['Cmd/Ctrl'], action: 'shortcut.cycleGrid', note: 'shortcut.cycleGrid.note' },
       {
         keys: ['Shift'],
-        action: 'Cycle the snapping mode',
-        note: 'Tap and release without pressing anything else, while a drawing or move gesture is available.',
-      },
-      {
-        keys: ['Cmd/Ctrl'],
-        action: 'Cycle the grid step: 0.5 m → 0.25 m → 0.1 m → 0.05 m',
-        note: 'Tap and release on its own. Use it when the default half-metre grid is too coarse — placing a window, for instance.',
+        action: 'shortcut.bypassSnapping',
+        note: 'shortcut.bypassSnapping.note',
       },
       {
         keys: ['Shift'],
-        action: 'Bypass guided snapping and angle constraints',
-        note: 'Hold during the active gesture. Passive guide or measurement feedback may stay visible.',
-      },
-      {
-        keys: ['Shift'],
-        action: 'Rotate freely, bypassing the default 15° rotation snap',
-        note: 'Hold while dragging a rotate handle or direct-rotation gesture.',
+        action: 'shortcut.bypassRotationSnap',
+        note: 'shortcut.bypassRotationSnap.note',
       },
     ],
   },
   {
-    title: 'Item Placement',
+    title: 'shortcuts.placement',
     shortcuts: [
-      {
-        keys: ['R', 'T'],
-        action: 'Rotate item; with a door selected, R toggles open/closed and T closes',
-      },
-      {
-        keys: ['E'],
-        action: 'Operate the selected node — doors, windows, and cabinet doors/drawers animate open/closed',
-      },
+      { keys: ['R', 'T'], action: 'shortcut.rotateItem' },
+      { keys: ['E'], action: 'shortcut.operate' },
       {
         keys: ['Shift'],
-        action: 'Temporarily bypass placement validation constraints',
-        note: 'Hold while placing.',
+        action: 'shortcut.bypassPlacement',
+        note: 'shortcut.bypassPlacement.note',
       },
     ],
   },
   {
-    title: 'View',
+    title: 'shortcuts.view',
     shortcuts: [
-      { keys: [VIEW_SHORTCUT_KEYS.wallsUp.toUpperCase()], action: 'Raise the walls a step' },
-      { keys: [VIEW_SHORTCUT_KEYS.wallsDown.toUpperCase()], action: 'Lower the walls a step' },
-      { keys: [VIEW_SHORTCUT_KEYS.roofs.toUpperCase()], action: 'Show or hide the roofs' },
+      { keys: [VIEW_SHORTCUT_KEYS.wallsUp.toUpperCase()], action: 'shortcut.wallsUp' },
+      { keys: [VIEW_SHORTCUT_KEYS.wallsDown.toUpperCase()], action: 'shortcut.wallsDown' },
+      { keys: [VIEW_SHORTCUT_KEYS.roofs.toUpperCase()], action: 'shortcut.roofs' },
     ],
   },
   {
-    title: 'Camera',
+    title: 'shortcuts.camera',
     shortcuts: [
-      {
-        keys: ['W', 'A', 'S', 'D'],
-        action: 'Pan camera',
-        note: 'Moves in screen space, similar to dragging the camera view.',
-      },
-      {
-        keys: ['Middle click'],
-        action: 'Pan camera',
-        note: 'Drag with the middle mouse button, or hold Space while dragging with the left mouse button.',
-      },
-      {
-        keys: ['Right click'],
-        action: 'Orbit camera',
-        note: 'Drag with the right mouse button.',
-      },
+      { keys: ['W', 'A', 'S', 'D'], action: 'shortcut.pan', note: 'shortcut.pan.note' },
+      { keys: ['Middle click'], action: 'shortcut.pan', note: 'shortcut.panMiddle.note' },
+      { keys: ['Right click'], action: 'shortcut.orbit', note: 'shortcut.orbit.note' },
     ],
   },
 ]
@@ -231,38 +168,36 @@ function ShortcutKeys({ keys }: { keys: string[] }) {
 }
 
 export function KeyboardShortcutsDialog() {
+  const t = useT(messages)
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button className="w-full justify-start gap-2" variant="outline">
           <Keyboard className="size-4" />
-          Keyboard shortcuts
+          {t('shortcuts.title')}
         </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="shrink-0 border-b px-6 py-4">
-          <DialogTitle>Keyboard shortcuts</DialogTitle>
-          <DialogDescription>
-            Shortcuts are context-aware. Guided constraints are enabled by default; hold Shift
-            during an active gesture to build freely.
-          </DialogDescription>
+          <DialogTitle>{t('shortcuts.title')}</DialogTitle>
+          <DialogDescription>{t('shortcuts.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-4">
           {SHORTCUT_CATEGORIES.map((category) => (
             <section className="space-y-2" key={category.title}>
-              <h3 className="font-medium text-sm">{category.title}</h3>
+              <h3 className="font-medium text-sm">{t(category.title)}</h3>
               <div className="overflow-hidden rounded-md border border-border/80">
                 {category.shortcuts.map((shortcut, index) => (
                   <div
                     className="grid grid-cols-[minmax(130px,220px)_1fr] gap-3 px-3 py-2"
-                    key={`${category.title}-${shortcut.action}`}
+                    key={`${category.title}-${index}`}
                   >
                     <ShortcutKeys keys={shortcut.keys} />
                     <div>
-                      <p className="text-sm">{shortcut.action}</p>
+                      <p className="text-sm">{t(shortcut.action)}</p>
                       {shortcut.note ? (
-                        <p className="text-muted-foreground text-xs">{shortcut.note}</p>
+                        <p className="text-muted-foreground text-xs">{t(shortcut.note)}</p>
                       ) : null}
                     </div>
                     {index < category.shortcuts.length - 1 ? (

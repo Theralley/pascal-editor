@@ -2,6 +2,8 @@
 // structuredClone while its module body evaluates. See the file's own comment.
 import './structured-clone-fallback'
 import { type Kind, parseQuantity, quantity } from '@pascal-app/lingo'
+import { getLocale } from '../i18n/locale'
+import type { Locale } from '../i18n/messages'
 
 /**
  * Natural-language measurement parsing for editor property fields, backed by
@@ -56,6 +58,11 @@ export interface ParseMeasurementOptions {
   bareUnit?: string
   /** Disambiguates gal/ton/cup families; harmless for length/angle. */
   system?: 'metric' | 'us' | 'imperial'
+  /**
+   * Whose decimal separator to read. Defaults to the active locale. Swedish reads `1,5` and `1,500`
+   * as one and a half; English keeps a comma between digits as a thousands separator.
+   */
+  locale?: Locale
 }
 
 /**
@@ -68,7 +75,8 @@ export function parseMeasurement(
   spec: LingoUnitSpec,
   options: ParseMeasurementOptions = {},
 ): number | null {
-  const result = parseQuantity(raw, {
+  const text = (options.locale ?? getLocale()) === 'sv' ? raw.replace(/(\d),(\d)/g, '$1.$2') : raw
+  const result = parseQuantity(text, {
     kind: spec.kind,
     unit: options.bareUnit ?? spec.unitId,
     system: options.system,

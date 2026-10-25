@@ -45,7 +45,12 @@ import {
 } from 'three'
 import { useShallow } from 'zustand/react/shallow'
 import { useRoomRecords } from '../../hooks/use-selected-room'
-import { getAreaUnitLabel, type LinearUnit, squareMetersToAreaUnit } from '../../lib/measurements'
+import {
+  formatDecimal,
+  getAreaUnitLabel,
+  type LinearUnit,
+  squareMetersToAreaUnit,
+} from '../../lib/measurements'
 import { roomFloorElevation } from '../../lib/room-handle-drag'
 import type { RoomSelectionRecord } from '../../lib/room-selection'
 import {
@@ -93,7 +98,11 @@ export function roomLabelsVisible(state: RoomLabelVisibilityState): boolean {
 }
 
 export function formatRoomArea(squareMeters: number, unit: LinearUnit): string {
-  return `${squareMetersToAreaUnit(squareMeters, unit).toFixed(1)} ${getAreaUnitLabel(unit)}`
+  const area = formatDecimal(squareMetersToAreaUnit(squareMeters, unit), {
+    minFractionDigits: 1,
+    maxFractionDigits: 1,
+  })
+  return `${area} ${getAreaUnitLabel(unit)}`
 }
 
 function useRoomLabelsVisible() {

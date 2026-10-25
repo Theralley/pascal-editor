@@ -1,4 +1,6 @@
 import type { MeasurementPoint } from '@pascal-app/core'
+import { getLocale } from '../i18n/locale'
+import type { Locale } from '../i18n/messages'
 
 export type LinearUnit = 'metric' | 'imperial'
 export type MetricNotation = 'meters' | 'millimeters'
@@ -135,6 +137,24 @@ export function getLinearUnitLabel(unit: LinearUnit): string {
   return unit === 'imperial' ? 'ft' : 'm'
 }
 
+const INTL_LOCALE: Record<Locale, string> = { en: 'en-US', sv: 'sv-SE' }
+
+/** A decimal in the locale's own separator, never grouped, so a label stays as wide as its digits. */
+export function formatDecimal(
+  value: number,
+  options: { minFractionDigits?: number; maxFractionDigits: number },
+  locale: Locale = getLocale(),
+): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], {
+    minimumFractionDigits: options.minFractionDigits ?? 0,
+    maximumFractionDigits: options.maxFractionDigits,
+    useGrouping: false,
+  }).format(value)
+}
+
+/** Swedish sets a space between a number and its unit; English keeps them together. */
+const unitGap = (locale: Locale) => (locale === 'sv' ? ' ' : '')
+
 const SQUARE_FEET_PER_SQUARE_METER = FEET_PER_METER * FEET_PER_METER
 const CUBIC_FEET_PER_CUBIC_METER = SQUARE_FEET_PER_SQUARE_METER * FEET_PER_METER
 
@@ -150,10 +170,16 @@ export function formatAreaLabel(
   squareMeters: number,
   unit: LinearUnit,
   fractionDigits = 1,
+  locale: Locale = getLocale(),
 ): string {
   if (!Number.isFinite(squareMeters)) return '--'
 
-  return `${squareMetersToAreaUnit(squareMeters, unit).toFixed(fractionDigits)}${getAreaUnitLabel(unit)}`
+  const value = formatDecimal(
+    squareMetersToAreaUnit(squareMeters, unit),
+    { minFractionDigits: fractionDigits, maxFractionDigits: fractionDigits },
+    locale,
+  )
+  return `${value}${unitGap(locale)}${getAreaUnitLabel(unit)}`
 }
 
 export function cubicMetersToVolumeUnit(cubicMeters: number, unit: LinearUnit): number {
@@ -168,16 +194,23 @@ export function formatVolumeLabel(
   cubicMeters: number,
   unit: LinearUnit,
   fractionDigits = 1,
+  locale: Locale = getLocale(),
 ): string {
   if (!Number.isFinite(cubicMeters)) return '--'
 
-  return `${cubicMetersToVolumeUnit(cubicMeters, unit).toFixed(fractionDigits)}${getVolumeUnitLabel(unit)}`
+  const value = formatDecimal(
+    cubicMetersToVolumeUnit(cubicMeters, unit),
+    { minFractionDigits: fractionDigits, maxFractionDigits: fractionDigits },
+    locale,
+  )
+  return `${value}${unitGap(locale)}${getVolumeUnitLabel(unit)}`
 }
 
 export function formatLinearMeasurement(
   meters: number,
   unit: LinearUnit,
   metricNotation: MetricNotation = 'meters',
+  locale: Locale = getLocale(),
 ): string {
   if (!Number.isFinite(meters)) return '--'
 
@@ -200,11 +233,11 @@ export function formatLinearMeasurement(
   if (metricNotation === 'millimeters') {
     const roundedMillimeters = Math.round(absoluteMeters * 1000)
     const sign = meters < 0 && roundedMillimeters !== 0 ? '-' : ''
-    return `${sign}${roundedMillimeters}mm`
+    return `${sign}${roundedMillimeters}${unitGap(locale)}mm`
   }
 
   const roundedMeters = Number.parseFloat(absoluteMeters.toFixed(2))
   const sign = meters < 0 && roundedMeters !== 0 ? '-' : ''
 
-  return `${sign}${roundedMeters}m`
+  return `${sign}${formatDecimal(roundedMeters, { maxFractionDigits: 2 }, locale)}${unitGap(locale)}m`
 }
