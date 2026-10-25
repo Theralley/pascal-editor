@@ -14,8 +14,10 @@ import { useViewer } from '@pascal-app/viewer'
 import { DoorClosed, DoorOpen, PanelTopClose, PanelTopOpen, Play, Square } from 'lucide-react'
 import { type ComponentType, lazy, Suspense } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
 import { ActionMenuButton } from './action-menu-button'
+import { messages } from './messages'
 
 type Loader = () => Promise<{ default: ComponentType }>
 const lazyCache = new WeakMap<Loader, ComponentType>()
@@ -70,7 +72,16 @@ export function MechanismButton({
   mechanism: MechanismCapability
   running: boolean
 }) {
-  const label = mechanism.icon ? (running ? 'Close' : 'Open') : running ? 'Stop' : 'Play'
+  const t = useT(messages)
+  const label = t(
+    mechanism.icon
+      ? running
+        ? 'mechanism.close'
+        : 'mechanism.open'
+      : running
+        ? 'mechanism.stop'
+        : 'mechanism.play',
+  )
   return (
     <ActionMenuButton
       keys={['E']}

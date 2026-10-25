@@ -31,6 +31,7 @@ import {
   useDivideLifetime,
 } from '../components/editor/room-controls'
 import { runHistoryShortcut } from '../hooks/use-keyboard'
+import { setLocale } from '../i18n'
 import useDeleteConfirmation from '../store/use-delete-confirmation'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
@@ -830,6 +831,31 @@ describe('room structure controls', () => {
       title: 'Delete 3 elements?',
       keepLabel: null,
     })
+  })
+  test('the confirmation reads in Swedish, plurals and pronouns agreeing', () => {
+    setLocale('sv')
+    try {
+      requestRoomDeletion(zoneId)
+      const request = useDeleteConfirmation.getState().request!
+      const nodes = useScene.getState().nodes
+      const one = { ...request, room: { ...request.room!, itemIds: ['item_a'] } }
+      const two = { ...request, room: { ...request.room!, itemIds: ['item_a', 'item_b'] } }
+      expect(deleteConfirmationContent(one, nodes).description).toContain(
+        '1 objekt finns inuti. Behåll det där det är, eller ta bort det också.',
+      )
+      expect(deleteConfirmationContent(two, nodes)).toMatchObject({
+        keepLabel: 'Behåll objekten',
+        confirmLabel: 'Ta bort allt',
+      })
+      expect(deleteConfirmationContent(two, nodes).description).toContain(
+        '2 objekt finns inuti. Behåll dem där de är, eller ta bort dem också.',
+      )
+      expect(deleteConfirmationContent({ count: 3, onConfirm: () => {} }, nodes).title).toBe(
+        'Ta bort 3 element?',
+      )
+    } finally {
+      setLocale('en')
+    }
   })
   test('deleting one side of a split merges it into the other; that room stays selected', () => {
     applyRoomPlan(

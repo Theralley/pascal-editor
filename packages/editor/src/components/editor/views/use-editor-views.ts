@@ -2,6 +2,7 @@
 
 import { useScene } from '@pascal-app/core'
 import { useSyncExternalStore } from 'react'
+import { useT } from '../../../i18n'
 import {
   availableViews,
   type EditorViewDescriptor,
@@ -14,19 +15,21 @@ import {
 } from '../../../lib/plugin-panels'
 import useEditor from '../../../store/use-editor'
 import { activeViewLayout, type ViewLayout } from '../../../store/view-layout'
+import { messages } from './messages'
 
 export const PLUGINS_VIEW_ID = 'plugins'
 
-const pluginsView: EditorViewDescriptor = {
+const pluginsView = (label: string): EditorViewDescriptor => ({
   id: PLUGINS_VIEW_ID,
-  label: 'Plugins',
+  label,
   icon: { kind: 'url', src: '/icons/plugins.webp' },
   component: () => import('./plugins-view').then((module) => ({ default: module.PluginsView })),
   workspaces: ['edit'],
-}
+})
 
 /** Every view this project can show in the current workspace, the plugin directory included when it has a place. */
 export function useEditorViews(): EditorViewDescriptor[] {
+  const t = useT(messages)
   const registered = useSyncExternalStore(
     editorHostViewRegistry.subscribe,
     editorHostViewRegistry.getSnapshot,
@@ -46,7 +49,7 @@ export function useEditorViews(): EditorViewDescriptor[] {
     workspaceMode,
   })
   return availableViews({
-    registered: withManager ? [...registered, pluginsView] : registered,
+    registered: withManager ? [...registered, pluginsView(t('plugins.label'))] : registered,
     workspaceMode,
     installedPlugins,
   })

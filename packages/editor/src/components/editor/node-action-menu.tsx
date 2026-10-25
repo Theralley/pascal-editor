@@ -14,7 +14,9 @@ import {
   Ungroup,
 } from 'lucide-react'
 import type { MouseEventHandler, PointerEventHandler, ReactNode } from 'react'
+import { useT } from '../../i18n'
 import { ActionMenuButton } from './action-menu-button'
+import { messages } from './messages'
 import { RegistryActionContributions } from './registry-action-contributions'
 
 type NodeActionMenuProps = {
@@ -65,9 +67,10 @@ export function NodeActionMenu({
   onPointerEnter,
   onPointerLeave,
   children,
-  deleteLabel = 'Delete',
+  deleteLabel,
   deleteDisabledReason,
 }: NodeActionMenuProps) {
+  const t = useT(messages)
   return (
     <div
       className="pointer-events-auto flex items-center gap-1 rounded-lg border border-border bg-background/95 p-1 shadow-xl backdrop-blur-md"
@@ -77,58 +80,58 @@ export function NodeActionMenu({
       onPointerUp={onPointerUp}
     >
       {onFind && (
-        <ActionMenuButton label="Find in catalog" onClick={onFind}>
+        <ActionMenuButton label={t('node.find')} onClick={onFind}>
           <Search className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onMove && (
-        <ActionMenuButton label="Move" onClick={onMove}>
+        <ActionMenuButton label={t('node.move')} onClick={onMove}>
           <Move className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onEditMesh && (
-        <ActionMenuButton label="Edit mesh" onClick={onEditMesh}>
+        <ActionMenuButton label={t('node.editMesh')} onClick={onEditMesh}>
           <PencilRuler className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onGroup && (
-        <ActionMenuButton keys={['Cmd/Ctrl', 'G']} label="Group selection" onClick={onGroup}>
+        <ActionMenuButton keys={['Cmd/Ctrl', 'G']} label={t('node.group')} onClick={onGroup}>
           <Group className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onUngroup && (
         <ActionMenuButton
           keys={['Cmd/Ctrl', 'Shift', 'G']}
-          label="Ungroup selection"
+          label={t('node.ungroup')}
           onClick={onUngroup}
         >
           <Ungroup className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onCurve && (
-        <ActionMenuButton label="Curve" onClick={onCurve}>
+        <ActionMenuButton label={t('node.curve')} onClick={onCurve}>
           <Spline className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onRotateLeft && (
-        <ActionMenuButton label="Rotate left" onClick={onRotateLeft}>
+        <ActionMenuButton label={t('node.rotateLeft')} onClick={onRotateLeft}>
           <RotateCcw className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onRotateRight && (
-        <ActionMenuButton label="Rotate right" onClick={onRotateRight}>
+        <ActionMenuButton label={t('node.rotateRight')} onClick={onRotateRight}>
           <RotateCw className="h-4 w-4" />
         </ActionMenuButton>
       )}
       <RegistryActionContributions />
       {children}
       {onDuplicate && (
-        <ActionMenuButton label="Duplicate" onClick={onDuplicate}>
+        <ActionMenuButton label={t('node.duplicate')} onClick={onDuplicate}>
           <Copy className="h-4 w-4" />
         </ActionMenuButton>
       )}
       {onAddHole && (
-        <ActionMenuButton label="Cut out" onClick={onAddHole}>
+        <ActionMenuButton label={t('node.cutOut')} onClick={onAddHole}>
           <Icon height={16} icon="carbon:cut-out" width={16} />
         </ActionMenuButton>
       )}
@@ -138,7 +141,7 @@ export function NodeActionMenu({
           disabled={!!deleteDisabledReason}
           disabledReason={deleteDisabledReason}
           keys={['Delete / Backspace']}
-          label={deleteLabel}
+          label={deleteLabel ?? t('node.delete')}
           onClick={onDelete}
         >
           <Trash2 className="h-4 w-4" />

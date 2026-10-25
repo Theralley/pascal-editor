@@ -2,8 +2,10 @@
 
 import type { LazyComponent } from '@pascal-app/core'
 import { type ComponentType, lazy, Suspense } from 'react'
+import { useT } from '../../../i18n'
 import type { EditorViewDescriptor } from '../../../lib/editor-views'
 import { ErrorBoundary } from '../../ui/primitives/error-boundary'
+import { messages } from './messages'
 
 // `React.lazy` once per loader, so a view keeps its identity across renders.
 const lazyViewCache = new WeakMap<LazyComponent, ComponentType>()
@@ -35,25 +37,21 @@ function ViewMessage({ title, body }: { title: string; body: string }) {
  * so the choice comes back once the view does.
  */
 export function HostView({ view }: { view: EditorViewDescriptor | undefined }) {
+  const t = useT(messages)
   if (!view?.component) {
-    return (
-      <ViewMessage
-        body="Its plugin isn't installed in this project. Pick another view above."
-        title="This view isn't available"
-      />
-    )
+    return <ViewMessage body={t('host.unavailableBody')} title={t('host.unavailableTitle')} />
   }
   const Component = resolveViewComponent(view.component)
   return (
     <ErrorBoundary
       fallback={
         <ViewMessage
-          body="This view hit an error and was unloaded for this session. Reload to try again."
-          title={`"${view.label}" crashed`}
+          body={t('host.crashedBody')}
+          title={t('host.crashedTitle', { label: view.label })}
         />
       }
     >
-      <Suspense fallback={<ViewMessage body="" title="Loading…" />}>
+      <Suspense fallback={<ViewMessage body="" title={t('host.loading')} />}>
         <Component />
       </Suspense>
     </ErrorBoundary>

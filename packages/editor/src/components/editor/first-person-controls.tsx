@@ -74,6 +74,7 @@ import {
 } from 'three'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
 import '../../three-types'
+import { type MessageKey, translate, useT } from '../../i18n'
 import {
   closeDoorOpenState,
   DOOR_SWING_OPEN_ANGLE,
@@ -105,6 +106,7 @@ import {
   nativeOpeningIds,
   watchScriptedDoors,
 } from './first-person/mechanism-targets'
+import { messages } from './messages'
 
 const CAMERA_EYE_OFFSET = 0.45
 const LOOK_SENSITIVITY = 0.002
@@ -128,12 +130,12 @@ const HUD_LABEL_SAMPLE_FRAMES = 10
 type MovementKeyName = Exclude<keyof MovementInput, 'joystick'>
 
 const movementKeyboardBindings: Array<{ name: MovementKeyName; keys: string[] }> = [
-  { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
-  { name: 'backward', keys: ['ArrowDown', 'KeyS'] },
-  { name: 'leftward', keys: ['ArrowLeft', 'KeyA'] },
-  { name: 'rightward', keys: ['ArrowRight', 'KeyD'] },
-  { name: 'jump', keys: ['Space'] },
-  { name: 'run', keys: ['ShiftLeft', 'ShiftRight'] },
+  { name: 'forward', keys: ['ArrowUp', 'KeyW'] }, // i18n-ignore
+  { name: 'backward', keys: ['ArrowDown', 'KeyS'] }, // i18n-ignore
+  { name: 'leftward', keys: ['ArrowLeft', 'KeyA'] }, // i18n-ignore
+  { name: 'rightward', keys: ['ArrowRight', 'KeyD'] }, // i18n-ignore
+  { name: 'jump', keys: ['Space'] }, // i18n-ignore
+  { name: 'run', keys: ['ShiftLeft', 'ShiftRight'] }, // i18n-ignore
 ]
 const keyboardMap = movementKeyboardBindings
 const movementKeyToName = new Map<string, MovementKeyName>(
@@ -374,11 +376,29 @@ function resolveFirstPersonHudLabels(worldPoint: Vector3) {
   return { floorLabel: null, zoneLabel: null }
 }
 
+// The verbs core's item prompts and the mechanisms speak, in English; the HUD shows them translated.
+const HUD_VERB_KEYS: Readonly<Record<string, MessageKey<typeof messages>>> = {
+  open: 'walkthrough.verbOpen',
+  close: 'walkthrough.verbClose',
+  press: 'walkthrough.verbPress',
+  'turn on': 'walkthrough.verbTurnOn',
+  'turn off': 'walkthrough.verbTurnOff',
+}
+
 function resolveHudInteract(target: FirstPersonInteractableTarget | null): WalkthroughInteract {
+  const interact = resolveHudTarget(target)
+  const verbKey = interact && HUD_VERB_KEYS[interact.verb]
+  return interact && verbKey ? { ...interact, verb: translate(messages, verbKey) } : interact
+}
+
+function resolveHudTarget(target: FirstPersonInteractableTarget | null): WalkthroughInteract {
   if (!target) return null
   if (target.type === 'elevator') {
     return {
-      label: target.action === 'open-door' ? 'door button' : 'elevator button',
+      label: translate(
+        messages,
+        target.action === 'open-door' ? 'walkthrough.doorButton' : 'walkthrough.elevatorButton',
+      ),
       verb: 'press',
     }
   }
@@ -401,28 +421,37 @@ function resolveHudInteract(target: FirstPersonInteractableTarget | null): Walkt
     if (parts.length === 0 && procedural.recipe.parts.some((part) => part.light)) {
       const state = useInteractive.getState()
       const isOn = state.procedural[target.id]?.lightsOn ?? state.lampDefault
-      return { label: procedural.name ?? 'Lights', verb: isOn ? 'turn off' : 'turn on' }
+      return {
+        label: procedural.name ?? translate(messages, 'walkthrough.lights'),
+        verb: isOn ? 'turn off' : 'turn on',
+      }
     }
     const part = target.partId ? parts.find((entry) => entry.id === target.partId) : undefined
     const active = useInteractive.getState().procedural[target.id]?.parts
     const isOn = part ? Boolean(active?.[part.id]) : parts.some((entry) => active?.[entry.id])
     const kind = part?.kind ?? (parts.every((entry) => entry.kind === 'spin') ? 'spin' : 'hinge')
     return {
-      label: part?.label ?? procedural.name ?? 'item',
+      label: part?.label ?? procedural.name ?? translate(messages, 'walkthrough.item'),
       verb: kind === 'spin' ? (isOn ? 'turn off' : 'turn on') : isOn ? 'close' : 'open',
     }
   }
   if (target.type === 'window') {
     if (node?.type !== 'window') return null
     const isOpen = getDisplayedWindowValue(target.id, node.operationState) > 0
-    return { label: node.name || 'window', verb: isOpen ? 'close' : 'open' }
+    return {
+      label: node.name || translate(messages, 'walkthrough.window'),
+      verb: isOpen ? 'close' : 'open',
+    }
   }
 
   if (node?.type !== 'door') return null
   const isOpen = isOperationDoorType(node.doorType)
     ? getDisplayedDoorValue(target.id, 'operationState', node.operationState) > 0
     : getDisplayedDoorValue(target.id, 'swingAngle', node.swingAngle) > 0
-  return { label: node.name || 'door', verb: isOpen ? 'close' : 'open' }
+  return {
+    label: node.name || translate(messages, 'walkthrough.door'),
+    verb: isOpen ? 'close' : 'open',
+  }
 }
 
 function resolveElevatorButtonTarget(object: Object3D): ElevatorButtonTarget | null {
@@ -1984,6 +2013,7 @@ export const FirstPersonControls = () => {
 }
 
 export const FirstPersonOverlay = ({ onExit }: { onExit: () => void }) => {
+  const t = useT(messages)
   const hasPlacedSpawn = useScene((state) =>
     Object.values(state.nodes).some((node) => node.type === 'spawn'),
   )
@@ -2009,7 +2039,7 @@ export const FirstPersonOverlay = ({ onExit }: { onExit: () => void }) => {
     >
       {!hasPlacedSpawn && (
         <div className="corner-smooth rounded-full border border-border/40 bg-background/80 px-3 py-1 text-center text-muted-foreground text-xs shadow-elevation-3 backdrop-blur-xl">
-          Place a spawn point from the Build tab to control where walkthrough starts.
+          {t('walkthrough.noSpawn')}
         </div>
       )}
     </WalkthroughHud>

@@ -3,8 +3,10 @@
 import { type AnyNodeId, emitter, type OpenWallEnd } from '@pascal-app/core'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useT } from '../../i18n'
 import { openWallEndsSummary } from '../../lib/floorplan/open-wall-ends'
 import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
+import { messages } from './messages'
 
 // The viewer area holds the floor plan and the 3D view side by side, so its
 // top centre clears both views' corner controls in 2D, 3D and split alike.
@@ -45,6 +47,7 @@ export function OpenWallEndsHint({
   ends: readonly OpenWallEnd[]
   onShow: (end: OpenWallEnd) => void
 }) {
+  const t = useT(messages)
   const anchor = useViewerAreaTopCenter()
   const [cursor, setCursor] = useState(0)
   const joinable = ends.filter((end) => end.candidate)
@@ -81,7 +84,7 @@ export function OpenWallEndsHint({
         }}
         type="button"
       >
-        Show
+        {t('wallEnd.show')}
       </button>
     </div>,
     document.body,

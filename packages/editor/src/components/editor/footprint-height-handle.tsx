@@ -14,6 +14,7 @@ import { Html } from '@react-three/drei'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useRef, useState } from 'react'
 import { type Group, Plane, Vector2, Vector3 } from 'three'
+import { useT } from '../../i18n'
 import {
   beginFootprintHeightPreview,
   footprintHeightMinimum,
@@ -26,6 +27,7 @@ import { runRoomHandleDrag } from '../../lib/room-handle-drag'
 import useEditor, { isGridSnapActive } from '../../store/use-editor'
 import useInteractionScope from '../../store/use-interaction-scope'
 import { suppressBoxSelectForPointer } from '../tools/select/box-select-state'
+import { messages } from './messages'
 import { ElevationArrows, outlineCentroid, useHandleScale } from './room-handles'
 
 export const FOOTPRINT_HEIGHT_DRAG_LABEL = 'footprint-height'
@@ -80,6 +82,7 @@ export function FootprintHeightHandle() {
 }
 
 function FootprintHeightArrows({ plate }: { plate: SlabNode }) {
+  const t = useT(messages)
   const { camera, raycaster, gl } = useThree()
   const zoom = useHandleScale()
   const unit = useViewer((s) => s.unit)
@@ -184,7 +187,7 @@ function FootprintHeightArrows({ plate }: { plate: SlabNode }) {
             {shown !== null && (
               <div className={PILL}>
                 <span className="font-medium text-foreground">
-                  {upper ? 'Floor top' : 'Foundation'}
+                  {upper ? t('footprint.floorTop') : t('footprint.foundation')}
                 </span>
                 <span className="text-muted-foreground">
                   {formatLinearMeasurement(shown, unit, metricNotation)}

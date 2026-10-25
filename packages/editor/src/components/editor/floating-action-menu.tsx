@@ -34,6 +34,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
 import { useReducedMotion } from '../../hooks/use-reduced-motion'
+import { useLocale, useT } from '../../i18n'
 import { resolveMoveActionNode } from '../../lib/direct-manipulation'
 import { getFloatingMenuScale } from '../../lib/floating-menu-scale'
 import { resolveFloatingActionMenuVisibility } from '../../lib/interaction/overlay-policy'
@@ -54,6 +55,7 @@ import useInteractionScope, {
 import { IconRefGlyph } from '../ui/icon-ref'
 import { duplicateNodeAndPickUp } from './duplicate-node'
 import { formatMeasurement, MeasurementPill } from './measurement-pill'
+import { messages } from './messages'
 import { NodeActionMenu } from './node-action-menu'
 import { startZoneRoomTransform } from './room-controls'
 
@@ -296,6 +298,7 @@ function getHeightPillDimensions(node: WallNode | FenceNode): {
 }
 
 export function FloatingActionMenu() {
+  const t = useT(messages)
   const reducedMotion = useReducedMotion()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const updateNode = useScene((s) => s.updateNode)
@@ -749,16 +752,16 @@ export function FloatingActionMenu() {
                 {hasAxisCycling(node.type) ? (
                   <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
                     <span className="font-medium text-foreground">
-                      Axis {rotationAxis.toUpperCase()}
+                      {t('hvac.axis', { axis: rotationAxis.toUpperCase() })}
                     </span>
                     <span aria-hidden className="text-muted-foreground">
                       ·
                     </span>
-                    <span className="text-muted-foreground">R/T rotate</span>
+                    <span className="text-muted-foreground">{t('hvac.rotateHint')}</span>
                     <span aria-hidden className="text-muted-foreground">
                       ·
                     </span>
-                    <span className="text-muted-foreground">⌥ axis</span>
+                    <span className="text-muted-foreground">{t('hvac.axisHint')}</span>
                   </div>
                 ) : null}
               </div>
@@ -788,6 +791,8 @@ function SystemSummaryPill({
   nodeId: AnyNodeId
   unit: 'metric' | 'imperial'
 }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const allNodes = useScene((s) => s.nodes)
   const summary = useMemo(() => summarizeSystemFor(nodeId, allNodes), [nodeId, allNodes])
   if (!summary) return null
@@ -796,7 +801,7 @@ function SystemSummaryPill({
       <span className="font-medium text-foreground">
         {summary.systems.length > 0
           ? summary.systems.map((sys) => sys[0]!.toUpperCase() + sys.slice(1)).join(' + ')
-          : 'System'}
+          : t('hvac.system')}
       </span>
       {summary.runCount > 0 ? (
         <>
@@ -804,8 +809,8 @@ function SystemSummaryPill({
             ·
           </span>
           <span className="text-muted-foreground">
-            {formatMeasurement(summary.runLengthM, unit, metricNotation)} · {summary.runCount}{' '}
-            {summary.runCount === 1 ? 'run' : 'runs'}
+            {formatMeasurement(summary.runLengthM, unit, metricNotation, locale)} ·{' '}
+            {t('hvac.runs', { count: summary.runCount })}
           </span>
         </>
       ) : null}
@@ -815,7 +820,7 @@ function SystemSummaryPill({
             ·
           </span>
           <span className="text-muted-foreground">
-            {summary.terminalCount} {summary.terminalCount === 1 ? 'register' : 'registers'}
+            {t('hvac.registers', { count: summary.terminalCount })}
           </span>
         </>
       ) : null}
@@ -824,7 +829,7 @@ function SystemSummaryPill({
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="font-medium text-amber-500">⚠ no equipment</span>
+          <span className="font-medium text-amber-500">{t('hvac.noEquipment')}</span>
         </>
       )}
     </div>

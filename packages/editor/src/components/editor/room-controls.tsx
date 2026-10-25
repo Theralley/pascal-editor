@@ -33,6 +33,7 @@ import {
 } from 'three'
 import { markToolCancelConsumed } from '../../hooks/use-keyboard'
 import { getRoomSelectionIndex } from '../../hooks/use-selected-room'
+import { useT } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import { getFloatingMenuScale } from '../../lib/floating-menu-scale'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
@@ -69,6 +70,7 @@ import {
 } from '../tools/shared/draft-measurement-label'
 import { ActionMenuButton } from './action-menu-button'
 import { getMenuYOffset } from './floating-action-menu'
+import { messages } from './messages'
 import { NodeActionMenu } from './node-action-menu'
 import { RoomFloorHighlight3D } from './room-floor-highlight'
 import { RoomHandleDragPreview3D, RoomHandles3D } from './room-handles'
@@ -140,6 +142,7 @@ export function roomDeleteBlockedReason(nodes: StructureNodes, zoneId: string) {
  * Delete.
  */
 export function RoomActionMenu({ room }: { room: RoomSelectionRecord }) {
+  const t = useT(messages)
   const zoneId = room.zoneId
   const levelId = room.key.levelId
   const nodes = useScene((s) => s.nodes)
@@ -166,7 +169,7 @@ export function RoomActionMenu({ room }: { room: RoomSelectionRecord }) {
     <div className="flex flex-col items-center gap-1">
       <NodeActionMenu
         deleteDisabledReason={deleteBlocked}
-        deleteLabel={mezzanine ? 'Delete mezzanine' : 'Delete room'}
+        deleteLabel={mezzanine ? t('room.deleteMezzanine') : t('room.deleteRoom')}
         onDelete={(event) => {
           event.stopPropagation()
           requestRoomDeletion(zoneId)
@@ -179,7 +182,7 @@ export function RoomActionMenu({ room }: { room: RoomSelectionRecord }) {
         onRotateRight={turn('right')}
       >
         {mezzanine && (
-          <ActionMenuButton label="Add stairs" onClick={addStairs}>
+          <ActionMenuButton label={t('room.addStairs')} onClick={addStairs}>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Image
                 alt=""
@@ -193,7 +196,7 @@ export function RoomActionMenu({ room }: { room: RoomSelectionRecord }) {
         )}
         {!mezzanine && (
           <ActionMenuButton
-            label="Divide room"
+            label={t('room.divide')}
             onClick={(event: MouseEvent<HTMLButtonElement>) => {
               event.stopPropagation()
               startRoomDivide(zoneId, levelId)

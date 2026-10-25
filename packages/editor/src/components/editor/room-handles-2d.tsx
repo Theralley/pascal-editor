@@ -5,6 +5,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { Minus, Plus } from 'lucide-react'
 import { type PointerEvent as ReactPointerEvent, useMemo, useState } from 'react'
 import { useSelectedRoom } from '../../hooks/use-selected-room'
+import { useT } from '../../i18n'
 import { formatLinearMeasurement, MEASUREMENT_FLOORPLAN_COLOR } from '../../lib/measurements'
 import {
   commitRoomFloorElevation,
@@ -29,6 +30,7 @@ import { FloorplanGeometryRenderer } from '../editor-2d/renderers/floorplan-geom
 import { suppressBoxSelectForPointer } from '../tools/select/box-select-state'
 import { ActionMenuButton } from './action-menu-button'
 import { formatMeasurement } from './measurement-pill'
+import { messages } from './messages'
 
 /**
  * The selected room while its controls may show: select mode, nothing in
@@ -56,6 +58,7 @@ function signed(text: string, value: number) {
  * 3D elevation handle's clamp and commit, one undo step a click.
  */
 export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
+  const t = useT(messages)
   const nodes = useScene((s) => s.nodes)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -78,11 +81,11 @@ export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
       onPointerDown={(event) => event.stopPropagation()}
       onPointerUp={(event) => event.stopPropagation()}
     >
-      <span className="mr-1 text-muted-foreground text-xs">Floor height</span>
+      <span className="mr-1 text-muted-foreground text-xs">{t('floorHeight.label')}</span>
       <ActionMenuButton
         disabled={down === null}
-        disabledReason="The floor can't go lower here"
-        label="Lower the floor"
+        disabledReason={t('floorHeight.lowerBlocked')}
+        label={t('floorHeight.lower')}
         onClick={step(down)}
       >
         <Minus className="h-4 w-4" />
@@ -95,8 +98,8 @@ export function RoomFloorHeightStepper({ zoneId }: { zoneId: string }) {
       </span>
       <ActionMenuButton
         disabled={up === null}
-        disabledReason="The floor can't go higher here"
-        label="Raise the floor"
+        disabledReason={t('floorHeight.raiseBlocked')}
+        label={t('floorHeight.raise')}
         onClick={step(up)}
       >
         <Plus className="h-4 w-4" />

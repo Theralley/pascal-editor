@@ -2,6 +2,7 @@
 
 import { useViewer } from '@pascal-app/viewer'
 import { type ForwardedRef, Fragment, forwardRef } from 'react'
+import { type Locale, useLocale } from '../../i18n'
 import { formatLinearMeasurement, type MetricNotation } from '../../lib/measurements'
 
 // Canonical in-world dimension formatter — metric metres or imperial
@@ -10,8 +11,9 @@ export function formatMeasurement(
   value: number,
   unit: 'metric' | 'imperial',
   metricNotation: MetricNotation = 'meters',
+  locale?: Locale,
 ): string {
-  return formatLinearMeasurement(value, unit, metricNotation)
+  return formatLinearMeasurement(value, unit, metricNotation, locale)
 }
 
 type MeasurePart = 'height' | 'length' | 'thickness'
@@ -50,6 +52,7 @@ export function DimensionPill({
   primaryRef?: ForwardedRef<HTMLSpanElement>
 }) {
   const metricNotation = useViewer((state) => state.metricNotation)
+  const locale = useLocale()
 
   return (
     <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
@@ -59,8 +62,9 @@ export function DimensionPill({
               Math.abs(part.value),
               unit,
               metricNotation,
+              locale,
             )}`
-          : formatMeasurement(part.value, unit, metricNotation)
+          : formatMeasurement(part.value, unit, metricNotation, locale)
         return (
           <Fragment key={part.key}>
             {index > 0 ? (

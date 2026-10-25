@@ -3,8 +3,9 @@
 import type { QuickMeasurementMetric, QuickMeasurementReport } from '@pascal-app/core'
 import { Crosshair, MapPin } from 'lucide-react'
 import { memo } from 'react'
-import { type Locale, useLocale } from '../../i18n'
+import { type Locale, useLocale, useT } from '../../i18n'
 import { formatAreaLabel, formatLinearMeasurement, formatVolumeLabel } from '../../lib/measurements'
+import { messages } from './messages'
 
 function formatMetric(
   metric: QuickMeasurementMetric,
@@ -29,11 +30,14 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   lensState: 'live' | 'pinned'
 }) {
   const locale = useLocale()
+  const t = useT(messages)
   const pinned = lensState === 'pinned'
 
   return (
     <div
-      aria-label={`${pinned ? 'Pinned' : 'Live'} ${report.kindLabel.toLowerCase()} measurements`}
+      aria-label={t(pinned ? 'quick.pinnedLabel' : 'quick.liveLabel', {
+        kind: report.kindLabel.toLowerCase(),
+      })}
       className="w-full min-w-0 overflow-hidden rounded-lg border border-border/45 bg-background/96 text-foreground shadow-elevation-3 backdrop-blur-xl"
       data-quick-measure-card
       data-quick-measure-state={lensState}
@@ -50,7 +54,7 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
           <div className="text-[10px] text-muted-foreground leading-tight">{report.kindLabel}</div>
         </div>
         <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 font-medium text-[10px] text-muted-foreground">
-          {pinned ? 'Pinned' : 'Live lens'}
+          {pinned ? t('quick.pinned') : t('quick.liveLens')}
         </span>
       </div>
 
@@ -71,7 +75,7 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-border/60 border-t px-3 py-1.5 text-[10px] text-muted-foreground leading-tight">
         {report.note ? <span className="min-w-48 flex-1">{report.note}</span> : <span />}
         <span className="ml-auto shrink-0 text-foreground/70">
-          {pinned ? 'Click another surface to replace' : 'Click surface to pin'}
+          {pinned ? t('quick.replace') : t('quick.pin')}
         </span>
       </div>
     </div>

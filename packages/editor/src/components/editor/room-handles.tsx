@@ -27,6 +27,7 @@ import {
   Vector3,
 } from 'three'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
+import { useT } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import {
   clearStructuralElevationGuide,
@@ -55,6 +56,7 @@ import { suppressBoxSelectForPointer } from '../tools/select/box-select-state'
 import { ARROW_COLOR, ARROW_SCALE, HandleArrow } from './handles/handle-arrow'
 import { resolveResizeSnapValue } from './handles/resize-snap'
 import { formatMeasurement } from './measurement-pill'
+import { messages } from './messages'
 import { WallPushArrow } from './wall-push-arrow'
 
 const PILL =
@@ -524,6 +526,7 @@ function MezzanineEdgeArrow({
 }
 
 export function RoomHandleDragPreview3D() {
+  const t = useT(messages)
   const drag = useRoomHandleDrag((s) => s.drag)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -614,7 +617,7 @@ export function RoomHandleDragPreview3D() {
         />
         <Html center position={[ax, drag.value + 0.35, az]} zIndexRange={[25, 0]}>
           <div className={PILL}>
-            <span className="font-medium text-foreground">Floor</span>
+            <span className="font-medium text-foreground">{t('room.floor')}</span>
             <span className="text-muted-foreground">
               {formatMeasurement(
                 drag.value - roomFloorBase(useScene.getState().nodes, drag.zoneId),

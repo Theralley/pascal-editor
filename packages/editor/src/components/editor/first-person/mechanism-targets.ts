@@ -8,7 +8,9 @@ import {
   useInteractive,
   useScene,
 } from '@pascal-app/core'
+import { translate } from '../../../i18n'
 import type { WalkthroughInteract } from '../../../store/use-first-person-hud'
+import { messages } from '../messages'
 
 /**
  * Whether the walkthrough swings this door or window itself, through the native `operationState`
@@ -54,7 +56,7 @@ export function mechanismHudInteract(node: AnyNode): WalkthroughInteract {
   if (!mechanism) return null
   const on = mechanism.isOn(node, useInteractive.getState())
   const verb = mechanism.verb === 'open' ? (on ? 'close' : 'open') : on ? 'turn off' : 'turn on'
-  return { label: node.name ?? 'item', verb }
+  return { label: node.name ?? translate(messages, 'walkthrough.item'), verb }
 }
 
 /** Ids of the mounted doors built from a script that are open, by their mechanism. */

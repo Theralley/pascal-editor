@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useIsMobile } from '../../hooks/use-mobile'
+import { type MessageKey, useT } from '../../i18n'
 import { triggerSFX } from '../../lib/sfx-bus'
 import { isTypingTarget } from '../../lib/typing-target'
 import { requestWalkthroughPointerLock } from '../../lib/walkthrough-pointer-lock'
@@ -31,6 +32,7 @@ import { useFirstPersonHud } from '../../store/use-first-person-hud'
 import { Slider } from '../ui/slider'
 import { WalkthroughCrosshair } from '../walkthrough-hud'
 import { CaptureLevelPicker } from './capture-level-picker'
+import { messages } from './messages'
 import { isOverlaySnapshotSave } from './snapshot-capture'
 
 // Local alias — distinct from `useEditor.captureMode` (which describes *why*
@@ -126,10 +128,12 @@ function CornerAccents() {
 const HUD_CHIP_CLASS =
   'flex flex-col gap-px rounded-lg border border-white/10 bg-neutral-950/85 px-3 py-1.5'
 
-const CROP_LABELS: Record<CropMode, string> = {
-  standard: 'Standard',
-  viewport: 'Viewport',
-  area: 'Area',
+type Key = MessageKey<typeof messages>
+
+const CROP_LABEL_KEYS: Record<CropMode, Key> = {
+  standard: 'capture.standard',
+  viewport: 'capture.viewport',
+  area: 'capture.area',
 }
 
 // Dark-HUD skin for the shared slider, which is themed for the light editor chrome.
@@ -137,7 +141,7 @@ const FOV_SLIDER_CLASS =
   'w-24 [&_[data-slot=slider-track]]:h-1 [&_[data-slot=slider-track]]:bg-white/20 [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:size-3 [&_[data-slot=slider-thumb]]:border-white/50 [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:ring-white/30'
 
 type CameraNavHint = {
-  action: string
+  actionKey: Key
   keys: readonly string[]
 }
 
@@ -149,26 +153,34 @@ function CaptureWalkthroughCrosshair() {
 const CAMERA_NAV_HINTS: Record<CaptureCameraNav, readonly CameraNavHint[] | null> = {
   orbit: null,
   walk: [
-    { keys: ['WASD'], action: 'move' },
-    { keys: ['Space'], action: 'jump' },
-    { keys: ['E'], action: 'open' },
-    { keys: ['Wheel'], action: 'lens' },
-    { keys: ['P', 'Esc'], action: 'free cursor' },
-    { keys: ['Click', 'Enter'], action: 'shoot' },
+    { keys: ['WASD'], actionKey: 'capture.hintMove' },
+    { keys: ['Space'], actionKey: 'capture.hintJump' },
+    { keys: ['E'], actionKey: 'capture.hintOpen' },
+    { keys: ['Wheel'], actionKey: 'capture.hintLens' },
+    { keys: ['P', 'Esc'], actionKey: 'capture.hintFreeCursor' },
+    { keys: ['Click', 'Enter'], actionKey: 'capture.hintShoot' },
   ],
   drone: [
-    { keys: ['WASD'], action: 'move' },
-    { keys: ['Space', 'E'], action: 'up' },
-    { keys: ['Q'], action: 'down' },
-    { keys: ['Shift'], action: 'boost' },
-    { keys: ['Alt'], action: 'slow' },
-    { keys: ['Wheel'], action: 'lens' },
-    { keys: ['P', 'Esc'], action: 'free cursor' },
-    { keys: ['Click', 'Enter'], action: 'shoot' },
+    { keys: ['WASD'], actionKey: 'capture.hintMove' },
+    { keys: ['Space', 'E'], actionKey: 'capture.hintUp' },
+    { keys: ['Q'], actionKey: 'capture.hintDown' },
+    { keys: ['Shift'], actionKey: 'capture.hintBoost' },
+    { keys: ['Alt'], actionKey: 'capture.hintSlow' },
+    { keys: ['Wheel'], actionKey: 'capture.hintLens' },
+    { keys: ['P', 'Esc'], actionKey: 'capture.hintFreeCursor' },
+    { keys: ['Click', 'Enter'], actionKey: 'capture.hintShoot' },
   ],
 }
 
+// Keys that name a mouse action or a word are translated; letters and Esc, Shift, Alt, Enter stay.
+const CAMERA_NAV_KEY_LABELS: Readonly<Record<string, Key>> = {
+  Space: 'capture.keySpace',
+  Wheel: 'capture.keyWheel',
+  Click: 'capture.keyClick',
+}
+
 export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
+  const t = useT(messages)
   const isCaptureMode = useEditor((s) => s.isCaptureMode)
   const captureMode = useEditor((s) => s.captureMode)
   const setCaptureMode = useEditor((s) => s.setCaptureMode)
@@ -632,9 +644,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
           {!selectionStyle && !isPreset && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full border border-white/10 bg-neutral-950/80 px-4 py-2 text-sm text-white">
-                {cameraOwnsPointer
-                  ? 'Switch back to orbit to drag a capture area'
-                  : 'Drag the area you want to capture'}
+                {cameraOwnsPointer ? t('capture.orbitBlocked') : t('capture.dragArea')}
               </span>
             </div>
           )}
@@ -695,15 +705,15 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
         <div className="pointer-events-none absolute top-4 left-1/2 flex -translate-x-1/2 gap-2">
           <div className={HUD_CHIP_CLASS}>
             <span className="font-mono text-[8.5px] text-white/50 uppercase tracking-[0.14em]">
-              Crop
+              {t('capture.crop')}
             </span>
             <span className="font-semibold text-white text-xs">
-              {isPreset ? 'Preset · square' : CROP_LABELS[mode]}
+              {isPreset ? t('capture.presetSquare') : t(CROP_LABEL_KEYS[mode])}
             </span>
           </div>
           <div className={HUD_CHIP_CLASS}>
             <span className="font-mono text-[8.5px] text-white/50 uppercase tracking-[0.14em]">
-              Format
+              {t('capture.format')}
             </span>
             <span className="font-semibold text-white text-xs tabular-nums">
               {resolution ? `${resolution.w} × ${resolution.h}` : '—'}
@@ -718,13 +728,13 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
       {/* Top-right dismiss button (icon-only on mobile) */}
       <div className="pointer-events-auto absolute top-4 right-4">
         <button
-          aria-label="Close capture mode"
+          aria-label={t('capture.close')}
           className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-neutral-950/85 px-3 py-1.5 text-white/80 text-xs transition-colors hover:bg-neutral-950 hover:text-white"
           onClick={dismiss}
           type="button"
         >
           <X className="h-3 w-3" />
-          {!isMobile && 'Esc to cancel'}
+          {!isMobile && t('capture.escCancel')}
         </button>
       </div>
 
@@ -742,19 +752,19 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
                 <ModeButton
                   active={cameraNav === 'orbit'}
                   icon={<Orbit className="h-3.5 w-3.5" />}
-                  label="Orbit"
+                  label={t('capture.orbit')}
                   onClick={() => setCameraNav('orbit')}
                 />
                 <ModeButton
                   active={cameraNav === 'walk'}
                   icon={<Footprints className="h-3.5 w-3.5" />}
-                  label="Walk"
+                  label={t('capture.walk')}
                   onClick={() => setCameraNav('walk')}
                 />
                 <ModeButton
                   active={cameraNav === 'drone'}
                   icon={<Drone className="h-3.5 w-3.5" />}
-                  label="Drone"
+                  label={t('capture.drone')}
                   onClick={() => setCameraNav('drone')}
                 />
               </div>
@@ -762,10 +772,10 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
             {fovValue !== null && (
               <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-neutral-950/85 py-1.5 pr-1.5 pl-3 shadow-xl">
                 <span className="font-mono text-[8.5px] text-white/50 uppercase tracking-[0.14em]">
-                  Lens
+                  {t('capture.lens')}
                 </span>
                 <Slider
-                  aria-label="Field of view"
+                  aria-label={t('capture.fov')}
                   className={FOV_SLIDER_CLASS}
                   max={CAPTURE_FOV_MAX}
                   min={CAPTURE_FOV_MIN}
@@ -779,7 +789,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
                   {fovValue}°
                 </span>
                 <button
-                  aria-label="Reset field of view"
+                  aria-label={t('capture.resetFov')}
                   className="grid h-6 w-6 place-items-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-white/50"
                   disabled={captureFovBaseline === null || fovValue === captureFovBaseline}
                   onClick={() => {
@@ -801,7 +811,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
               active={mode === 'standard'}
               badge={standardAspect}
               icon={<Monitor className="h-3.5 w-3.5" />}
-              label={isMobile ? undefined : 'Standard'}
+              label={isMobile ? undefined : t('capture.standard')}
               onClick={() => {
                 if (mode === 'standard') setAspectMenuOpen((v) => !v)
                 else setAspectMenuOpen(false)
@@ -833,7 +843,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
             <ModeButton
               active={mode === 'viewport'}
               icon={<Maximize2 className="h-3.5 w-3.5" />}
-              label={isMobile ? undefined : 'Viewport'}
+              label={isMobile ? undefined : t('capture.viewport')}
               onClick={() => {
                 setMode('viewport')
                 setDrag(null)
@@ -843,7 +853,7 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
             <ModeButton
               active={mode === 'area'}
               icon={<Crop className="h-3.5 w-3.5" />}
-              label={isMobile ? undefined : 'Area'}
+              label={isMobile ? undefined : t('capture.area')}
               onClick={() => {
                 setMode('area')
                 setAspectMenuOpen(false)
@@ -863,31 +873,32 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
           !isPreset &&
           (cameraHint ? (
             <div className="pointer-events-none flex max-w-lg flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-lg border border-white/10 bg-neutral-950/85 px-3 py-1.5 text-[10px]">
-              {cameraHint.map(({ keys, action }) => (
-                <span className="inline-flex items-center gap-1 whitespace-nowrap" key={action}>
+              {cameraHint.map(({ keys, actionKey }) => (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap" key={actionKey}>
                   <span className="inline-flex items-center gap-0.5">
                     {keys.map((key, index) => (
                       <span className="inline-flex items-center gap-0.5" key={key}>
                         {index > 0 && <span className="text-white/25">/</span>}
                         <kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-white/80 leading-none shadow-sm">
-                          {key}
+                          {CAMERA_NAV_KEY_LABELS[key] ? t(CAMERA_NAV_KEY_LABELS[key]) : key}
                         </kbd>
                       </span>
                     ))}
                   </span>
-                  <span className="text-white/55">{action}</span>
+                  <span className="text-white/55">{t(actionKey)}</span>
                 </span>
               ))}
             </div>
           ) : (
             <span className="pointer-events-none max-w-90 rounded-lg border border-white/10 bg-neutral-950/85 px-3.5 py-1.5 text-center text-[11.5px] text-white/85 leading-relaxed">
-              A <b className="font-semibold text-white">snapshot</b>
-              {' freezes this exact camera angle as a reusable reference for renders & videos.'}
+              {t.rich('capture.pitch', {
+                strong: (text) => <b className="font-semibold text-white">{text}</b>,
+              })}
             </span>
           ))}
 
         <button
-          aria-label={isPreset ? 'Capture' : 'Take snapshot'}
+          aria-label={isPreset ? t('capture.shoot') : t('capture.takeSnapshot')}
           className="group pointer-events-auto relative grid h-14 w-14 place-items-center rounded-full disabled:opacity-50"
           disabled={captureDisabled}
           onClick={handleCapture}
@@ -910,12 +921,12 @@ export function SnapshotCaptureOverlay({ projectId }: { projectId: string }) {
         </button>
         <span className="pointer-events-none font-mono text-[10.5px] text-white uppercase tracking-[0.12em] drop-shadow">
           {captureState === 'capturing'
-            ? 'Capturing…'
+            ? t('capture.capturing')
             : captureState === 'saved'
-              ? 'Saved'
+              ? t('capture.saved')
               : isPreset
-                ? 'Capture'
-                : 'Take snapshot'}
+                ? t('capture.shoot')
+                : t('capture.takeSnapshot')}
         </span>
       </div>
     </div>

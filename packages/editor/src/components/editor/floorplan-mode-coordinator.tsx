@@ -3,16 +3,19 @@
 import { emitter, nodeRegistry } from '@pascal-app/core'
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { translate, useT } from '../../i18n'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
 import { isFloorplanToolAvailableInMode } from '../../lib/floorplan/floorplan-mode'
 import useEditor from '../../store/use-editor'
 import useFloorplanMode from '../../store/use-floorplan-mode'
+import { messages } from './messages'
 
 function getToolLabel(tool: string): string {
   return nodeRegistry.get(tool)?.presentation?.label ?? tool
 }
 
 export function FloorplanModeCoordinator() {
+  const t = useT(messages)
   const editorMode = useEditor((state) => state.mode)
   const tool = useEditor((state) => state.tool)
   const floorplanMode = useFloorplanMode((state) => state.mode)
@@ -34,9 +37,7 @@ export function FloorplanModeCoordinator() {
     emitter.emit('tool:cancel')
     useEditor.getState().setMode('select')
     if (priorFloorplanMode === 'expert') {
-      showNotice(
-        `Switched to Default. The unfinished ${toolLabel} draft was canceled; saved Expert annotations are hidden, not deleted.`,
-      )
+      showNotice(translate(messages, 'mode.switchedToDefault', { tool: toolLabel }))
     } else {
       showExpertModeNotice(toolLabel)
     }
@@ -66,11 +67,11 @@ export function FloorplanModeCoordinator() {
           }}
           type="button"
         >
-          Switch to Expert
+          {t('mode.switchToExpert')}
         </button>
       ) : null}
       <button
-        aria-label="Dismiss"
+        aria-label={t('mode.dismiss')}
         className="shrink-0 rounded p-1 text-muted-foreground hover:bg-black/6 dark:hover:bg-white/10 hover:text-foreground"
         onClick={dismissNotice}
         type="button"

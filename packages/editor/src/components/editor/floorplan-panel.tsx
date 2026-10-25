@@ -83,6 +83,7 @@ import {
   resolvePlanRoomHit,
   roomPickingEnabled,
 } from '../../hooks/use-selected-room'
+import { useT } from '../../i18n'
 import { resolveCeilingPlanPointSnap } from '../../lib/ceiling-plan-snap'
 import {
   alignFloorplanDraftPoint,
@@ -258,6 +259,7 @@ import {
   resolveFloorplanPresentationViewBox,
   setFloorplanCompassRotation,
 } from './floorplan-navigation-presentation'
+import { messages } from './messages'
 import { useFloorplanBackgroundPlacement } from './use-floorplan-background-placement'
 import { useFloorplanHitTesting } from './use-floorplan-hit-testing'
 import { useFloorplanSceneData } from './use-floorplan-scene-data'
@@ -2286,7 +2288,7 @@ function buildDraftWall(levelId: string, start: WallPlanPoint, end: WallPlanPoin
     object: 'node',
     id: 'wall_draft' as WallNode['id'],
     type: 'wall',
-    name: 'Draft wall',
+    name: 'Draft wall', // i18n-ignore
     parentId: levelId,
     visible: true,
     metadata: {},
@@ -3327,6 +3329,7 @@ function FloorplanReferenceScaleDraftLine({
   unit: 'metric' | 'imperial'
   unitsPerPixel: number
 }) {
+  const t = useT(messages)
   const cursor = useFloorplanDraftPreview((s) => s.cursorPoint)
   const metricNotation = useViewer((state) => state.metricNotation)
   if (!cursor) {
@@ -3337,12 +3340,14 @@ function FloorplanReferenceScaleDraftLine({
     <FloorplanReferenceScaleLine
       end={cursor}
       isDraft
-      label={`Ref ${formatMeasurement(
-        Math.hypot(cursor[0] - start[0], cursor[1] - start[1]),
-        unit,
-        null,
-        metricNotation,
-      )}`}
+      label={t('plan.refScale', {
+        length: formatMeasurement(
+          Math.hypot(cursor[0] - start[0], cursor[1] - start[1]),
+          unit,
+          null,
+          metricNotation,
+        ),
+      })}
       palette={palette}
       start={start}
       unitsPerPixel={unitsPerPixel}
@@ -3478,6 +3483,7 @@ function FloorplanGuideHandleHint({
   rotationModifierPressed: boolean
   showScaleHint: boolean
 }) {
+  const t = useT(messages)
   if (!anchor) {
     return null
   }
@@ -3503,7 +3509,9 @@ function FloorplanGuideHandleHint({
             rotationModifierPressed ? 'opacity-40' : 'opacity-100',
           )}
         >
-          <span className="font-medium text-[11px] lowercase leading-none">resize</span>
+          <span className="font-medium text-[11px] lowercase leading-none">
+            {t('plan.hintResize')}
+          </span>
           <Icon
             aria-hidden="true"
             className="h-3.5 w-3.5 shrink-0"
@@ -3518,11 +3526,15 @@ function FloorplanGuideHandleHint({
             rotationModifierPressed ? 'opacity-100' : 'opacity-40',
           )}
         >
-          <span className="font-medium text-[11px] lowercase leading-none">rotate</span>
+          <span className="font-medium text-[11px] lowercase leading-none">
+            {t('plan.hintRotate')}
+          </span>
           {isMacPlatform ? (
             <Command aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
           ) : (
-            <span className="font-mono text-[10px] uppercase leading-none">ctrl</span>
+            <span className="font-mono text-[10px] uppercase leading-none">
+              {t('plan.hintCtrl')}
+            </span>
           )}
           <Icon
             aria-hidden="true"
@@ -3534,9 +3546,13 @@ function FloorplanGuideHandleHint({
 
         {showScaleHint && (
           <div className="flex items-center gap-1.5 opacity-40">
-            <span className="font-medium text-[11px] lowercase leading-none">set scale</span>
+            <span className="font-medium text-[11px] lowercase leading-none">
+              {t('plan.hintSetScale')}
+            </span>
             <Ruler aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
-            <span className="font-medium text-[11px] lowercase leading-none">panel</span>
+            <span className="font-medium text-[11px] lowercase leading-none">
+              {t('plan.hintPanel')}
+            </span>
           </div>
         )}
       </div>
@@ -4220,7 +4236,7 @@ function FloorplanStairBuildPreviewLayer({
     }
     const previewStair = StairNodeSchema.parse({
       id: 'stair_floorplan_preview',
-      name: 'Staircase preview',
+      name: 'Staircase preview', // i18n-ignore
       position: [point[0], 0, point[1]],
       rotation,
       children: [previewSegment.id],
@@ -4765,7 +4781,7 @@ function FloorplanLinearDraftLayer({
       {draftWallMeasurement && (
         <FloorplanDraftMeasurement
           labelBackground={isDark ? '#0f172a' : '#ffffff'}
-          labelText={isDark ? '#e2e8f0' : '#171717'}
+          labelText={isDark ? '#e2e8f0' : '#171717'} // i18n-ignore
           measurement={draftWallMeasurement}
           measurementStroke={measurementStroke}
           sceneRotationDeg={sceneRotationDeg}
@@ -4809,7 +4825,7 @@ function FloorplanLinearDraftLayer({
         <FloorplanDraftMeasurement
           key={index}
           labelBackground={isDark ? '#0f172a' : '#ffffff'}
-          labelText={isDark ? '#e2e8f0' : '#171717'}
+          labelText={isDark ? '#e2e8f0' : '#171717'} // i18n-ignore
           measurement={measurement}
           measurementStroke={measurementStroke}
           sceneRotationDeg={sceneRotationDeg}
@@ -4837,6 +4853,7 @@ export function FloorplanPanel({
   compassHost?: HTMLElement | null
   floorplanSceneSlot?: ReactNode
 }) {
+  const t = useT(messages)
   useFloorplanCameraSyncBridge()
   const viewportHostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -7029,7 +7046,7 @@ export function FloorplanPanel({
       curveHandleHoverStroke: palette.curveHandleHoverStroke,
       measurementStroke: palette.measurementStroke,
       measurementLabelBackground: isDark ? '#0f172a' : '#ffffff',
-      measurementLabelText: isDark ? '#e2e8f0' : '#171717',
+      measurementLabelText: isDark ? '#e2e8f0' : '#171717', // i18n-ignore
     }),
     [palette, isDark],
   )
@@ -11220,12 +11237,12 @@ export function FloorplanPanel({
       : null
   const referenceScaleInputError =
     referenceScaleValue.trim() === ''
-      ? 'Enter the real length of the line.'
+      ? t('plan.errorEnterReal')
       : Number.isNaN(pendingReferenceDisplayLength)
-        ? `Enter a length like 3.5, 180cm or 5'11".`
+        ? t('plan.errorLikeThis')
         : pendingReferenceDisplayLength > 0
           ? null
-          : 'Length must be greater than 0.'
+          : t('plan.errorGreaterThanZero')
   const referenceScaleHint = referenceScaleInputError
     ? null
     : referenceScaleLengthHint(referenceScaleValue, referenceScaleUnit)
@@ -11290,9 +11307,7 @@ export function FloorplanPanel({
 
         {referenceScaleDraft && (
           <div className="pointer-events-none absolute top-3 left-1/2 z-30 -translate-x-1/2 rounded-md border bg-background/95 px-3 py-2 text-center text-sm shadow-sm">
-            {referenceScaleDraft.start
-              ? 'Click the other end of that distance'
-              : 'Click one end of a distance you know — e.g. a dimension printed on the plan'}
+            {referenceScaleDraft.start ? t('plan.scaleClickOther') : t('plan.scaleClickOne')}
           </div>
         )}
 
@@ -11318,17 +11333,16 @@ export function FloorplanPanel({
                 <Ruler className="h-4 w-4 text-foreground/80" />
               </div>
               <div className="min-w-0">
-                <div className="font-medium text-sm">Set overlay scale</div>
+                <div className="font-medium text-sm">{t('plan.scaleTitle')}</div>
                 <div className="mt-0.5 text-muted-foreground text-xs leading-4">
-                  Enter the real-world length of the line you just drew. The image will resize to
-                  match it.
+                  {t('plan.scaleIntro')}
                 </div>
               </div>
             </div>
 
             <div className="mb-3 rounded-xl border border-border/70 bg-black/4 dark:bg-white/5 px-3 py-2">
               <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Drawn line
+                {t('plan.drawnLine')}
               </div>
               <div className="mt-1 font-medium text-sm">
                 {formatMeasurement(
@@ -11342,7 +11356,7 @@ export function FloorplanPanel({
 
             <label className="block">
               <span className="mb-1.5 block font-medium text-muted-foreground text-xs">
-                Real length
+                {t('plan.realLength')}
               </span>
               <div className="grid grid-cols-[1fr_8.25rem] gap-2">
                 <input
@@ -11352,7 +11366,7 @@ export function FloorplanPanel({
                     referenceScaleInputError ? 'border-destructive/60' : 'border-border',
                   )}
                   onChange={(event) => setReferenceScaleValue(event.target.value)}
-                  placeholder={`e.g. 3.5, 180cm or 5'11"`}
+                  placeholder={t('plan.scalePlaceholder')}
                   type="text"
                   value={referenceScaleValue}
                 />
@@ -11363,10 +11377,10 @@ export function FloorplanPanel({
                   }
                   value={referenceScaleUnit}
                 >
-                  <option value="meters">Meters</option>
-                  <option value="centimeters">Centimeters</option>
-                  <option value="feet">Feet</option>
-                  <option value="inches">Inches</option>
+                  <option value="meters">{t('plan.unitMeters')}</option>
+                  <option value="centimeters">{t('plan.unitCentimeters')}</option>
+                  <option value="feet">{t('plan.unitFeet')}</option>
+                  <option value="inches">{t('plan.unitInches')}</option>
                 </select>
               </div>
               <span
@@ -11375,16 +11389,16 @@ export function FloorplanPanel({
                   referenceScaleInputError ? 'text-destructive' : 'text-muted-foreground',
                 )}
               >
-                {referenceScaleInputError ??
-                  referenceScaleHint ??
-                  'Any decimal works. Use the known real length, not the drawn value.'}
+                {referenceScaleInputError ?? referenceScaleHint ?? t('plan.scaleAnyDecimal')}
               </span>
             </label>
 
             <div className="mt-3 rounded-lg bg-muted/45 px-3 py-2 text-muted-foreground text-xs">
               {pendingReferenceImageScaleFactor
-                ? `Image will scale ${formatNumber(pendingReferenceImageScaleFactor, 3)}x from the first point.`
-                : 'Enter a length greater than 0.'}
+                ? t('plan.scaleFactor', {
+                    factor: formatNumber(pendingReferenceImageScaleFactor, 3),
+                  })
+                : t('plan.scaleEnterPositive')}
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
@@ -11393,14 +11407,14 @@ export function FloorplanPanel({
                 onClick={() => setPendingReferenceScale(null)}
                 type="button"
               >
-                Cancel
+                {t('plan.cancel')}
               </button>
               <button
                 className="h-8 rounded-lg bg-foreground px-3 font-medium text-background text-xs transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!pendingReferenceMetersPerUnit}
                 type="submit"
               >
-                Save Scale
+                {t('plan.saveScale')}
               </button>
             </div>
           </form>
@@ -11408,7 +11422,7 @@ export function FloorplanPanel({
 
         {levelNode?.type !== 'level' && !hasAmbientBuildingLevel ? (
           <div className="flex h-full items-center justify-center px-6 text-center text-muted-foreground text-sm">
-            Switch to a building level to view and edit the floorplan.
+            {t('plan.switchToLevel')}
           </div>
         ) : isFloorplanOpen ? (
           // The panel stays mounted in 3D mode (display:none) to keep the
@@ -11655,7 +11669,7 @@ export function FloorplanPanel({
               {activeDrawingType !== 'site-plan' && (
                 <FloorplanSiteEdgeLabelLayer
                   labelBackground={isDark ? '#0f172a' : '#ffffff'}
-                  labelText={isDark ? '#e2e8f0' : '#171717'}
+                  labelText={isDark ? '#e2e8f0' : '#171717'} // i18n-ignore
                   palette={palette}
                   sceneRotationDeg={floorplanSceneRotationDeg}
                   shouldShow={shouldShowSiteEdgeLabels}
@@ -11742,7 +11756,7 @@ export function FloorplanPanel({
                   overlay={guideRotationReadout}
                   palette={{
                     measurementLabelBackground: isDark ? '#0f172a' : '#ffffff',
-                    measurementLabelText: isDark ? '#e2e8f0' : '#171717',
+                    measurementLabelText: isDark ? '#e2e8f0' : '#171717', // i18n-ignore
                     measurementStroke: palette.measurementStroke,
                   }}
                   sceneRotationDeg={floorplanSceneRotationDeg}

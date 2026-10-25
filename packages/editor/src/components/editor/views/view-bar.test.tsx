@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
 import { useViewer } from '@pascal-app/viewer'
+import { setLocale } from '../../../i18n'
 import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
 import { GroundModeToggle } from './view-bar'
 
@@ -7,6 +8,7 @@ const saved = useViewer.getState()
 
 afterEach(() => {
   useViewer.setState(saved, true)
+  setLocale('en')
 })
 
 test('over a level at grade the bar says nothing about the ground', () => {
@@ -51,4 +53,13 @@ test("a hillside in the eye's way over a level at grade says only that the groun
   expect(renderCurrentMarkup(<GroundModeToggle />)).toContain('Ground veiled')
   useViewer.setState({ groundMode: 'solid' })
   expect(renderCurrentMarkup(<GroundModeToggle />)).toContain('Ground solid')
+})
+
+test('the bar speaks Swedish: the ground state and its choices', () => {
+  setLocale('sv')
+  useViewer.setState({ belowGrade: true, gradeStanding: 'below-grade', groundMode: 'auto' })
+  const bar = renderCurrentMarkup(<GroundModeToggle />)
+  expect(bar).toContain('Under marknivå · marken är dold')
+  expect(bar).toMatch(/aria-pressed="true"[^>]*>Auto</)
+  expect(bar).toMatch(/aria-pressed="false"[^>]*>Hel</)
 })

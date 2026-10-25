@@ -12,6 +12,7 @@ import {
   useOpenWallEnds,
   useOpenWallEndsSuppressed,
 } from '../../hooks/use-open-wall-ends'
+import { useT } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import { openWallEndKey, openWallEndLabel } from '../../lib/floorplan/open-wall-ends'
 import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
@@ -19,6 +20,7 @@ import { cn } from '../../lib/utils'
 import useEditor from '../../store/use-editor'
 import { isViewVisible, VIEW_3D, visibleScene } from '../../store/view-layout'
 import { JoinWallsPill } from './join-walls-pill'
+import { messages } from './messages'
 import { OpenWallEndsHint } from './open-wall-ends-hint'
 
 /**
@@ -153,6 +155,7 @@ function OpenWallEndMarker3D({
   refusal: string | null
   resources: MarkerResources
 }) {
+  const t = useT(messages)
   const { dashGeometry, discGeometry, ringGeometry, redMaterial, outlineMaterial } = resources
   const [x, z] = end.point
   const target = end.candidate?.point
@@ -245,7 +248,7 @@ function OpenWallEndMarker3D({
             ) : null}
           </div>
           <button
-            aria-label={label ?? 'Wall end not joined'}
+            aria-label={label ?? t('wallEnd.label')}
             className={cn(
               'h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm transition-transform',
               interactive

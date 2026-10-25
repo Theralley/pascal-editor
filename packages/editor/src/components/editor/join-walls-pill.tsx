@@ -1,6 +1,8 @@
 'use client'
 
 import { Link2 } from 'lucide-react'
+import { useT } from '../../i18n'
+import { messages } from './messages'
 
 /**
  * The "Join walls" action on an open wall end — shared by the floor plan and
@@ -18,6 +20,7 @@ export function JoinWallsPill({
   onJoin: () => void
   refusal: string | null
 }) {
+  const t = useT(messages)
   return (
     <div
       className="pointer-events-auto flex items-center gap-1 whitespace-nowrap rounded-full border border-border bg-background/95 p-1 text-xs shadow-xl backdrop-blur-md"
@@ -37,7 +40,7 @@ export function JoinWallsPill({
         type="button"
       >
         <Link2 className="h-3.5 w-3.5" />
-        Join walls
+        {t('wallEnd.join')}
       </button>
     </div>
   )

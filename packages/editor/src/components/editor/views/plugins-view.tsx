@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { type Locale, useLocale, useT } from '../../../i18n'
 import {
   type EditorHostPanel,
   editorHostPanelRegistry,
@@ -32,6 +33,7 @@ import useEditor from '../../../store/use-editor'
 import { IconRefGlyph } from '../../ui/icon-ref'
 import { Badge } from '../../ui/primitives/badge'
 import { Button } from '../../ui/primitives/button'
+import { messages } from './messages'
 import { PLUGINS_VIEW_ID } from './use-editor-views'
 
 const PLUGIN_AUTHORING_URL = 'https://editor.pascal.app/docs/developers/plugins'
@@ -78,15 +80,25 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const
 }
 
+function categoryName(name: string, t: ReturnType<typeof useT<typeof messages>>) {
+  return name === OTHER_CATEGORY ? t('plugins.other') : name
+}
+
 function usesCredits(panel: EditorHostPanel) {
   return panel.access?.some((access) => access.usesCredits) ?? false
 }
 
-function creditsLabel(credits: PluginDirectoryContext['credits']) {
+function creditsLabel(
+  credits: PluginDirectoryContext['credits'],
+  t: ReturnType<typeof useT<typeof messages>>,
+  locale: Locale,
+) {
   if (!credits) return null
   return 'unlimited' in credits
-    ? 'Unlimited'
-    : `${Math.ceil(credits.remaining).toLocaleString('en-US')} left`
+    ? t('plugins.unlimited')
+    : t('plugins.creditsLeft', {
+        count: Math.ceil(credits.remaining).toLocaleString(locale === 'sv' ? 'sv-SE' : 'en-US'),
+      })
 }
 
 function PluginIcon({ panel, size }: { panel: EditorHostPanel; size: 'md' | 'lg' }) {
@@ -103,28 +115,30 @@ function PluginIcon({ panel, size }: { panel: EditorHostPanel; size: 'md' | 'lg'
 }
 
 function StatusLine({ entry, projectName }: { entry: PluginEntry; projectName?: string }) {
+  const t = useT(messages)
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
       {entry.installed && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/80" />}
       <span className="truncate">
         {entry.installed
           ? projectName
-            ? `Installed in ${projectName}`
-            : 'Installed'
-          : 'Not installed'}{' '}
-        · {entry.category}
+            ? t('plugins.installedIn', { project: projectName })
+            : t('plugins.installed')
+          : t('plugins.notInstalled')}{' '}
+        · {categoryName(entry.category, t)}
       </span>
     </span>
   )
 }
 
 function AccessChips({ panel }: { panel: EditorHostPanel }) {
+  const t = useT(messages)
   const chips = new Map<string, LucideIcon>()
   for (const access of panel.access ?? []) {
-    if (access.usesCredits) chips.set('Uses credits', Coins)
+    if (access.usesCredits) chips.set(t('plugins.usesCredits'), Coins)
     else chips.set(access.chip ?? access.label, ACCESS_ICON[access.kind])
   }
-  if (chips.size === 0) chips.set('No services or credits', Check)
+  if (chips.size === 0) chips.set(t('plugins.noServices'), Check)
   return (
     <>
       {[...chips].map(([label, Glyph]) => (
@@ -155,6 +169,7 @@ function PluginCard({
   onOpen: () => void
   onInstall: () => void
 }) {
+  const t = useT(messages)
   const { panel } = entry
   return (
     <div
@@ -187,13 +202,13 @@ function PluginCard({
         </div>
       </div>
       <p className="line-clamp-2 text-foreground/80 text-sm">
-        {panel.summary ?? panel.description ?? 'Adds a new tool panel to the editor.'}
+        {panel.summary ?? panel.description ?? t('plugins.defaultSummary')}
       </p>
       <div className="flex flex-wrap items-center gap-1.5">
         <AccessChips panel={panel} />
         {entry.installed ? (
           <span className="ml-auto inline-flex items-center gap-1 text-muted-foreground text-xs">
-            Manage
+            {t('plugins.manage')}
             <ChevronRight className="h-3.5 w-3.5" />
           </span>
         ) : (
@@ -208,7 +223,7 @@ function PluginCard({
             size="sm"
             variant="outline"
           >
-            {lock ? lock.actionLabel : 'Install'}
+            {lock ? lock.actionLabel : t('plugins.install')}
           </Button>
         )}
       </div>
@@ -236,11 +251,13 @@ function PluginDetail({
   /** Opens the plugin's panel; absent when it has none in this workspace. */
   onOpen?: () => void
 }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const { panel } = entry
-  const credits = creditsLabel(context.credits)
+  const credits = creditsLabel(context.credits, t, locale)
   return (
     <aside
-      aria-label={`${panel.label} details`}
+      aria-label={t('plugins.details', { label: panel.label })}
       className={cn(
         'flex w-[360px] shrink-0 flex-col gap-5 overflow-y-auto border-border/60 border-l bg-sidebar p-5',
         floating && 'absolute inset-y-0 right-0 z-10 max-w-full shadow-2xl',
@@ -256,7 +273,7 @@ function PluginDetail({
           <StatusLine entry={entry} projectName={context.projectName} />
         </div>
         <button
-          aria-label="Close details"
+          aria-label={t('plugins.closeDetails')}
           className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           onClick={onClose}
           type="button"
@@ -279,7 +296,7 @@ function PluginDetail({
         <div className="flex gap-2">
           {onOpen && (
             <Button className="h-10 flex-1 rounded-full" onClick={onOpen}>
-              Open {panel.label}
+              {t('plugins.open', { label: panel.label })}
             </Button>
           )}
           <Button
@@ -288,28 +305,30 @@ function PluginDetail({
             onClick={onToggle}
             variant="outline"
           >
-            Uninstall
+            {t('plugins.uninstall')}
           </Button>
         </div>
       ) : (
         <Button className="h-10 rounded-full" disabled={readOnly} onClick={onToggle}>
           <Check />
-          {context.projectName ? `Install in ${context.projectName}` : 'Install'}
+          {context.projectName
+            ? t('plugins.installInProject', { project: context.projectName })
+            : t('plugins.install')}
         </Button>
       )}
 
       <section>
         <h4 className="mb-2 font-mono text-[10.5px] text-muted-foreground uppercase tracking-[0.08em]">
-          About
+          {t('plugins.about')}
         </h4>
         <p className="text-foreground/90 text-sm leading-relaxed">
-          {panel.description ?? panel.summary ?? 'Adds a new tool panel to the editor.'}
+          {panel.description ?? panel.summary ?? t('plugins.defaultSummary')}
         </p>
       </section>
 
       <section>
         <h4 className="mb-2 font-mono text-[10.5px] text-muted-foreground uppercase tracking-[0.08em]">
-          Can access
+          {t('plugins.canAccess')}
         </h4>
         {panel.access?.length ? (
           <ul className="overflow-hidden rounded-xl border border-border/60">
@@ -331,18 +350,20 @@ function PluginDetail({
           </ul>
         ) : (
           <p className="rounded-xl border border-border/60 border-dashed px-3.5 py-3 text-muted-foreground text-sm">
-            Runs in the editor. No Pascal services, no outside accounts.
+            {t('plugins.noAccess')}
           </p>
         )}
       </section>
 
       <section>
         <h4 className="mb-2 font-mono text-[10.5px] text-muted-foreground uppercase tracking-[0.08em]">
-          Credits
+          {t('plugins.credits')}
         </h4>
         <div className="flex items-center gap-2.5 rounded-xl bg-accent/60 px-3.5 py-3 text-sm">
           <Coins className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span>{usesCredits(panel) ? "Uses this project's credits" : "Doesn't use credits"}</span>
+          <span>
+            {usesCredits(panel) ? t('plugins.usesProjectCredits') : t('plugins.noCredits')}
+          </span>
           {credits && usesCredits(panel) && (
             <span className="ml-auto font-mono text-muted-foreground text-xs tabular-nums">
               {credits}
@@ -361,11 +382,11 @@ function PluginDetail({
                 rel="noreferrer"
                 target="_blank"
               >
-                By {panel.creator.name}
+                {t('plugins.by', { name: panel.creator.name })}
                 <ExternalLink className="h-3 w-3" />
               </a>
             ) : (
-              <span>By {panel.creator.name}</span>
+              <span>{t('plugins.by', { name: panel.creator.name })}</span>
             ))}
           {panel.pluginUrl && (
             <a
@@ -374,7 +395,7 @@ function PluginDetail({
               rel="noreferrer"
               target="_blank"
             >
-              View plugin
+              {t('plugins.viewPlugin')}
               <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -391,6 +412,7 @@ function PluginDetail({
  * room to read like one.
  */
 export function PluginsView() {
+  const t = useT(messages)
   const panels = useRegistry(editorHostPanelRegistry)
   const installLocks = useRegistry(pluginInstallLocks)
   const context = useRegistry(pluginDirectoryContext)
@@ -473,9 +495,17 @@ export function PluginsView() {
   }
 
   const statusOptions: [Status, string, number][] = [
-    ['all', 'All', inCategory.length],
-    ['installed', 'Installed', inCategory.filter((entry) => entry.installed).length],
-    ['available', 'Available', inCategory.filter((entry) => !entry.installed).length],
+    ['all', t('plugins.statusAll'), inCategory.length],
+    [
+      'installed',
+      t('plugins.statusInstalled'),
+      inCategory.filter((entry) => entry.installed).length,
+    ],
+    [
+      'available',
+      t('plugins.statusAvailable'),
+      inCategory.filter((entry) => !entry.installed).length,
+    ],
   ]
 
   const renderSection = (title: string, list: PluginEntry[], aside?: string) =>
@@ -514,11 +544,11 @@ export function PluginsView() {
     >
       {wide && (
         <nav
-          aria-label="Plugin categories"
+          aria-label={t('plugins.categories')}
           className="flex w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-border/60 border-r px-3.5 py-6"
         >
           <h4 className="mx-2.5 mb-1.5 font-mono text-[10.5px] text-muted-foreground uppercase tracking-[0.08em]">
-            Browse
+            {t('plugins.browse')}
           </h4>
           {[null, ...categories].map((name) => {
             const count = name
@@ -537,7 +567,9 @@ export function PluginsView() {
                 onClick={() => pickCategory(name)}
                 type="button"
               >
-                <span className="flex-1 truncate">{name ?? 'All plugins'}</span>
+                <span className="flex-1 truncate">
+                  {name ? categoryName(name, t) : t('plugins.all')}
+                </span>
                 <span className="font-mono text-muted-foreground text-xs">{count}</span>
               </button>
             )
@@ -552,7 +584,7 @@ export function PluginsView() {
               rel="noreferrer"
               target="_blank"
             >
-              Create a Pascal plugin
+              {t('plugins.create')}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -562,22 +594,24 @@ export function PluginsView() {
       <main className={cn('min-w-0 flex-1 overflow-y-auto pt-7 pb-12', wide ? 'px-8' : 'px-5')}>
         <div className="mb-6 flex flex-wrap items-end gap-4">
           <div className={cn('min-w-0', wide ? 'flex-1' : 'basis-full')}>
-            <h1 className="font-semibold text-2xl text-foreground tracking-tight">Plugins</h1>
+            <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+              {t('plugins.heading')}
+            </h1>
             <p className="mt-1 text-muted-foreground text-sm">
-              Add focused tools and content to {context.projectName ?? 'this project'}.
+              {t('plugins.intro', { project: context.projectName ?? t('plugins.thisProject') })}
             </p>
           </div>
           {!wide && categories.length > 1 && (
             <select
-              aria-label="Category"
+              aria-label={t('plugins.category')}
               className="h-9 rounded-lg border border-border bg-accent/40 px-2.5 text-sm"
               onChange={(event) => pickCategory(event.target.value || null)}
               value={category ?? ''}
             >
-              <option value="">All plugins</option>
+              <option value="">{t('plugins.all')}</option>
               {categories.map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {categoryName(name, t)}
                 </option>
               ))}
             </select>
@@ -585,10 +619,10 @@ export function PluginsView() {
           <label className="flex h-9 w-64 max-w-full items-center gap-2 rounded-lg border border-border bg-accent/40 px-3 text-muted-foreground focus-within:border-foreground/30">
             <Search className="h-4 w-4 shrink-0" />
             <input
-              aria-label="Search plugins"
+              aria-label={t('plugins.search')}
               className="min-w-0 flex-1 bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search plugins"
+              placeholder={t('plugins.search')}
               type="search"
               value={query}
             />
@@ -617,13 +651,19 @@ export function PluginsView() {
         {installed.length + available.length === 0 ? (
           <p className="py-12 text-center text-muted-foreground text-sm">
             {needle
-              ? `No plugins match “${query.trim()}”${category ? ` in ${category}` : ''}.`
-              : 'No plugins here yet.'}
+              ? category
+                ? t('plugins.noMatchIn', {
+                    query: query.trim(),
+                    category: categoryName(category, t),
+                  })
+                : t('plugins.noMatch', { query: query.trim() })
+              : t('plugins.none')}
           </p>
         ) : (
           <>
-            {status !== 'available' && renderSection('In this project', installed)}
-            {status !== 'installed' && renderSection('Available', available, 'Installing is free')}
+            {status !== 'available' && renderSection(t('plugins.inThisProject'), installed)}
+            {status !== 'installed' &&
+              renderSection(t('plugins.available'), available, t('plugins.free'))}
           </>
         )}
       </main>
@@ -647,14 +687,16 @@ export function PluginsView() {
           role="status"
         >
           <span>
-            {undoEntry.panel.label} {undo.installed ? 'installed' : 'uninstalled'}
+            {t(undo.installed ? 'plugins.wasInstalled' : 'plugins.wasUninstalled', {
+              label: undoEntry.panel.label,
+            })}
           </span>
           <button
             className="h-8 rounded-lg px-2.5 font-semibold transition-colors hover:bg-accent"
             onClick={() => setInstalled(undo.id, !undo.installed, false)}
             type="button"
           >
-            Undo
+            {t('plugins.undo')}
           </button>
         </div>
       )}
