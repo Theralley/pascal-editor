@@ -35,7 +35,7 @@ import { wallCutApplies } from '../wall/wall-cut-eligibility'
 
 export type OpeningDisplayViewerState = Pick<
   ReturnType<typeof useViewer.getState>,
-  'wallMode' | 'openingDisplay'
+  'wallMode' | 'openingDisplay' | 'bumpGeometryRevision'
 >
 
 export type OpeningDisplayViewerStore = { getState: () => OpeningDisplayViewerState }
@@ -70,12 +70,15 @@ const isFloorMark = (object: Object3D) =>
   object.name === FLOOR_MARK_NAME || object.name === FLOOR_MARK_HIT_NAME
 
 /** Takes the floor mark off an opening, so its bounds and children are as its system built them. */
-function removeMarks(group: Object3D): void {
+function removeMarks(group: Object3D): boolean {
+  let removed = false
   for (const child of [...group.children]) {
     if (!isFloorMark(child)) continue
     group.remove(child)
     ;(child as Mesh).geometry?.dispose()
+    removed = true
   }
+  return removed
 }
 
 /** The opening's drawn and pickable meshes. */
@@ -114,7 +117,7 @@ function applies(node: AnyNode | undefined, nodes: Readonly<Record<string, AnyNo
   return host?.type === 'wall' && wallCutApplies(host as WallNode)
 }
 
-type Tracked = { signature: string; display: OpeningDisplay }
+type Tracked = { signature: string; display: OpeningDisplay; marks: Mesh[] }
 
 /** What a capture asks of the openings: shown as built, or as the Low setting leaves them. */
 type CaptureStance = { kind: 'full' } | { kind: 'low'; display: OpeningDisplay }
@@ -188,6 +191,7 @@ export class OpeningDisplayCache {
 
     const nodes = useScene.getState().nodes
     const seen = new Set<string>()
+    let marksChanged = false
     for (const [kind, definition] of nodeRegistry.entries()) {
       const config = definition.capabilities?.lowWallOpening
       if (!config) continue
@@ -199,34 +203,51 @@ export class OpeningDisplayCache {
         const signature = signatureOf(group, Boolean((node as { source?: unknown }).source))
         const previous = this.tracked.get(id)
         if (previous?.signature === signature && previous.display === display) continue
-        removeMarks(group)
+        const hadMarks = removeMarks(group)
         for (const part of partsOf(group)) hideFromScene(part, 'opening-low')
         const spec = display === 'marks' && config.floorMark ? floorMarkSpecOf(group) : undefined
-        if (spec) group.add(...createFloorMark(spec))
+        const marks = spec ? createFloorMark(spec) : []
+        if (marks.length > 0) group.add(...marks)
+        if (hadMarks || marks.length > 0) marksChanged = true
         this.tracked.set(id, {
           signature: signatureOf(group, Boolean((node as { source?: unknown }).source)),
           display,
+          marks,
         })
         if (live) setAffected(id, true)
       }
     }
     for (const id of [...this.tracked.keys()]) {
-      if (!seen.has(id)) this.releaseOne(id, live)
+      if (!seen.has(id)) marksChanged = this.releaseOne(id, live) || marksChanged
     }
+    // The selection and hover tints sit on the meshes that were just swapped.
+    if (marksChanged) this.viewerStore.getState().bumpGeometryRevision()
   }
 
   private release(live = true): void {
-    for (const id of [...this.tracked.keys()]) this.releaseOne(id, live)
+    let marksChanged = false
+    for (const id of [...this.tracked.keys()])
+      marksChanged = this.releaseOne(id, live) || marksChanged
+    if (marksChanged) this.viewerStore.getState().bumpGeometryRevision()
   }
 
-  private releaseOne(id: string, live: boolean): void {
+  /** Gives the opening back; true when it had marks. Its marks are disposed even if it is already unregistered. */
+  private releaseOne(id: string, live: boolean): boolean {
+    const tracked = this.tracked.get(id)
     this.tracked.delete(id)
     const group = sceneRegistry.nodes.get(id)
+    let hadMarks = false
     if (group) {
-      removeMarks(group)
+      hadMarks = removeMarks(group)
       for (const part of partsOf(group)) showInScene(part, 'opening-low')
     }
+    for (const mark of tracked?.marks ?? []) {
+      mark.removeFromParent()
+      mark.geometry.dispose()
+      hadMarks = true
+    }
     if (live) setAffected(id, false)
+    return hadMarks
   }
 }
 

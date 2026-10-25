@@ -19,6 +19,7 @@ import {
 let viewerStore: StoreApi<OpeningDisplayViewerState>
 let cache: OpeningDisplayCache
 let restoreRegistry: () => void
+let revisions = 0
 
 function setView(view: Partial<OpeningDisplayViewerState>) {
   viewerStore.setState(view)
@@ -76,6 +77,7 @@ const marksShown = (root: Mesh) => {
 }
 
 beforeEach(() => {
+  revisions = 0
   restoreRegistry = nodeRegistry._snapshot()
   nodeRegistry._register({
     kind: 'door',
@@ -92,6 +94,7 @@ beforeEach(() => {
   viewerStore = createStore<OpeningDisplayViewerState>(() => ({
     wallMode: 'up',
     openingDisplay: 'marks',
+    bumpGeometryRevision: () => revisions++,
   }))
   cache = new OpeningDisplayCache(viewerStore)
 })
@@ -260,6 +263,48 @@ describe('OpeningDisplayCache', () => {
       [id, true],
       [id, false],
     ])
+  })
+
+  test('a deleted door gives its marks back to be disposed, and undo draws them again', () => {
+    const { id, root } = addOpening('door')
+    setView({ wallMode: 'low', openingDisplay: 'marks' })
+    cache.update()
+    const mark = markOf(root, FLOOR_MARK_NAME)!
+    let disposed = 0
+    mark.geometry.addEventListener('dispose', () => disposed++)
+    sceneRegistry.nodes.delete(id)
+    sceneRegistry.byType.door!.delete(id)
+    cache.update()
+    expect(disposed).toBe(1)
+    expect(mark.parent).toBeNull()
+    expect(isOpeningDisplayAffected(id)).toBe(false)
+
+    sceneRegistry.nodes.set(id, root)
+    sceneRegistry.byType.door!.add(id)
+    cache.update()
+    expect(markOf(root, FLOOR_MARK_NAME)).toBeDefined()
+    expect(markOf(root, FLOOR_MARK_NAME)).not.toBe(mark)
+    expect(marksShown(root)).toBe(true)
+  })
+
+  test('the selection tints are told when marks come and go', () => {
+    addOpening('door')
+    setView({ wallMode: 'low', openingDisplay: 'marks' })
+    cache.update()
+    expect(revisions).toBe(1)
+    cache.update()
+    expect(revisions).toBe(1)
+    setView({ openingDisplay: 'hidden' })
+    cache.update()
+    expect(revisions).toBe(2)
+    setView({ wallMode: 'up' })
+    cache.update()
+    expect(revisions).toBe(2)
+    setView({ wallMode: 'low', openingDisplay: 'marks' })
+    cache.update()
+    setView({ wallMode: 'up' })
+    cache.update()
+    expect(revisions).toBe(4)
   })
 
   describe('captures', () => {
