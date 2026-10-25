@@ -1863,8 +1863,9 @@ function stampIdentity(
       if (clipNames.some((name) => name.endsWith(': open'))) extras.openable = true
       extras.clips = clipNames
     }
-    // A baked scene cuts its walls low like the live viewer does: the same walls, not the curtain ones.
-    if (node.type === 'wall' && !wallCutApplies(node as WallNode)) extras.displayCut = false
+    // A baked scene cuts its walls low like the live viewer does: the same walls, not the curtain
+    // ones. Stamped either way, so a bake made before it did can be told apart.
+    if (node.type === 'wall') extras.displayCut = wallCutApplies(node as WallNode)
     if (node.type === 'zone') {
       // Zone fills are stripped from the bake; /viewer rebuilds the room from
       // this polygon. Force the identity node visible so GLTFExporter's

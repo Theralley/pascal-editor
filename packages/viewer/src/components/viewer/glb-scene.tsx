@@ -105,7 +105,7 @@ type PascalExtras = {
   polygon?: [number, number][]
   holes?: [number, number][][]
   color?: string
-  /** False on a node the display cut leaves whole (a curtain wall). */
+  /** Whether the display cut applies to a wall; false on a curtain wall. Absent on a bake made before it was stamped. */
   displayCut?: boolean
   camera?: { position: [number, number, number]; target: [number, number, number] }
 }

@@ -1,7 +1,15 @@
 // @ts-expect-error — bun:test is provided by the Bun runtime; viewer does not
 // depend on @types/bun so the import type is unresolved at compile time.
 import { describe, expect, test } from 'bun:test'
+import {
+  calculateLevelMiters,
+  DoorNode,
+  sceneRegistry,
+  WallNode,
+  WindowNode,
+} from '@pascal-app/core'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
+import { generateExtrudedWall } from '../../systems/wall/wall-system'
 import { cutBakedWalls, GLB_WALL_CAPS_NAME } from './glb-wall-cut'
 
 function bakedLevel() {
@@ -80,5 +88,79 @@ describe('cutBakedWalls', () => {
     expect(body.material).toBe(material)
     expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
     cut.dispose()
+  })
+})
+
+/** The area of the cap on a level, every triangle facing up. */
+function capArea(level: Group): number {
+  const cap = level.getObjectByName(GLB_WALL_CAPS_NAME) as Mesh | undefined
+  if (!cap) return 0
+  const position = cap.geometry.getAttribute('position')
+  const index = cap.geometry.getIndex()!
+  let area = 0
+  for (let i = 0; i < index.count; i += 3) {
+    const [p, q, r] = [0, 1, 2].map((k) => index.getX(i + k))
+    const up =
+      (position.getZ(q!) - position.getZ(p!)) * (position.getX(r!) - position.getX(p!)) -
+      (position.getX(q!) - position.getX(p!)) * (position.getZ(r!) - position.getZ(p!))
+    expect(up).toBeGreaterThanOrEqual(-1e-6)
+    area += up / 2
+  }
+  return area
+}
+
+describe('cutBakedWalls caps', () => {
+  test('a baked wall with a door and a window is capped as the live one is, at any cut', () => {
+    const wall = WallNode.parse({ start: [0, 0], end: [4, 0], thickness: 0.2 })
+    const door = DoorNode.parse({ wallId: wall.id, position: [1, 1.05, 0], width: 1, height: 2.1 })
+    const window = WindowNode.parse({ wallId: wall.id, position: [3, 1.5, 0], width: 1, height: 1 })
+    sceneRegistry.nodes.set(wall.id, new Mesh())
+    const geometry = generateExtrudedWall(wall, [door, window], calculateLevelMiters([wall]))
+    sceneRegistry.nodes.delete(wall.id)
+
+    const level = new Group()
+    level.userData = { pascalId: 'level_1', kind: 'level' }
+    level.position.y = 3
+    const object = new Group()
+    object.userData = { pascalId: wall.id, kind: 'wall', displayCut: true }
+    object.add(new Mesh(geometry, new MeshBasicMaterial()))
+    level.add(object)
+    level.updateMatrixWorld(true)
+
+    const cut = cutBakedWalls([{ object, level }], 0.25, new MeshBasicMaterial())
+    expect(capArea(level)).toBeCloseTo((4 - 1) * 0.2, 4)
+    // The window's sill is at 1.0 m: a cut above it passes through the window too.
+    cut.setHeight(1.2)
+    expect(capArea(level)).toBeCloseTo((4 - 1 - 1) * 0.2, 4)
+    // A cut above the wall's top leaves no plate floating over it.
+    cut.setHeight(2.8)
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+    cut.setHeight(0.25)
+    expect(capArea(level)).toBeCloseTo((4 - 1) * 0.2, 4)
+    cut.dispose()
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+  })
+
+  test('a wall shorter than the cut has no cap', () => {
+    const { level, wall } = bakedLevel()
+    const cut = cutBakedWalls([{ object: wall, level }], 2.7, new MeshBasicMaterial())
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+    cut.dispose()
+  })
+
+  test('a bake that was not stamped is judged by what its wall draws: glass stays whole, the stamp wins', () => {
+    for (const [stamp, transparent, cutExpected] of [
+      [undefined, true, false],
+      [undefined, false, true],
+      [true, true, true],
+      [false, false, false],
+    ] as const) {
+      const { level, wall, body } = bakedLevel()
+      body.material = new MeshBasicMaterial({ transparent, opacity: transparent ? 0.3 : 1 })
+      if (stamp !== undefined) wall.userData.displayCut = stamp
+      const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+      expect(level.getObjectByName(GLB_WALL_CAPS_NAME) !== undefined).toBe(cutExpected)
+      cut.dispose()
+    }
   })
 })
