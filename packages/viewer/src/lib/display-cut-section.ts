@@ -65,13 +65,11 @@ export type PreparedSection = {
  * transform are the primitives of one baked mesh and make one solid; any other pair of meshes are
  * separate solids, and never become each other's holes.
  */
-export function prepareSection(
-  meshes: readonly Mesh[],
-  frame: Object3D,
-  joinTolerance = DEFAULT_JOIN,
-): PreparedSection {
-  frame.updateWorldMatrix(true, false)
-  const inverse = new Matrix4().copy(frame.matrixWorld).invert()
+/**
+ * The meshes grouped into solids: those sharing a position attribute, a parent and a transform are
+ * the primitives of one baked mesh. Two instances of one geometry are two solids.
+ */
+export function groupInstances(meshes: readonly Mesh[]): Mesh[][] {
   const instances = new Map<unknown, Map<string, Mesh[]>>()
   for (const mesh of meshes) {
     const position = mesh.geometry?.getAttribute('position')
@@ -84,9 +82,17 @@ export function prepareSection(
     if (list) list.push(mesh)
     else known.set(instance, [mesh])
   }
-  const bodies: Body[] = []
-  for (const known of instances.values())
-    for (const group of known.values()) bodies.push(prepareBody(group, inverse))
+  return [...instances.values()].flatMap((known) => [...known.values()])
+}
+
+export function prepareSection(
+  meshes: readonly Mesh[],
+  frame: Object3D,
+  joinTolerance = DEFAULT_JOIN,
+): PreparedSection {
+  frame.updateWorldMatrix(true, false)
+  const inverse = new Matrix4().copy(frame.matrixWorld).invert()
+  const bodies = groupInstances(meshes).map((group) => prepareBody(group, inverse))
   return {
     bounds: {
       min: Math.min(...bodies.map((body) => body.min)),
@@ -160,19 +166,27 @@ function sectionBody(
   height: number,
   joinTolerance: number,
 ): { loops: SectionLoop[]; complete: boolean } {
-  if (height < body.min - ON_PLANE || height >= body.max + ON_PLANE) return NONE
+  // A body that starts at or above the height keeps nothing: its base is not a stub's top.
+  if (height <= body.min + ON_PLANE || height >= body.max + ON_PLANE) return NONE
   const { xyz, corners } = body
-  const ids = new Map<string, number>()
+  const cells = new Map<string, number[]>()
   const points: Vector2[] = []
   const segments: Segment[] = []
+  // A point within WELD of an existing one is that one, whichever side of a cell border it fell.
   const idOf = (x: number, z: number) => {
-    const key = `${Math.round(x / WELD)},${Math.round(z / WELD)}`
-    let id = ids.get(key)
-    if (id === undefined) {
-      id = points.length
-      ids.set(key, id)
-      points.push(new Vector2(x, z))
-    }
+    const cx = Math.floor(x / WELD)
+    const cz = Math.floor(z / WELD)
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++)
+        for (const id of cells.get(`${cx + dx},${cz + dz}`) ?? []) {
+          const point = points[id]!
+          if (Math.abs(point.x - x) <= WELD && Math.abs(point.y - z) <= WELD) return id
+        }
+    const id = points.length
+    points.push(new Vector2(x, z))
+    const own = cells.get(`${cx},${cz}`)
+    if (own) own.push(id)
+    else cells.set(`${cx},${cz}`, [id])
     return id
   }
   const isOver = (vertex: number) => xyz[vertex * 3 + 1]! > height + ON_PLANE
@@ -222,39 +236,49 @@ function sectionBody(
 function splitAtPoints(points: Vector2[], segments: Segment[]): Segment[] {
   const cell = 0.25
   const grid = new Map<string, number[]>()
-  const key = (x: number, z: number) => `${Math.floor(x / cell)},${Math.floor(z / cell)}`
+  // Each segment is filed in the cells it passes through, sampled at half a cell; a point looks in
+  // its own cell and the eight round it, which covers the cells a segment only clips.
   segments.forEach(([from, to], s) => {
     const a = points[from]!
     const b = points[to]!
-    const x0 = Math.floor((Math.min(a.x, b.x) - ON_SEGMENT) / cell)
-    const x1 = Math.floor((Math.max(a.x, b.x) + ON_SEGMENT) / cell)
-    const z0 = Math.floor((Math.min(a.y, b.y) - ON_SEGMENT) / cell)
-    const z1 = Math.floor((Math.max(a.y, b.y) + ON_SEGMENT) / cell)
-    for (let x = x0; x <= x1; x++)
-      for (let z = z0; z <= z1; z++) {
-        const list = grid.get(`${x},${z}`)
-        if (list) list.push(s)
-        else grid.set(`${x},${z}`, [s])
-      }
+    const steps = Math.max(1, Math.ceil(a.distanceTo(b) / (cell / 2)))
+    let last = ''
+    for (let i = 0; i <= steps; i++) {
+      const x = Math.floor((a.x + ((b.x - a.x) * i) / steps) / cell)
+      const z = Math.floor((a.y + ((b.y - a.y) * i) / steps) / cell)
+      const key = `${x},${z}`
+      if (key === last) continue
+      last = key
+      const list = grid.get(key)
+      if (list) list.push(s)
+      else grid.set(key, [s])
+    }
   })
   const splits = new Map<number, { along: number; id: number }[]>()
   const edge = new Vector2()
   const offset = new Vector2()
+  const looked = new Int32Array(segments.length).fill(-1)
   points.forEach((point, id) => {
-    for (const s of grid.get(key(point.x, point.y)) ?? []) {
-      const [from, to] = segments[s]!
-      if (from === id || to === id) continue
-      edge.subVectors(points[to]!, points[from]!)
-      const length = edge.length()
-      if (length < 2 * ON_SEGMENT) continue
-      offset.subVectors(point, points[from]!)
-      const along = offset.dot(edge) / length
-      if (along <= ON_SEGMENT || along >= length - ON_SEGMENT) continue
-      if (Math.abs(offset.cross(edge)) / length > ON_SEGMENT) continue
-      const list = splits.get(s)
-      if (list) list.push({ along, id })
-      else splits.set(s, [{ along, id }])
-    }
+    const cx = Math.floor(point.x / cell)
+    const cz = Math.floor(point.y / cell)
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++)
+        for (const s of grid.get(`${cx + dx},${cz + dz}`) ?? []) {
+          if (looked[s] === id) continue
+          looked[s] = id
+          const [from, to] = segments[s]!
+          if (from === id || to === id) continue
+          edge.subVectors(points[to]!, points[from]!)
+          const length = edge.length()
+          if (length < 2 * ON_SEGMENT) continue
+          offset.subVectors(point, points[from]!)
+          const along = offset.dot(edge) / length
+          if (along <= ON_SEGMENT || along >= length - ON_SEGMENT) continue
+          if (Math.abs(offset.cross(edge)) / length > ON_SEGMENT) continue
+          const list = splits.get(s)
+          if (list) list.push({ along, id })
+          else splits.set(s, [{ along, id }])
+        }
   })
   if (splits.size === 0) return segments
   return segments.flatMap((segment, s) => {
@@ -276,14 +300,23 @@ function closeOutlines(
   segments = splitAtPoints(points, segments)
   // Two faces back to back leave the same piece in both directions, which is no outline at all;
   // the same piece twice the same way (overlapping solids) is one.
-  const seen = new Map<string, Segment>()
+  // Counted per piece and direction first, so the result does not depend on the order the faces
+  // came in: a piece met once more one way than the other stays, once each way is gone.
+  const net = new Map<string, { segment: Segment; count: number }>()
   for (const segment of segments) {
-    const forward = `${segment[0]},${segment[1]}`
-    const back = `${segment[1]},${segment[0]}`
-    if (seen.has(back)) seen.delete(back)
-    else seen.set(forward, segment)
+    const forward = segment[0] < segment[1]
+    const key = forward ? `${segment[0]},${segment[1]}` : `${segment[1]},${segment[0]}`
+    const entry = net.get(key) ?? {
+      segment: forward ? segment : [segment[1], segment[0]],
+      count: 0,
+    }
+    entry.count += forward ? 1 : -1
+    net.set(key, entry)
   }
-  const kept = [...seen.values()]
+  const kept: Segment[] = []
+  for (const { segment, count } of net.values())
+    if (count > 0) kept.push(segment)
+    else if (count < 0) kept.push([segment[1], segment[0]])
   const leaving = new Map<number, number[]>()
   kept.forEach(([from], s) => {
     const list = leaving.get(from)
@@ -328,6 +361,8 @@ function closeOutlines(
     if (chain[chain.length - 1] === chain[0]) closed.push(chain.slice(1))
     else open.push(chain)
   }
+  // Past a few hundred loose chains the section is broken beyond a seam.
+  if (open.length > 200) return { loops: [], complete: false }
   const near = (a: number, b: number) => points[a]!.distanceTo(points[b]!) <= joinTolerance
   const length = (ids: number[]) =>
     ids.reduce((sum, id, i) => sum + points[id]!.distanceTo(points[ids[(i + 1) % ids.length]!]!), 0)
@@ -362,8 +397,8 @@ function closeOutlines(
   for (const ids of closed) {
     const loop = ids.map((id) => points[id]!.clone())
     if (ids.length >= 3 && Math.abs(ShapeUtils.area(loop)) > 1e-9) loops.push(loop)
-    // A loop of real length with no area folded onto itself: a piece is missing.
-    else if (length(ids) > REAL_LENGTH) complete = false
+    // A loop with no area that comes back to a point it left folded onto itself: a piece is missing.
+    else if (new Set(ids).size < ids.length && length(ids) > REAL_LENGTH) complete = false
   }
   return { loops, complete }
 }

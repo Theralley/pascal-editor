@@ -25,9 +25,10 @@ import {
   type Solid,
 } from '../../lib/display-cut-section'
 import { createDefaultMaterial, type RenderShading } from '../../lib/materials'
+import { isHeldFromScene } from '../../lib/scene-visibility'
 import { getCachedLevelMiters } from './level-miter-cache'
 import { wallCutApplies } from './wall-cut-eligibility'
-import { wallParts } from './wall-cutout-cache'
+import { forEachWallPart, wallParts } from './wall-cutout-cache'
 
 export const WALL_CUT_CAPS_NAME = 'wall-cut-caps'
 const WALL_COLLISION_MESH = 'collision-mesh'
@@ -147,7 +148,31 @@ function footprintSolids(
 }
 
 /** A wall's parts that are drawn: a hidden one (a stale curtain wall's glass) is no part of the cap. */
-const shownParts = (mesh: Mesh) => wallParts(mesh).filter((part) => part.visible)
+function partShown(part: Mesh, wall: Object3D): boolean {
+  for (let object: Object3D | null = part; object && object !== wall; object = object.parent)
+    if (!object.visible || isHeldFromScene(object, ['batched', 'wall-batched'])) return false
+  return true
+}
+
+const shownParts = (mesh: Mesh) => wallParts(mesh).filter((part) => partShown(part, mesh))
+
+let geometriesSeen = 0
+const geometryIds = new WeakMap<object, number>()
+const geometryId = (geometry: object): number => {
+  let id = geometryIds.get(geometry)
+  if (id === undefined) {
+    id = ++geometriesSeen
+    geometryIds.set(geometry, id)
+  }
+  return id
+}
+
+const mix = (hash: number, value: number) => Math.imul(hash ^ Math.round(value * 1e4), 16777619) | 0
+
+const versionOf = (part: Mesh) => {
+  const position = part.geometry.getAttribute('position')
+  return !position ? 0 : 'version' in position ? position.version : position.data.version
+}
 
 const EMPTY: Section = { solids: [], complete: true }
 
@@ -181,6 +206,9 @@ export class WallCutCaps {
     }
   >()
   private material: Material | null = null
+  /** The wall meshes whose parts are watched, as of one registry revision. */
+  private watched: { revision: number; meshes: Mesh[] } | null = null
+  private partsSeen = 0
   private shading: RenderShading | undefined
   /** What the caps were last made from; while it holds, an update does nothing. */
   private inputs: { nodes: unknown; revision: number; height: number } | null = null
@@ -224,6 +252,12 @@ export class WallCutCaps {
       for (const cap of this.caps.values()) if (cap.mesh) cap.mesh.material = this.material
     }
     const { nodes } = useScene.getState()
+    // A part loaded, moved or hidden announces nothing, so what the walls carry is read each frame.
+    const stamp = this.partsStamp()
+    if (stamp !== this.partsSeen) {
+      this.partsSeen = stamp
+      this.inputs = null
+    }
     const last = this.inputs
     if (
       last &&
@@ -258,6 +292,28 @@ export class WallCutCaps {
         [])
         alive.add(childId)
     for (const wallId of this.sections.keys()) if (!alive.has(wallId)) this.sections.delete(wallId)
+  }
+
+  /** A number that changes when a part a wall carries is added, moved, remade or shown or hidden. */
+  private partsStamp(): number {
+    if (this.watched?.revision !== sceneRegistry.revision) {
+      const meshes: Mesh[] = []
+      for (const id of sceneRegistry.byType.wall ?? []) {
+        const mesh = sceneRegistry.nodes.get(id as AnyNodeId) as Mesh | undefined
+        if (mesh) meshes.push(mesh)
+      }
+      this.watched = { revision: sceneRegistry.revision, meshes }
+    }
+    let hash = 0
+    for (const wall of this.watched.meshes)
+      forEachWallPart(wall, (part) => {
+        hash = mix(hash, geometryId(part.geometry))
+        hash = mix(hash, versionOf(part))
+        hash = mix(hash, part.geometry.drawRange.count)
+        hash = mix(hash, partShown(part, wall) ? 1 : 0)
+        for (const element of part.matrixWorld.elements) hash = mix(hash, element)
+      })
+    return hash
   }
 
   dispose(): void {
@@ -300,7 +356,13 @@ export class WallCutCaps {
     mesh.updateWorldMatrix(true, false)
     const relative = new Matrix4().copy(root.matrixWorld).invert().multiply(mesh.matrixWorld)
     // A moulding or finish the wall carries is cut with it, so a change in one remakes the cap.
-    const parts = shownParts(mesh).map((part) => part.geometry.uuid)
+    const parts = shownParts(mesh).flatMap((part) => [
+      geometryId(part.geometry),
+      versionOf(part),
+      part.geometry.drawRange.start,
+      part.geometry.drawRange.count,
+      ...new Matrix4().copy(root.matrixWorld).invert().multiply(part.matrixWorld).elements,
+    ])
     return [
       geometry.uuid,
       'version' in position ? position.version : position.data.version,

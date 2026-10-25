@@ -213,4 +213,20 @@ describe('cutBakedWalls caps', () => {
     expect(capArea(level)).toBeCloseTo(1 * 0.1 + 1 * 0.15, 4)
     cut.dispose()
   })
+
+  test('instances of one open geometry are judged one by one: the one above the cut gets no plate', () => {
+    const { level, wall } = bakedLevel()
+    wall.clear()
+    const open = new BoxGeometry(4, 1, 0.2).translate(2, 0.5, 0)
+    const index = open.getIndex()!
+    open.setIndex(Array.from({ length: index.count - 6 }, (_, i) => index.getX(i + 6)))
+    const standing = new Mesh(open, new MeshBasicMaterial())
+    const raised = new Mesh(open, new MeshBasicMaterial())
+    raised.position.y = 3
+    wall.add(standing, raised)
+    level.updateMatrixWorld(true)
+    const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+    expect(capArea(level)).toBeCloseTo(4 * 0.2, 4)
+    cut.dispose()
+  })
 })

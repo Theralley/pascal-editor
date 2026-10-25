@@ -29,6 +29,7 @@ import {
   setDisplayCutHeight,
   setDisplayCutRoot,
 } from '../../lib/display-cut'
+import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import { WALL_CUT_CAPS_NAME, WallCutCaps } from './wall-cut-caps'
 import { presentWallsLowForCapture } from './wall-cutout'
 import { WallCutoutCache, type WallCutoutViewerState } from './wall-cutout-cache'
@@ -431,21 +432,65 @@ describe('WallCutCaps', () => {
     caps.dispose()
   })
 
-  test('a hidden part of the wall takes no cap, and shows one when it is shown', () => {
-    const { root, mesh } = level()
-    const stale = new Mesh(new BoxGeometry(4.4, 0.5, 0.6).translate(2, 0.25, 0), [
-      new MeshBasicMaterial(),
-    ])
-    stale.visible = false
-    mesh.add(stale)
-    root.updateMatrixWorld(true)
+  describe('parts the wall carries', () => {
+    const casing = () =>
+      new Mesh(new BoxGeometry(4.4, 0.5, 0.6).translate(2, 0.25, 0), [new MeshBasicMaterial()])
+    const shown = (root: Group) => covers(capsOf(root), 2, 0.25)
+
+    test('a hidden part, one under a hidden group, and one held off the scene take no cap', () => {
+      const { root, mesh } = level()
+      const direct = casing()
+      const inner = casing()
+      const held = casing()
+      const group = new Group()
+      group.visible = false
+      group.add(inner)
+      mesh.add(direct, group)
+      direct.visible = false
+      root.updateMatrixWorld(true)
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      direct.visible = true
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      direct.removeFromParent()
+      mesh.add(held)
+      hideFromScene(held, 'isolated')
+      root.updateMatrixWorld(true)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      showInScene(held, 'isolated')
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      caps.dispose()
+    })
+
+    test('a part added late, then moved above the cut, is capped and then not', () => {
+      const { root, mesh } = level()
+      const caps = new WallCutCaps()
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      const part = casing()
+      mesh.add(part)
+      root.updateMatrixWorld(true)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(true)
+      part.position.y = 1
+      root.updateMatrixWorld(true)
+      caps.update(true, 0.25, 'solid')
+      expect(shown(root)).toBe(false)
+      caps.dispose()
+    })
+  })
+
+  test('walls standing on a slab at the slider minimum get no plate on it', () => {
+    const { root } = level({ base: 0.05 })
     const caps = new WallCutCaps()
-    caps.update(true, 0.25, 'solid')
-    expect(covers(capsOf(root), 2, 0.25)).toBe(false)
-    stale.visible = true
-    caps.markWall(Object.keys(useScene.getState().nodes).find((id) => id.startsWith('wall_'))!)
-    caps.update(true, 0.25, 'solid')
-    expect(covers(capsOf(root), 2, 0.25)).toBe(true)
+    caps.update(true, 0.05, 'solid')
+    expect(capsOf(root)).toBeUndefined()
+    caps.update(true, 0.06, 'solid')
+    expect(capsOf(root)).toBeDefined()
     caps.dispose()
   })
 

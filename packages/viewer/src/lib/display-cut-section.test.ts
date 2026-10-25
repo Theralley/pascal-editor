@@ -225,6 +225,60 @@ describe('repairs and the plane', () => {
   })
 })
 
+describe('order and welding', () => {
+  /** A seeded shuffle of a geometry's triangles. */
+  const shuffled = (geometry: BufferGeometry, seed: number) => {
+    const index = geometry.getIndex()!
+    const triangles = Array.from({ length: index.count / 3 }, (_, t) => [
+      index.getX(t * 3),
+      index.getX(t * 3 + 1),
+      index.getX(t * 3 + 2),
+    ])
+    let state = seed
+    for (let i = triangles.length - 1; i > 0; i--) {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+      const j = state % (i + 1)
+      ;[triangles[i], triangles[j]] = [triangles[j]!, triangles[i]!]
+    }
+    const copy = geometry.clone()
+    copy.setIndex(triangles.flat())
+    return copy
+  }
+
+  test('the same faces in any order give the same section', () => {
+    // A wall and a casing back to back with it, so faces cancel in pairs.
+    const body = joined(
+      new BoxGeometry(2, 1, 0.2).translate(0, 0.5, 0),
+      new BoxGeometry(2, 1, 0.2).translate(0, 0.5, 0.2),
+      new BoxGeometry(0.4, 1, 0.2).translate(-0.5, 0.5, 0.4),
+    )
+    const reference = sectionOfBody(body, 0.37)
+    expect(reference.complete).toBe(true)
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const section = sectionOfBody(shuffled(body, seed), 0.37)
+      expect(section.complete).toBe(true)
+      expect(loopCount(section)).toBe(loopCount(reference))
+      expect(sectionArea(section)).toBeCloseTo(sectionArea(reference), 5)
+    }
+  })
+
+  test('points a hair apart across a weld cell border are one point', () => {
+    // Corners at 0 and 1e-5 / 2 fall on either side of a rounding border.
+    const box = new BoxGeometry(2, 1, 1).translate(0, 0.5, 0)
+    const position = box.getAttribute('position')
+    for (let i = 0; i < position.count; i += 3) position.setX(i, position.getX(i) + 6e-6)
+    const section = sectionOfBody(box, 0.5)
+    expect(section.complete).toBe(true)
+    expect(sectionArea(section)).toBeCloseTo(2, 3)
+  })
+
+  test('a body that begins at the cut has no section', () => {
+    const body = new BoxGeometry(2, 1, 1).translate(0, 1.5, 0)
+    expect(loopCount(sectionOfBody(body, 1))).toBe(0)
+    expect(loopCount(sectionOfBody(body, 1.01))).toBe(1)
+  })
+})
+
 describe('buildCutCapGeometry', () => {
   test('is nothing for no loops', () => {
     expect(buildCutCapGeometry([])).toBeNull()

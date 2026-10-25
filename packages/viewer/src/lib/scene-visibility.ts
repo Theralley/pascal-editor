@@ -67,6 +67,17 @@ export function showInScene(obj: Object3D, reason: HiddenReason): void {
   delete holder[HOLD]
 }
 
+/**
+ * Whether `obj` is held off the scene layer for a reason other than `except` (a wall batch draws
+ * the walls it holds, so those are not hidden). Read-only.
+ */
+export function isHeldFromScene(obj: Object3D, except: readonly HiddenReason[] = []): boolean {
+  const hold = (obj as Holder)[HOLD]
+  if (!hold) return false
+  for (const reason of hold.reasons) if (!except.includes(reason)) return true
+  return false
+}
+
 export function temporarilyShowShadowOnly(root: Object3D): () => void {
   return temporarilyShowHeld(root, ['shadow-only'])
 }

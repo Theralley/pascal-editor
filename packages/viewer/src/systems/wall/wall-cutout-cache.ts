@@ -53,17 +53,22 @@ function registeredObjects(): ReadonlySet<Object3D> {
  * not the nodes hosted on it, which are registered themselves and are not the wall's to cut.
  */
 export function wallParts(wallMesh: Object3D): Mesh[] {
-  const hosted = registeredObjects()
   const parts: Mesh[] = []
-  const visit = (object: Object3D) => {
+  forEachWallPart(wallMesh, (part) => parts.push(part))
+  return parts
+}
+
+/** `wallParts`, without making a list: for what is looked at every frame. */
+export function forEachWallPart(wallMesh: Object3D, visit: (part: Mesh) => void): void {
+  const hosted = registeredObjects()
+  const walk = (object: Object3D) => {
     for (const child of object.children) {
       if (hosted.has(child) || child.name === WALL_COLLISION_MESH) continue
-      if ((child as Mesh).isMesh && (child as Mesh).material) parts.push(child as Mesh)
-      visit(child)
+      if ((child as Mesh).isMesh && (child as Mesh).material) visit(child as Mesh)
+      walk(child)
     }
   }
-  visit(wallMesh)
-  return parts
+  walk(wallMesh)
 }
 
 function countDescendants(object: Object3D): number {

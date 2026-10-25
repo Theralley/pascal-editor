@@ -16,6 +16,7 @@ import {
 } from '../../lib/display-cut'
 import {
   buildCutCapGeometry,
+  groupInstances,
   type PreparedSection,
   prepareSection,
   type Solid,
@@ -153,10 +154,9 @@ export function cutBakedWalls(
     Object3D,
     {
       object: Object3D
-      body: PreparedSection
+      /** Each instance of the body on its own: its bounds, its fallback, its completeness. */
+      instances: { section: PreparedSection; meshes: Mesh[]; footprint?: Solid[] }[]
       trims: PreparedSection
-      bodyMeshes: Mesh[]
-      footprint?: Solid[]
     }[]
   >()
   for (const { object, level } of walls) {
@@ -167,9 +167,11 @@ export function cutBakedWalls(
     const { body, trims } = splitBody(own)
     entries.push({
       object,
-      body: prepareSection(body, level),
+      instances: groupInstances(body).map((meshes) => ({
+        section: prepareSection(meshes, level),
+        meshes,
+      })),
       trims: prepareSection(trims, level),
-      bodyMeshes: body,
     })
     for (const mesh of own) {
       worn.set(mesh, mesh.material)
@@ -184,15 +186,23 @@ export function cutBakedWalls(
     for (const [level, entries] of perLevel) {
       const built = buildCutCapGeometry(
         entries.map((entry) => {
-          const section = entry.body.at(at)
-          const trims = entry.trims.at(at).solids
-          // A body whose section will not close is capped from its base, where it stands across
-          // the cut, and not left a hollow stub; a trim never decides that.
-          if (!section.complete && entry.body.bounds.min < at && entry.body.bounds.max > at) {
-            entry.footprint ??= baseFootprint(entry.bodyMeshes, level)
-            return { owner: entry.object, solids: [...entry.footprint, ...trims] }
+          const solids: Solid[] = []
+          for (const instance of entry.instances) {
+            const section = instance.section.at(at)
+            // An instance whose section will not close is capped from its base, where it stands
+            // across the cut, and not left a hollow stub; one wholly over or under it is not.
+            if (
+              !section.complete &&
+              instance.section.bounds.min < at &&
+              instance.section.bounds.max > at
+            ) {
+              instance.footprint ??= baseFootprint(instance.meshes, level)
+              solids.push(...instance.footprint)
+            } else solids.push(...section.solids)
           }
-          return { owner: entry.object, solids: [...section.solids, ...trims] }
+          // A trim never decides that.
+          solids.push(...entry.trims.at(at).solids)
+          return { owner: entry.object, solids }
         }),
       )
       let cap = caps.get(level)
