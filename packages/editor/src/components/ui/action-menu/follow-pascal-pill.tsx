@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useReducedMotion } from '../../../hooks/use-reduced-motion'
+import { useT } from '../../../i18n'
 import useFollowPascal from '../../../store/use-follow-pascal'
+import { messages } from './messages'
 
 /**
  * Offered while a build plays and the person has the camera: one press and the camera goes back to
@@ -12,6 +14,7 @@ export function FollowPascalPill() {
   const shows = useFollowPascal((state) => state.on && state.paused && state.building)
   const resume = useFollowPascal((state) => state.resume)
   const reduced = useReducedMotion()
+  const t = useT(messages)
   return (
     <AnimatePresence>
       {shows ? (
@@ -24,7 +27,7 @@ export function FollowPascalPill() {
           transition={reduced ? { duration: 0.12 } : { type: 'spring', bounce: 0, duration: 0.3 }}
           type="button"
         >
-          Resume following
+          {t('follow.resume')}
         </motion.button>
       ) : null}
     </AnimatePresence>

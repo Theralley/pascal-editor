@@ -1,12 +1,14 @@
 'use client'
 
 import { useHasPointAskHandler } from '@pascal-app/core'
+import { useT } from '../../../i18n'
 import { canPoint, enterPointMode, leavePointMode } from '../../../lib/point-ask/session'
 import { cn } from '../../../lib/utils'
 import useEditor from '../../../store/use-editor'
 import { usePointAsk } from '../../../store/use-point-ask'
 import { isViewVisible, VIEW_3D } from '../../../store/view-layout'
 import { ActionButton } from './action-button'
+import { messages } from './messages'
 
 /**
  * Point and ask (key C): the toolbar's way into the mode where hovering names what Pascal would
@@ -14,6 +16,7 @@ import { ActionButton } from './action-button'
  * the 2D plan and the walkthrough it is disabled and says so (v1 works in the 3D view).
  */
 export function PointAskButton() {
+  const t = useT(messages)
   const available = useHasPointAskHandler()
   const active = usePointAsk((s) => s.active)
   const sceneVisible = useEditor((s) => isViewVisible(s, VIEW_3D))
@@ -31,7 +34,7 @@ export function PointAskButton() {
       data-guide-target="mode-point-ask"
       disabled={unavailable}
       isActive={active}
-      label="Point and ask"
+      label={t('point.label')}
       onClick={() => {
         if (active) leavePointMode()
         else if (canPoint()) enterPointMode(true)
@@ -39,7 +42,7 @@ export function PointAskButton() {
       shortcut="C"
       size="icon"
       tooltipContent={
-        unavailable ? <p>Point and ask works in the 3D view</p> : <p>Point and ask (C)</p>
+        unavailable ? <p>{t('point.unavailable')}</p> : <p>{t('point.tooltip')}</p>
       }
       variant="ghost"
     >

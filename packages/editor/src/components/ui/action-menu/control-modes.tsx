@@ -4,9 +4,11 @@ import { Icon } from '@iconify/react'
 import { type LucideIcon, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { Fragment } from 'react'
+import { type MessageKey, useT } from './../../../i18n'
 import { cn } from './../../../lib/utils'
 import useEditor from './../../../store/use-editor'
 import { ActionButton } from './action-button'
+import { messages } from './messages'
 import { MeasurementControl } from './measurement-control'
 import { PointAskButton } from './point-ask-button'
 
@@ -17,7 +19,7 @@ type ControlConfig = {
   icon?: LucideIcon
   iconifyIcon?: string
   imageSrc?: string
-  label: string
+  labelKey: MessageKey<typeof messages>
   shortcut?: string
   color: string
   activeColor: string
@@ -28,7 +30,7 @@ const controls: ControlConfig[] = [
   {
     id: 'select',
     imageSrc: '/icons/select.webp',
-    label: 'Select',
+    labelKey: 'mode.select',
     shortcut: 'V',
     color: 'hover:bg-blue-500/20 hover:text-blue-600 dark:hover:text-blue-400',
     activeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 dark:hover:text-accent-foreground',
@@ -36,7 +38,7 @@ const controls: ControlConfig[] = [
   {
     id: 'delete',
     icon: Trash2,
-    label: 'Delete',
+    labelKey: 'mode.delete',
     shortcut: 'X',
     color: 'hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400',
     activeColor: 'bg-red-500/20 text-red-600 dark:text-red-400 dark:hover:text-accent-foreground',
@@ -44,6 +46,7 @@ const controls: ControlConfig[] = [
 ]
 
 export function ControlModes() {
+  const t = useT(messages)
   const mode = useEditor((state) => state.mode)
   const selectionTool = useEditor((state) => state.floorplanSelectionTool)
   const armToolMode = useEditor((state) => state.armToolMode)
@@ -94,7 +97,7 @@ export function ControlModes() {
               // tour at this button. Nothing here reads it.
               data-guide-target={c.id === 'select' ? 'mode-select' : undefined}
               isActive={isActive}
-              label={c.label}
+              label={t(c.labelKey)}
               onClick={() => handleClick(c.id)}
               shortcut={c.shortcut}
               size="icon"
@@ -102,7 +105,7 @@ export function ControlModes() {
             >
               {c.imageSrc ? (
                 <Image
-                  alt={c.label}
+                  alt={t(c.labelKey)}
                   className={cn(
                     'h-[28px] w-[28px] object-contain transition-[opacity,filter] duration-200',
                     isActive

@@ -3,7 +3,9 @@ import type { ThreeElements } from '@react-three/fiber'
 import { forwardRef } from 'react'
 import { CircleGeometry, CylinderGeometry, type Group, SphereGeometry } from 'three'
 import { furnishTools } from '../../../components/ui/action-menu/furnish-tools'
+import { messages as toolMessages } from '../../../components/ui/action-menu/messages'
 import { tools } from '../../../components/ui/action-menu/structure-tools'
+import { translate } from '../../../i18n'
 import { EDITOR_LAYER } from '../../../lib/constants'
 import { wallCursorIcon } from '../../../lib/tool-cursor-icon'
 import useEditor from '../../../store/use-editor'
@@ -62,14 +64,21 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   const wallMode = useEditor((s) => s.continuationByContext.wall)
 
   // Find the icon for the current tool — the wall shows its Rooms variant.
-  let activeToolConfig: { label: string; iconSrc: string } | null | undefined = null
+  let activeToolConfig: { alt: string; iconSrc: string } | null = null
   if (mode === 'build' && tool) {
     if (tool === 'wall') {
-      activeToolConfig = wallCursorIcon(wallMode)
-    } else if (tool === 'item' && catalogCategory) {
-      activeToolConfig = furnishTools.find((t) => t.catalogCategory === catalogCategory)
+      const { label, iconSrc } = wallCursorIcon(wallMode)
+      activeToolConfig = { alt: label, iconSrc }
     } else {
-      activeToolConfig = tools.find((t) => t.id === tool)
+      const config =
+        tool === 'item' && catalogCategory
+          ? furnishTools.find((t) => t.catalogCategory === catalogCategory)
+          : tools.find((t) => t.id === tool)
+      if (config)
+        activeToolConfig = {
+          alt: translate(toolMessages, config.labelKey),
+          iconSrc: config.iconSrc,
+        }
     }
   }
 
@@ -162,7 +171,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
           {tooltipContent || (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              alt={activeToolConfig!.label}
+              alt={activeToolConfig!.alt}
               src={activeToolConfig!.iconSrc}
               style={{
                 width: '100%',

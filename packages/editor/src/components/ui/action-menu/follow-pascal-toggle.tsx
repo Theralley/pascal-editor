@@ -1,9 +1,11 @@
 'use client'
 
 import { Video } from 'lucide-react'
+import { useT } from '../../../i18n'
 import { cn } from '../../../lib/utils'
 import useFollowPascal from '../../../store/use-follow-pascal'
 import { ActionButton } from './action-button'
+import { messages } from './messages'
 
 /** The toolbar's switch for Follow Pascal: the camera follows what the agent builds. */
 export function FollowPascalToggle({
@@ -13,6 +15,7 @@ export function FollowPascalToggle({
   className?: string
   tooltipClassName?: string
 }) {
+  const t = useT(messages)
   const on = useFollowPascal((state) => state.on)
   const setOn = useFollowPascal((state) => state.setOn)
   return (
@@ -24,7 +27,7 @@ export function FollowPascalToggle({
           : 'hover:bg-black/4 hover:text-violet-600 dark:hover:text-violet-300',
         className,
       )}
-      label={`Follow Pascal: ${on ? 'On' : 'Off'}`}
+      label={on ? t('follow.on') : t('follow.off')}
       onClick={() => setOn(!on)}
       size="icon"
       tooltipClassName={tooltipClassName}
