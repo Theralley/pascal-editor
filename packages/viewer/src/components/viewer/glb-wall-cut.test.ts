@@ -8,7 +8,15 @@ import {
   WallNode,
   WindowNode,
 } from '@pascal-app/core'
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
+import {
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshPhysicalMaterial,
+  Raycaster,
+  Vector3,
+} from 'three'
 import { generateExtrudedWall } from '../../systems/wall/wall-system'
 import { cutBakedWalls, GLB_WALL_CAPS_NAME } from './glb-wall-cut'
 
@@ -162,5 +170,13 @@ describe('cutBakedWalls caps', () => {
       expect(level.getObjectByName(GLB_WALL_CAPS_NAME) !== undefined).toBe(cutExpected)
       cut.dispose()
     }
+  })
+
+  test('an unstamped wall in exported glass (transmission, opaque) stays whole', () => {
+    const { level, wall, body } = bakedLevel()
+    body.material = new MeshPhysicalMaterial({ transmission: 1 })
+    const cut = cutBakedWalls([{ object: wall, level }], 0.25, new MeshBasicMaterial())
+    expect(level.getObjectByName(GLB_WALL_CAPS_NAME)).toBeUndefined()
+    cut.dispose()
   })
 })

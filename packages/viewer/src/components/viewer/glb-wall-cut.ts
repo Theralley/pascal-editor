@@ -5,7 +5,11 @@ import {
   setDisplayCutRaycast,
   setDisplayCutRoot,
 } from '../../lib/display-cut'
-import { buildCutCapGeometry, sectionLoops } from '../../lib/display-cut-section'
+import {
+  buildCutCapGeometry,
+  type PreparedSection,
+  prepareSection,
+} from '../../lib/display-cut-section'
 
 type BakedWall = { object: Object3D; level: Object3D }
 
@@ -45,16 +49,26 @@ function bodyMeshes(meshes: readonly Mesh[]): Mesh[] {
   return widest?.meshes ?? []
 }
 
-/** Whether a baked material is see-through: a glass finish, as on a curtain wall. */
+/**
+ * Whether a baked material is glass: an alpha blend, or the transmission a bake exports glass as
+ * (opaque, `transparent` off, with its authored opacity kept in the material's extras).
+ */
 function seesThrough(mesh: Mesh): boolean {
   const baked = (mesh.userData as { __bakedMaterial?: Material | Material[] }).__bakedMaterial
-  const materials = [baked ?? mesh.material].flat()
-  return materials.some((material) => material.transparent && material.opacity < 1)
+  return [baked ?? mesh.material].flat().some((material) => {
+    const glass = material as Material & { transmission?: number }
+    return (
+      (glass.transmission ?? 0) > 0 ||
+      typeof material.userData?.pascalGlassOpacity === 'number' ||
+      (material.transparent && material.opacity < 1)
+    )
+  })
 }
 
 /**
  * Whether the cut applies to a baked wall. A bake says so itself (`displayCut`); one made before
  * it did is judged by what it draws: a wall in glass is a curtain wall, which the cut leaves whole.
+ * That is a guess: a glass finish on a wall that is not a curtain wall reads the same.
  */
 function cutApplies(object: Object3D, meshes: readonly Mesh[]): boolean {
   const stamped = (object.userData as { displayCut?: boolean }).displayCut
@@ -80,13 +94,13 @@ export function cutBakedWalls(
 ): BakedWallCut {
   setDisplayCutHeight(height)
   const worn = new Map<Mesh, Material | Material[]>()
-  const perLevel = new Map<Object3D, { object: Object3D; body: Mesh[] }[]>()
+  const perLevel = new Map<Object3D, { object: Object3D; body: PreparedSection }[]>()
   for (const { object, level } of walls) {
     const own = ownMeshes(object)
     if (!cutApplies(object, own)) continue
     const entries = perLevel.get(level) ?? []
     perLevel.set(level, entries)
-    entries.push({ object, body: bodyMeshes(own) })
+    entries.push({ object, body: prepareSection(bodyMeshes(own), level) })
     for (const mesh of own) {
       worn.set(mesh, mesh.material)
       setDisplayCutRoot(mesh, level)
@@ -101,7 +115,7 @@ export function cutBakedWalls(
       const built = buildCutCapGeometry(
         entries.map(({ object, body }) => ({
           owner: object,
-          loops: sectionLoops(body, level, at),
+          solids: body.at(at).solids,
         })),
       )
       let cap = caps.get(level)

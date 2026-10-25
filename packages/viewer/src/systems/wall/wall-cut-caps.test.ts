@@ -105,6 +105,22 @@ function area(mesh: Mesh): number {
   return total
 }
 
+/** Whether the cap has a face over the plan point (x, z). */
+function covers(mesh: Mesh | undefined, x: number, z: number): boolean {
+  if (!mesh) return false
+  const position = mesh.geometry.getAttribute('position')
+  const index = mesh.geometry.getIndex()!
+  for (let i = 0; i < index.count; i += 3) {
+    const [a, b, c] = [0, 1, 2].map((k) => index.getX(i + k) as number)
+    const side = (p: number, q: number) =>
+      (position.getX(q) - position.getX(p)) * (z - position.getZ(p)) -
+      (position.getZ(q) - position.getZ(p)) * (x - position.getX(p))
+    const signs = [side(a!, b!), side(b!, c!), side(c!, a!)]
+    if (signs.every((v) => v >= 0) || signs.every((v) => v <= 0)) return true
+  }
+  return false
+}
+
 beforeEach(() => {
   sceneRegistry.clear()
   useScene.setState({ nodes: {}, materials: {} })
@@ -190,7 +206,8 @@ describe('WallCutCaps', () => {
     caps.update(true, 0.25, 'solid')
     expect(capsOf(root)!.geometry).toBe(geometry)
     // The wall is rebuilt longer: its mesh draws the new body and the rebuild is announced.
-    mesh.geometry = new BoxGeometry(6, 2.5, 0.2).translate(3, 1.25, 0)
+    const longer = { ...wall, end: [6, 0] as [number, number] }
+    mesh.geometry = generateExtrudedWall(longer, [], calculateLevelMiters([longer]))
     caps.markWall(wall.id)
     caps.update(true, 0.25, 'solid')
     expect(capsOf(root)!.geometry).not.toBe(geometry)
@@ -310,6 +327,75 @@ describe('WallCutCaps', () => {
     expect(area(cap)).toBeCloseTo(2 * 0.2, 4)
     const position = cap.geometry.getAttribute('position')
     for (let i = 0; i < position.count; i++) expect(position.getX(i)).toBeLessThanOrEqual(2 + 1e-4)
+    caps.dispose()
+  })
+
+  test('openings and steps leave gaps by probe, and a cut exactly on a sill, head, step or top agrees', () => {
+    const window = WindowNode.parse({ position: [3, 1.5, 0], width: 1, height: 1 })
+    const children = [window]
+    const { root } = level({ children, geometry: built(children) })
+    const caps = new WallCutCaps()
+    // The sill is at 1.0 m, the head at 2.0 m, the wall's top at 2.5 m.
+    const cases: [number, number][] = [
+      [0.9999, 4],
+      [1, 3],
+      [1.0001, 3],
+      [1.9999, 3],
+      [2, 3],
+      [2.0001, 4],
+      [2.4999, 4],
+      [2.5, 0],
+      [2.5001, 0],
+    ]
+    for (const [height, length] of cases) {
+      caps.update(true, height, 'solid')
+      const cap = capsOf(root)
+      expect(cap ? area(cap) : 0).toBeCloseTo(length * 0.2, 3)
+      expect(covers(cap, 1, 0)).toBe(length > 0)
+      expect(covers(cap, 3, 0)).toBe(length === 4)
+    }
+    caps.dispose()
+  })
+
+  test('a step exactly at the cut caps only the part that stands on both sides of it', () => {
+    const { root } = level({
+      base: 0.6,
+      geometry: (wall) =>
+        generateExtrudedWall(wall, [], calculateLevelMiters([wall]), 0.6, 0.05, [
+          { start: 0, end: 0.5, elevation: 0.05 },
+          { start: 0.5, end: 1, elevation: 0.6 },
+        ]),
+    })
+    const caps = new WallCutCaps()
+    for (const [height, length] of [
+      [0.5999, 2],
+      [0.6, 2],
+      [0.6001, 4],
+    ] as const) {
+      caps.update(true, height, 'solid')
+      expect(area(capsOf(root)!)).toBeCloseTo(length * 0.2, 3)
+      expect(covers(capsOf(root), 1, 0)).toBe(true)
+      expect(covers(capsOf(root), 3, 0)).toBe(length === 4)
+    }
+    caps.dispose()
+  })
+
+  test('a wall whose section does not close is capped from its footprint, not left a hollow stub', () => {
+    const debug = spyOn(console, 'debug').mockImplementation(() => {})
+    const { root } = level({
+      geometry: () => {
+        const open = new BoxGeometry(4, 2.5, 0.2).translate(2, 1.25, 0)
+        const index = open.getIndex()!
+        // Without the +x end, the section is a U.
+        open.setIndex(Array.from({ length: index.count - 6 }, (_, i) => index.getX(i + 6)))
+        return open
+      },
+    })
+    const caps = new WallCutCaps()
+    caps.update(true, 0.25, 'solid')
+    expect(area(capsOf(root)!)).toBeCloseTo(4 * 0.2, 4)
+    expect(debug).toHaveBeenCalled()
+    debug.mockRestore()
     caps.dispose()
   })
 
