@@ -30,6 +30,7 @@ import {
   ActionButton,
   ActionGroup,
   duplicateNodeAndPickUp,
+  formatDecimal,
   formatLinearMeasurement,
   getStairLevelOptions,
   levelDisplayName,
@@ -524,7 +525,7 @@ export default function StairPanel() {
                   slope:
                     flight.slope === null
                       ? '—'
-                      : `${((flight.slope * 180) / Math.PI).toLocaleString(t.locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}°`,
+                      : `${formatDecimal((flight.slope * 180) / Math.PI, { minFractionDigits: 1, maxFractionDigits: 1 }, t.locale)}°`,
                 })}
               </div>
             ))}

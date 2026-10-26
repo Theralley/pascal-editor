@@ -26,6 +26,41 @@ const KNOWN_MESSAGES = new Map<string, MessageKey<typeof messages>>([
   ['Width must be positive', 'msg.widthPositive'],
   ['A turning landing must be at least as deep as the stair is wide', 'msg.turningLanding'],
   ['Stair support and arrival do not converge; choose an explicit rise or run', 'msg.noConverge'],
+  ['Overhead surfaces leave less than the target headroom.', 'msg.headroomTarget'],
+  [
+    'Detailed headroom could not be evaluated: check riser counts and the surface query budget.',
+    'msg.headroomUnresolved',
+  ],
+  [
+    'Flight riser heights differ. Use uniform-riser repair only if this is a proposed design.',
+    'msg.nonuniform',
+  ],
+  ['A landing has a stored rise; inspect its transition before repair.', 'msg.raisedLanding'],
+  ['The flight chain does not reach the declared destination.', 'msg.arrivalMismatch'],
+  ['Detailed stair geometry requires a positive whole riser count.', 'msg.detailRisers'],
+  [
+    'Detailed stair geometry exceeds the 10,000-surface computation budget. The authored count is preserved.',
+    'msg.detailBudget',
+  ],
+  ['Explicit arc construction requires a positive going.', 'msg.arcGoing'],
+  ['One tread spans more than one turn; add risers or reduce the sweep.', 'msg.treadTurn'],
+  [
+    'Detailed winder construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
+    'msg.winderBudget',
+  ],
+  ['Riser panels must fit within their treads.', 'msg.riserPanels'],
+  ['Stringers must fit within the flight width.', 'msg.stringers'],
+  [
+    'The center stringer must fit around the walking line within the winder width.',
+    'msg.centerStringer',
+  ],
+  ['Winder nosing must be smaller than the walking-line radius.', 'msg.winderNosing'],
+  ['Winders require positive dimensions and 1\u201310,000 whole risers.', 'msg.winderDims'],
+  ['The winder walking line must lie within the flight width.', 'msg.winderLine'],
+  [
+    'Detailed stair construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
+    'msg.constructionBudget',
+  ],
 ])
 
 export const stairMessageKey = (message: string) => KNOWN_MESSAGES.get(message)
