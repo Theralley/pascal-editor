@@ -7,8 +7,7 @@ import { builtinPlugin } from './index'
  * Kinds whose definition text has no Swedish yet. A kind translated in full leaves this list: the
  * test below fails for a pending kind that no longer needs it, so the list can only shrink.
  */
-const PENDING = new Set([
-])
+const PENDING = new Set([])
 
 /** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */
 const SAMPLE_NODES: Record<string, object[]> = {
