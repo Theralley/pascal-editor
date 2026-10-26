@@ -22,6 +22,7 @@ import { columnPaint } from './paint'
 import { columnParametrics } from './parametrics'
 import { ColumnNode } from './schema'
 import { columnSurfaceProvider } from './surface'
+import { columnTranslations } from './translations'
 
 // Limits + offsets shared with the in-world arrows. Mirrors the floors
 // the renderer clamps to (`Math.max(0.2, node.height)` etc.) so a drag
@@ -468,6 +469,7 @@ export const columnDefinition: NodeDefinition<typeof ColumnNode> = {
     'column-rotate': columnRotateAffordance,
   },
 
+  translations: columnTranslations,
   presentation: {
     label: 'Column',
     description: 'A parametric column with configurable cross-section, base, and capital.',

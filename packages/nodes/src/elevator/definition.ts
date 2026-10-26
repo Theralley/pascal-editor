@@ -16,6 +16,7 @@ import { elevatorResizeAffordance, elevatorRotateAffordance } from './floorplan-
 import { elevatorPaint } from './paint'
 import { elevatorParametrics } from './parametrics'
 import { ElevatorNode } from './schema'
+import { elevatorTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.22
 const HEIGHT_HANDLE_OFFSET = 0.3
@@ -272,6 +273,7 @@ export const elevatorDefinition: NodeDefinition<typeof ElevatorNode> = {
     'elevator-rotate': elevatorRotateAffordance,
   },
 
+  translations: elevatorTranslations,
   presentation: {
     label: 'Elevator',
     description: 'A multi-level elevator shaft with configurable openings per level.',

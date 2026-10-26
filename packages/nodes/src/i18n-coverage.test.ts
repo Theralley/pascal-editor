@@ -25,8 +25,6 @@ const PENDING = new Set([
   'item',
   'procedural-item',
   'imported-mesh',
-  'column',
-  'elevator',
   'unit',
   'roof',
   'roof-segment',
@@ -65,6 +63,8 @@ const PENDING = new Set([
 
 /** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */
 const SAMPLE_NODES: Record<string, object[]> = {
+  'stair-segment': [{ id: 'sseg_sample' }],
+  fence: [{ start: [0, 0], end: [4, 0] }],
   wall: [
     { id: 'wall_a', start: [0, 0], end: [4, 0] },
     { id: 'wall_b', start: [0, 0], end: [4, 0], curveOffset: 0.5 },

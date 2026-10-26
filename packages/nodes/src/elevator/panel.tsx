@@ -4,7 +4,6 @@ import {
   type AnyNode,
   type AnyNodeId,
   type ElevatorNode,
-  getLevelDisplayName,
   type LevelNode,
   requestElevatorLevel,
   useInteractive,
@@ -16,6 +15,8 @@ import {
   ActionButton,
   ActionGroup,
   duplicateNodeAndPickUp,
+  levelDisplayName,
+  type MessageKey,
   MetricControl,
   PanelSection,
   PanelWrapper,
@@ -24,11 +25,16 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Copy, Move, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+
+import { messages } from './messages'
+
+type ElevatorMessageKey = MessageKey<typeof messages>
 
 function findLevelId(levels: LevelNode[], levelId: string | null | undefined) {
   if (!levelId) return null
@@ -98,29 +104,29 @@ type ElevatorMetricKey =
 type ElevatorAccessField = 'disabledLevelIds' | 'serviceOnlyLevelIds'
 
 const DOOR_STYLE_OPTIONS: Array<{
-  label: string
+  labelKey: ElevatorMessageKey
   value: ElevatorNode['doorStyle']
 }> = [
-  { label: 'Center opening', value: 'center-opening' },
-  { label: 'Single left', value: 'single-left' },
-  { label: 'Single right', value: 'single-right' },
+  { labelKey: 'centerOpening', value: 'center-opening' },
+  { labelKey: 'singleLeft', value: 'single-left' },
+  { labelKey: 'singleRight', value: 'single-right' },
 ]
 
 const DOOR_PANEL_STYLE_OPTIONS: Array<{
-  label: string
+  labelKey: ElevatorMessageKey
   value: ElevatorNode['doorPanelStyle']
 }> = [
-  { label: 'Glass frame', value: 'glass-frame' },
-  { label: 'Solid panel', value: 'solid-panel' },
-  { label: 'Segmented panel', value: 'segmented-panel' },
+  { labelKey: 'glassFrame', value: 'glass-frame' },
+  { labelKey: 'solidPanel', value: 'solid-panel' },
+  { labelKey: 'segmentedPanel', value: 'segmented-panel' },
 ]
 
 const SHAFT_STYLE_OPTIONS: Array<{
-  label: string
+  labelKey: ElevatorMessageKey
   value: ElevatorNode['shaftStyle']
 }> = [
-  { label: 'Solid', value: 'solid' },
-  { label: 'Glass', value: 'glass' },
+  { labelKey: 'solid', value: 'solid' },
+  { labelKey: 'glass', value: 'glass' },
 ]
 
 function roundMeters(value: number) {
@@ -148,6 +154,7 @@ function degreesToRadians(degrees: number) {
 }
 
 export default function ElevatorPanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const selectedCount = useViewer((s) => s.selection.selectedIds.length)
   const setSelection = useViewer((s) => s.setSelection)
@@ -448,27 +455,31 @@ export default function ElevatorPanel() {
     <PanelWrapper
       icon="/icons/elevator.webp"
       onClose={handleClose}
-      title={node.name || 'Elevator'}
+      title={node.name || t('elevator')}
       width={300}
     >
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions')}>
         <ActionGroup>
-          <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+          <ActionButton
+            icon={<Move className="h-3.5 w-3.5" />}
+            label={t('move')}
+            onClick={handleMove}
+          />
           <ActionButton
             icon={<Copy className="h-3.5 w-3.5" />}
-            label="Duplicate"
+            label={t('duplicate')}
             onClick={handleDuplicate}
           />
           <ActionButton
             className="text-destructive hover:text-destructive"
             icon={<Trash2 className="h-3.5 w-3.5" />}
-            label="Delete"
+            label={t('delete')}
             onClick={handleDelete}
           />
         </ActionGroup>
       </PanelSection>
 
-      <PanelSection title="Position">
+      <PanelSection title={t('position')}>
         <SliderControl
           label="X"
           onChange={(value) => {
@@ -527,9 +538,9 @@ export default function ElevatorPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Rotation">
+      <PanelSection title={t('rotation')}>
         <SliderControl
-          label="Yaw"
+          label={t('yaw')}
           max={180}
           min={-180}
           onChange={(degrees) => previewTransform(displayPosition, degreesToRadians(degrees))}
@@ -558,11 +569,11 @@ export default function ElevatorPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Service">
+      <PanelSection title={t('service')}>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              From
+              {t('from')}
             </div>
             <select
               className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-2 text-sm text-foreground"
@@ -571,7 +582,7 @@ export default function ElevatorPanel() {
             >
               {levels.map((level) => (
                 <option key={level.id} value={level.id}>
-                  {getLevelDisplayName(level)}
+                  {levelDisplayName(level, t.locale)}
                 </option>
               ))}
             </select>
@@ -579,7 +590,7 @@ export default function ElevatorPanel() {
 
           <div className="space-y-1.5">
             <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              To
+              {t('to')}
             </div>
             <select
               className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-2 text-sm text-foreground"
@@ -588,7 +599,7 @@ export default function ElevatorPanel() {
             >
               {levels.map((level) => (
                 <option key={level.id} value={level.id}>
-                  {getLevelDisplayName(level)}
+                  {levelDisplayName(level, t.locale)}
                 </option>
               ))}
             </select>
@@ -597,7 +608,7 @@ export default function ElevatorPanel() {
 
         <div className="space-y-1.5">
           <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Default Floor
+            {t('defaultFloor')}
           </div>
           <select
             className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-sm text-foreground"
@@ -606,16 +617,16 @@ export default function ElevatorPanel() {
           >
             {defaultLevelOptions.map((level) => (
               <option key={level.id} value={level.id}>
-                {getLevelDisplayName(level)}
+                {levelDisplayName(level, t.locale)}
               </option>
             ))}
           </select>
         </div>
       </PanelSection>
 
-      <PanelSection title="Cab">
+      <PanelSection title={t('cab')}>
         <MetricControl
-          label="Width"
+          label={t('width')}
           max={4}
           min={0.8}
           onChange={(value) => previewMetric('width', value)}
@@ -627,7 +638,7 @@ export default function ElevatorPanel() {
           value={displayNode.width}
         />
         <MetricControl
-          label="Depth"
+          label={t('depth')}
           max={4}
           min={0.8}
           onChange={(value) => previewMetric('depth', value)}
@@ -639,7 +650,7 @@ export default function ElevatorPanel() {
           value={displayNode.depth}
         />
         <MetricControl
-          label="Cab Height"
+          label={t('cabHeight')}
           max={4}
           min={1.8}
           onChange={(value) => previewMetric('cabHeight', value)}
@@ -652,10 +663,10 @@ export default function ElevatorPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Shaft">
+      <PanelSection title={t('shaft')}>
         <div className="space-y-1.5">
           <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Shaft Style
+            {t('shaftStyle')}
           </div>
           <select
             className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-sm text-foreground"
@@ -666,13 +677,13 @@ export default function ElevatorPanel() {
           >
             {SHAFT_STYLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <MetricControl
-          label="Shaft Width"
+          label={t('shaftWidth')}
           max={5}
           min={displayNode.width}
           onChange={(value) => previewMetric('shaftWidth', Math.max(value, displayNode.width))}
@@ -684,7 +695,7 @@ export default function ElevatorPanel() {
           value={displayShaftWidth}
         />
         <MetricControl
-          label="Shaft Depth"
+          label={t('shaftDepth')}
           max={5}
           min={displayNode.depth}
           onChange={(value) => previewMetric('shaftDepth', Math.max(value, displayNode.depth))}
@@ -696,7 +707,7 @@ export default function ElevatorPanel() {
           value={displayShaftDepth}
         />
         <MetricControl
-          label="Wall Thickness"
+          label={t('wallThickness')}
           max={0.4}
           min={0.04}
           onChange={(value) => previewMetric('shaftWallThickness', value)}
@@ -709,10 +720,10 @@ export default function ElevatorPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Doors">
+      <PanelSection title={t('doors')}>
         <div className="space-y-1.5">
           <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Opening Style
+            {t('openingStyle')}
           </div>
           <select
             className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-sm text-foreground"
@@ -723,14 +734,14 @@ export default function ElevatorPanel() {
           >
             {DOOR_STYLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div className="space-y-1.5">
           <div className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Door Type
+            {t('doorType')}
           </div>
           <select
             className="h-9 w-full rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-sm text-foreground"
@@ -743,13 +754,13 @@ export default function ElevatorPanel() {
           >
             {DOOR_PANEL_STYLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <MetricControl
-          label="Door Width"
+          label={t('doorWidth')}
           max={Math.max(displayNode.width - 0.1, 0.5)}
           min={0.45}
           onChange={(value) => previewMetric('doorWidth', value)}
@@ -761,7 +772,7 @@ export default function ElevatorPanel() {
           value={displayNode.doorWidth}
         />
         <MetricControl
-          label="Door Height"
+          label={t('doorHeight')}
           max={Math.max(displayNode.cabHeight - 0.1, 1.3)}
           min={1.2}
           onChange={(value) => previewMetric('doorHeight', value)}
@@ -774,7 +785,7 @@ export default function ElevatorPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Access">
+      <PanelSection title={t('access')}>
         <div className="space-y-2">
           {servedLevels.map((level) => {
             const isDisabled = disabledLevelIds.has(level.id)
@@ -785,7 +796,9 @@ export default function ElevatorPanel() {
                 className="flex items-center justify-between gap-2 rounded-lg border border-border/45 bg-black/4 dark:bg-[#2C2C2E] px-2.5 py-2"
                 key={level.id}
               >
-                <span className="min-w-0 truncate text-sm">{getLevelDisplayName(level)}</span>
+                <span className="min-w-0 truncate text-sm">
+                  {levelDisplayName(level, t.locale)}
+                </span>
                 <div className="flex shrink-0 gap-1.5">
                   <button
                     className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
@@ -797,7 +810,7 @@ export default function ElevatorPanel() {
                     onClick={() => toggleLevelAccess('serviceOnlyLevelIds', level.id)}
                     type="button"
                   >
-                    Service
+                    {t('service')}
                   </button>
                   <button
                     className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
@@ -808,7 +821,7 @@ export default function ElevatorPanel() {
                     onClick={() => toggleLevelAccess('disabledLevelIds', level.id)}
                     type="button"
                   >
-                    Disabled
+                    {t('disabled')}
                   </button>
                 </div>
               </div>
@@ -817,7 +830,7 @@ export default function ElevatorPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Destination">
+      <PanelSection title={t('destination')}>
         <div className="grid grid-cols-2 gap-1.5">
           {servedLevels.map((level) => {
             const isActive = activeLevelId === level.id
@@ -839,19 +852,19 @@ export default function ElevatorPanel() {
                 type="button"
               >
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-xs">{getLevelDisplayName(level)}</span>
+                  <span className="truncate text-xs">{levelDisplayName(level, t.locale)}</span>
                   {isDisabled ? (
                     <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-current/65">
-                      Disabled
+                      {t('disabled')}
                     </span>
                   ) : isServiceOnly ? (
                     <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-current/65">
-                      Service
+                      {t('service')}
                     </span>
                   ) : (
                     stopOrder && (
                       <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-current/65">
-                        Stop {stopOrder}
+                        {t('stopN', { n: stopOrder })}
                       </span>
                     )
                   )}
@@ -869,9 +882,9 @@ export default function ElevatorPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Motion">
+      <PanelSection title={t('motion')}>
         <SliderControl
-          label="Speed"
+          label={t('speed')}
           max={8}
           min={0.5}
           onChange={(value) => handleUpdate({ speed: value })}
@@ -881,7 +894,7 @@ export default function ElevatorPanel() {
           value={node.speed}
         />
         <SliderControl
-          label="Door Time"
+          label={t('doorTime')}
           max={2200}
           min={300}
           onChange={(value) => handleUpdate({ doorDurationMs: value })}
@@ -890,7 +903,7 @@ export default function ElevatorPanel() {
           value={node.doorDurationMs}
         />
         <SliderControl
-          label="Dwell"
+          label={t('dwell')}
           max={5000}
           min={300}
           onChange={(value) => handleUpdate({ dwellMs: value })}
