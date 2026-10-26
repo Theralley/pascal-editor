@@ -18,6 +18,7 @@ import { fenceFeatureHandles } from './handles'
 import { FenceFeatureEditor } from './inspector'
 import { toggleFenceGate } from './interaction'
 import { createFenceFeatureMoveSession } from './move-session'
+import { fenceFeatureTranslations } from './translations'
 
 const floorplanMoveTarget: FloorplanMoveTarget<FenceFeatureNode> = ({ node, sceneApi }) => {
   if (!sceneApi) throw new Error('Fence feature move requires SceneApi')
@@ -87,6 +88,7 @@ export const fenceGateDefinition: NodeDefinition<typeof FenceGateNode | typeof F
     const { id, type, ...rest } = FenceGateNode.parse({})
     return rest
   },
+  translations: fenceFeatureTranslations,
   presentation: {
     label: 'Gate',
     description: 'A gate hosted by a fence.',
@@ -129,6 +131,7 @@ export const fenceOpeningDefinition: NodeDefinition<
     const { id, type, ...rest } = FenceOpeningNode.parse({})
     return rest
   },
+  translations: fenceFeatureTranslations,
   presentation: {
     label: 'Open Passage',
     description: 'An intentional opening in a fence.',

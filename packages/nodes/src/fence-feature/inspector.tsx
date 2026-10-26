@@ -10,10 +10,11 @@ import {
   getFenceCenterlineLength,
   useScene,
 } from '@pascal-app/core'
-import { ActionButton, SliderControl, ToggleControl } from '@pascal-app/editor'
+import { ActionButton, SliderControl, ToggleControl, useT } from '@pascal-app/editor'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { getFenceFeatureDimensions } from '../fence/geometry-parts'
+import { messages } from './messages'
 
 export function FenceFeatureEditor({
   node: child,
@@ -22,6 +23,7 @@ export function FenceFeatureEditor({
   node: FenceFeatureNode
   onUpdate: (patch: Partial<FenceFeatureNode>) => void
 }) {
+  const t = useT(messages)
   const [error, setError] = useState('')
   const parentId = child.parentId as AnyNodeId | undefined
   const parent = useScene((s) => (parentId ? s.nodes[parentId] : undefined))
@@ -33,7 +35,7 @@ export function FenceFeatureEditor({
         : []
     }),
   )
-  if (parent?.type !== 'fence') return <p>Fence unavailable.</p>
+  if (parent?.type !== 'fence') return <p>{t('fenceUnavailable')}</p>
   const node = fenceWithFeatures(parent, siblings)
   const features = [fenceFeatureData(child)]
   const length = getFenceCenterlineLength(node)
@@ -45,7 +47,7 @@ export function FenceFeatureEditor({
       (patch.width !== undefined || patch.center !== undefined) &&
       !canPlaceFenceFeature(node, next)
     ) {
-      setError('Keep the opening inside the fence and clear of other gates or passages.')
+      setError(t('keepTheOpeningInsideTheFenceAndClearOfOt'))
       return
     }
     setError('')
@@ -66,39 +68,39 @@ export function FenceFeatureEditor({
             ? [
                 {
                   key: 'leafType',
-                  label: 'Leaves',
+                  label: t('leaves'),
                   value: feature.leafType ?? 'single',
                   options: [
-                    ['single', 'Single gate'],
-                    ['double', 'Double gate'],
+                    ['single', t('single')],
+                    ['double', t('double')],
                   ],
                 },
                 {
                   key: 'hinge',
-                  label: 'Hinge side',
+                  label: t('hingeSide'),
                   value: feature.hinge ?? 'left',
                   options: [
-                    ['left', 'Left'],
-                    ['right', 'Right'],
+                    ['left', t('left')],
+                    ['right', t('right')],
                   ],
                 },
                 {
                   key: 'swing',
-                  label: 'Swing direction',
+                  label: t('swingDirection'),
                   value: feature.swing ?? 'inward',
                   options: [
-                    ['inward', 'Inward'],
-                    ['outward', 'Outward'],
+                    ['inward', t('inward')],
+                    ['outward', t('outward')],
                   ],
                 },
                 {
                   key: 'brace',
-                  label: 'Bracing',
+                  label: t('bracing'),
                   value: feature.brace ?? 'none',
                   options: [
-                    ['none', 'None'],
-                    ['diagonal', 'Diagonal'],
-                    ['cross', 'Cross'],
+                    ['none', t('none')],
+                    ['diagonal', t('diagonal')],
+                    ['cross', t('cross')],
                   ],
                 },
               ]
@@ -107,7 +109,7 @@ export function FenceFeatureEditor({
         const numbers = [
           {
             key: 'center',
-            label: 'Distance from start',
+            label: t('distanceFromStart'),
             value: feature.center,
             min: 0,
             max: length,
@@ -116,7 +118,7 @@ export function FenceFeatureEditor({
           },
           {
             key: 'width',
-            label: 'Opening width',
+            label: t('openingWidth'),
             value: feature.width,
             min: 0.35,
             max: length,
@@ -125,7 +127,7 @@ export function FenceFeatureEditor({
           },
           {
             key: 'height',
-            label: gate ? 'Gate height' : 'Post height',
+            label: gate ? t('gateHeight') : t('postHeight'),
             value: height,
             min: 0.3,
             max: 1000,
@@ -136,7 +138,7 @@ export function FenceFeatureEditor({
             ? [
                 {
                   key: 'clearance',
-                  label: 'Ground clearance',
+                  label: t('groundClearance'),
                   value: bottom,
                   min: 0,
                   max: 1000,
@@ -145,7 +147,7 @@ export function FenceFeatureEditor({
                 },
                 {
                   key: 'openAngle',
-                  label: 'Opening angle',
+                  label: t('openingAngle'),
                   value: feature.openAngle ?? 0,
                   min: 0,
                   max: 170,
@@ -154,7 +156,7 @@ export function FenceFeatureEditor({
                 },
                 {
                   key: 'thickness',
-                  label: 'Leaf thickness',
+                  label: t('leafThickness'),
                   value: feature.thickness ?? 0.06,
                   min: 0.02,
                   max: 0.3,
@@ -163,7 +165,7 @@ export function FenceFeatureEditor({
                 },
                 {
                   key: 'frameWidth',
-                  label: 'Frame width',
+                  label: t('frameWidth'),
                   value: feature.frameWidth ?? 0.055,
                   min: 0.025,
                   max: 0.2,
@@ -172,7 +174,7 @@ export function FenceFeatureEditor({
                 },
                 {
                   key: 'spacing',
-                  label: 'Infill spacing',
+                  label: t('infillSpacing'),
                   value: feature.spacing ?? 0.15,
                   min: 0.04,
                   max: 1000,
@@ -181,7 +183,7 @@ export function FenceFeatureEditor({
                 },
                 {
                   key: 'boardWidth',
-                  label: 'Board width',
+                  label: t('boardWidth'),
                   value: feature.boardWidth ?? 0.055,
                   min: 0.02,
                   max: 0.3,
@@ -192,7 +194,7 @@ export function FenceFeatureEditor({
                   ? [
                       {
                         key: 'leafSplit',
-                        label: 'Left leaf proportion',
+                        label: t('leftLeafProportion'),
                         value: feature.leafSplit ?? 0.5,
                         min: 0.2,
                         max: 0.8,
@@ -208,7 +210,7 @@ export function FenceFeatureEditor({
           <div key={feature.id}>
             <div className="mt-2 space-y-2">
               <ToggleControl
-                label="Match fence style"
+                label={t('matchFenceStyle')}
                 checked={feature.matchFenceStyle !== false}
                 onChange={(checked) =>
                   update(feature.id, {
@@ -220,7 +222,7 @@ export function FenceFeatureEditor({
                 }
               />
               <ToggleControl
-                label="Match fence height"
+                label={t('matchFenceHeight')}
                 checked={feature.matchFenceHeight ?? feature.matchFenceStyle !== false}
                 onChange={(checked) =>
                   update(feature.id, {
@@ -232,7 +234,7 @@ export function FenceFeatureEditor({
               />
               {gate && feature.matchFenceStyle === false && (
                 <label className="flex min-h-9 items-center justify-between gap-3 text-xs text-muted-foreground">
-                  Gate style
+                  {t('gateStyle')}
                   <select
                     className="h-8 min-w-0 max-w-40 rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-2 text-xs text-foreground outline-none transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e] focus-visible:ring-2 focus-visible:ring-ring"
                     value={feature.style && feature.style !== 'match' ? feature.style : 'picket'}
@@ -241,11 +243,11 @@ export function FenceFeatureEditor({
                       if (style.success) update(feature.id, { style: style.data })
                     }}
                   >
-                    <option value="picket">Picket</option>
-                    <option value="slat">Vertical slats</option>
-                    <option value="horizontal">Horizontal boards</option>
-                    <option value="privacy">Solid privacy</option>
-                    <option value="rail">Open rails</option>
+                    <option value="picket">{t('picket')}</option>
+                    <option value="slat">{t('verticalSlats')}</option>
+                    <option value="horizontal">{t('horizontalBoards')}</option>
+                    <option value="privacy">{t('solidPrivacy')}</option>
+                    <option value="rail">{t('openRails')}</option>
                   </select>
                 </label>
               )}
@@ -304,20 +306,20 @@ export function FenceFeatureEditor({
                   />
                 ))}
               <ToggleControl
-                label="Jamb posts"
+                label={t('jambPosts')}
                 checked={feature.showPosts !== false}
                 onChange={(checked) => update(feature.id, { showPosts: checked })}
               />
               {gate && (
                 <ToggleControl
-                  label="Hinges and latch"
+                  label={t('hingesAndLatch')}
                   checked={feature.showHardware !== false}
                   onChange={(checked) => update(feature.id, { showHardware: checked })}
                 />
               )}
               <ActionButton
                 type="button"
-                label={gate ? 'Remove gate' : 'Remove opening'}
+                label={gate ? t('removeGate') : t('removeOpening')}
                 className="w-full text-destructive hover:text-destructive"
                 onClick={() => useScene.getState().deleteNode(child.id)}
               />

@@ -20,19 +20,20 @@ import {
   sampleFenceSpline,
   useScene,
 } from '@pascal-app/core'
-import { SliderControl } from '@pascal-app/editor'
+import { SliderControl, useT } from '@pascal-app/editor'
+import { messages } from './messages'
 
 export function FencePatternInfo({ node }: { node: FenceNode }) {
-  const subject =
-    node.style === 'picket'
-      ? 'pickets in each bay between posts'
-      : node.style === 'horizontal'
-        ? 'posts along the full fence'
-        : 'infill pieces between the two end posts'
+  const t = useT(messages)
   return (
     <p className="text-xs text-muted-foreground">
-      Distribution controls {subject}. Spacing is measured between centers. The available width
-      limits the count so pieces do not overlap.
+      {t(
+        node.style === 'picket'
+          ? 'patternInfo.picket'
+          : node.style === 'horizontal'
+            ? 'patternInfo.horizontal'
+            : 'patternInfo.infill',
+      )}
     </p>
   )
 }
@@ -44,10 +45,11 @@ export function FencePicketRailProjectionEditor({
   node: FenceNode
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
+  const t = useT(messages)
   const max = maxFencePicketRailProjection(node.postSize)
   return (
     <SliderControl
-      label="Picket rail projection"
+      label={t('picketRailProjection')}
       max={max}
       min={0.001}
       onChange={(value) =>
@@ -68,6 +70,7 @@ export function FenceSurfaceEditor({
   node: FenceNode
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
+  const t = useT(messages)
   const nodes = useScene((state) => state.nodes)
   const levelId = findLevelAncestorId(node.id as AnyNodeId, nodes)
   const hosts = Object.values(nodes).filter(
@@ -83,7 +86,7 @@ export function FenceSurfaceEditor({
   return (
     <div className="space-y-2 text-xs">
       <label className="flex items-center justify-between gap-2">
-        Surface behavior
+        {t('surfaceBehavior')}
         <select
           className="rounded border bg-background p-1"
           value={node.surfaceMode}
@@ -101,16 +104,16 @@ export function FenceSurfaceEditor({
             }
           }}
         >
-          <option value="auto">Follow highest surface</option>
+          <option value="auto">{t('followHighestSurface')}</option>
           <option disabled={hosts.length === 0} value="selected">
-            Follow selected surface
+            {t('followSelectedSurface')}
           </option>
-          <option value="level">Hold starting height</option>
+          <option value="level">{t('holdStartingHeight')}</option>
         </select>
       </label>
       {node.surfaceMode === 'selected' && (
         <label className="flex items-center justify-between gap-2">
-          Surface
+          {t('surface')}
           <select
             className="min-w-0 max-w-40 rounded border bg-background p-1"
             value={selectedId}
@@ -122,7 +125,7 @@ export function FenceSurfaceEditor({
               })
             }}
           >
-            <option value="">Choose a surface</option>
+            <option value="">{t('chooseASurface')}</option>
             {hosts.map((host) => (
               <option key={host.id} value={host.id}>
                 {host.name || host.type} ({host.type})
@@ -132,7 +135,7 @@ export function FenceSurfaceEditor({
         </label>
       )}
       {node.surfaceMode === 'selected' && !selectedId && (
-        <p className="text-muted-foreground">Choose a slab or shaped surface on this level.</p>
+        <p className="text-muted-foreground">{t('chooseASlabOrShapedSurfaceOnThisLevel')}</p>
       )}
     </div>
   )
@@ -159,6 +162,7 @@ export function FenceLengthEditor({
   node: FenceNode
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
+  const t = useT(messages)
   const length = getWallCurveLength(node)
 
   const handleChange = (newLength: number) => {
@@ -178,7 +182,7 @@ export function FenceLengthEditor({
 
   return (
     <SliderControl
-      label="Length"
+      label={t('length')}
       max={50}
       min={0.1}
       onChange={handleChange}
@@ -197,13 +201,14 @@ export function FenceCurveEditor({
   node: FenceNode
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
+  const t = useT(messages)
   const curveOffset = getClampedWallCurveOffset(node)
   const maxCurveOffset = getMaxWallCurveOffset(node)
 
   return (
     <div className="space-y-2">
       <SliderControl
-        label="Curve"
+        label={t('curve')}
         max={Math.max(0.01, maxCurveOffset)}
         min={-Math.max(0.01, maxCurveOffset)}
         onChange={(value) => onUpdate({ curveOffset: normalizeWallCurveOffset(node, value) })}
@@ -237,7 +242,7 @@ export function FenceCurveEditor({
           })
         }}
       >
-        Edit path
+        {t('editPath')}
       </button>
     </div>
   )
@@ -250,6 +255,7 @@ export function FencePathEditor({
   node: FenceNode
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
+  const t = useT(messages)
   const path = node.path ?? []
   const tangents = path.map((_, i) => node.tangents?.[i] ?? null)
   const spanModes = path
@@ -268,14 +274,15 @@ export function FencePathEditor({
   return (
     <div className="space-y-2 text-xs">
       <p>
-        {path.length} points · {getFenceCenterlineLength(node).toFixed(2)} m
+        {t('pathSummary', {
+          count: path.length,
+          length: getFenceCenterlineLength(node).toFixed(2),
+        })}
       </p>
-      <p className="text-muted-foreground">
-        Set each span to straight or curved, then drag its points and curve handles in either view.
-      </p>
+      <p className="text-muted-foreground">{t('setEachSpanToStraightOrCurvedThenDragIts')}</p>
       {path.map((point, index) => (
         <details key={`curve-editor-${index}`} className="rounded border p-2">
-          <summary className="cursor-pointer">Point {index + 1}</summary>
+          <summary className="cursor-pointer">{t('pointN', { n: index + 1 })}</summary>
           <div className="mt-2 flex gap-2">
             {(['X', 'Z'] as const).map((axis, coordinate) => (
               <label key={axis} className="min-w-0 flex-1">
@@ -301,7 +308,7 @@ export function FencePathEditor({
           </div>
           {index < path.length - 1 && (
             <label className="mt-2 flex items-center justify-between">
-              Span to point {index + 2}
+              {t('spanToPoint', { n: index + 2 })}
               <select
                 className="rounded border bg-background p-1"
                 value={spanModes[index]}
@@ -315,14 +322,14 @@ export function FencePathEditor({
                   update(path, handles, modes)
                 }}
               >
-                <option value="straight">Straight</option>
-                <option value="curve">Curved</option>
+                <option value="straight">{t('straight')}</option>
+                <option value="curve">{t('curved')}</option>
               </select>
             </label>
           )}
           {(spanModes[index - 1] === 'curve' || spanModes[index] === 'curve') && (
             <label className="mt-2 flex items-center justify-between">
-              Join
+              {t('join')}
               <select
                 className="rounded border bg-background p-1"
                 value={
@@ -334,8 +341,8 @@ export function FencePathEditor({
                   update(path, handles)
                 }}
               >
-                <option value="smooth">Smooth</option>
-                <option value="corner">Corner</option>
+                <option value="smooth">{t('smooth')}</option>
+                <option value="corner">{t('corner')}</option>
               </select>
             </label>
           )}
@@ -366,7 +373,7 @@ export function FencePathEditor({
                   update(points, handles, modes)
                 }}
               >
-                Add point after
+                {t('addPointAfter')}
               </button>
             )}
             {index === path.length - 1 && (
@@ -385,7 +392,7 @@ export function FencePathEditor({
                   )
                 }}
               >
-                Extend path
+                {t('extendPath')}
               </button>
             )}
             <button
@@ -411,7 +418,7 @@ export function FencePathEditor({
                 )
               }}
             >
-              Remove point
+              {t('removePoint')}
             </button>
           </div>
         </details>

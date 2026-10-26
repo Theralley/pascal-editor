@@ -1,0 +1,79 @@
+import { defineMessages } from '@pascal-app/editor'
+
+export const messages = defineMessages({
+  en: {
+    picketRailProjection: 'Picket rail projection',
+    surfaceBehavior: 'Surface behavior',
+    followHighestSurface: 'Follow highest surface',
+    followSelectedSurface: 'Follow selected surface',
+    holdStartingHeight: 'Hold starting height',
+    surface: 'Surface',
+    chooseASurface: 'Choose a surface',
+    chooseASlabOrShapedSurfaceOnThisLevel: 'Choose a slab or shaped surface on this level.',
+    length: 'Length',
+    curve: 'Curve',
+    editPath: 'Edit path',
+    setEachSpanToStraightOrCurvedThenDragIts:
+      'Set each span to straight or curved, then drag its points and curve handles in either view.',
+    straight: 'Straight',
+    curved: 'Curved',
+    join: 'Join',
+    smooth: 'Smooth',
+    corner: 'Corner',
+    addPointAfter: 'Add point after',
+    extendPath: 'Extend path',
+    removePoint: 'Remove point',
+    detachEndpoint: 'Detach endpoint',
+    dragEndpoint: 'Drag endpoint',
+    'patternInfo.picket':
+      'Distribution controls pickets in each bay between posts. Spacing is measured between centers. The available width limits the count so pieces do not overlap.',
+    'patternInfo.horizontal':
+      'Distribution controls posts along the full fence. Spacing is measured between centers. The available width limits the count so pieces do not overlap.',
+    'patternInfo.infill':
+      'Distribution controls infill pieces between the two end posts. Spacing is measured between centers. The available width limits the count so pieces do not overlap.',
+    pathSummary: '{count} points · {length} m',
+    pointN: 'Point {n}',
+    spanToPoint: 'Span to point {n}',
+    gatesAndOpenings: 'Gates & openings',
+    addGate: 'Add Gate',
+    addOpening: 'Add Opening',
+  },
+  sv: {
+    picketRailProjection: 'Spjälribbans utstick',
+    surfaceBehavior: 'Ytans påverkan',
+    followHighestSurface: 'Följ högsta ytan',
+    followSelectedSurface: 'Följ vald yta',
+    holdStartingHeight: 'Behåll starthöjden',
+    surface: 'Yta',
+    chooseASurface: 'Välj en yta',
+    chooseASlabOrShapedSurfaceOnThisLevel:
+      'Välj ett bjälklag eller en formad yta på den här våningen.',
+    length: 'Längd',
+    curve: 'Båge',
+    editPath: 'Redigera bana',
+    setEachSpanToStraightOrCurvedThenDragIts:
+      'Ställ in varje delsträcka som rak eller böjd och dra sedan dess punkter och böjhandtag i någon av vyerna.',
+    straight: 'Rak',
+    curved: 'Böjd',
+    join: 'Övergång',
+    smooth: 'Mjuk',
+    corner: 'Hörn',
+    addPointAfter: 'Lägg till punkt efter',
+    extendPath: 'Förläng banan',
+    removePoint: 'Ta bort punkt',
+    detachEndpoint: 'Lossa ändpunkt',
+    dragEndpoint: 'Dra ändpunkt',
+    'patternInfo.picket':
+      'Fördelningen styr spjälorna i varje fack mellan stolparna. Avståndet mäts mellan centrum. Den tillgängliga bredden begränsar antalet så att delarna inte överlappar.',
+    'patternInfo.horizontal':
+      'Fördelningen styr stolparna längs hela staketet. Avståndet mäts mellan centrum. Den tillgängliga bredden begränsar antalet så att delarna inte överlappar.',
+    'patternInfo.infill':
+      'Fördelningen styr fyllnadsdelarna mellan de två ändstolparna. Avståndet mäts mellan centrum. Den tillgängliga bredden begränsar antalet så att delarna inte överlappar.',
+    pathSummary: '{count} punkter · {length} m',
+    pointN: 'Punkt {n}',
+    spanToPoint: 'Delsträcka till punkt {n}',
+    gatesAndOpenings: 'Grindar och öppningar',
+    addGate: 'Lägg till grind',
+    addOpening: 'Lägg till öppning',
+  },
+})
