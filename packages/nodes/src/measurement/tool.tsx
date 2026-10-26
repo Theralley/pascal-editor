@@ -41,6 +41,7 @@ import {
   measurementPolygonLabelAnchor,
   measurementPolygonMidpoints,
   metersToLinearUnit,
+  translate,
   useEditor,
   useInteractionScope,
   useMeasurementDraft,
@@ -1551,7 +1552,7 @@ const MeasurementDraftPreview: FC<{
           text:
             kind === 'area'
               ? `A ${formatAreaLabel(measurementArea(livePoints), unit)}` // i18n-ignore: quantity symbol
-              : `P ${formatLinearMeasurement(measurementPerimeter(livePoints), unit, metricNotation)}`, // i18n-ignore: quantity symbol
+              : `${translate(messages, 'symbol.perimeter')} ${formatLinearMeasurement(measurementPerimeter(livePoints), unit, metricNotation)}`,
         }
       }
     } else if (kind === 'volume' && points.length >= 3 && baseNormal) {

@@ -46,6 +46,10 @@ export const messages = defineMessages({
     'checks.aboutNote':
       'Open ends and separate branches may be intentional. Intersection checks use bounding boxes; inspect openings and clearances.',
 
+    'finding.slopeFlat': '{size} drain slopes {slope} — IPC 704.1 requires at least {min}.',
+    'finding.slopeSteep':
+      '{size} drain slopes {slope} — over one pipe-diameter per foot risks siphoning the traps.',
+    'finding.trapArm': '{size} trap arm runs {length}" to its vent — IPC 909.1 caps it at {max}".',
     'finding.openConnection': 'Open connection: {port}',
     'finding.separateBranch':
       'Separate branch: no connection to the other branches of this system. Review whether this is intentional.',
@@ -57,6 +61,8 @@ export const messages = defineMessages({
       other: '{count} hangers without a support.',
     },
 
+    'name.endCap': 'End Cap',
+    clearance: 'Not enough room for this fitting. Lengthen the run or move the connection.',
     'light.off': 'Turn light off',
     'light.on': 'Turn light on',
 
@@ -111,6 +117,11 @@ export const messages = defineMessages({
     'checks.aboutNote':
       'Öppna ändar och separata grenar kan vara avsiktliga. Korsningskontrollerna använder omslutande lådor, så granska öppningar och fria avstånd själv.',
 
+    'finding.slopeFlat': 'Avloppet på {size} har fallet {slope} — IPC 704.1 kräver minst {min}.',
+    'finding.slopeSteep':
+      'Avloppet på {size} har fallet {slope} — mer än en rördiameter per fot riskerar att sifonera vattenlåsen.',
+    'finding.trapArm':
+      'Vattenlåsets stickledning på {size} är {length}" till ventilationen — IPC 909.1 begränsar den till {max}".',
     'finding.openConnection': 'Öppen anslutning: {port}',
     'finding.separateBranch':
       'Separat gren: ingen anslutning till systemets andra grenar. Kontrollera om det är avsiktligt.',
@@ -122,6 +133,9 @@ export const messages = defineMessages({
       other: '{count} upphängningar utan stöd.',
     },
 
+    'name.endCap': 'Ändlock',
+    clearance:
+      'Det finns inte plats för den här rördelen. Förläng sträckan eller flytta anslutningen.',
     'light.off': 'Släck lampan',
     'light.on': 'Tänd lampan',
 

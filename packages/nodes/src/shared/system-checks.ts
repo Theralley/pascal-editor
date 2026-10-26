@@ -24,8 +24,53 @@ export type SystemFinding = {
   severity: 'error' | 'warning'
 }
 
+// The drainage rules word their findings in English; this words the known ones in the locale.
+const DRAINAGE_MESSAGES: {
+  code: string
+  pattern: RegExp
+  key: 'finding.slopeFlat' | 'finding.slopeSteep' | 'finding.trapArm'
+  vars: string[]
+}[] = [
+  {
+    code: 'slope-too-flat',
+    pattern: /^(.+) drain slopes (\S+) — IPC 704\.1 requires at least (\S+)\.$/,
+    key: 'finding.slopeFlat',
+    vars: ['size', 'slope', 'min'],
+  },
+  {
+    code: 'slope-too-steep',
+    pattern:
+      /^(.+) drain slopes (\S+) — over one pipe-diameter per foot risks siphoning the traps\.$/,
+    key: 'finding.slopeSteep',
+    vars: ['size', 'slope'],
+  },
+  {
+    code: 'trap-arm-too-long',
+    pattern: /^(.+) trap arm runs (\d+)" to its vent — IPC 909\.1 caps it at (\d+)"\.$/,
+    key: 'finding.trapArm',
+    vars: ['size', 'length', 'max'],
+  },
+]
+
+function drainageMessage(finding: { code: string; message: string }): string {
+  for (const entry of DRAINAGE_MESSAGES) {
+    if (entry.code !== finding.code) continue
+    const match = entry.pattern.exec(finding.message)
+    if (!match) break
+    return translate(
+      messages,
+      entry.key,
+      Object.fromEntries(entry.vars.map((name, index) => [name, match[index + 1]!])),
+    )
+  }
+  return finding.message
+}
+
 export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): SystemFinding[] {
-  const findings: SystemFinding[] = [...validateDwv(nodes)]
+  const findings: SystemFinding[] = validateDwv(nodes).map((finding) => ({
+    ...finding,
+    message: drainageMessage(finding),
+  }))
   const ports = collectSystemPorts(nodes)
   const joined = new Set<number>()
   const connectedPairs = new Set<string>()

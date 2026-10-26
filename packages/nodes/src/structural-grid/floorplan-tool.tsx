@@ -14,11 +14,13 @@ import {
   isMagneticSnapActive,
   markToolCancelConsumed,
   resolveSurfacePlanPointSnap,
+  translate,
   triggerSFX,
   useFloorplanRender,
   useInteractionScope,
 } from '@pascal-app/editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { messages } from './messages'
 
 const MIN_GRID_LENGTH = 0.01
 const GRID_BUBBLE_RADIUS = 0.22
@@ -182,7 +184,7 @@ export function FloorplanStructuralGridToolLayer({
 
       const label = nextStructuralGridLabel(sceneApi.nodes(), activeLevelId, currentStart, point)
       const node = StructuralGridNode.parse({
-        name: `Grid ${label}`,
+        name: translate(messages, 'name.grid', { label }),
         start: currentStart,
         end: point,
         label,

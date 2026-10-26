@@ -15,6 +15,7 @@ import {
   isGridSnapActive,
   isMagneticSnapActive,
   movementSfxStepKey,
+  translate,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
@@ -27,6 +28,7 @@ import {
   getLevelLocalSnappedPosition,
   resolveAlignedFloorPlacement,
 } from '../shared/floor-placement'
+import { messages } from './messages'
 import { SpawnPreview } from './renderer'
 
 const ROTATION_STEP = Math.PI / 4
@@ -146,7 +148,7 @@ const SpawnTool = () => {
         placedId = existingSpawnId
       } else {
         const spawn = SpawnNode.parse({
-          name: 'Spawn Point',
+          name: translate(messages, 'title'),
           position: next,
           rotation: rotationRef.current,
           parentId: activeLevelId,

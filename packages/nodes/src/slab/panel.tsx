@@ -289,10 +289,10 @@ export function SlabPanel() {
           { label: t('preset.thick', { size: '6"' }), elevation: 0.1524 },
         ]
       : [
-          { label: t('preset.sunken', { size: '15 cm' }), elevation: -0.15 },
-          { label: t('preset.thin', { size: '2 cm' }), elevation: 0.02 },
-          { label: t('preset.standard', { size: '5 cm' }), elevation: 0.05 },
-          { label: t('preset.thick', { size: '15 cm' }), elevation: 0.15 },
+          { label: t('preset.sunken', { size: t('size.sunken') }), elevation: -0.15 },
+          { label: t('preset.thin', { size: t('size.thin') }), elevation: 0.02 },
+          { label: t('preset.standard', { size: t('size.standard') }), elevation: 0.05 },
+          { label: t('preset.thick', { size: t('size.thick') }), elevation: 0.15 },
         ]
 
   return (

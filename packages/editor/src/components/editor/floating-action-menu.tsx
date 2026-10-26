@@ -353,6 +353,8 @@ export function FloatingActionMenu() {
   const node = useScene((s) => (selectedId ? (s.nodes[selectedId as AnyNodeId] ?? null) : null))
   const quickActionNodes = useScene(useShallow((s) => collectQuickActionNodes(s.nodes, selectedId)))
   const quickActionDef = node ? nodeRegistry.get(node.type) : undefined
+  const quickActionLocale = useLocale()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the actions word themselves in the locale
   const quickActions = useMemo<NodeQuickAction[]>(
     () =>
       node && quickActionNodes
@@ -361,7 +363,7 @@ export function FloatingActionMenu() {
             nodes: quickActionNodes,
           }) ?? [])
         : [],
-    [node, quickActionNodes],
+    [node, quickActionNodes, quickActionLocale],
   )
   // ALLOWED_TYPES is the hardcoded set; registry-driven kinds (any
   // NodeDefinition with `capabilities.selectable`) get the floating menu

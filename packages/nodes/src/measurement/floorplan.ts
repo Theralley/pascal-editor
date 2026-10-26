@@ -20,9 +20,11 @@ import {
   measurementFloorplanPresentationColor,
   measurementPolygonLabelAnchor,
   readFloorplanContext,
+  translate,
   withFloorplanGeometryMetadata,
 } from '@pascal-app/editor'
 import { measurementResolvedEditPoints } from './edit'
+import { messages } from './messages'
 import { resolveMeasurementNode } from './resolve'
 
 const projectPoint = (point: MeasurementPoint): FloorplanPoint => [point[0], point[2]]
@@ -58,7 +60,7 @@ export function buildMeasurementFloorplan(
     Boolean(selected),
   )
   const style = lineStyle(stroke)
-  const statusPrefix = resolved.dangling.length > 0 ? 'Unlinked · ' : ''
+  const statusPrefix = resolved.dangling.length > 0 ? translate(messages, 'unlinked') : ''
   const editHandles: FloorplanGeometry[] = editable
     ? measurementResolvedEditPoints(measurement).map((point, vertexIndex) => ({
         kind: 'endpoint-handle',

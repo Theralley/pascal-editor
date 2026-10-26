@@ -6,12 +6,14 @@ import {
   PipeFittingNode,
   type PipeSegmentNode,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import type { ScenePort } from '@pascal-app/editor/distribution'
 import { Euler, Quaternion, Vector3 } from 'three'
 import { localFittingPorts } from '../duct-fitting/ports'
 import { ductPortDiameterIn } from '../duct-segment/geometry'
 import { localPipeFittingPorts } from '../pipe-fitting/ports'
 import { accessoryMateQuaternion } from './accessory-placement'
+import { messages } from './messages'
 
 const END_CAP_OWNER_ID_KEY = 'automaticRunEndCapOwnerId'
 const END_CAP_ENDPOINT_KEY = 'automaticRunEndCapEndpoint'
@@ -69,7 +71,7 @@ export function createDuctRunEndCap(
     system: duct.system,
   }
   const cap = DuctFittingNode.parse({
-    name: 'End Cap',
+    name: translate(messages, 'name.endCap'),
     metadata: {
       [END_CAP_OWNER_ID_KEY]: duct.id,
       [END_CAP_ENDPOINT_KEY]: endpoint,
@@ -111,7 +113,7 @@ export function createPipeRunEndCap(
     system: pipe.system,
   }
   const cap = PipeFittingNode.parse({
-    name: 'End Cap',
+    name: translate(messages, 'name.endCap'),
     metadata: {
       [END_CAP_OWNER_ID_KEY]: pipe.id,
       [END_CAP_ENDPOINT_KEY]: endpoint,

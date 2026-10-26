@@ -138,6 +138,18 @@ export function SiteNodePanel() {
 
   if (!node) return null
 
+  // The editor words an edge in English; the same parts read in the locale here.
+  const edgeLabel = (label: string) => {
+    const match = /^Edge (\d+) — faces (\S+) \((-?\d+)°\), (.+)$/.exec(label)
+    return match
+      ? t('orientation.edge', {
+          n: match[1]!,
+          compass: match[2]!,
+          deg: match[3]!,
+          length: match[4]!,
+        })
+      : label
+  }
   const setbacks = node.setbacks
   const setbackField = (
     key: 'front' | 'side' | 'rear' | 'left' | 'right',
@@ -375,7 +387,7 @@ export function SiteNodePanel() {
             <option value="">{t('orientation.auto')}</option>
             {edges.map((edge) => (
               <option key={edge.index} value={String(edge.index)}>
-                {edge.label}
+                {edgeLabel(edge.label)}
               </option>
             ))}
           </select>

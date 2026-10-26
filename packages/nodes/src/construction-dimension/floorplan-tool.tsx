@@ -29,6 +29,7 @@ import {
   isMagneticSnapActive,
   markToolCancelConsumed,
   resolveSurfacePlanPointSnap,
+  translate,
   triggerSFX,
   useDrawingView,
   useFloorplanRender,
@@ -39,6 +40,7 @@ import {
   alignConstructionDimensionDirectionToSharedWall,
   resolveCircularConstructionDimensionLayout,
 } from './geometry'
+import { messages } from './messages'
 
 const SEMANTIC_SNAP_DISTANCE = 0.2
 const SEMANTIC_BYPASS_DISTANCE = 0.012
@@ -278,7 +280,7 @@ export function buildConstructionDimensionPreviewGeometries(
             kind: 'dimension-label',
             cx: baselinePoint[0],
             cy: baselinePoint[2],
-            text: `ARC ${formatLinearMeasurement(layout.arcLength, unit, metricNotation)}`, // i18n-ignore: drawing label
+            text: `${translate(messages, 'drawing.arc')} ${formatLinearMeasurement(layout.arcLength, unit, metricNotation)}`,
             angle: 0,
             screenUpright: true,
             appearance: 'outlined',
@@ -493,8 +495,10 @@ export function FloorplanConstructionDimensionToolLayer({
       const node = ConstructionDimensionNode.parse({
         name:
           dimensionMode === 'linear' && chainMode === 'continuous'
-            ? 'Continuous Dimension'
-            : `${dimensionMode.replaceAll('-', ' ')} Dimension`,
+            ? translate(messages, 'name.continuous')
+            : translate(messages, 'name.dimension', {
+                mode: translate(messages, `name.mode.${dimensionMode}`),
+              }),
         anchors: current.anchors,
         baseline: {
           origin: [originPoint[0], originPoint[2]],

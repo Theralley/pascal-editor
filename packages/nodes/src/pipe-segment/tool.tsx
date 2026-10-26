@@ -37,7 +37,7 @@ import {
   isRunEndCapPort,
 } from '../shared/automatic-run-end-cap'
 import { ConnectionFeedback } from '../shared/connection-feedback'
-import { FITTING_CLEARANCE_MESSAGE, hasFittingClearance } from '../shared/fitting-clearance'
+import { fittingClearanceMessage, hasFittingClearance } from '../shared/fitting-clearance'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { PipeFittingGhost } from '../shared/mep-ghost'
 import { DWV_PORT_SYSTEMS, runSectionHalfSizeM } from '../shared/port-systems'
@@ -184,7 +184,7 @@ const PipeSegmentTool = () => {
     const invalidPlan = () =>
       previewOnly
         ? {
-            validationMessage: FITTING_CLEARANCE_MESSAGE,
+            validationMessage: fittingClearanceMessage(),
             nextStart: rawStart,
             nextConnection: startConnection,
             previewPipes: [] as PipeSegmentNode[],

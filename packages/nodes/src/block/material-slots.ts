@@ -4,6 +4,8 @@ import {
   blockMaterialSlotIds,
   type MaterialRef,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
 
 export type BlockMaterialSlots = Record<string, MaterialRef> | undefined
 export type BlockMaterialSlotNames = Record<string, string> | undefined
@@ -75,7 +77,7 @@ export function createBlockMaterialSlot(
   const slotId = `slot-${index}`
   return {
     slotId,
-    slotNames: { ...slotNames, [slotId]: `Slot ${index}` },
+    slotNames: { ...slotNames, [slotId]: translate(messages, 'slots.name', { n: index }) },
   }
 }
 

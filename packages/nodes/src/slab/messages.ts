@@ -20,6 +20,10 @@ export const messages = defineMessages({
     'preset.thin': 'Thin ({size})',
     'preset.standard': 'Standard ({size})',
     'preset.thick': 'Thick ({size})',
+    'size.sunken': '15cm',
+    'size.thin': '2cm',
+    'size.standard': '5cm',
+    'size.thick': '15cm',
 
     'info.heading': 'Info',
     'info.area': 'Area',
@@ -68,6 +72,10 @@ export const messages = defineMessages({
     'preset.thin': 'Tunn ({size})',
     'preset.standard': 'Standard ({size})',
     'preset.thick': 'Tjock ({size})',
+    'size.sunken': '15 cm',
+    'size.thin': '2 cm',
+    'size.standard': '5 cm',
+    'size.thick': '15 cm',
 
     'info.heading': 'Info',
     'info.area': 'Yta',

@@ -23,6 +23,7 @@ import {
   type Locale,
   measurementPolygonLabelAnchor,
   measurementPresentationColor,
+  translate,
   triangulateMeasurementPolygon,
   useLocale,
 } from '@pascal-app/editor'
@@ -44,6 +45,7 @@ import {
 } from 'three'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
 import { useShallow } from 'zustand/react/shallow'
+import { messages } from './messages'
 import {
   measurementDependencyIds,
   type ResolvedMeasurementPayload,
@@ -367,7 +369,7 @@ export const MeasurementRenderer = ({ node }: { node: MeasurementNode }) => {
   const locale = useLocale()
   const label = useMemo(() => {
     const value = formatMeasurement(resolved.payload, unit, metricNotation, locale)
-    return resolved.dangling.length > 0 ? `Unlinked · ${value}` : value
+    return resolved.dangling.length > 0 ? `${translate(messages, 'unlinked')}${value}` : value
   }, [locale, metricNotation, resolved, unit])
   const color = measurementPresentationColor(resolved.dangling.length > 0, active)
   const lineMaterial = useMemo(

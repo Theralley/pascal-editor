@@ -38,7 +38,7 @@ import {
 } from '../shared/automatic-run-end-cap'
 import { ConnectionFeedback } from '../shared/connection-feedback'
 import { ductProfilesMatch, planDuctAdapter } from '../shared/duct-adapter'
-import { FITTING_CLEARANCE_MESSAGE, hasFittingClearance } from '../shared/fitting-clearance'
+import { fittingClearanceMessage, hasFittingClearance } from '../shared/fitting-clearance'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { DuctSegmentGhost, FittingGhost } from '../shared/mep-ghost'
 import { DUCT_PORT_SYSTEMS, runSectionHalfSizeM } from '../shared/port-systems'
@@ -337,7 +337,7 @@ export function planDuctDraw(
   const startPlan = elbowPlanFor(startPort, dir, profile, nodes)
   const endPlan = elbowPlanFor(endPort, [-dir[0], -dir[1], -dir[2]], profile, nodes)
   const invalidPlan = (): DuctDrawPlan => ({
-    validationMessage: FITTING_CLEARANCE_MESSAGE,
+    validationMessage: fittingClearanceMessage(),
     fittings: [],
     ducts: [],
     tails: [],

@@ -5,6 +5,8 @@ import {
   resolveConstructionDimensionDrawingOverride,
   resolveConstructionDimensionDrawingPresentation,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
 
 export function resolveConstructionDimensionForDrawing(args: {
   node: ConstructionDimensionNode
@@ -25,7 +27,7 @@ export function resolveConstructionDimensionForDrawing(args: {
     return {
       ...node,
       metadata: lockedMetadata(node),
-      prefix: `UNLINKED CONTROL · ${node.prefix}`,
+      prefix: `${translate(messages, 'unlinked.control')}${node.prefix}`,
     }
   }
 

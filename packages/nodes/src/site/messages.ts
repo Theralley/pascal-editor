@@ -52,6 +52,7 @@ export const messages = defineMessages({
     'orientation.frontEdge': 'Front (street) edge',
     'orientation.auto': 'Auto — most north-facing edge',
     'orientation.north': 'North rotation',
+    'orientation.edge': 'Edge {n} — faces {compass} ({deg}°), {length}',
   },
   sv: {
     title: 'Tomt',
@@ -104,5 +105,6 @@ export const messages = defineMessages({
     'orientation.frontEdge': 'Främre kant (mot gatan)',
     'orientation.auto': 'Automatiskt — kanten som vetter mest åt norr',
     'orientation.north': 'Nordrotation',
+    'orientation.edge': 'Kant {n} — vetter åt {compass} ({deg}°), {length}',
   },
 })

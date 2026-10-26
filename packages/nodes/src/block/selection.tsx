@@ -85,6 +85,7 @@ import {
   blockLoopCutSegments,
 } from './commands'
 import useBlockEditSession from './edit-session'
+import { blockErrorText } from './error-text'
 import { triangulateBlockFace } from './geometry'
 import { blockGeometrySnapThreshold, resolveBlockGeometrySnap } from './geometry-snap'
 import { BLOCK_WHEEL_OPTIONS, consumeBlockGestureWheel } from './gesture-wheel'
@@ -4006,7 +4007,7 @@ function BlockEditor({
                 error ? 'text-destructive' : 'text-muted-foreground',
               )}
             >
-              {error ?? componentStatus}
+              {error ? blockErrorText(error) : componentStatus}
             </div>
           ) : null}
         </div>

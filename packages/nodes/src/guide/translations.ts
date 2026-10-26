@@ -1,8 +1,8 @@
 /** Swedish for the text `guideDefinition` declares, keyed by its English source. */
 export const guideTranslations = {
   sv: {
-    Guide: 'Hjälplinje',
+    Guide: 'Underlagsbild',
     'A measurement / reference annotation (linear, area, or arc).':
-      'En mät- eller referensmarkering (linje, yta eller båge).',
+      'En underlagsbild eller referensmarkering (linje, yta eller båge).',
   },
 }

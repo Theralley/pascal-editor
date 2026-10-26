@@ -151,7 +151,7 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
                 {formatAreaLabel(member.areaM2, areaUnit, 1)}
               </span>
               <button
-                aria-label={t('members.remove', { name: member.name || t('members.zone') })}
+                aria-label={t('members.remove', { name: member.name || t('members.zoneName') })}
                 className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground"
                 onClick={() => removeMember(member.zoneId)}
                 type="button"

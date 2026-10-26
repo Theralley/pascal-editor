@@ -3,9 +3,9 @@ export const siteTranslations = {
   sv: {
     Site: 'Tomt',
     'The top-level container holding buildings, zones, and the property boundary.':
-      'Den översta nivån som rymmer byggnader, zoner och fastighetsgränsen.',
-    'Property corner': 'Fastighetens hörn',
-    'Property boundary': 'Fastighetens gräns',
-    'Property center': 'Fastighetens mitt',
+      'Den översta nivån som rymmer byggnader, zoner och tomtgränsen.',
+    'Property corner': 'Tomtens hörn',
+    'Property boundary': 'Tomtgräns',
+    'Property center': 'Tomtens mitt',
   },
 }

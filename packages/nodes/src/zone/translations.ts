@@ -11,6 +11,6 @@ export const zoneTranslations = {
     Footprint: 'Golvyta',
     Perimeter: 'Omkrets',
     'Footprint only — room envelope not proven.':
-      'Endast golvyta — rummets omslutning är inte styrkad.',
+      'Bara golvytan – rummets hölje är inte kontrollerat.',
   },
 }

@@ -1,5 +1,7 @@
-export const FITTING_CLEARANCE_MESSAGE =
-  'Not enough room for this fitting. Lengthen the run or move the connection.'
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
+
+export const fittingClearanceMessage = () => translate(messages, 'clearance')
 
 type Point = readonly [number, number, number]
 

@@ -9,6 +9,7 @@ import {
 } from '@pascal-app/core'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useLocale } from '../i18n'
 import usePlacementPreview from '../store/use-placement-preview'
 
 /** The notice `nodeId`'s kind gives for where it stands (`placementNotice`), if it declares one. */
@@ -58,12 +59,14 @@ export function usePlacementNotice(
   )
   const nodes = useScene((state) => (nodeId || draft?.node ? state.nodes : null))
   const live = useLiveTransforms((state) => (nodeId ? state.get(nodeId) : undefined))
+  const locale = useLocale()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the notice words itself in the locale
   return useMemo(() => {
     if (!nodes) return null
     if (nodeId) return placementNoticeOf(nodes, nodeId, live)
     if (!draft?.node) return null
     return previewPlacementNoticeOf(nodes, draft)
-  }, [nodes, live, nodeId, draft])
+  }, [nodes, live, nodeId, draft, locale])
 }
 
 /** The node a construction tool is placing: its transient draft. */

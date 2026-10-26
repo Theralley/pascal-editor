@@ -19,6 +19,7 @@ import {
 import {
   readFloorplanContext,
   readFloorplanMetricNotationOverride,
+  translate,
   withFloorplanGeometryMetadata,
 } from '@pascal-app/editor'
 import { resolveMeasurementAnchor } from '../measurement/resolve'
@@ -33,6 +34,7 @@ import {
   resolveCircularConstructionDimensionLayout,
   resolveConstructionDimensionLayout,
 } from './geometry'
+import { messages } from './messages'
 
 const DEFAULT_STROKE = '#334155'
 const DANGLING_STROKE = '#dc2626'
@@ -538,7 +540,7 @@ function notation(
   const repeated = includeFeatureCount && node.featureCount > 1 ? `${node.featureCount} x ` : ''
   const content = node.textOverride ?? `${repeated}${base}`
   const decorated = `${node.prefix}${content}${node.suffix}`
-  return dangling ? `UNLINKED · ${decorated}` : decorated
+  return dangling ? `${translate(messages, 'unlinked')}${decorated}` : decorated
 }
 
 function dimensionGeometry(

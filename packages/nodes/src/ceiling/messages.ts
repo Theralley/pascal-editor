@@ -15,9 +15,9 @@ export const messages = defineMessages({
     'preset.low': 'Low ({size})',
     'preset.standard': 'Standard ({size})',
     'preset.high': 'High ({size})',
-    'size.low': '2.4 m',
-    'size.standard': '2.5 m',
-    'size.high': '3.0 m',
+    'size.low': '2.4m',
+    'size.standard': '2.5m',
+    'size.high': '3.0m',
 
     'info.heading': 'Info',
     'info.area': 'Area',
