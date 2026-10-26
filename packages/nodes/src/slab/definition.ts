@@ -43,6 +43,7 @@ import { slabPaint } from './paint'
 import { slabParametrics } from './parametrics'
 import { slabQuickMeasurement } from './quick-measurement'
 import { SlabNode } from './schema'
+import { slabTranslations } from './translations'
 
 const HEIGHT_HANDLE_OFFSET = 0.22
 const MIN_SLAB_ELEVATION = -1
@@ -417,6 +418,8 @@ export const slabDefinition: NodeDefinition<typeof SlabNode> = {
     paletteSection: 'structure',
     paletteOrder: 30,
   },
+
+  translations: slabTranslations,
 
   mcp: {
     description: 'A polygon-bounded slab (floor) with optional cutout holes.',

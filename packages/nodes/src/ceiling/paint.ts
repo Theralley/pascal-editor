@@ -15,11 +15,13 @@ import {
   type SceneMaterialId,
   useScene,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import { CEILING_REGION_MESH, useViewer } from '@pascal-app/viewer'
 import type { Material, Mesh, Object3D } from 'three'
 import { createSlotPaintCapability, resolveSlotPaintMaterialRef } from '../shared/slot-paint'
 import { swapPreviewMaterial } from '../shared/swap-preview-material'
 import { getCeilingMaterials, resolveCeilingFinish } from './materials'
+import { messages } from './messages'
 
 /**
  * Ceiling paint on the unified slot model. A ceiling's own finish is its
@@ -128,7 +130,8 @@ const base = createSlotPaintCapability({
 
 export const ceilingPaint: PaintCapability = {
   ...base,
-  roleLabel: (_node, role) => (parseCeilingRegionRole(role) ? 'Painted part' : null),
+  roleLabel: (_node, role) =>
+    parseCeilingRegionRole(role) ? translate(messages, 'role.paintedPart') : null,
   buildPatch: (args: PaintPatchArgs) =>
     parseCeilingRegionRole(args.role) ? {} : base.buildPatch(args),
   commit: (args: PaintPatchArgs) => {

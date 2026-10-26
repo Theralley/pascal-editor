@@ -30,6 +30,7 @@ import { CEILING_HANDLE_MIN_HEIGHT, ceilingHeightRange } from './height-bounds'
 import { ceilingPaint } from './paint'
 import { ceilingParametrics } from './parametrics'
 import { CeilingNode } from './schema'
+import { ceilingTranslations } from './translations'
 
 const HEIGHT_HANDLE_OFFSET = 0.22
 
@@ -241,6 +242,8 @@ export const ceilingDefinition: NodeDefinition<typeof CeilingNode> = {
     paletteSection: 'structure',
     paletteOrder: 40,
   },
+
+  translations: ceilingTranslations,
 
   mcp: {
     description: 'A polygon-bounded ceiling with optional cutout holes.',

@@ -14,6 +14,7 @@ import { zoneParametrics } from './parametrics'
 import { zoneQuickMeasurement } from './quick-measurement'
 import { buildRoomFloorplanSchedule } from './room-documentation'
 import { ZoneNode } from './schema'
+import { zoneTranslations } from './translations'
 import { buildingUnitsForZone } from './unit-membership'
 
 /**
@@ -104,6 +105,8 @@ export const zoneDefinition: NodeDefinition<typeof ZoneNode> = {
     paletteSection: 'site',
     paletteOrder: 20,
   },
+
+  translations: zoneTranslations,
 
   mcp: {
     description: 'A polygon-bounded site zone with a typed surface (grass / water / paving / ...).',

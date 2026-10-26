@@ -20,11 +20,13 @@ import {
   useEditingHole,
   useEditor,
   useInteractionScope,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Edit, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { CEILING_PANEL_MIN_HEIGHT, ceilingHeightRange, clampCeilingHeight } from './height-bounds'
+import { messages } from './messages'
 
 /**
  * Phase 5 Stage E — ceiling inspector (kind-owned).
@@ -35,6 +37,7 @@ import { CEILING_PANEL_MIN_HEIGHT, ceilingHeightRange, clampCeilingHeight } from
  * panel can collapse into auto-derived groups.
  */
 export function CeilingPanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -246,39 +249,41 @@ export function CeilingPanel() {
   const heightPresets =
     unit === 'imperial'
       ? [
-          { label: 'Low (8\'0")', height: 2.4384 },
-          { label: 'Standard (8\'6")', height: 2.5908 },
-          { label: 'High (9\'0")', height: 2.7432 },
+          { label: t('preset.low', { size: '8\'0"' }), height: 2.4384 },
+          { label: t('preset.standard', { size: '8\'6"' }), height: 2.5908 },
+          { label: t('preset.high', { size: '9\'0"' }), height: 2.7432 },
         ]
       : [
-          { label: 'Low (2.4m)', height: 2.4 },
-          { label: 'Standard (2.5m)', height: 2.5 },
-          { label: 'High (3.0m)', height: 3.0 },
+          { label: t('preset.low', { size: t('size.low') }), height: 2.4 },
+          { label: t('preset.standard', { size: t('size.standard') }), height: 2.5 },
+          { label: t('preset.high', { size: t('size.high') }), height: 3.0 },
         ]
 
   return (
     <PanelWrapper
       icon="/icons/ceiling.webp"
       onClose={handleClose}
-      title={node.name || 'Ceiling'}
+      title={node.name || t('title')}
       width={320}
     >
-      <PanelSection title="Height">
+      <PanelSection title={t('height.heading')}>
         <SegmentedControl
           onChange={handleTopModeChange}
           options={[
-            { label: 'Follows level', value: 'storey' },
-            { label: 'Custom height', value: 'custom' },
+            { label: t('height.follows'), value: 'storey' },
+            { label: t('height.custom'), value: 'custom' },
           ]}
           value={isFollows ? 'storey' : 'custom'}
         />
         {isFollows ? (
           <div className="px-1 text-[11px] text-muted-foreground">
-            Currently {formatLinearMeasurement(resolvedHeight, unit, metricNotation)}
+            {t('height.current', {
+              height: formatLinearMeasurement(resolvedHeight, unit, metricNotation),
+            })}
           </div>
         ) : (
           <SliderControl
-            label="Height"
+            label={t('height.label')}
             max={Math.min(1000, maxHeight)}
             min={minHeight}
             onChange={handleHeightChange}
@@ -306,7 +311,9 @@ export function CeilingPanel() {
                 title={
                   fits
                     ? undefined
-                    : `Taller than this level (${formatLinearMeasurement(maxHeight, unit, metricNotation)} available). Raise the level height first.`
+                    : t('height.tooTall', {
+                        height: formatLinearMeasurement(maxHeight, unit, metricNotation),
+                      })
                 }
               />
             )
@@ -314,20 +321,21 @@ export function CeilingPanel() {
         </div>
         {Number.isFinite(maxHeight) && (
           <div className="px-1 pb-1 text-[11px] text-muted-foreground">
-            Limited by the level to {formatLinearMeasurement(maxHeight, unit, metricNotation)} —
-            raise the level height for a taller ceiling.
+            {t('height.limited', {
+              height: formatLinearMeasurement(maxHeight, unit, metricNotation),
+            })}
           </div>
         )}
       </PanelSection>
 
-      <PanelSection title="Info">
+      <PanelSection title={t('info.heading')}>
         <div className="flex items-center justify-between px-2 py-1 text-muted-foreground text-sm">
-          <span>Area</span>
+          <span>{t('info.area')}</span>
           <span className="font-mono text-foreground dark:text-white">{area.toFixed(2)} m²</span>
         </div>
       </PanelSection>
 
-      <PanelSection title="Holes">
+      <PanelSection title={t('holes.heading')}>
         {node.holes && node.holes.length > 0 ? (
           <div className="flex flex-col gap-1 pb-2">
             {node.holes.map((hole, index) => {
@@ -336,7 +344,8 @@ export function CeilingPanel() {
                 editingHole?.nodeId === selectedId && editingHole?.holeIndex === index
               const source = node.holeMetadata?.[index]?.source ?? 'manual'
               const isAutoHole = source !== 'manual'
-              const autoLabel = source === 'elevator' ? 'Auto elevator cutout' : 'Auto stair cutout'
+              const autoLabel =
+                source === 'elevator' ? t('holes.autoElevator') : t('holes.autoStair')
               return (
                 <div
                   className={`flex items-center justify-between rounded-lg border p-2 transition-colors ${
@@ -350,18 +359,18 @@ export function CeilingPanel() {
                     <p
                       className={`font-medium text-xs ${isEditing ? 'text-primary' : 'text-foreground dark:text-white'}`}
                     >
-                      Hole {index + 1} {isEditing && '(Editing)'}
+                      {t('holes.hole', { n: index + 1 })} {isEditing && t('holes.editing')}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {holeArea.toFixed(2)} m² · {hole.length} pts ·{' '}
-                      {isAutoHole ? autoLabel : 'Manual'}
+                      {holeArea.toFixed(2)} m² · {t('holes.points', { n: hole.length })} ·{' '}
+                      {isAutoHole ? autoLabel : t('holes.manual')}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
                     {isEditing ? (
                       <ActionButton
                         className="h-7 bg-primary text-primary-foreground hover:bg-primary/90"
-                        label="Done"
+                        label={t('holes.done')}
                         onClick={() => {
                           useInteractionScope
                             .getState()
@@ -374,7 +383,7 @@ export function CeilingPanel() {
                       />
                     ) : isAutoHole ? (
                       <div className="rounded-md bg-black/4 dark:bg-[#2C2C2E] px-2 py-1 text-[10px] text-muted-foreground">
-                        Auto
+                        {t('holes.auto')}
                       </div>
                     ) : canEditHoles ? (
                       <>
@@ -400,7 +409,9 @@ export function CeilingPanel() {
             })}
           </div>
         ) : (
-          <div className="px-2 py-3 text-center text-muted-foreground text-xs">No holes</div>
+          <div className="px-2 py-3 text-center text-muted-foreground text-xs">
+            {t('holes.none')}
+          </div>
         )}
 
         <div className="px-1 pt-1 pb-1">
@@ -409,7 +420,7 @@ export function CeilingPanel() {
             <ShapeChoice
               className="px-1 text-muted-foreground text-xs"
               disabled={!canEditHoles}
-              label="Cut opening"
+              label={t('holes.cutOpening')}
               onPick={(shape) => startOpeningDraft(roomZoneId, 'ceiling', shape)}
             />
           ) : (
@@ -417,7 +428,7 @@ export function CeilingPanel() {
               className="w-full"
               disabled={!canEditHoles || editingHole?.nodeId === selectedId}
               icon={<Plus className="h-3.5 w-3.5" />}
-              label="Add Hole"
+              label={t('holes.add')}
               onClick={handleAddHole}
             />
           )}
@@ -425,7 +436,11 @@ export function CeilingPanel() {
       </PanelSection>
 
       <ActionGroup>
-        <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+        <ActionButton
+          icon={<Move className="h-3.5 w-3.5" />}
+          label={t('move')}
+          onClick={handleMove}
+        />
       </ActionGroup>
     </PanelWrapper>
   )

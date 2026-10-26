@@ -13,15 +13,35 @@ import {
   formatAreaLabel,
   formatLinearMeasurement,
   formatVolumeLabel,
+  type MessageKey,
   PanelSection,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PanelSelect } from '../shared/panel-fields'
+import { messages } from './messages'
 import { buildingUnitsForZone } from './unit-membership'
 
 type Point2D = readonly [number, number]
+
+// The sentences core words a quantity with, by their English source.
+const QUANTITY_TEXT: Record<string, MessageKey<typeof messages>> = {
+  'No slab coverage proves this zone.': 'quantity.noSlab',
+  'No ceiling coverage proves this zone.': 'quantity.noCeiling',
+  'Slabs covering this zone have different elevations.': 'quantity.slabsDiffer',
+  'Ceilings covering this zone have different heights.': 'quantity.ceilingsDiffer',
+  'A surface opening removes this zone.': 'quantity.openingRemoves',
+  'A surface opening crosses the zone boundary.': 'quantity.openingCrosses',
+  'The room enclosure is open.': 'quantity.enclosureOpen',
+  'No indoor-facing wall surface is proven within this zone.': 'quantity.noWalls',
+  'The matching ceiling is not above the slab surface.': 'quantity.ceilingBelow',
+  'Gross indoor-facing wall surface within this zone, including both sides of interior partitions.':
+    'quantity.wallNote',
+  'Zone floor surface proven by compatible slab coverage, after openings.': 'quantity.floorNote',
+  'Proven zone floor area multiplied by clear ceiling height.': 'quantity.volumeNote',
+}
 
 function ZonePlanSketch({
   edgeLengths,
@@ -34,10 +54,11 @@ function ZonePlanSketch({
   polygon: readonly Point2D[]
   unit: 'metric' | 'imperial'
 }) {
+  const t = useT(messages)
   if (polygon.length < 3) {
     return (
       <div className="flex h-28 items-center justify-center rounded-md border border-border/50 text-muted-foreground text-xs">
-        Zone boundary unavailable
+        {t('plan.unavailable')}
       </div>
     )
   }
@@ -66,7 +87,7 @@ function ZonePlanSketch({
 
   return (
     <svg
-      aria-label="Top view with zone edge dimensions"
+      aria-label={t('plan.label')}
       className="h-auto w-full rounded-md border border-cyan-950/20 bg-[#f8faf7]"
       role="img"
       viewBox={`0 0 ${viewWidth} ${viewHeight}`}
@@ -140,23 +161,29 @@ function QuantityRow({
   label: string
   quantity: ZoneQuantityValue
 }) {
+  const t = useT(messages)
+  const text = (value: string | undefined) => {
+    const key = value ? QUANTITY_TEXT[value] : undefined
+    return key ? t(key) : value
+  }
   return (
     <div className="rounded-md border border-border/50 bg-background/35 px-2.5 py-2">
       <div className="flex items-baseline gap-2">
         <span className="font-mono font-semibold text-cyan-600 text-[10px]">{abbreviation}</span>
         <span className="text-muted-foreground text-xs">{label}</span>
         <span className="ml-auto font-mono font-medium text-foreground text-xs tabular-nums">
-          {quantity.status === 'available' ? format(quantity.value) : 'Not proven'}
+          {quantity.status === 'available' ? format(quantity.value) : t('quantity.notProven')}
         </span>
       </div>
       <div className="mt-1 text-[10px] text-muted-foreground leading-snug">
-        {quantity.status === 'available' ? quantity.note : quantity.reason}
+        {text(quantity.status === 'available' ? quantity.note : quantity.reason)}
       </div>
     </div>
   )
 }
 
 function ZoneUnitPanel({ zone }: { zone: ZoneNode }) {
+  const t = useT(messages)
   const units = useScene(useShallow((state) => buildingUnitsForZone(zone, (id) => state.nodes[id])))
   if (units.length === 0) return null
 
@@ -181,13 +208,13 @@ function ZoneUnitPanel({ zone }: { zone: ZoneNode }) {
   }
 
   return (
-    <PanelSection title="Unit">
+    <PanelSection title={t('unit.heading')}>
       <PanelSelect
-        label="Unit"
+        label={t('unit.heading')}
         onChange={handleChange}
         options={[
-          { label: 'None', value: '' },
-          ...units.map((unit) => ({ label: unit.name || 'Unit', value: unit.id })),
+          { label: t('unit.none'), value: '' },
+          ...units.map((unit) => ({ label: unit.name || t('unit.fallback'), value: unit.id })),
         ]}
         value={current?.id ?? ''}
       />
@@ -196,6 +223,7 @@ function ZoneUnitPanel({ zone }: { zone: ZoneNode }) {
 }
 
 export default function ZoneQuantitiesPanel() {
+  const t = useT(messages)
   const selectedZoneId = useViewer((state) => state.selection.zoneId)
   const unit = useViewer((state) => state.unit)
   const setUnit = useViewer((state) => state.setUnit)
@@ -231,25 +259,31 @@ export default function ZoneQuantitiesPanel() {
     <>
       <ZoneUnitPanel zone={effectiveZone} />
       <PanelSection
-        title={effectiveZone.spaceRole === 'room' ? 'Room quantities' : 'Zone quantities'}
+        title={effectiveZone.spaceRole === 'room' ? t('quantities.room') : t('quantities.zone')}
       >
         <div className="overflow-hidden rounded-md border border-cyan-950/20 bg-[#f8faf7] text-slate-950">
           <div className="flex items-center border-cyan-950/15 border-b px-2.5 py-2">
             <span className="font-semibold text-[11px]">{effectiveZone.name}</span>
             <span className="ml-auto rounded-full border border-cyan-800/25 bg-cyan-50 px-2 py-0.5 text-cyan-900 text-[9px]">
-              {report.classification === 'enclosed-room' ? 'Enclosed room' : 'Footprint only'}
+              {report.classification === 'enclosed-room'
+                ? t('quantities.enclosed')
+                : t('quantities.footprint')}
             </span>
           </div>
           <div className="flex items-baseline gap-2 px-2.5 py-2 font-mono text-[10px]">
+            {/* i18n-ignore: quantity symbol */}
             <span className="text-cyan-800">A</span>
             <button
               className="rounded-sm underline decoration-dotted underline-offset-2 hover:text-cyan-800"
               onClick={() => setUnit(unit === 'imperial' ? 'metric' : 'imperial')}
-              title={unit === 'imperial' ? 'Show in m²' : 'Show in ft²'}
+              title={
+                unit === 'imperial' ? t('quantities.showMetric') : t('quantities.showImperial')
+              }
               type="button"
             >
               {formatAreaLabel(report.footprintArea, unit, 2)}
             </button>
+            {/* i18n-ignore: quantity symbol */}
             <span className="ml-auto text-slate-600">P</span>
             <span>{formatLinearMeasurement(report.perimeter, unit, metricNotation)}</span>
           </div>
@@ -266,19 +300,19 @@ export default function ZoneQuantitiesPanel() {
           <QuantityRow
             abbreviation="Aw"
             format={(value) => formatAreaLabel(value, unit, 2)}
-            label="Wall surface"
+            label={t('quantities.wallSurface')}
             quantity={report.wallSurface}
           />
           <QuantityRow
             abbreviation="Af"
             format={(value) => formatAreaLabel(value, unit, 2)}
-            label="Floor surface"
+            label={t('quantities.floorSurface')}
             quantity={report.floorSurface}
           />
           <QuantityRow
             abbreviation="V"
             format={(value) => formatVolumeLabel(value, unit, 2)}
-            label="Volume"
+            label={t('quantities.volume')}
             quantity={report.volume}
           />
         </div>

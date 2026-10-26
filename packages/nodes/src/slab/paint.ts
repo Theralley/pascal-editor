@@ -30,6 +30,7 @@ import {
   withFloorStepOverride,
   type ZoneNode,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import type { Material, Mesh } from 'three'
 import {
   buildSlotPreviewMaterial,
@@ -40,6 +41,7 @@ import {
   resolveSlotPaintMaterialRef,
 } from '../shared/slot-paint'
 import { swapPreviewMaterial } from '../shared/swap-preview-material'
+import { messages } from './messages'
 
 /**
  * Slab paint on the unified slot model. A plain slab exposes two faces —
@@ -480,18 +482,22 @@ export const slabPaint: PaintCapability & {
   ...base,
   // "Steps · Kitchen": the room a floor finish belongs to, by name.
   roleLabel: (_node, role) => {
-    if (role === 'foundation') return 'Foundation'
+    if (role === 'foundation') return translate(messages, 'role.foundation')
     const side = sideRole(role)
     const zoneId = side?.zoneId ?? parseRoomFinishRole(role)?.zoneId
     if (!zoneId) return null
-    const part = side ? (side.field === 'floorStepFinish' ? 'Steps' : 'Floor edge') : 'Floor'
-    const room = zoneOf(zoneId)?.name?.trim() || 'Room'
+    const part = translate(
+      messages,
+      side ? (side.field === 'floorStepFinish' ? 'role.steps' : 'role.floorEdge') : 'role.floor',
+    )
+    const room = zoneOf(zoneId)?.name?.trim() || translate(messages, 'role.room')
     if (!side?.key) return `${part} · ${room}`
     const through = useScene.getState().nodes[side.key as AnyNodeId]
     const label =
       through?.type === 'zone'
-        ? through.name?.trim() || 'Room'
-        : (through as { name?: string } | undefined)?.name?.trim() || 'Doorway'
+        ? through.name?.trim() || translate(messages, 'role.room')
+        : (through as { name?: string } | undefined)?.name?.trim() ||
+          translate(messages, 'role.doorway')
     return `${part} · ${room} · ${label}`
   },
   buildPatch: (args: PaintPatchArgs) =>

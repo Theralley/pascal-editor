@@ -42,6 +42,7 @@ import {
   WINDOW_PLAIN_PLACE_VISIBLE,
 } from './placement'
 import { WindowNode } from './schema'
+import { windowTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
@@ -382,6 +383,8 @@ export const windowDefinition: NodeDefinition<typeof WindowNode> = {
     paletteSection: 'structure',
     paletteOrder: 60,
   },
+
+  translations: windowTranslations,
 
   mcp: {
     description: 'A window mounted on a wall, with type / dimensions / opening options.',
