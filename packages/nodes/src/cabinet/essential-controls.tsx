@@ -1,6 +1,7 @@
 'use client'
 
-import { PanelSection, SegmentedControl } from '@pascal-app/editor'
+import { PanelSection, SegmentedControl, useT } from '@pascal-app/editor'
+import { messages } from './messages'
 import {
   type CabinetCompartment,
   type CabinetCooktopCompartmentType,
@@ -23,6 +24,17 @@ export function CabinetEssentialControls({
   width: number
   onReplace: (index: number, next: CabinetCompartment) => void
 }) {
+  const t = useT(messages)
+  const itemLabel = (type: CabinetCompartment['type']) =>
+    t(
+      type === 'door'
+        ? 'doorDirection'
+        : type === 'sink'
+          ? 'sinkLayout'
+          : isFridgeCompartmentType(type)
+            ? 'fridgeType'
+            : 'cooktopType',
+    )
   const entries = stack
     .map((part, index) => ({ part, index }))
     .filter(
@@ -34,27 +46,22 @@ export function CabinetEssentialControls({
     )
   if (!entries.length) return null
   return (
-    <PanelSection title="Item options">
+    <PanelSection title={t('itemOptions')}>
       {entries.map(({ part, index }) => (
         <div key={part.id} className="space-y-2 pb-2">
           <div className="text-xs text-muted-foreground">
-            {part.type === 'door'
-              ? 'Door direction'
-              : part.type === 'sink'
-                ? 'Sink layout'
-                : isFridgeCompartmentType(part.type)
-                  ? 'Fridge type'
-                  : 'Cooktop type'}
-            {entries.length > 1 ? ` · ${index + 1}` : ''}
+            {entries.length > 1
+              ? t('itemOptionN', { label: itemLabel(part.type), n: index + 1 })
+              : itemLabel(part.type)}
           </div>
           {part.type === 'door' && (
             <SegmentedControl
               value={compartmentDoorType(part, width)}
               options={[
-                { value: 'single-left', label: 'Left hinge' },
-                { value: 'single-right', label: 'Right hinge' },
-                { value: 'double', label: 'Double' },
-                { value: 'glass', label: 'Glass' },
+                { value: 'single-left', label: t('leftHinge') },
+                { value: 'single-right', label: t('rightHinge') },
+                { value: 'double', label: t('double') },
+                { value: 'glass', label: t('glass') },
               ]}
               onChange={(value) =>
                 onReplace(
@@ -70,8 +77,8 @@ export function CabinetEssentialControls({
             <SegmentedControl
               value={compartmentSinkLayout(part)}
               options={[
-                { value: 'single', label: 'Single' },
-                { value: 'double', label: 'Double' },
+                { value: 'single', label: t('single') },
+                { value: 'double', label: t('double') },
                 { value: 'double-offset', label: '60/40' },
               ]}
               onChange={(value) =>
@@ -88,10 +95,10 @@ export function CabinetEssentialControls({
             <SegmentedControl
               value={part.type}
               options={[
-                { value: 'fridge-single', label: 'Single' },
-                { value: 'fridge-double', label: 'Double' },
-                { value: 'fridge-top-freezer', label: 'Top freezer' },
-                { value: 'fridge-bottom-freezer', label: 'Bottom freezer' },
+                { value: 'fridge-single', label: t('single') },
+                { value: 'fridge-double', label: t('double') },
+                { value: 'fridge-top-freezer', label: t('topFreezer2') },
+                { value: 'fridge-bottom-freezer', label: t('bottomFreezer2') },
               ]}
               onChange={(value) =>
                 onReplace(
@@ -105,8 +112,8 @@ export function CabinetEssentialControls({
             <SegmentedControl
               value={part.type}
               options={[
-                { value: 'cooktop-gas', label: 'Gas' },
-                { value: 'cooktop-induction', label: 'Induction' },
+                { value: 'cooktop-gas', label: t('gas') },
+                { value: 'cooktop-induction', label: t('induction') },
               ]}
               onChange={(value) =>
                 onReplace(

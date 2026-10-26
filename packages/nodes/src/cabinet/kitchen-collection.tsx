@@ -1,8 +1,9 @@
 'use client'
 
-import { BuildPanelSection, BuildToolGrid, BuildToolTile } from '@pascal-app/editor'
+import { BuildPanelSection, BuildToolGrid, BuildToolTile, useT } from '@pascal-app/editor'
 import { useId, useState } from 'react'
 import { KITCHEN_ITEMS, kitchenItemMatches } from './kitchen-catalog'
+import { messages } from './messages'
 import useCabinetPlacementStatus from './placement-status'
 import type { CabinetPresetId } from './presets'
 
@@ -33,6 +34,7 @@ export function KitchenCollection({
   query?: string
   includeWall?: boolean
 }) {
+  const t = useT(messages)
   const [search, setSearch] = useState('')
   const placementTarget = useCabinetPlacementStatus((state) => state.target)
   const inputId = useId()
@@ -50,47 +52,48 @@ export function KitchenCollection({
       {query === undefined && (
         <div>
           <label htmlFor={inputId} className="sr-only">
-            Search kitchen items
+            {t('searchKitchenItems')}
           </label>
           <input
             id={inputId}
             type="search"
-            placeholder="Search fridge, sink, cabinets…"
+            placeholder={t('searchFridgeSinkCabinets')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
       )}
-      {(['Cabinets', 'Appliances & fixtures'] as const).map((group) => {
-        const entries = items.filter((item) => item.group === group)
-        return (
-          entries.length > 0 && (
-            <BuildPanelSection
-              key={group}
-              id={`kitchen-${group === 'Cabinets' ? 'cabinets' : 'appliances'}`}
-              title={group}
-            >
-              <BuildToolGrid columns={3}>
-                {entries.map((item) => (
-                  <BuildToolTile
-                    key={item.id}
-                    aria-label={`Choose ${item.label}`}
-                    active={activeId === item.id}
-                    tone="neutral"
-                    iconSrc={`/icons/kitchen/${item.id}.webp`}
-                    label={item.label}
-                    onClick={() => onSelect(item.id)}
-                  />
-                ))}
-              </BuildToolGrid>
-            </BuildPanelSection>
+      {(['Cabinets', 'Appliances & fixtures'] as const) // i18n-ignore: group ids
+        .map((group) => {
+          const entries = items.filter((item) => item.group === group)
+          return (
+            entries.length > 0 && (
+              <BuildPanelSection
+                key={group}
+                id={`kitchen-${group === 'Cabinets' ? 'cabinets' : 'appliances'}`}
+                title={t(group === 'Cabinets' ? 'groupCabinets' : 'groupAppliances')}
+              >
+                <BuildToolGrid columns={3}>
+                  {entries.map((item) => (
+                    <BuildToolTile
+                      key={item.id}
+                      aria-label={t('chooseItem', { label: t(`preset.${item.id}`) })}
+                      active={activeId === item.id}
+                      tone="neutral"
+                      iconSrc={`/icons/kitchen/${item.id}.webp`}
+                      label={t(`preset.${item.id}`)}
+                      onClick={() => onSelect(item.id)}
+                    />
+                  ))}
+                </BuildToolGrid>
+              </BuildPanelSection>
+            )
           )
-        )
-      })}
+        })}
       {!items.length && (
         <p role="status" className="text-xs text-muted-foreground">
-          No kitchen items match. Try “fridge”, “sink”, or “cabinet”.
+          {t('noKitchenItemsMatchTryFridgeSinkOrCabine')}
         </p>
       )}
     </div>

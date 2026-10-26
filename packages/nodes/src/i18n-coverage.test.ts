@@ -8,8 +8,6 @@ import { builtinPlugin } from './index'
  * test below fails for a pending kind that no longer needs it, so the list can only shrink.
  */
 const PENDING = new Set([
-  'cabinet',
-  'cabinet-module',
 ])
 
 /** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */

@@ -19,6 +19,8 @@ export type CabinetPlanningIssue = {
   severity: 'error' | 'warning'
   message: string
   nodeIds: string[]
+  /** Reads `message` in another language: the panel builds its text from these. */
+  detail: { variant?: 'wall'; name: string; nextName?: string; mm?: number }
 }
 
 export type CabinetPlanningReport = {
@@ -38,8 +40,9 @@ function issue(
   severity: CabinetPlanningIssue['severity'],
   message: string,
   nodeIds: string[],
+  detail: CabinetPlanningIssue['detail'],
 ): CabinetPlanningIssue {
-  return { code, severity, message, nodeIds }
+  return { code, severity, message, nodeIds, detail }
 }
 
 function isFiller(module: CabinetModuleNode): boolean {
@@ -75,6 +78,7 @@ export function validateCabinetRun(
           'error',
           `${module.name || 'Cabinet module'} is shorter than its fixed compartment stack.`,
           [module.id],
+          { name: module.name ?? '' },
         ),
       )
     }
@@ -86,6 +90,7 @@ export function validateCabinetRun(
           'error',
           `${module.name || 'Cabinet module'} must be a tall module in a tall run.`,
           [run.id, module.id],
+          { name: module.name ?? '' },
         ),
       )
     } else if (run.runTier === 'wall' && module.cabinetType === 'tall') {
@@ -95,6 +100,7 @@ export function validateCabinetRun(
           'error',
           `${module.name || 'Cabinet module'} cannot be a tall module in a wall run.`,
           [run.id, module.id],
+          { variant: 'wall', name: module.name ?? '' },
         ),
       )
     }
@@ -106,6 +112,7 @@ export function validateCabinetRun(
           'warning',
           `${module.name || 'Top cabinet'} is too short to be practical storage; use trim instead.`,
           [module.id],
+          { name: module.name ?? '' },
         ),
       )
     }
@@ -119,6 +126,7 @@ export function validateCabinetRun(
             'warning',
             `${module.name || 'Cabinet module'} extends ${(overflow * 1000).toFixed(0)} mm above the ceiling.`,
             [run.id, module.id],
+            { name: module.name ?? '', mm: Math.round(overflow * 1000) },
           ),
         )
       }
@@ -133,6 +141,7 @@ export function validateCabinetRun(
           'error',
           `${module.name || 'Cabinet module'} overlaps ${next.name || 'the next cabinet module'}.`,
           [module.id, next.id],
+          { name: module.name ?? '', nextName: next.name ?? '' },
         ),
       )
     } else if (gap > tolerance && !isFiller(module) && !isFiller(next)) {
@@ -142,6 +151,7 @@ export function validateCabinetRun(
           'warning',
           `There is an unfilled ${(gap * 1000).toFixed(0)} mm gap between cabinet modules.`,
           [module.id, next.id],
+          { name: module.name ?? '', mm: Math.round(gap * 1000) },
         ),
       )
     }

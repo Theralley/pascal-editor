@@ -9,17 +9,20 @@ import type {
 import { createSceneApi, useScene } from '@pascal-app/core'
 import {
   ActionButton,
+  type MessageKey,
   PanelSection,
   PanelWrapper,
   SegmentedControl,
   SliderControl,
   usePlacementNotice,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { AlertTriangle, Pause, Play, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CompartmentCard } from './compartment-card'
+import { cabinetDisplayName } from './display-name'
 import { CabinetEssentialControls } from './essential-controls'
 import {
   animateCabinetOperationState,
@@ -30,13 +33,14 @@ import {
 import { kitchenPresetForModule } from './kitchen-catalog'
 import { KitchenCollection } from './kitchen-collection'
 import { KitchenModuleActions } from './kitchen-module-actions'
+import { messages } from './messages'
 import { cabinetModulePanelContext } from './panel-context'
 import {
   cabinetModuleSupportsPresets,
   cabinetModuleSupportsTopFinish,
   cabinetModuleUsesFixedApplianceWidth,
 } from './panel-visibility'
-import { CABINET_PRESETS, type CabinetPresetId, cabinetPresetById } from './presets'
+import { CABINET_PRESETS, type CabinetPresetId } from './presets'
 import {
   CABINET_REVEAL_GAPS,
   type CabinetRevealGapId,
@@ -79,7 +83,7 @@ import {
   stackForCabinet,
 } from './stack'
 import { resolveCompartmentTransition } from './stack-transitions'
-import { validateCabinetRun } from './validation'
+import { type CabinetPlanningIssue, validateCabinetRun } from './validation'
 import {
   CABINET_WALL_HEIGHT_PRESETS,
   type CabinetWallHeightPresetId,
@@ -93,49 +97,71 @@ import {
   cabinetStandardWidthId,
 } from './widths'
 
+type CabinetMessageKey = MessageKey<typeof messages>
+
 const HANDLE_STYLE_OPTIONS = [
-  { value: 'bar', label: 'Bar' },
-  { value: 'knob', label: 'Knob' },
-  { value: 'cutout', label: 'Cutout' },
-  { value: 'hole', label: 'Hole' },
-  { value: 'none', label: 'None' },
-] as const
+  { value: 'bar', labelKey: 'bar' },
+  { value: 'knob', labelKey: 'knob' },
+  { value: 'cutout', labelKey: 'cutout' },
+  { value: 'hole', labelKey: 'hole' },
+  { value: 'none', labelKey: 'none' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const HANDLE_POSITION_OPTIONS = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'top', label: 'Top' },
-  { value: 'center', label: 'Center' },
-] as const
+  { value: 'auto', labelKey: 'auto' },
+  { value: 'top', labelKey: 'top' },
+  { value: 'center', labelKey: 'center' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const FRONT_OVERLAY_OPTIONS = [
-  { value: 'full', label: 'Overlay' },
-  { value: 'inset', label: 'Inset' },
-] as const
+  { value: 'full', labelKey: 'overlay' },
+  { value: 'inset', labelKey: 'inset' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const FRONT_STYLE_OPTIONS = [
-  { value: 'slab', label: 'Slab' },
-  { value: 'shaker', label: 'Shaker' },
-  { value: 'raised-arch', label: 'Raised Arch' },
-] as const
+  { value: 'slab', labelKey: 'slab' },
+  { value: 'shaker', labelKey: 'shaker' },
+  { value: 'raised-arch', labelKey: 'raisedArch' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const CABINET_TIER_OPTIONS = [
-  { value: 'base', label: 'Base Cabinet' },
-  { value: 'tall', label: 'Tall Cabinet' },
-] as const
+  { value: 'base', labelKey: 'baseCabinet' },
+  { value: 'tall', labelKey: 'tallCabinet' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const TOP_FINISH_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'top-cabinet', label: 'Top Cabinet' },
-  { value: 'trim', label: 'Trim / Soffit' },
-] as const
+  { value: 'none', labelKey: 'none' },
+  { value: 'top-cabinet', labelKey: 'topCabinet' },
+  { value: 'trim', labelKey: 'trimSoffit' },
+] as const satisfies readonly { value: string; labelKey: CabinetMessageKey }[]
 
 const EMPTY_MODULES: CabinetModuleNodeType[] = []
 const EMPTY_MODULE_IDS: AnyNodeId[] = []
 
-const REFLOW_REJECTED_MESSAGE =
-  'No space in this run. No base cabinet can shrink enough to fit this item.'
-
 export default function CabinetPanel() {
+  const t = useT(messages)
+  const planningIssueText = (planningIssue: CabinetPlanningIssue) => {
+    const { variant, name, nextName, mm } = planningIssue.detail
+    const vars = {
+      name: name ? cabinetDisplayName(name) : t('cabinetModule'),
+      next: nextName ? cabinetDisplayName(nextName) : t('nextCabinetModule'),
+      mm: mm ?? 0,
+    }
+    switch (planningIssue.code) {
+      case 'stack-too-short':
+        return t('planningStackTooShort', vars)
+      case 'tier-mismatch':
+        return t(variant === 'wall' ? 'planningTallInWallRun' : 'planningTallRequired', vars)
+      case 'top-cabinet-too-short':
+        return t('planningTopTooShort', { name: name ? cabinetDisplayName(name) : t('topCabinet') })
+      case 'ceiling-overflow':
+        return t('planningCeilingOverflow', vars)
+      case 'module-overlap':
+        return t('planningOverlap', vars)
+      case 'module-gap':
+        return t('planningGap', vars)
+    }
+  }
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const placementNotice = usePlacementNotice(selectedId)
   const setSelection = useViewer((s) => s.setSelection)
@@ -191,8 +217,8 @@ export default function CabinetPanel() {
     )
   })
   const showReflowRejected = useCallback(() => {
-    setReflowNotice({ message: REFLOW_REJECTED_MESSAGE })
-  }, [])
+    setReflowNotice({ message: t('reflowRejected') })
+  }, [t])
 
   useEffect(() => {
     if (selectedId) setReflowNotice(null)
@@ -605,7 +631,7 @@ export default function CabinetPanel() {
     return (
       <PanelWrapper
         icon="/icons/item.webp"
-        title="Wall filler"
+        title={t('wallFiller')}
         onBack={backToRun}
         onClose={close}
         width={320}
@@ -615,13 +641,10 @@ export default function CabinetPanel() {
             {placementNotice.line}
           </p>
         )}
-        <PanelSection title="Dimensions">
-          <p className="px-2 pb-3 text-xs text-muted-foreground">
-            Solid matching front between the cabinet and wall. Countertop and toe-kick continue
-            across this filler.
-          </p>
+        <PanelSection title={t('dimensions')}>
+          <p className="px-2 pb-3 text-xs text-muted-foreground">{t('wallFillerNote')}</p>
           <SliderControl
-            label="Width"
+            label={t('width')}
             value={node.width}
             min={0.05}
             max={3}
@@ -630,7 +653,7 @@ export default function CabinetPanel() {
             onChange={(width) => updateNode({ width })}
           />
           <SliderControl
-            label="Height"
+            label={t('height')}
             value={node.carcassHeight}
             min={0.4}
             max={2.4}
@@ -650,8 +673,8 @@ export default function CabinetPanel() {
       onClose={close}
       title={
         node.type === 'cabinet-module'
-          ? cabinetPresetById(kitchenPresetForModule(node, parentRun)).label
-          : node.name || 'Kitchen run'
+          ? t(`preset.${kitchenPresetForModule(node, parentRun)}`)
+          : cabinetDisplayName(node.name || 'Kitchen run')
       }
       width={320}
     >
@@ -660,11 +683,11 @@ export default function CabinetPanel() {
           {placementNotice.line}
         </p>
       )}
-      <PanelSection title="Dimensions">
+      <PanelSection title={t('dimensions')}>
         {node.type === 'cabinet-module' && !isHoodOnlyNode && (
           <div className="space-y-1 px-1 pb-2">
             <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Standard width
+              {t('standardWidth')}
             </div>
             <SegmentedControl
               disabled={usesFixedApplianceWidth}
@@ -685,7 +708,7 @@ export default function CabinetPanel() {
         {isWallCabinetModule && !isHoodOnlyNode && (
           <div className="space-y-1 px-1 pb-2">
             <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Height preset
+              {t('heightPreset')}
             </div>
             <SegmentedControl
               mixed={wallHeightPreset === 'custom'}
@@ -702,12 +725,12 @@ export default function CabinetPanel() {
               value={wallHeightPreset === 'custom' ? '18' : wallHeightPreset}
             />
             <p className="px-1 pt-1 text-[10px] leading-4 text-muted-foreground">
-              Common wall-cabinet heights. Use the slider below for a custom height.
+              {t('commonWallCabinetHeightsUseTheSliderBelo')}
             </p>
           </div>
         )}
         <SliderControl
-          label="Width"
+          label={t('width')}
           max={3}
           min={0.3}
           onChange={(value) => updateNode({ width: value })}
@@ -719,7 +742,7 @@ export default function CabinetPanel() {
         {!isHoodOnlyNode && (
           <>
             <SliderControl
-              label="Depth"
+              label={t('depth')}
               max={1.2}
               min={0.3}
               onChange={(value) => updateNode({ depth: value })}
@@ -729,7 +752,7 @@ export default function CabinetPanel() {
               value={node.depth}
             />
             <SliderControl
-              label="Height"
+              label={t('height')}
               max={
                 node.type === 'cabinet-module' && resolveCabinetType(node, parentRun) === 'tall'
                   ? 2.4
@@ -754,7 +777,7 @@ export default function CabinetPanel() {
 
       {planningReport &&
         (planningReport.errors.length > 0 || planningReport.warnings.length > 0) && (
-          <PanelSection title="Planning checks">
+          <PanelSection title={t('planningChecks')}>
             <div className="space-y-1 px-1 pb-2 text-xs leading-5">
               {planningReport.errors.map((planningIssue) => (
                 <div
@@ -762,7 +785,7 @@ export default function CabinetPanel() {
                   key={`${planningIssue.severity}-${planningIssue.code}-${planningIssue.nodeIds.join('-')}`}
                 >
                   <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0" />
-                  <span>{planningIssue.message}</span>
+                  <span>{planningIssueText(planningIssue)}</span>
                 </div>
               ))}
               {planningReport.warnings.map((planningIssue) => (
@@ -771,7 +794,7 @@ export default function CabinetPanel() {
                   key={`${planningIssue.severity}-${planningIssue.code}-${planningIssue.nodeIds.join('-')}`}
                 >
                   <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0" />
-                  <span>{planningIssue.message}</span>
+                  <span>{planningIssueText(planningIssue)}</span>
                 </div>
               ))}
             </div>
@@ -781,34 +804,34 @@ export default function CabinetPanel() {
       {!isHoodOnlyNode && (
         <>
           {isFridgeModule && (
-            <PanelSection title="Appliance front">
+            <PanelSection title={t('applianceFront')}>
               <div className="space-y-2 px-1 pb-2">
                 <div>
                   <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Panel-ready
+                    {t('panelReady')}
                   </div>
                   <SegmentedControl
                     onChange={(value) => updateNode({ panelReady: value === 'on' })}
                     options={[
-                      { value: 'off', label: 'Appliance' },
-                      { value: 'on', label: 'Cabinet panel' },
+                      { value: 'off', label: t('appliance') },
+                      { value: 'on', label: t('cabinetPanel') },
                     ]}
                     value={node.panelReady ? 'on' : 'off'}
                   />
                 </div>
                 {node.panelReady && (
                   <p className="px-1 text-xs leading-5 text-muted-foreground">
-                    Uses the cabinet front style, reveal, handle, and front material settings below.
+                    {t('usesTheCabinetFrontStyleRevealHandleAndF')}
                   </p>
                 )}
               </div>
             </PanelSection>
           )}
-          <PanelSection title="Finish">
+          <PanelSection title={t('finish')}>
             <div className="space-y-2 px-1 pb-2">
               <div>
                 <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Style
+                  {t('style')}
                 </div>
                 <SegmentedControl
                   onChange={(value) =>
@@ -816,7 +839,7 @@ export default function CabinetPanel() {
                   }
                   options={FRONT_STYLE_OPTIONS.map((option) => ({
                     value: option.value,
-                    label: option.label,
+                    label: t(option.labelKey),
                   }))}
                   value={node.frontStyle ?? 'slab'}
                 />
@@ -824,11 +847,11 @@ export default function CabinetPanel() {
             </div>
           </PanelSection>
 
-          <PanelSection title="Handles">
+          <PanelSection title={t('handles')}>
             <div className="space-y-2 px-1 pb-2">
               <div>
                 <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Style
+                  {t('style')}
                 </div>
                 <SegmentedControl
                   onChange={(value) =>
@@ -836,7 +859,7 @@ export default function CabinetPanel() {
                   }
                   options={HANDLE_STYLE_OPTIONS.map((option) => ({
                     value: option.value,
-                    label: option.label,
+                    label: t(option.labelKey),
                   }))}
                   value={node.handleStyle}
                 />
@@ -844,7 +867,7 @@ export default function CabinetPanel() {
               {(node.handleStyle === 'bar' || node.handleStyle === 'knob') && (
                 <div>
                   <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Position
+                    {t('position')}
                   </div>
                   <SegmentedControl
                     onChange={(value) =>
@@ -852,7 +875,7 @@ export default function CabinetPanel() {
                     }
                     options={HANDLE_POSITION_OPTIONS.map((option) => ({
                       value: option.value,
-                      label: option.label,
+                      label: t(option.labelKey),
                     }))}
                     value={node.handlePosition ?? 'auto'}
                   />
@@ -865,10 +888,10 @@ export default function CabinetPanel() {
       {node.type === 'cabinet-module' &&
         parentRun?.type === 'cabinet' &&
         cabinetModuleSupportsPresets(node) && (
-          <PanelSection title="Kitchen">
-            <ActionButton label="Edit kitchen run" onClick={backToRun} />
+          <PanelSection title={t('kitchen')}>
+            <ActionButton label={t('editKitchenRun')} onClick={backToRun} />
             <p className="px-1 py-2 text-xs text-muted-foreground">
-              Shared countertop, plinth, and finishes
+              {t('sharedCountertopPlinthAndFinishes')}
             </p>
             {!parentIsModule && parentRun.runTier !== 'wall' && (
               <KitchenModuleActions
@@ -880,7 +903,7 @@ export default function CabinetPanel() {
             )}
             {(parentIsModule || parentRun.runTier === 'wall') && (
               <details className="px-1 py-2 text-xs">
-                <summary className="cursor-pointer">Replace with…</summary>
+                <summary className="cursor-pointer">{t('replaceWith')}</summary>
                 <KitchenCollection includeWall={false} onSelect={applyPreset} />
               </details>
             )}
@@ -889,16 +912,16 @@ export default function CabinetPanel() {
 
       <details className="group border-t border-border/50">
         <summary className="cursor-pointer px-3 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Advanced
+          {t('advanced')}
         </summary>
         <p className="px-3 pb-2 text-xs text-muted-foreground">
-          Cabinet construction, compartments, and opening preview.
+          {t('cabinetConstructionCompartmentsAndOpenin')}
         </p>
         {!isHoodOnlyNode && (
-          <PanelSection title="Front construction" defaultExpanded={false}>
+          <PanelSection title={t('frontConstruction')} defaultExpanded={false}>
             <div>
               <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                Mounting
+                {t('mounting')}
               </div>
               <SegmentedControl
                 onChange={(value) =>
@@ -906,14 +929,14 @@ export default function CabinetPanel() {
                 }
                 options={FRONT_OVERLAY_OPTIONS.map((option) => ({
                   value: option.value,
-                  label: option.label,
+                  label: t(option.labelKey),
                 }))}
                 value={node.frontOverlay ?? 'full'}
               />
             </div>
             <div>
               <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                Reveal gap
+                {t('revealGap')}
               </div>
               <SegmentedControl
                 mixed={cabinetRevealGapId(node.frontGap) === 'custom'}
@@ -936,7 +959,7 @@ export default function CabinetPanel() {
           </PanelSection>
         )}
         {node.type === 'cabinet-module' && parentRun?.type === 'cabinet' && !isHoodOnlyNode && (
-          <PanelSection title="Cabinet Type" defaultExpanded={false}>
+          <PanelSection title={t('cabinetType')} defaultExpanded={false}>
             <div className="space-y-2 px-1 pb-2">
               <SegmentedControl
                 onChange={(value) => {
@@ -948,17 +971,17 @@ export default function CabinetPanel() {
                 }}
                 options={CABINET_TIER_OPTIONS.map((option) => ({
                   value: option.value,
-                  label: option.label,
+                  label: t(option.labelKey),
                 }))}
                 value={resolveCabinetType(node, parentRun)}
               />
               {resolveCabinetType(node, parentRun) === 'base' &&
                 (hasWallCabinet ? (
-                  <ActionButton label="Remove wall cabinet" onClick={removeWallCabinet} />
+                  <ActionButton label={t('removeWallCabinet')} onClick={removeWallCabinet} />
                 ) : (
                   <>
-                    <ActionButton label="Add wall cabinet" onClick={addWallCabinetAbove} />
-                    <ActionButton label="Add chimney" onClick={addHoodAbove} />
+                    <ActionButton label={t('addWallCabinet')} onClick={addWallCabinetAbove} />
+                    <ActionButton label={t('addChimney')} onClick={addHoodAbove} />
                   </>
                 ))}
             </div>
@@ -966,11 +989,11 @@ export default function CabinetPanel() {
         )}
 
         {canAddTopFinish && (
-          <PanelSection title="Top / Ceiling" defaultExpanded={false}>
+          <PanelSection title={t('topCeiling')} defaultExpanded={false}>
             <div className="space-y-2 px-1 pb-2">
               <div>
                 <div className="px-1 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Finish
+                  {t('finish')}
                 </div>
                 <SegmentedControl
                   onChange={(value) =>
@@ -982,7 +1005,7 @@ export default function CabinetPanel() {
                     })
                   }
                   options={TOP_FINISH_OPTIONS.map((option) => ({
-                    label: option.label,
+                    label: t(option.labelKey),
                     value: option.value,
                   }))}
                   value={node.topFinish ?? 'none'}
@@ -991,7 +1014,7 @@ export default function CabinetPanel() {
               {node.topFinish !== 'none' && (
                 <>
                   <ActionButton
-                    label="Fill to ceiling"
+                    label={t('fillToCeiling')}
                     onClick={() =>
                       updateNode({
                         topFinishHeight: cabinetCeilingGap(
@@ -1002,7 +1025,7 @@ export default function CabinetPanel() {
                     }
                   />
                   <SliderControl
-                    label="Top height"
+                    label={t('topHeight')}
                     max={1.2}
                     min={0}
                     onChange={(value) => updateNode({ topFinishHeight: value })}
@@ -1012,7 +1035,7 @@ export default function CabinetPanel() {
                     value={node.topFinishHeight}
                   />
                   <SliderControl
-                    label="Top depth"
+                    label={t('topDepth')}
                     max={1.2}
                     min={0.15}
                     onChange={(value) => updateNode({ topFinishDepth: value })}
@@ -1027,8 +1050,7 @@ export default function CabinetPanel() {
                 <div className="flex gap-1.5 px-1 text-xs leading-5 text-red-700 dark:text-red-300">
                   <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0" />
                   <span>
-                    Finished height extends {(ceilingOverflow * 1000).toFixed(0)} mm above the
-                    ceiling.
+                    {t('finishedHeightExtends', { mm: (ceilingOverflow * 1000).toFixed(0) })}
                   </span>
                 </div>
               )}
@@ -1037,11 +1059,11 @@ export default function CabinetPanel() {
         )}
 
         {!isHoodOnlyNode && (
-          <PanelSection title="Open Animation">
+          <PanelSection title={t('openAnimation')}>
             <div className="flex items-center gap-2 px-1">
               <div className="min-w-0 flex-1">
                 <SliderControl
-                  label="Open"
+                  label={t('open')}
                   max={100}
                   min={0}
                   onChange={(value) => {
@@ -1056,10 +1078,10 @@ export default function CabinetPanel() {
               <button
                 aria-label={
                   isAnimating
-                    ? 'Stop animation'
+                    ? t('stopAnimation')
                     : (node.operationState ?? 0) >= 0.99
-                      ? 'Close cabinet'
-                      : 'Open cabinet'
+                      ? t('closeCabinet')
+                      : t('openCabinet')
                 }
                 className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-border/40 bg-black/4 dark:bg-[#2C2C2E] px-2.5 text-[11px] font-medium text-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e]"
                 onClick={() => {
@@ -1071,23 +1093,27 @@ export default function CabinetPanel() {
                 }}
                 title={
                   isAnimating
-                    ? 'Stop animation'
+                    ? t('stopAnimation')
                     : (node.operationState ?? 0) >= 0.99
-                      ? 'Close cabinet'
-                      : 'Play animation'
+                      ? t('closeCabinet')
+                      : t('playAnimation')
                 }
                 type="button"
               >
                 {isAnimating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 <span>
-                  {isAnimating ? 'Stop' : (node.operationState ?? 0) >= 0.99 ? 'Close' : 'Play'}
+                  {isAnimating
+                    ? t('stop')
+                    : (node.operationState ?? 0) >= 0.99
+                      ? t('close')
+                      : t('play')}
                 </span>
               </button>
             </div>
           </PanelSection>
         )}
 
-        <PanelSection title="Compartments" defaultExpanded={false}>
+        <PanelSection title={t('compartments')} defaultExpanded={false}>
           {reflowNotice ? (
             <p
               aria-live="polite"
@@ -1122,7 +1148,7 @@ export default function CabinetPanel() {
           <div className="px-1 pb-1">
             <ActionButton
               icon={<Plus className="h-4 w-4" />}
-              label="Add compartment"
+              label={t('addCompartment')}
               onClick={addCompartment}
             />
           </div>

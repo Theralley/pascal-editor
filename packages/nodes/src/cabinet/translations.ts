@@ -1,0 +1,52 @@
+/** Swedish for the text `cabinetDefinition` and `cabinetModuleDefinition` declare, keyed by their English source. */
+export const cabinetTranslations = {
+  sv: {
+    'Modular Cabinet': 'Modulärt skåp',
+    'A configurable parametric base cabinet.': 'Ett inställbart parametriskt underskåp.',
+    'Cabinet Module': 'Skåpmodul',
+    'An editable module inside a modular cabinet run.':
+      'En redigerbar modul i en rad av modulära skåp.',
+    'Place cabinet': 'Placera skåpet',
+    'Placement type': 'Typ av placering',
+    'Type: Cabinet': 'Typ: Skåp',
+    'Type: Island': 'Typ: Köksö',
+    'Placement type — click or press I to toggle':
+      'Typ av placering — klicka eller tryck I för att växla',
+    'Force place': 'Tvinga placering',
+    Rotate: 'Rotera',
+    'Cancel run / exit': 'Avbryt raden / avsluta',
+    Dimensions: 'Mått',
+    Width: 'Bredd',
+    Depth: 'Djup',
+    'Carcass height': 'Stommens höjd',
+    Position: 'Placering',
+    Front: 'Front',
+    Carcass: 'Stomme',
+    Countertop: 'Bänkskiva',
+    Plinth: 'Sockel',
+    Hardware: 'Beslag',
+    Glass: 'Glas',
+    Appliance: 'Vitvara',
+    'Appliance Interior': 'Vitvarans insida',
+    Left: 'Vänster',
+    Right: 'Höger',
+    'Add cabinet to the left': 'Lägg till ett skåp till vänster',
+    'Add cabinet to the right': 'Lägg till ett skåp till höger',
+    'L Left': 'L vänster',
+    'L Right': 'L höger',
+    'Turn an L corner to the left': 'Gör ett L-hörn åt vänster',
+    'Turn an L corner to the right': 'Gör ett L-hörn åt höger',
+    Wall: 'Överskåp',
+    'A wall cabinet already exists above this cabinet':
+      'Det finns redan ett överskåp ovanför det här skåpet',
+    'No space above—overlaps an existing wall cabinet':
+      'Ingen plats ovanför — överlappar ett befintligt överskåp',
+    'Add wall cabinet above': 'Lägg till ett överskåp ovanför',
+    Tall: 'Högskåp',
+    'Switch to tall cabinet': 'Byt till högskåp',
+    Base: 'Underskåp',
+    'Switch to base cabinet': 'Byt till underskåp',
+    'Opening clearance: nearby objects may block a door or drawer':
+      'Fritt utrymme vid öppning: föremål i närheten kan blockera en lucka eller låda',
+  },
+}

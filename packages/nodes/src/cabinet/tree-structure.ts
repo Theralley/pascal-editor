@@ -4,6 +4,9 @@ import type {
   CabinetModuleNode as CabinetModuleNodeType,
   CabinetNode as CabinetNodeType,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
+import { cabinetDisplayName } from './display-name'
+import { messages } from './messages'
 
 /**
  * Sidebar-tree shaping for cabinet runs (`def.tree` on both cabinet
@@ -106,16 +109,16 @@ export function cabinetTreeLabel(
   node: AnyNode,
   nodes: Readonly<Partial<Record<AnyNodeId, AnyNode>>>,
 ): string {
-  if (node.name) return node.name
+  if (node.name) return cabinetDisplayName(node.name)
   if (isCabinetRun(node)) {
     const moduleCount = resolveCabinetRunChildIds(node, nodes).filter((childId) => {
       const child = nodes[childId]
       return child?.type === 'cabinet-module'
     }).length
-    return `Modular Cabinet (${moduleCount} module${moduleCount === 1 ? '' : 's'})`
+    return translate(messages, 'treeRun', { count: moduleCount })
   }
-  if (isCabinetModule(node)) return 'Cabinet Module'
-  return 'Node'
+  if (isCabinetModule(node)) return translate(messages, 'treeModule')
+  return translate(messages, 'treeNode')
 }
 
 /** `def.tree.childIds` for both cabinet kinds. */

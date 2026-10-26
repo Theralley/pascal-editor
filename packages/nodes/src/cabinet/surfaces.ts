@@ -9,8 +9,10 @@ import {
   type SurfaceContext,
   type SurfaceProvider,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import { cooktopFootprint, sinkFaucetFootprint, sinkOpening } from './appliance-layout'
 import { type CabinetSlab, getCabinetCountertopLayout } from './countertop-layout'
+import { messages } from './messages'
 import { isCooktopCompartmentType } from './stack'
 
 function rectangle(x: number, z: number, width: number, depth: number): [number, number][] {
@@ -48,7 +50,11 @@ export function getCabinetSurfaces(
     // Removing/replacing that member or splitting/merging the span is a topology edit.
     const anchorId = layout.modules[0]!.id
     if (layout.countertop) {
-      const surface = slabSurface(`countertop:${anchorId}`, 'Countertop', layout.countertop)
+      const surface = slabSurface(
+        `countertop:${anchorId}`,
+        translate(messages, 'countertop'),
+        layout.countertop,
+      )
       const holes = layout.sinkCuts.flatMap((cut) =>
         cut.bowls.map((bowl) => {
           const opening = sinkOpening(bowl)
@@ -79,7 +85,13 @@ export function getCabinetSurfaces(
       surfaces.push(surface)
     }
     if (layout.bar) {
-      surfaces.push(slabSurface(`bar:${layout.bar.edge}:${anchorId}`, 'Bar ledge', layout.bar.slab))
+      surfaces.push(
+        slabSurface(
+          `bar:${layout.bar.edge}:${anchorId}`,
+          translate(messages, 'barLedge'),
+          layout.bar.slab,
+        ),
+      )
     }
   }
   return surfaces
