@@ -1,6 +1,7 @@
 import { type NodeDefinition, UnitNode as UnitNodeSchema } from '@pascal-app/core'
 import { unitParametrics } from './parametrics'
 import { UnitNode } from './schema'
+import { unitTranslations } from './translations'
 
 /**
  * Unit — a referencing overlay, not a container. It lists member zone ids
@@ -37,6 +38,8 @@ export const unitDefinition: NodeDefinition<typeof UnitNode> = {
     paletteSection: 'site',
     hidden: true,
   },
+
+  translations: unitTranslations,
 
   mcp: {
     description:

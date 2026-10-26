@@ -1,6 +1,7 @@
 import { BuildingNode as BuildingNodeSchema, type NodeDefinition } from '@pascal-app/core'
 import { buildingParametrics } from './parametrics'
 import { BuildingNode } from './schema'
+import { buildingTranslations } from './translations'
 
 /**
  * Building — Stage A. Container for levels; can be translated /
@@ -55,6 +56,8 @@ export const buildingDefinition: NodeDefinition<typeof BuildingNode> = {
     paletteSection: 'site',
     paletteOrder: 6,
   },
+
+  translations: buildingTranslations,
 
   mcp: {
     description: 'A building container that groups levels.',

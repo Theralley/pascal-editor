@@ -1,0 +1,108 @@
+import { defineMessages } from '@pascal-app/editor'
+
+export const messages = defineMessages({
+  en: {
+    title: 'Site',
+
+    'address.heading': 'Address',
+    'address.street': 'Street address',
+    'address.placeholder': '1200 W Cass St, Tampa, FL',
+    'address.find': 'Find parcel',
+    'address.finding': 'Finding…',
+    'address.typeFirst': 'Type an address first.',
+    'address.looking': 'Looking up the parcel and the streets around it…',
+    'address.failed': 'Parcel lookup failed.',
+
+    'parcel.heading': 'Parcel',
+    'parcel.apn': 'APN',
+    'parcel.county': 'County',
+    'parcel.lotArea': 'Lot area',
+    'parcel.sqFt': '{n} sq ft',
+    'parcel.source': 'Source',
+
+    'setbacks.heading': 'Setbacks',
+    'setbacks.front': 'Front',
+    'setbacks.side': 'Side',
+    'setbacks.rear': 'Rear',
+    'setbacks.left': 'Left (override)',
+    'setbacks.right': 'Right (override)',
+    'setbacks.sidePlaceholder': 'side',
+    'setbacks.source': 'Source / citation',
+    'setbacks.sourcePlaceholder': 'e.g. Tampa LDC §27-156',
+    'setbacks.zone': 'Zone',
+    'setbacks.zonePlaceholder': 'e.g. RS-60',
+
+    'look.heading': 'Project look',
+    'look.note':
+      "Save the current lighting and display as this project's default. Personal display changes stay in this browser.",
+    'look.save': 'Save current look',
+    'look.use': 'Use project look',
+
+    'terrain.heading': 'Terrain',
+    'terrain.showGround': 'Show ground',
+    'terrain.interval': 'Contour interval (site plan and 3D)',
+    'terrain.none': 'none',
+    'terrain.every': 'every {n} in',
+    'terrain.contours3d': 'Show the contour lines in 3D',
+    'terrain.surveyed': '{count} surveyed lines at {interval} ft ({datum}) — {source}',
+    'terrain.survey': 'survey',
+    'terrain.noSurvey': 'No surveyed lines — contours are drawn from the sculpted ground.',
+
+    'orientation.heading': 'Orientation',
+    'orientation.frontEdge': 'Front (street) edge',
+    'orientation.auto': 'Auto — most north-facing edge',
+    'orientation.north': 'North rotation',
+  },
+  sv: {
+    title: 'Tomt',
+
+    'address.heading': 'Adress',
+    'address.street': 'Gatuadress',
+    'address.placeholder': '1200 W Cass St, Tampa, FL',
+    'address.find': 'Hitta fastighet',
+    'address.finding': 'Söker…',
+    'address.typeFirst': 'Skriv in en adress först.',
+    'address.looking': 'Slår upp fastigheten och gatorna runt den…',
+    'address.failed': 'Det gick inte att slå upp fastigheten.',
+
+    'parcel.heading': 'Fastighet',
+    'parcel.apn': 'APN',
+    'parcel.county': 'Län',
+    'parcel.lotArea': 'Tomtarea',
+    'parcel.sqFt': '{n} kvadratfot',
+    'parcel.source': 'Källa',
+
+    'setbacks.heading': 'Avstånd till tomtgräns',
+    'setbacks.front': 'Framsida',
+    'setbacks.side': 'Sida',
+    'setbacks.rear': 'Baksida',
+    'setbacks.left': 'Vänster (undantag)',
+    'setbacks.right': 'Höger (undantag)',
+    'setbacks.sidePlaceholder': 'sida',
+    'setbacks.source': 'Källa / hänvisning',
+    'setbacks.sourcePlaceholder': 't.ex. Tampa LDC §27-156',
+    'setbacks.zone': 'Zon',
+    'setbacks.zonePlaceholder': 't.ex. RS-60',
+
+    'look.heading': 'Projektets utseende',
+    'look.note':
+      'Spara den aktuella belysningen och visningen som projektets standard. Personliga visningsändringar stannar i den här webbläsaren.',
+    'look.save': 'Spara nuvarande utseende',
+    'look.use': 'Använd projektets utseende',
+
+    'terrain.heading': 'Terräng',
+    'terrain.showGround': 'Visa mark',
+    'terrain.interval': 'Höjdkurvsintervall (situationsplan och 3D)',
+    'terrain.none': 'ingen',
+    'terrain.every': 'var {n} tum',
+    'terrain.contours3d': 'Visa höjdkurvorna i 3D',
+    'terrain.surveyed': '{count} inmätta linjer med {interval} fots mellanrum ({datum}) — {source}',
+    'terrain.survey': 'inmätning',
+    'terrain.noSurvey': 'Inga inmätta linjer — höjdkurvorna ritas från den formade marken.',
+
+    'orientation.heading': 'Orientering',
+    'orientation.frontEdge': 'Främre kant (mot gatan)',
+    'orientation.auto': 'Automatiskt — kanten som vetter mest åt norr',
+    'orientation.north': 'Nordrotation',
+  },
+})

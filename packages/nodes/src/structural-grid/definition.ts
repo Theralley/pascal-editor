@@ -2,6 +2,7 @@ import type { NodeDefinition } from '@pascal-app/core'
 import type { FloorplanNodeExtension } from '@pascal-app/editor'
 import { buildStructuralGridFloorplan } from './floorplan'
 import { StructuralGridNode } from './schema'
+import { structuralGridTranslations } from './translations'
 
 export const structuralGridDefinition: NodeDefinition<typeof StructuralGridNode> = {
   kind: 'structural-grid',
@@ -52,6 +53,8 @@ export const structuralGridDefinition: NodeDefinition<typeof StructuralGridNode>
     paletteSection: 'structure',
     paletteOrder: 72,
   },
+
+  translations: structuralGridTranslations,
 
   mcp: {
     description:

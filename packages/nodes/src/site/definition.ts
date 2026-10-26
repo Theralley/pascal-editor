@@ -2,6 +2,7 @@ import { type NodeDefinition, SiteNode as SiteNodeSchema } from '@pascal-app/cor
 import { polygonMeasurementFeatures } from '../shared/polygon-measurement'
 import { siteParametrics } from './parametrics'
 import { SiteNode } from './schema'
+import { siteTranslations } from './translations'
 
 /**
  * Site — Stage A. Top-level container under the scene root; holds
@@ -56,6 +57,8 @@ export const siteDefinition: NodeDefinition<typeof SiteNode> = {
     paletteSection: 'site',
     paletteOrder: 5,
   },
+
+  translations: siteTranslations,
 
   mcp: {
     description: 'Top-level site container.',

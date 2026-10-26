@@ -6,6 +6,7 @@ import {
   floorOpeningMoveEdgeAffordance,
   floorOpeningMoveVertexAffordance,
 } from './floorplan'
+import { floorOpeningTranslations } from './translations'
 
 export const floorOpeningDefinition: NodeDefinition<typeof FloorOpeningNode> = {
   kind: 'floor-opening',
@@ -49,4 +50,6 @@ export const floorOpeningDefinition: NodeDefinition<typeof FloorOpeningNode> = {
     hidden: true,
     actionMenu: false,
   },
+
+  translations: floorOpeningTranslations,
 }

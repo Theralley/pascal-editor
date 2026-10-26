@@ -4,7 +4,6 @@ import {
   type AnyNode,
   type AnyNodeId,
   buildUnitReport,
-  getLevelDisplayName,
   UNIT_KINDS,
   type UnitKind,
   type UnitNode,
@@ -15,23 +14,18 @@ import {
   ActionButton,
   ActionGroup,
   formatAreaLabel,
+  levelDisplayName,
   PanelSection,
   PanelWrapper,
   triggerSFX,
+  useLocale,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Trash2, X } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { PanelSelect, PanelTextField } from '../shared/panel-fields'
-
-const UNIT_KIND_LABELS: Record<UnitKind, string> = {
-  apartment: 'Apartment',
-  'hotel-room': 'Hotel room',
-  commercial: 'Commercial',
-  common: 'Common',
-}
-
-const UNIT_KIND_OPTIONS = UNIT_KINDS.map((value) => ({ label: UNIT_KIND_LABELS[value], value }))
+import { messages } from './messages'
 
 function ReportRow({ label, value }: { label: string; value: string }) {
   return (
@@ -43,6 +37,8 @@ function ReportRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function UnitPanel({ node }: { node: UnitNode }) {
+  const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
   const updateNode = useScene((state) => state.updateNode)
   const setSelection = useViewer((state) => state.setSelection)
@@ -63,9 +59,9 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
       .sort((a, b) => a[1] - b[1])
       .map(([levelId]) => {
         const level = nodes[levelId as AnyNodeId]
-        return { levelId, name: level?.type === 'level' ? getLevelDisplayName(level) : '' }
+        return { levelId, name: level?.type === 'level' ? levelDisplayName(level, locale) : '' }
       })
-  }, [nodes, report])
+  }, [nodes, report, locale])
 
   const levelNameById = useMemo(
     () => new Map(memberLevels.map((level) => [level.levelId, level.name])),
@@ -98,28 +94,32 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
 
   const warningMessages = warnings.map((warning) => {
     if (warning.code === 'non-adjacent-levels') {
-      return 'Members sit on levels that are not adjacent.'
+      return t('warning.nonAdjacent')
     }
-    return 'No zones assigned yet.'
+    return t('warning.noZones')
   })
 
   return (
     <PanelWrapper
       icon="/icons/zone.webp"
       onClose={handleClose}
-      title={node.name || 'Unit'}
+      title={node.name || t('title')}
       width={320}
     >
-      <PanelSection title="Unit">
-        <PanelTextField label="Name" onCommit={(name) => update({ name })} value={node.name} />
+      <PanelSection title={t('unit.heading')}>
+        <PanelTextField
+          label={t('unit.name')}
+          onCommit={(name) => update({ name })}
+          value={node.name}
+        />
         <PanelSelect
-          label="Kind"
+          label={t('unit.kind')}
           onChange={(kind) => update({ kind: kind as UnitKind })}
-          options={UNIT_KIND_OPTIONS}
+          options={UNIT_KINDS.map((value) => ({ label: t(`kind.${value}`), value }))}
           value={node.kind}
         />
         <label className="flex h-10 items-center justify-between gap-3 rounded-lg border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-3 text-sm">
-          <span className="text-muted-foreground">Color</span>
+          <span className="text-muted-foreground">{t('unit.color')}</span>
           <span className="flex items-center gap-2">
             <span className="font-mono text-muted-foreground text-xs">{node.color}</span>
             <input
@@ -132,11 +132,9 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
         </label>
       </PanelSection>
 
-      <PanelSection title="Members">
+      <PanelSection title={t('members.heading')}>
         {report.members.length === 0 ? (
-          <p className="text-muted-foreground text-xs leading-snug">
-            No rooms yet. Pick this unit from a room's panel, or draw zones while it is focused.
-          </p>
+          <p className="text-muted-foreground text-xs leading-snug">{t('members.empty')}</p>
         ) : (
           report.members.map((member) => (
             <div
@@ -144,7 +142,7 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
               key={member.zoneId}
             >
               <span className="min-w-0 flex-1 truncate text-foreground">
-                {member.name || memberFallbackName(nodes, member.zoneId)}
+                {member.name || t(memberFallbackKey(nodes, member.zoneId))}
               </span>
               <span className="shrink-0 truncate text-muted-foreground">
                 {member.levelId ? levelNameById.get(member.levelId) : ''}
@@ -153,7 +151,7 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
                 {formatAreaLabel(member.areaM2, areaUnit, 1)}
               </span>
               <button
-                aria-label={`Remove ${member.name || 'zone'} from unit`}
+                aria-label={t('members.remove', { name: member.name || t('members.zone') })}
                 className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-black/8 dark:hover:bg-[#3e3e3e] hover:text-foreground"
                 onClick={() => removeMember(member.zoneId)}
                 type="button"
@@ -172,25 +170,28 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
         ) : null}
       </PanelSection>
 
-      <PanelSection title="Report">
-        <ReportRow label="Members" value={String(report.memberCount)} />
-        <ReportRow label="Levels" value={levelSpanLabel} />
-        <ReportRow label="Gross area" value={formatAreaLabel(report.grossAreaM2, areaUnit, 2)} />
+      <PanelSection title={t('report.heading')}>
+        <ReportRow label={t('report.members')} value={String(report.memberCount)} />
+        <ReportRow label={t('report.levels')} value={levelSpanLabel} />
+        <ReportRow
+          label={t('report.grossArea')}
+          value={formatAreaLabel(report.grossAreaM2, areaUnit, 2)}
+        />
       </PanelSection>
 
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions.heading')}>
         <ActionGroup>
           {focusedUnitId !== node.id && (
             <ActionButton
               className="rounded-full"
-              label="Focus"
+              label={t('actions.focus')}
               onClick={() => useViewer.getState().setFocusedUnit(node.id)}
             />
           )}
           <ActionButton
             className="text-destructive hover:text-destructive"
             icon={<Trash2 className="h-3.5 w-3.5" />}
-            label="Delete"
+            label={t('actions.delete')}
             onClick={handleDelete}
           />
         </ActionGroup>
@@ -200,7 +201,7 @@ export default function UnitPanel({ node }: { node: UnitNode }) {
 }
 
 /** An unnamed member reads as what it is: a room, or another zone. */
-function memberFallbackName(nodes: Record<string, AnyNode>, zoneId: string) {
+function memberFallbackKey(nodes: Record<string, AnyNode>, zoneId: string) {
   const zone = nodes[zoneId]
-  return zone?.type === 'zone' && zone.spaceRole === 'room' ? 'Room' : 'Zone'
+  return zone?.type === 'zone' && zone.spaceRole === 'room' ? 'members.room' : 'members.zone'
 }

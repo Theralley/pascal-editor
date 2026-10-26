@@ -9,10 +9,12 @@ import {
   PanelSection,
   PanelWrapper,
   useParcelProvider,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { MapPin, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { messages } from './messages'
 
 const METRES_PER_FOOT = 0.3048
 
@@ -35,6 +37,7 @@ interface Suggestion {
  * (`setParcelProvider`) and is hidden when the host has none.
  */
 export function SiteNodePanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   // The selected site node, else THE site node: the sidebar's Site header
   // mounts this panel directly, where nothing may be selected.
@@ -107,11 +110,11 @@ export function SiteNodePanel() {
     if (!node) return
     const address = query.trim()
     if (!address) {
-      setStatus('Type an address first.')
+      setStatus(t('address.typeFirst'))
       return
     }
     setBusy(true)
-    setStatus('Looking up the parcel and the streets around it…')
+    setStatus(t('address.looking'))
     try {
       const result = await dropInLot(
         {
@@ -127,11 +130,11 @@ export function SiteNodePanel() {
       )
       setStatus(result.message)
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Parcel lookup failed.')
+      setStatus(error instanceof Error ? error.message : t('address.failed'))
     } finally {
       setBusy(false)
     }
-  }, [node, picked, query])
+  }, [node, picked, query, t])
 
   if (!node) return null
 
@@ -171,7 +174,7 @@ export function SiteNodePanel() {
               },
             })
           }}
-          placeholder={optional ? 'side' : '0'}
+          placeholder={optional ? t('setbacks.sidePlaceholder') : '0'}
         />
         <span className="text-muted-foreground text-xs">ft</span>
       </span>
@@ -179,18 +182,18 @@ export function SiteNodePanel() {
   )
 
   return (
-    <PanelWrapper title="Site">
+    <PanelWrapper title={t('title')}>
       {parcelProvider ? (
-        <PanelSection title="Address">
+        <PanelSection title={t('address.heading')}>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Street address</span>
+            <span className="text-muted-foreground">{t('address.street')}</span>
             <input
               className="w-full rounded-md border border-border/70 bg-background px-2 py-1.5 text-foreground"
               onChange={(event) => {
                 setQuery(event.target.value)
                 setPicked(null)
               }}
-              placeholder="1200 W Cass St, Tampa, FL"
+              placeholder={t('address.placeholder')}
               value={query}
             />
           </label>
@@ -218,7 +221,7 @@ export function SiteNodePanel() {
             <ActionButton
               disabled={busy}
               icon={<Search className="size-4" />}
-              label={busy ? 'Finding…' : 'Find parcel'}
+              label={busy ? t('address.finding') : t('address.find')}
               onClick={findParcel}
             />
           </ActionGroup>
@@ -227,18 +230,18 @@ export function SiteNodePanel() {
       ) : null}
 
       {node.parcel ? (
-        <PanelSection title="Parcel">
-          <Row label="APN" value={node.parcel.apn || '—'} />
-          <Row label="County" value={node.parcel.county || '—'} />
+        <PanelSection title={t('parcel.heading')}>
+          <Row label={t('parcel.apn')} value={node.parcel.apn || '—'} />
+          <Row label={t('parcel.county')} value={node.parcel.county || '—'} />
           <Row
-            label="Lot area"
+            label={t('parcel.lotArea')}
             value={
               node.parcel.lotAreaSqFt
-                ? `${Math.round(node.parcel.lotAreaSqFt).toLocaleString()} sq ft`
+                ? t('parcel.sqFt', { n: Math.round(node.parcel.lotAreaSqFt).toLocaleString() })
                 : '—'
             }
           />
-          <Row label="Source" value={node.parcel.layer || node.parcel.source || '—'} />
+          <Row label={t('parcel.source')} value={node.parcel.layer || node.parcel.source || '—'} />
           {node.parcel.notes?.length ? (
             <p className="text-muted-foreground text-xs leading-snug">
               {node.parcel.notes.join(' ')}
@@ -247,42 +250,39 @@ export function SiteNodePanel() {
         </PanelSection>
       ) : null}
 
-      <PanelSection title="Setbacks">
-        {setbackField('front', 'Front')}
-        {setbackField('side', 'Side')}
-        {setbackField('rear', 'Rear')}
-        {setbackField('left', 'Left (override)', true)}
-        {setbackField('right', 'Right (override)', true)}
+      <PanelSection title={t('setbacks.heading')}>
+        {setbackField('front', t('setbacks.front'))}
+        {setbackField('side', t('setbacks.side'))}
+        {setbackField('rear', t('setbacks.rear'))}
+        {setbackField('left', t('setbacks.left'), true)}
+        {setbackField('right', t('setbacks.right'), true)}
         <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">Source / citation</span>
+          <span className="text-muted-foreground">{t('setbacks.source')}</span>
           <input
             className="w-full rounded-md border border-border/70 bg-background px-2 py-1.5 text-foreground"
             defaultValue={node.setbacksSource ?? ''}
             key={node.setbacksSource ?? ''}
             onBlur={(event) => update({ setbacksSource: event.target.value || undefined })}
-            placeholder="e.g. Tampa LDC §27-156"
+            placeholder={t('setbacks.sourcePlaceholder')}
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">Zone</span>
+          <span className="text-muted-foreground">{t('setbacks.zone')}</span>
           <input
             className="w-full rounded-md border border-border/70 bg-background px-2 py-1.5 text-foreground"
             defaultValue={node.zone ?? ''}
             key={node.zone ?? ''}
             onBlur={(event) => update({ zone: event.target.value || undefined })}
-            placeholder="e.g. RS-60"
+            placeholder={t('setbacks.zonePlaceholder')}
           />
         </label>
       </PanelSection>
 
-      <PanelSection title="Project look">
-        <p className="text-muted-foreground text-xs">
-          Save the current lighting and display as this project's default. Personal display changes
-          stay in this browser.
-        </p>
+      <PanelSection title={t('look.heading')}>
+        <p className="text-muted-foreground text-xs">{t('look.note')}</p>
         <ActionGroup>
           <ActionButton
-            label="Save current look"
+            label={t('look.save')}
             onClick={() => {
               const viewer = useViewer.getState()
               const look = viewer.sceneAppearance
@@ -310,32 +310,32 @@ export function SiteNodePanel() {
             }}
           />
           <ActionButton
-            label="Use project look"
+            label={t('look.use')}
             onClick={() => useViewer.getState().resetProjectLook()}
           />
         </ActionGroup>
       </PanelSection>
 
-      <PanelSection title="Terrain">
+      <PanelSection title={t('terrain.heading')}>
         <label className="flex items-center gap-2 text-sm">
           <input
             checked={node.showGround !== false}
             onChange={(event) => update({ showGround: event.target.checked })}
             type="checkbox"
           />
-          <span className="text-muted-foreground">Show ground</span>
+          <span className="text-muted-foreground">{t('terrain.showGround')}</span>
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">Contour interval (site plan and 3D)</span>
+          <span className="text-muted-foreground">{t('terrain.interval')}</span>
           <select
             className="w-full rounded-md border border-border/70 bg-background px-2 py-1.5 text-foreground"
             onChange={(event) => update({ contourIntervalIn: Number(event.target.value) })}
             value={String(node.contourIntervalIn ?? 12)}
           >
-            <option value="0">none</option>
-            <option value="6">every 6 in</option>
-            <option value="12">every 12 in</option>
-            <option value="24">every 24 in</option>
+            <option value="0">{t('terrain.none')}</option>
+            <option value="6">{t('terrain.every', { n: 6 })}</option>
+            <option value="12">{t('terrain.every', { n: 12 })}</option>
+            <option value="24">{t('terrain.every', { n: 24 })}</option>
           </select>
         </label>
         <label className="flex items-center gap-2 text-sm">
@@ -344,23 +344,25 @@ export function SiteNodePanel() {
             onChange={(event) => update({ contours3d: event.target.checked })}
             type="checkbox"
           />
-          <span className="text-muted-foreground">Show the contour lines in 3D</span>
+          <span className="text-muted-foreground">{t('terrain.contours3d')}</span>
         </label>
         {node.terrainContours ? (
           <p className="text-muted-foreground text-xs">
-            {node.terrainContours.lines.length} surveyed lines at {node.terrainContours.intervalFt}{' '}
-            ft ({node.terrainContours.datum}) — {node.terrainContours.source ?? 'survey'}
+            {t('terrain.surveyed', {
+              count: node.terrainContours.lines.length,
+              interval: node.terrainContours.intervalFt,
+              datum: node.terrainContours.datum,
+              source: node.terrainContours.source ?? t('terrain.survey'),
+            })}
           </p>
         ) : (
-          <p className="text-muted-foreground text-xs">
-            No surveyed lines — contours are drawn from the sculpted ground.
-          </p>
+          <p className="text-muted-foreground text-xs">{t('terrain.noSurvey')}</p>
         )}
       </PanelSection>
 
-      <PanelSection title="Orientation">
+      <PanelSection title={t('orientation.heading')}>
         <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">Front (street) edge</span>
+          <span className="text-muted-foreground">{t('orientation.frontEdge')}</span>
           <select
             className="w-full rounded-md border border-border/70 bg-background px-2 py-1.5 text-foreground"
             onChange={(event) =>
@@ -370,7 +372,7 @@ export function SiteNodePanel() {
             }
             value={node.frontEdge == null ? '' : String(node.frontEdge)}
           >
-            <option value="">Auto — most north-facing edge</option>
+            <option value="">{t('orientation.auto')}</option>
             {edges.map((edge) => (
               <option key={edge.index} value={String(edge.index)}>
                 {edge.label}
@@ -379,7 +381,7 @@ export function SiteNodePanel() {
           </select>
         </label>
         <label className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">North rotation</span>
+          <span className="text-muted-foreground">{t('orientation.north')}</span>
           <span className="flex items-center gap-1">
             <input
               className="w-20 rounded-md border border-border/70 bg-background px-2 py-1 text-right text-foreground"

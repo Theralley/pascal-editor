@@ -4,6 +4,7 @@ import { spawnRotateAffordance } from './floorplan-affordances'
 import { spawnFloorplanMoveTarget } from './floorplan-move'
 import { spawnParametrics } from './parametrics'
 import { SpawnNode } from './schema'
+import { spawnTranslations } from './translations'
 
 const SPAWN_FOOTPRINT = 0.6
 const SPAWN_HANDLE_HEIGHT = 0.46
@@ -113,6 +114,8 @@ export const spawnDefinition: NodeDefinition<typeof SpawnNode> = {
     paletteSection: 'structure',
     paletteOrder: 90, // bottom of structure list — matches legacy palette order
   },
+
+  translations: spawnTranslations,
 
   mcp: {
     description: 'A singleton spawn point marker placed inside a level.',

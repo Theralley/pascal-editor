@@ -3,6 +3,7 @@ import { perNodeGeometryBatchable } from '../shared/node-batch/batchable'
 import { buildImportedMeshFloorplan } from './floorplan'
 import { buildImportedMeshGeometry } from './geometry'
 import { ImportedMeshNode } from './schema'
+import { importedMeshTranslations } from './translations'
 
 /** Format-neutral fallback for imported objects without a parametric node. */
 export const importedMeshDefinition: NodeDefinition<typeof ImportedMeshNode> = {
@@ -36,6 +37,8 @@ export const importedMeshDefinition: NodeDefinition<typeof ImportedMeshNode> = {
     icon: { kind: 'url', src: '/icons/item.webp' },
     hidden: true,
   },
+  translations: importedMeshTranslations,
+
   mcp: {
     description: 'Imported triangle geometry with source identity and properties in metadata.',
   },

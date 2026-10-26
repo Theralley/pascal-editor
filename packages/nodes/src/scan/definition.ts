@@ -1,6 +1,7 @@
 import { type NodeDefinition, ScanNode as ScanNodeSchema } from '@pascal-app/core'
 import { scanParametrics } from './parametrics'
 import { ScanNode } from './schema'
+import { scanTranslations } from './translations'
 
 /**
  * Scan — Stage A. Capture-session reference with an optional renderable
@@ -52,6 +53,8 @@ export const scanDefinition: NodeDefinition<typeof ScanNode> = {
     paletteSection: 'site',
     paletteOrder: 40,
   },
+
+  translations: scanTranslations,
 
   mcp: {
     description: 'A captured session reference with an optional renderable mesh.',

@@ -1,6 +1,7 @@
 import { GuideNode as GuideNodeSchema, type NodeDefinition } from '@pascal-app/core'
 import { guideParametrics } from './parametrics'
 import { GuideNode } from './schema'
+import { guideTranslations } from './translations'
 
 /**
  * Guide — Stage A. Measurement reference annotations placed by the
@@ -53,6 +54,8 @@ export const guideDefinition: NodeDefinition<typeof GuideNode> = {
     paletteSection: 'site',
     paletteOrder: 30,
   },
+
+  translations: guideTranslations,
 
   mcp: {
     description: 'A measurement reference guide annotation.',

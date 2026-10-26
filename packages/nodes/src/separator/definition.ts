@@ -1,4 +1,5 @@
 import { type NodeDefinition, SeparatorNode } from '@pascal-app/core'
+import { separatorTranslations } from './translations'
 
 export const separatorDefinition: NodeDefinition<typeof SeparatorNode> = {
   kind: 'separator',
@@ -37,4 +38,6 @@ export const separatorDefinition: NodeDefinition<typeof SeparatorNode> = {
     hidden: true,
     actionMenu: false,
   },
+
+  translations: separatorTranslations,
 }

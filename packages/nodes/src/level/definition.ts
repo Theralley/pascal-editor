@@ -5,6 +5,7 @@ import {
 } from '@pascal-app/core'
 import { levelParametrics } from './parametrics'
 import { LevelNode } from './schema'
+import { levelTranslations } from './translations'
 
 /**
  * Level — Stage A. Container for walls / slabs / ceilings / etc. on
@@ -64,6 +65,8 @@ export const levelDefinition: NodeDefinition<typeof LevelNode> = {
     paletteSection: 'site',
     paletteOrder: 7,
   },
+
+  translations: levelTranslations,
 
   mcp: {
     description: 'A level (floor) container under a building.',
