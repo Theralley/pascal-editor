@@ -76,7 +76,7 @@ export const messages = defineMessages({
     'palette.select': 'välj',
     'palette.back': 'tillbaka',
     'palette.close': 'stäng',
-    'palette.renameTo': 'Byt namn till <quoted>"{name}"</quoted>',
+    'palette.renameTo': 'Byt namn till <quoted>”{name}”</quoted>',
     'palette.typeNewName': 'Skriv ett nytt namn ovan…',
 
     'page.wallMode': 'Väggläge',

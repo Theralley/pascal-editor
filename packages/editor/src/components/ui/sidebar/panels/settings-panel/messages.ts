@@ -314,15 +314,15 @@ export const messages = defineMessages({
     'language.label': 'Språk',
     'language.hint': 'Språket i redigeraren.',
 
-    'units.label': 'Enheter',
+    'units.label': 'Måttenheter',
     'units.notSet': 'Inte angivet',
     'units.metric': 'Metriskt',
     'units.imperial': 'Imperialt',
     'units.differsFromProject':
-      'Du visar andra enheter än projektet. Välj projektets enheter i visningsmenyn.',
-    'units.fromProject': 'Alla som öppnar projektet ser dessa enheter.',
-    'units.usingMetric': 'Inte angivet: använder metriska enheter (ditt standardval).',
-    'units.usingImperial': 'Inte angivet: använder imperiala enheter (ditt standardval).',
+      'Du visar andra måttenheter än projektet. Välj projektets måttenheter i visningsmenyn.',
+    'units.fromProject': 'Alla som öppnar projektet ser dessa måttenheter.',
+    'units.usingMetric': 'Inte angivet: använder metriska måttenheter (ditt standardval).',
+    'units.usingImperial': 'Inte angivet: använder imperiala måttenheter (ditt standardval).',
 
     'floors.heading': 'Våningar',
     'floors.add': 'Lägg till våning',
@@ -352,7 +352,7 @@ export const messages = defineMessages({
     'sharing.floorPlans': 'Visa planritningar',
     'sharing.publicViewerHint': 'Syns i den publika visningen.',
 
-    'projectUnits.title': 'Projektets enheter',
+    'projectUnits.title': 'Projektets måttenheter',
     'projectUnits.description': 'Sparas i projektet för alla som öppnar det.',
 
     'viewer.title': 'Visning',
@@ -394,7 +394,7 @@ export const messages = defineMessages({
     'blender.unreachable':
       'Blender svarar inte. Öppna Blender med Pascal-tillägget installerat och aktiverat och försök igen.',
     'blender.refused':
-      'Blender körs men har inte tillåtit {origin} än. Öppna fliken Pascal i 3D-vyns sidopanel (N) i Blender och klicka på Tillåt.',
+      'Blender körs men har inte tillåtit {origin} ännu. Öppna fliken Pascal i 3D-vyns sidopanel (N) i Blender och klicka på Tillåt.',
     'blender.sentWithSummary': 'Skickat till Blender. {summary}.',
     'blender.sent': 'Skickat till Blender.',
     'blender.failed': 'Det gick inte att skicka scenen till Blender. Försök igen.',
@@ -576,23 +576,23 @@ export const messages = defineMessages({
     'shortcut.clearSelection.note': 'Ett klick på tom yta gör detsamma.',
     'shortcut.moveUnderCursor': 'Flytta det markerade flyttbara objektet under markören',
     'shortcut.moveUnderCursor.note':
-      'Dra i markeringsläge med ett enda objekt markerat. Styrd snappning och hjälplinjer är på som standard.',
+      'Dra i markeringsläge med ett enda objekt markerat. Styrt fäste och hjälplinjer är på som standard.',
     'shortcut.rotateUnderCursor': 'Rotera det markerade objektet under markören',
     'shortcut.rotateUnderCursor.note':
-      'Dra åt vänster eller höger i markeringsläge med ett enda objekt markerat. Rotationen snappar till steg om 15° som standard.',
+      'Dra åt vänster eller höger i markeringsläge med ett enda objekt markerat. Rotationen fäster i steg om 15° som standard.',
     'shortcut.rotateFreely': 'Rotera fritt',
     'shortcut.rotateFreely.note':
       'Håll ned Shift under draget för att kringgå rotationssteget på 15°.',
-    'shortcut.cycleSnapping': 'Växla snappningsläge',
+    'shortcut.cycleSnapping': 'Växla fästläge',
     'shortcut.cycleSnapping.note':
       'Tryck och släpp utan att trycka på något annat, medan en ritnings- eller flyttgest är tillgänglig.',
     'shortcut.cycleGrid': 'Växla rutnätssteg: 0,5 m → 0,25 m → 0,1 m → 0,05 m',
     'shortcut.cycleGrid.note':
       'Tryck och släpp den ensam. Använd det när standardrutnätet på en halv meter är för grovt, till exempel när du placerar ett fönster.',
-    'shortcut.bypassSnapping': 'Kringgå styrd snappning och vinkelbegränsningar',
+    'shortcut.bypassSnapping': 'Kringgå styrt fäste och vinkelbegränsningar',
     'shortcut.bypassSnapping.note':
       'Håll ned under den pågående gesten. Passiva hjälplinjer och måttvisning kan fortfarande synas.',
-    'shortcut.bypassRotationSnap': 'Rotera fritt utan standardsnappningen på 15°',
+    'shortcut.bypassRotationSnap': 'Rotera fritt utan standardfästet på 15°',
     'shortcut.bypassRotationSnap.note':
       'Håll ned medan du drar i ett roteringshandtag eller gör en direktrotation.',
     'shortcut.rotateItem':

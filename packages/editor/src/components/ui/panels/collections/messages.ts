@@ -15,7 +15,7 @@ export const messages = defineMessages({
     title: 'Samlingar',
     new: 'Ny',
     placeholder: 'Namn på samling…',
-    empty: 'Inga samlingar än. Skapa en för att gruppera element.',
+    empty: 'Inga samlingar ännu. Skapa en för att gruppera element.',
     confirmDelete: 'Ta bort ”{name}”?',
     delete: 'Ta bort',
     cancel: 'Avbryt',

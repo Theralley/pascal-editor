@@ -225,20 +225,18 @@ function LevelModeToggle() {
 }
 
 function WallModeToggle() {
-  const t = useT(messages)
   const v = useT(viewerMessages)
   const wallMode = useViewer((state) => state.wallMode)
   const setWallMode = useViewer((state) => state.setWallMode)
 
   // A step with U or J can land on a segment the row has scrolled away from.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `wallMode` is the trigger, not a value the effect reads
   useEffect(() => {
     document
       .querySelector<HTMLElement>(
         `[role="radiogroup"][aria-label="${CSS.escape(v('controls.walls'))}"] [aria-checked="true"]`,
       )
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [wallMode, t])
+  }, [wallMode, v])
 
   return (
     <SegmentedControl
@@ -688,7 +686,6 @@ function DisplayMenu() {
 }
 
 function WalkthroughButton() {
-  const t = useT(messages)
   const v = useT(viewerMessages)
   const isFirstPersonMode = useEditor((state) => state.isFirstPersonMode)
   const setFirstPersonMode = useEditor((state) => state.setFirstPersonMode)

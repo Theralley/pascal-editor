@@ -454,8 +454,7 @@ export const messages = defineMessages({
     'riser.waste': 'Avlopp',
     'riser.vent': 'Luftning',
     'riser.diagramLabel': 'Stamschema för avlopp och luftning',
-    'riser.empty':
-      'Inga avlopps- eller luftningsrör ännu. Rita rörsystem för att se stigarschemat.',
+    'riser.empty': 'Inga avlopps- eller luftningsrör ännu. Rita rörsystem för att se stamschemat.',
     'walkthrough.doorButton': 'dörrknappen',
     'walkthrough.elevatorButton': 'hissknappen',
     'walkthrough.lights': 'belysningen',

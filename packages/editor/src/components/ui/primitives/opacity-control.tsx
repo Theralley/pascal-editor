@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { Button } from '../../../components/ui/primitives/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/primitives/popover'
 import { Slider } from '../../../components/ui/primitives/slider'
-import { useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
+import { formatPercent } from '../../../lib/measurements'
 import { cn } from '../../../lib/utils'
 import { messages } from './messages'
 
@@ -25,6 +26,7 @@ export function OpacityControl({
   className,
 }: OpacityControlProps) {
   const t = useT(messages)
+  const locale = useLocale()
   const [isOpen, setIsOpen] = useState(false)
   const actualOpacity = opacity ?? 100
   const isHidden = visible === false || actualOpacity === 0
@@ -33,7 +35,7 @@ export function OpacityControl({
     <Popover onOpenChange={setIsOpen} open={isOpen}>
       <div className={cn('flex items-center gap-1', className)}>
         {!isHidden && actualOpacity < 100 && (
-          <span className="text-muted-foreground text-xs">{actualOpacity}%</span>
+          <span className="text-muted-foreground text-xs">{formatPercent(actualOpacity, locale)}</span>
         )}
         <PopoverTrigger asChild>
           <Button
@@ -63,7 +65,7 @@ export function OpacityControl({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm">{t('opacity')}</span>
-              <span className="text-muted-foreground text-xs">{actualOpacity}%</span>
+              <span className="text-muted-foreground text-xs">{formatPercent(actualOpacity, locale)}</span>
             </div>
             <Slider
               max={100}

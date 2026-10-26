@@ -156,6 +156,11 @@ export function formatDecimal(
 /** Swedish sets a space between a number and its unit; English keeps them together. */
 const unitGap = (locale: Locale) => (locale === 'sv' ? ' ' : '')
 
+/** A whole percent: "40%" in English, "40 %" in Swedish. */
+export function formatPercent(value: number, locale: Locale = getLocale()): string {
+  return `${value}${unitGap(locale)}%`
+}
+
 const SQUARE_FEET_PER_SQUARE_METER = FEET_PER_METER * FEET_PER_METER
 const CUBIC_FEET_PER_CUBIC_METER = SQUARE_FEET_PER_SQUARE_METER * FEET_PER_METER
 

@@ -22,7 +22,7 @@ export const messages = defineMessages({
     'run.tabDirection': 'Tab: riktning',
     'run.enterPositive': 'Ange en positiv längd',
     'run.tooShort': 'Dragningen måste vara minst {length} m',
-    'run.clearanceTooSmall': 'Det finns inte plats för rördelen vid den här anslutningen.',
+    'run.clearanceTooSmall': 'Det finns inte plats för rördelen vid den här anslutningen',
 
     'compat.differentSystems': 'Olika system: {source} / {target}',
     'compat.transition': 'Övergång behövs: {source} / {target}',

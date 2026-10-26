@@ -130,7 +130,7 @@ export const messages = defineMessages({
       'Klicka på en målad del av en vägg, ett golv eller ett innertak för att ta bort den, eller på en målad yta för att återställa den till standard.',
     'paint.sceneMaterials': 'Scenens material',
     'paint.addMaterial': 'Lägg till material',
-    'paint.noMaterials': 'Inga egna material än – lägg till ett med +.',
+    'paint.noMaterials': 'Inga egna material ännu – lägg till ett med +.',
 
     'terrain.raise': 'Höj',
     'terrain.lower': 'Sänk',
@@ -149,7 +149,7 @@ export const messages = defineMessages({
     'terrain.target': 'Målhöjd',
     'terrain.pickTarget': 'Hämta målhöjd från marken',
     'terrain.sampling': 'Klicka på marken för att hämta dess höjd som målhöjd.',
-    'terrain.noTarget': 'Ingen målhöjd än – första klicket hämtar höjden på marken under det.',
+    'terrain.noTarget': 'Ingen målhöjd ännu – första klicket hämtar höjden på marken under det.',
     'terrain.hasTarget': 'Varje utjämningsdrag jämnar ut mot den här höjden.',
     'terrain.levelLot': 'Jämna ut tomten',
     'terrain.clear': 'Rensa terräng',

@@ -16,7 +16,7 @@ describe('Settings in the active language', () => {
   test('shows Swedish labels when the locale is sv', () => {
     setLocale('sv')
     const html = renderCurrentMarkup(<SettingsPanel />)
-    for (const label of ['Projektets enheter', 'Kortkommandon', 'Spara bygge', 'Riskzon'])
+    for (const label of ['Projektets måttenheter', 'Kortkommandon', 'Spara bygge', 'Riskzon'])
       expect(html).toContain(label)
     expect(html).not.toContain('Keyboard shortcuts')
   })

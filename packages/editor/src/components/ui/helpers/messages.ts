@@ -114,7 +114,7 @@ export const messages = defineMessages({
     addPoint: 'Lägg till punkt',
     finishAtEdge: 'Avsluta vid kanten',
 
-    'reshape.curve': 'Kurva',
+    'reshape.curve': 'Böj',
     'reshape.controlPoint': 'Flytta kontrollpunkt',
     'reshape.tangent': 'Flytta tangent',
     'reshape.endpoint': 'Flytta ändpunkt',

@@ -89,7 +89,7 @@ export const messages = defineMessages({
     'duplicate.thisLevel': 'den här våningen',
     'duplicate.everything': 'Allt',
     'duplicate.everythingHint': 'Konstruktion, material, möbler och underlag.',
-    'duplicate.structure': 'Bara konstruktion',
+    'duplicate.structure': 'Endast stomme',
     'duplicate.structureHint': 'Väggar, bjälklag, tak, trappor, fönster och dörrar utan ytskikt.',
     'duplicate.structureMaterials': 'Konstruktion + material',
     'duplicate.structureMaterialsHint': 'Konstruktionen med nuvarande material och ytskikt.',

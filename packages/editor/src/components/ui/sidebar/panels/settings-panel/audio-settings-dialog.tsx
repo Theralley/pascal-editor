@@ -9,12 +9,14 @@ import {
   DialogTrigger,
 } from '../../../../../components/ui/primitives/dialog'
 import { Slider } from '../../../../../components/ui/slider'
-import { useT } from '../../../../../i18n'
+import { useLocale, useT } from '../../../../../i18n'
+import { formatPercent } from '../../../../../lib/measurements'
 import useAudio from '../../../../../store/use-audio'
 import { messages } from './messages'
 
 export function AudioSettingsDialog() {
   const t = useT(messages)
+  const locale = useLocale()
   const {
     masterVolume,
     sfxVolume,
@@ -44,7 +46,7 @@ export function AudioSettingsDialog() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-medium text-sm">{t('audio.master')}</label>
-              <span className="text-muted-foreground text-sm">{masterVolume}%</span>
+              <span className="text-muted-foreground text-sm">{formatPercent(masterVolume, locale)}</span>
             </div>
             <Slider
               max={100}
@@ -58,7 +60,7 @@ export function AudioSettingsDialog() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-medium text-sm">{t('audio.radio')}</label>
-              <span className="text-muted-foreground text-sm">{radioVolume}%</span>
+              <span className="text-muted-foreground text-sm">{formatPercent(radioVolume, locale)}</span>
             </div>
             <Slider
               max={100}
@@ -72,7 +74,7 @@ export function AudioSettingsDialog() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-medium text-sm">{t('audio.effects')}</label>
-              <span className="text-muted-foreground text-sm">{sfxVolume}%</span>
+              <span className="text-muted-foreground text-sm">{formatPercent(sfxVolume, locale)}</span>
             </div>
             <Slider
               max={100}

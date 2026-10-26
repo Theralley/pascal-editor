@@ -112,7 +112,7 @@ export const messages = defineMessages({
     'title.moveSelection': 'Flytta markeringen',
     'title.moveRoom': 'Flytta rum',
     'title.resize': 'Ändra storlek',
-    'title.divideRoom': 'Dela rum',
+    'title.divideRoom': 'Dela rummet',
     'title.mezzanine': 'Entresol',
     'title.cutOpening': 'Ta upp öppning',
     'title.terrace': 'Terrass',
@@ -193,7 +193,7 @@ export const messages = defineMessages({
     'notice.expertMode': '{tool} finns i expertläget.',
 
     'scope.floorEdge': 'Golvkant · hela vägen runt det här golvet',
-    'scope.riser': 'Stigning · hela vägen runt det här golvet',
+    'scope.riser': 'Sättsteg · hela vägen runt det här golvet',
     'scope.underside': 'Undersida · hela det här golvet',
     'scope.foundation': 'Grund · hela vägen runt det här golvet',
     'scope.thisStep': 'Det här steget',

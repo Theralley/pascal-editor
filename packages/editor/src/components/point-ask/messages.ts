@@ -77,7 +77,7 @@ export const messages = defineMessages({
     'card.error': 'Pascal kunde inte göra det här.',
     'card.question': 'Pascal behöver ett svar från dig.',
     'card.undone': 'Ångrat',
-    'card.onIt': 'Pascal arbetar på det',
+    'card.onIt': 'Pascal arbetar med det',
     'card.after': 'Efter',
     'card.editedSince':
       'Du har ändrat scenen sedan dess. Om du ångrar tas även de ändringarna bort.',

@@ -161,7 +161,7 @@ export const messages = defineMessages({
     'tools.duct': 'Kanal',
     'tools.ductFitting': 'Kanaldel',
     'tools.register': 'Luftdon',
-    'tools.hvac': 'Ventilationsaggregat',
+    'tools.hvac': 'Klimatenhet',
     'tools.dwvPipe': 'Avloppsrör',
     'tools.trap': 'Vattenlås',
     'tools.pipeFitting': 'Rördel',
@@ -216,6 +216,6 @@ export const messages = defineMessages({
     'floor.below': '{n} under',
     'floor.none': 'Ingen lägre våning finns.',
 
-    'riser.label': 'Stigarschema',
+    'riser.label': 'Stamschema',
   },
 })
