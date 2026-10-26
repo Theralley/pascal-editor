@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import { type AnyNode, ItemNode, LevelNode, ZoneNode } from '@pascal-app/core'
+import { setLocale } from '@pascal-app/editor'
 import { floorItemMisfitNotice, itemPlacementNotice } from './placement-notice'
 
 const bath = { id: 'zone_bath', name: 'Bath', width: 2.2, depth: 1.9 }
@@ -25,6 +26,23 @@ describe('the warning a person reads for a floor item that does not fit', () => 
     expect(
       floorItemMisfitNotice({ code: 'too_large_for_room', room: unnamed }, [3, 1, 1]).line,
     ).toBe('Too large for its room')
+  })
+})
+
+describe('the warning in Swedish', () => {
+  afterEach(() => setLocale('en'))
+
+  test('names the room and writes the sizes with decimal commas', () => {
+    setLocale('sv')
+    expect(
+      floorItemMisfitNotice({ code: 'blocks_door', room: bath, doorId: 'door_a' }, [1.6, 0.6, 0.8]),
+    ).toEqual({ line: 'Blockerar dörren till Bath' })
+    expect(
+      floorItemMisfitNotice({ code: 'too_large_for_room', room: bath }, [2.34, 0.6, 1.11]),
+    ).toEqual({
+      line: 'För stor för Bath',
+      detail: '2,34 × 1,11 m i ett rum på 2,2 × 1,9 m',
+    })
   })
 })
 

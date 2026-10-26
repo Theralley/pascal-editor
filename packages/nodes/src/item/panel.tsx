@@ -17,11 +17,13 @@ import {
   triggerSFX,
   useEditor,
   usePlacementNotice,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Copy, Link, Link2Off, Move, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { AuthoredParams } from './authored-params'
+import { messages } from './messages'
 
 /**
  * Stage E inspector for item. 1:1 port of the legacy
@@ -36,6 +38,7 @@ import { AuthoredParams } from './authored-params'
  * (see the wiki / plan recipe).
  */
 export default function ItemPanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const setSelection = useViewer((s) => s.setSelection)
   const deleteNode = useScene((s) => s.deleteNode)
@@ -113,11 +116,11 @@ export default function ItemPanel() {
       )}
       <AuthoredParams node={node} />
 
-      <PanelSection title="Position">
+      <PanelSection title={t('position.heading')}>
         <SliderControl
           label={
             <>
-              X<sub className="ml-[1px] text-[11px] opacity-70">pos</sub>
+              X<sub className="ml-[1px] text-[11px] opacity-70">{t('position.sub')}</sub>
             </>
           }
           max={node.position[0] + 2}
@@ -133,7 +136,7 @@ export default function ItemPanel() {
         <SliderControl
           label={
             <>
-              Y<sub className="ml-[1px] text-[11px] opacity-70">pos</sub>
+              Y<sub className="ml-[1px] text-[11px] opacity-70">{t('position.sub')}</sub>
             </>
           }
           max={node.position[1] + 2}
@@ -149,7 +152,7 @@ export default function ItemPanel() {
         <SliderControl
           label={
             <>
-              Z<sub className="ml-[1px] text-[11px] opacity-70">pos</sub>
+              Z<sub className="ml-[1px] text-[11px] opacity-70">{t('position.sub')}</sub>
             </>
           }
           max={node.position[2] + 2}
@@ -164,12 +167,12 @@ export default function ItemPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Rotation">
+      <PanelSection title={t('rotation.heading')}>
         <TiltSlider axis={0} label="X" node={node} onUpdate={handleUpdate} />
         <SliderControl
           label={
             <>
-              Y<sub className="ml-[1px] text-[11px] opacity-70">rot</sub>
+              Y<sub className="ml-[1px] text-[11px] opacity-70">{t('rotation.sub')}</sub>
             </>
           }
           max={Math.round((node.rotation[1] * 180) / Math.PI) + 45}
@@ -206,10 +209,10 @@ export default function ItemPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Scale">
+      <PanelSection title={t('scale.heading')}>
         <div className="flex items-center justify-between px-2 pb-2">
           <span className="font-medium text-[10px] text-muted-foreground/80 uppercase tracking-wider">
-            Uniform Scale
+            {t('scale.uniform')}
           </span>
           <button
             className={
@@ -228,7 +231,8 @@ export default function ItemPanel() {
           <SliderControl
             label={
               <>
-                XYZ<sub className="ml-[1px] text-[11px] opacity-70">scale</sub>
+                {/* i18n-ignore: axis letters */}XYZ
+                <sub className="ml-[1px] text-[11px] opacity-70">{t('scale.sub')}</sub>
               </>
             }
             max={10}
@@ -246,7 +250,7 @@ export default function ItemPanel() {
             <SliderControl
               label={
                 <>
-                  X<sub className="ml-[1px] text-[11px] opacity-70">scale</sub>
+                  X<sub className="ml-[1px] text-[11px] opacity-70">{t('scale.sub')}</sub>
                 </>
               }
               max={10}
@@ -261,7 +265,7 @@ export default function ItemPanel() {
             <SliderControl
               label={
                 <>
-                  Y<sub className="ml-[1px] text-[11px] opacity-70">scale</sub>
+                  Y<sub className="ml-[1px] text-[11px] opacity-70">{t('scale.sub')}</sub>
                 </>
               }
               max={10}
@@ -276,7 +280,7 @@ export default function ItemPanel() {
             <SliderControl
               label={
                 <>
-                  Z<sub className="ml-[1px] text-[11px] opacity-70">scale</sub>
+                  Z<sub className="ml-[1px] text-[11px] opacity-70">{t('scale.sub')}</sub>
                 </>
               }
               max={10}
@@ -292,9 +296,9 @@ export default function ItemPanel() {
         )}
       </PanelSection>
 
-      <PanelSection title="Info">
+      <PanelSection title={t('info.heading')}>
         <div className="flex items-center justify-between px-2 py-1 text-muted-foreground text-sm">
-          <span>Dimensions</span>
+          <span>{t('info.dimensions')}</span>
           {(() => {
             const [w, h, d] = getScaledDimensions(node)
             return (
@@ -306,18 +310,22 @@ export default function ItemPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions.heading')}>
         <ActionGroup>
-          <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+          <ActionButton
+            icon={<Move className="h-3.5 w-3.5" />}
+            label={t('actions.move')}
+            onClick={handleMove}
+          />
           <ActionButton
             icon={<Copy className="h-3.5 w-3.5" />}
-            label="Duplicate"
+            label={t('actions.duplicate')}
             onClick={handleDuplicate}
           />
           <ActionButton
             className="hover:bg-red-500/20"
             icon={<Trash2 className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-            label="Delete"
+            label={t('actions.delete')}
             onClick={handleDelete}
           />
         </ActionGroup>
@@ -338,12 +346,13 @@ function TiltSlider({
   node: ItemNode
   onUpdate: (updates: Partial<ItemNode>) => void
 }) {
+  const t = useT(messages)
   return (
     <SliderControl
       label={
         <>
           {label}
-          <sub className="ml-[1px] text-[11px] opacity-70">rot</sub>
+          <sub className="ml-[1px] text-[11px] opacity-70">{t('rotation.sub')}</sub>
         </>
       }
       max={180}

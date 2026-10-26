@@ -23,7 +23,7 @@ import { useMemo } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { type Camera, type Mesh, type MeshBasicMaterial, Ray, Vector3 } from 'three'
 import useBlockEditSession from '../block/edit-session'
-import { BLOCK_SUPPORT_REFUSAL } from '../block/hosted-edit'
+import { blockSupportRefusal } from '../block/hosted-edit'
 import BlockSelectionAffordance from '../block/selection'
 import { blockGizmoDimensions } from '../block/toolbar-state'
 import {
@@ -238,13 +238,13 @@ for (const operation of ['rotate', 'translate', 'scale'])
         if (sequence !== 'refused first') {
           await pointer('pointermove', dragPoint(operation, acceptedValue, origin))
           await settle(renderer)
-          expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(false)
+          expect(ui(renderer).includes(blockSupportRefusal())).toBe(false)
           accepted = getEffectiveNode(useScene.getState().nodes[host.id] as BlockNode).topology
           expect(accepted).not.toEqual(host.topology)
         }
         await pointer('pointermove', dragPoint(operation, refusedValue, origin))
         await settle(renderer)
-        expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(true)
+        expect(ui(renderer).includes(blockSupportRefusal())).toBe(true)
         expect(writes).toBe(0)
         expect(nodes()).toEqual(before)
         expect(getEffectiveNode(useScene.getState().nodes[host.id] as BlockNode).topology).toEqual(
@@ -253,7 +253,7 @@ for (const operation of ['rotate', 'translate', 'scale'])
         if (sequence === 'refused then corrected') {
           await pointer('pointermove', dragPoint(operation, acceptedValue, origin))
           await settle(renderer)
-          expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(false)
+          expect(ui(renderer).includes(blockSupportRefusal())).toBe(false)
         }
         await pointer('pointerup')
         await settle(renderer)
@@ -264,7 +264,7 @@ for (const operation of ['rotate', 'translate', 'scale'])
         expect(useScene.temporal.getState().pastStates).toHaveLength(accepted ? 1 : 0)
         expect(useInteractionScope.getState().scope).toMatchObject({ phase: 'selecting' })
         expect(useLiveNodeOverrides.getState().overrides.size).toBe(0)
-        expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(false)
+        expect(ui(renderer).includes(blockSupportRefusal())).toBe(false)
         if (accepted) {
           const label =
             operation === 'rotate' ? 'Angle' : operation === 'translate' ? 'X distance' : 'X scale'
@@ -296,7 +296,7 @@ for (const entry of [
       const preview = getEffectiveNode(useScene.getState().nodes[host.id] as BlockNode).topology
       if (entry.amount !== null) expect(preview).not.toEqual(host.topology)
       else expect(preview).toEqual(host.topology)
-      expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(false)
+      expect(ui(renderer).includes(blockSupportRefusal())).toBe(false)
       await key('Enter')
       await settle(renderer)
       expect(useInteractionScope.getState().scope).toMatchObject({ phase: 'selecting' })
@@ -379,7 +379,7 @@ test('generated child: a refused first rotation tick releases without writes or 
     await beginDrag(renderer, 'rotate', origin)
     await pointer('pointermove', dragPoint('rotate', 10, origin))
     await settle(renderer)
-    expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(true)
+    expect(ui(renderer).includes(blockSupportRefusal())).toBe(true)
     await pointer('pointerup')
     await settle(renderer)
     expect(nodes()).toEqual(before)
@@ -387,7 +387,7 @@ test('generated child: a refused first rotation tick releases without writes or 
     expect(useScene.temporal.getState().pastStates).toHaveLength(0)
     expect(useInteractionScope.getState().scope).toMatchObject({ phase: 'selecting' })
     expect(useLiveNodeOverrides.getState().overrides.size).toBe(0)
-    expect(ui(renderer).includes(BLOCK_SUPPORT_REFUSAL)).toBe(false)
+    expect(ui(renderer).includes(blockSupportRefusal())).toBe(false)
   } finally {
     unsubscribe()
     await renderer.unmount()

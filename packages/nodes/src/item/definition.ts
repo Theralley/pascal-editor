@@ -19,6 +19,7 @@ import { itemPaint } from './paint'
 import { itemParametrics } from './parametrics'
 import { itemPlacementNotice } from './placement-notice'
 import { ItemNode } from './schema'
+import { itemTranslations } from './translations'
 
 // The two floor gizmos flank the item at mid-height so they never overlap,
 // even on small items: move sits past the left edge, rotate past the right
@@ -383,6 +384,8 @@ export const itemDefinition: NodeDefinition<typeof ItemNode> = {
     paletteSection: 'furnish',
     paletteOrder: 10,
   },
+
+  translations: itemTranslations,
 
   mcp: {
     description:

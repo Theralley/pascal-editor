@@ -33,6 +33,7 @@ import { proceduralMechanism, toggleItemLights } from '../shared/item-interactio
 import { restingFloorplanAffectedIds } from '../shared/resting-surface-plan'
 import { bakeProceduralAnimationClips, isProceduralMotionPlaying } from './animation'
 import { proceduralFloorplanMoveTarget } from './move-session'
+import { proceduralItemTranslations } from './translations'
 
 const GIZMO_SIDE_OFFSET = 0.3
 const GIZMO_FRONT_OFFSET = 0.3
@@ -390,5 +391,7 @@ export const proceduralItemDefinition: NodeDefinition<typeof ProceduralItemNode>
     description: 'Experimental editable recipe',
     icon: { kind: 'iconify', name: 'lucide:boxes' },
   },
+  translations: proceduralItemTranslations,
+
   mcp: { description: 'Experimental procedural item with a validated recipe.' },
 }

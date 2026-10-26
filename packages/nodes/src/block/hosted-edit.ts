@@ -10,12 +10,14 @@ import {
   useLiveNodeOverrides,
 } from '@pascal-app/core'
 import { attachmentBounds } from '@pascal-app/core/procedural-items'
+import { translate } from '@pascal-app/editor'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 import { type HostedUpdate, hostedChildUpdates } from '../shared/hosted-resize'
 import { blockFaceHost } from './face-host'
+import { messages } from './messages'
 import { blockSurfaceProvider, blockTopSurfaces } from './surface'
 
-export const BLOCK_SUPPORT_REFUSAL = 'This edit would remove support for an item on the block'
+export const blockSupportRefusal = () => translate(messages, 'error.support')
 type EditScene = Pick<SceneApi, 'get' | 'update' | 'applyChanges'>
 
 function faceMatrix(host: BlockNode, faceId: string) {

@@ -22,7 +22,7 @@ import {
   type BlockSelection,
   blockFaceNormal,
 } from './commands'
-import { BLOCK_SUPPORT_REFUSAL, createBlockTopologyPreview } from './hosted-edit'
+import { blockSupportRefusal, createBlockTopologyPreview } from './hosted-edit'
 import type { BlockSfxAction } from './interaction-sfx'
 import {
   type BlockExtrudeAxis,
@@ -215,7 +215,7 @@ export function useBlockFaceOperation({
         }
         if (!topologyPreview.set(result.topology)) {
           supportRefused = true
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return
         }
         latestTopology = result.topology

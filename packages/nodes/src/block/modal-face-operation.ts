@@ -1,4 +1,6 @@
+import { translate } from '@pascal-app/editor'
 import type { BlockCommand } from './commands'
+import { messages } from './messages'
 import { type BlockModalFeedbackMode, blockModalFeedbackLabel } from './modal-transform'
 
 export type BlockModalFaceOperation = 'extrude' | 'inset'
@@ -64,11 +66,20 @@ export function blockModalFaceOperationStatus(
   feedbackMode: BlockModalFeedbackMode = 'free',
   extrudeAxis: BlockExtrudeAxis = 'normal',
 ): string {
-  const label = operation === 'extrude' ? 'Extrude' : 'Inset'
-  const unit = operation === 'extrude' ? 'm' : 'ratio'
+  const label = translate(
+    messages,
+    operation === 'extrude' ? 'operation.Extrude' : 'operation.Inset',
+  )
+  const unit = operation === 'extrude' ? 'm' : translate(messages, 'status.ratio')
   const axis =
     operation === 'extrude' && extrudeAxis !== 'normal'
-      ? ` · ${extrudeAxis.toUpperCase()} axis`
+      ? ` · ${translate(messages, 'status.axis', { axis: extrudeAxis.toUpperCase() })}`
       : ''
-  return `${label} · ${value} ${unit} · ${blockModalFeedbackLabel(feedbackMode)}${axis} · type value · click applies · Esc cancels`
+  return translate(messages, 'status.face.operation', {
+    operation: label,
+    value,
+    unit,
+    feedback: blockModalFeedbackLabel(feedbackMode),
+    axis,
+  })
 }

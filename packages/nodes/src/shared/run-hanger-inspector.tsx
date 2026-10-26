@@ -1,11 +1,14 @@
 'use client'
 
 import { type AnyNodeId, emitter, useScene } from '@pascal-app/core'
+import { useT } from '@pascal-app/editor'
 import { useMemo } from 'react'
+import { messages } from './messages'
 import { planRunHangerSlots, type SupportedRun } from './run-hangers'
 import SystemCheckPanel from './system-check-panel'
 
 export default function RunHangerInspector({ node }: { node: SupportedRun }) {
+  const t = useT(messages)
   const nodes = useScene((state) => state.nodes)
   const slots = useMemo(() => planRunHangerSlots(node, nodes), [node, nodes])
   if (!node.autoHangers) return <SystemCheckPanel nodeId={node.id} nodes={nodes} />
@@ -28,11 +31,8 @@ export default function RunHangerInspector({ node }: { node: SupportedRun }) {
     <>
       <SystemCheckPanel nodeId={node.id} nodes={nodes} />
       <section className="space-y-2 border-t pt-3">
-        <h3 className="text-sm font-medium">Individual hangers</h3>
-        <p className="text-xs text-muted-foreground">
-          Positions are measured along each path segment. Changing spacing regenerates the numbered
-          slots.
-        </p>
+        <h3 className="text-sm font-medium">{t('hangers.heading')}</h3>
+        <p className="text-xs text-muted-foreground">{t('hangers.note')}</p>
         <div className="max-h-72 space-y-3 overflow-y-auto">
           {slots.map((slot, index) => {
             const a = node.path[slot.segmentIndex]!
@@ -43,7 +43,7 @@ export default function RunHangerInspector({ node }: { node: SupportedRun }) {
               <div key={slot.id} className="space-y-1 rounded border p-2 text-xs">
                 <div className="flex justify-between">
                   <span>
-                    Hanger {index + 1} · segment {slot.segmentIndex + 1}
+                    {t('hangers.hanger', { n: index + 1, segment: slot.segmentIndex + 1 })}
                   </span>
                   <label>
                     <input
@@ -51,19 +51,19 @@ export default function RunHangerInspector({ node }: { node: SupportedRun }) {
                       checked={slot.skipped}
                       onChange={(event) => update(slot.id, { skipped: event.target.checked })}
                     />{' '}
-                    Skip
+                    {t('hangers.skip')}
                   </label>
                 </div>
                 {!slot.skipped && !slot.hanger && (
                   <p role="status" className="text-amber-600 dark:text-amber-400">
-                    No support within reach. Move the hanger or choose another host.
+                    {t('hangers.noSupport')}
                   </p>
                 )}
                 <label className="flex justify-between">
-                  Position (m)
+                  {t('hangers.position')}
                   <input
                     key={`${slot.id}:${slot.fraction}`}
-                    aria-label={`Hanger ${index + 1} position in metres`}
+                    aria-label={t('hangers.positionLabel', { n: index + 1 })}
                     type="number"
                     min={0}
                     max={length}
@@ -84,14 +84,14 @@ export default function RunHangerInspector({ node }: { node: SupportedRun }) {
                   />
                 </label>
                 <select
-                  aria-label={`Hanger ${index + 1} support`}
+                  aria-label={t('hangers.supportLabel', { n: index + 1 })}
                   value={hostId}
                   className="w-full bg-background"
                   onChange={(event) => update(slot.id, { hostId: event.target.value })}
                 >
-                  <option value="">Automatic support</option>
+                  <option value="">{t('hangers.automatic')}</option>
                   {hostId && !hosts.some((host) => host.id === hostId) && (
-                    <option value={hostId}>Missing support</option>
+                    <option value={hostId}>{t('hangers.missing')}</option>
                   )}
                   {hosts.map((host) => (
                     <option key={host.id} value={host.id}>
@@ -109,7 +109,7 @@ export default function RunHangerInspector({ node }: { node: SupportedRun }) {
                       })
                     }
                   >
-                    Reveal support
+                    {t('hangers.reveal')}
                   </button>
                 )}
               </div>

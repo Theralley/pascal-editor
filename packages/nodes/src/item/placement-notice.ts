@@ -6,8 +6,11 @@ import {
   type PlacementNotice,
 } from '@pascal-app/core'
 import { type FloorItemMisfit, floorItemFit } from '@pascal-app/core/building'
+import { getLocale, translate } from '@pascal-app/editor'
+import { messages } from './messages'
 
-const round = (value: number) => Math.round(value * 100) / 100
+const round = (value: number) =>
+  (Math.round(value * 100) / 100).toLocaleString(getLocale(), { maximumFractionDigits: 2 })
 
 /** What a person reads for a floor item that does not fit: in a door's way, or too large for its room. */
 export function floorItemMisfitNotice(
@@ -16,10 +19,21 @@ export function floorItemMisfitNotice(
 ): PlacementNotice {
   const name = misfit.room?.name.trim()
   if (misfit.code === 'blocks_door')
-    return { line: name ? `Blocks the door to ${name}` : 'Blocks a door' }
+    return {
+      line: name
+        ? translate(messages, 'notice.blocksDoorTo', { name })
+        : translate(messages, 'notice.blocksDoor'),
+    }
   return {
-    line: name ? `Too large for ${name}` : 'Too large for its room',
-    detail: `${round(dimensions[0] ?? 0)} × ${round(dimensions[2] ?? 0)} m in a ${round(misfit.room.width)} × ${round(misfit.room.depth)} m room`,
+    line: name
+      ? translate(messages, 'notice.tooLargeFor', { name })
+      : translate(messages, 'notice.tooLarge'),
+    detail: translate(messages, 'notice.size', {
+      width: round(dimensions[0] ?? 0),
+      depth: round(dimensions[2] ?? 0),
+      roomWidth: round(misfit.room.width),
+      roomDepth: round(misfit.room.depth),
+    }),
   }
 }
 

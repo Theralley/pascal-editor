@@ -11,8 +11,10 @@ import {
   nodeRegistry,
   validateDwv,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import { connectionCompatibility } from '@pascal-app/editor/distribution'
 import { Box3, Ray, Vector3 } from 'three'
+import { messages } from './messages'
 import { planRunHangerSlots } from './run-hangers'
 
 export type SystemFinding = {
@@ -55,7 +57,7 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
     if (!joined.has(index))
       findings.push({
         code: 'open-end',
-        message: `Open connection: ${entry.port.id}`,
+        message: translate(messages, 'finding.openConnection', { port: entry.port.id }),
         nodeIds: [entry.nodeId],
         severity: 'warning',
       })
@@ -76,8 +78,7 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
     if (!hasEquipment && hasSeparatePeer)
       findings.push({
         code: 'disconnected-branch',
-        message:
-          'Separate branch: no connection to the other branches of this system. Review whether this is intentional.',
+        message: translate(messages, 'finding.separateBranch'),
         nodeIds: component,
         severity: 'warning',
       })
@@ -116,7 +117,7 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
         continue
       const box = new Box3().setFromPoints([b.a, b.b]).expandByScalar(a.radius + b.radius)
       if (segmentHitsBox(a.a, a.b, box))
-        addClash(a.run.id, b.run.id, 'Possible run intersection. Inspect the highlighted runs.')
+        addClash(a.run.id, b.run.id, translate(messages, 'finding.runIntersection'))
     }
   }
   for (const wall of Object.values(nodes)) {
@@ -137,11 +138,7 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
     for (const segment of segments) {
       if (segment.run.wallAttachment?.wallId === wall.id) continue
       if (segmentHitsBox(segment.a, segment.b, box.clone().expandByScalar(segment.radius)))
-        addClash(
-          segment.run.id,
-          wall.id,
-          'Possible wall intersection. Check the wall opening and run clearance.',
-        )
+        addClash(segment.run.id, wall.id, translate(messages, 'finding.wallIntersection'))
     }
   }
   for (const run of runs) {
@@ -149,7 +146,7 @@ export function checkDistributionSystems(nodes: Record<AnyNodeId, AnyNode>): Sys
     if (missing.length)
       findings.push({
         code: 'unsupported-hanger',
-        message: `${missing.length} hanger${missing.length === 1 ? '' : 's'} without a support.`,
+        message: translate(messages, 'finding.unsupportedHangers', { count: missing.length }),
         nodeIds: [run.id],
         severity: 'warning',
       })

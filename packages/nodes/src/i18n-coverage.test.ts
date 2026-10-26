@@ -9,35 +9,15 @@ import { builtinPlugin } from './index'
  */
 const PENDING = new Set([
   'shelf',
-  'block',
-  'spawn',
-  'separator',
-  'floor-opening',
   'fence',
   'fence-gate',
   'fence-opening',
-  'slab',
-  'ceiling',
-  'window',
   'cabinet',
   'cabinet-module',
-  'item',
-  'procedural-item',
-  'imported-mesh',
   'column',
   'elevator',
-  'unit',
   'stair',
   'stair-segment',
-  'zone',
-  'site',
-  'building',
-  'level',
-  'guide',
-  'scan',
-  'measurement',
-  'construction-dimension',
-  'structural-grid',
 ])
 
 /** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */
@@ -85,6 +65,123 @@ const SAMPLE_NODES: Record<string, object[]> = {
     { id: 'wall_b', start: [0, 0], end: [4, 0], curveOffset: 0.5 },
     { id: 'wall_c', start: [0, 0], end: [4, 0], wallType: 'curtain' },
     { id: 'wall_d', start: [0, 0], end: [4, 0], underpinning: { rim: 0.2, stem: 0.3 } },
+  ],
+  separator: [{ start: [0, 0], end: [3, 0] }],
+  'floor-opening': [
+    {
+      polygon: [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    },
+  ],
+  slab: [
+    {
+      polygon: [
+        [0, 0],
+        [4, 0],
+        [4, 4],
+        [0, 4],
+      ],
+    },
+  ],
+  ceiling: [
+    {
+      polygon: [
+        [0, 0],
+        [4, 0],
+        [4, 4],
+        [0, 4],
+      ],
+    },
+  ],
+  zone: [
+    {
+      name: 'Room',
+      polygon: [
+        [0, 0],
+        [4, 0],
+        [4, 4],
+        [0, 4],
+      ],
+    },
+  ],
+  'imported-mesh': [{ id: 'imesh_a' }],
+  guide: [{ url: 'asset://guide.png' }],
+  item: [
+    {
+      asset: {
+        id: 'chair',
+        category: 'furniture',
+        name: 'Chair',
+        thumbnail: '/items/chair/thumbnail.webp',
+        src: '/items/chair/model.glb',
+      },
+    },
+  ],
+  measurement: [
+    {
+      id: 'measurement_a',
+      measurement: {
+        kind: 'distance',
+        points: [
+          [0, 0, 0],
+          [1, 0, 0],
+        ],
+      },
+    },
+    {
+      id: 'measurement_b',
+      measurement: {
+        kind: 'area',
+        base: [
+          [0, 0, 0],
+          [1, 0, 0],
+          [1, 0, 1],
+        ],
+      },
+    },
+  ],
+  'procedural-item': [
+    {
+      recipe: {
+        version: 1,
+        name: 'Box',
+        description: 'A box.',
+        parameters: [
+          {
+            id: 'width',
+            label: 'Width',
+            default: 1,
+            min: 0.5,
+            max: 2,
+            step: 0.1,
+            unit: 'm',
+            axis: 'x',
+          },
+        ],
+        slots: [{ id: 'body', label: 'Body', color: '#777777' }],
+        parts: [
+          {
+            id: 'body',
+            label: 'Body',
+            count: 1,
+            shapes: [
+              {
+                id: 'box',
+                primitive: 'box',
+                slot: 'body',
+                size: ['width', 1, 1],
+                position: [0, 0.5, 0],
+              },
+            ],
+          },
+        ],
+        constraints: [],
+      },
+    },
   ],
 }
 

@@ -1,5 +1,5 @@
 import type { AnyNodeId, BlockNode, BlockTopology, SceneApi } from '@pascal-app/core'
-import type { SelectionAffordanceHistoryApi } from '@pascal-app/editor'
+import { type SelectionAffordanceHistoryApi, translate } from '@pascal-app/editor'
 import {
   applyBlockCommand,
   type BlockCommand,
@@ -7,7 +7,8 @@ import {
   type BlockSelection,
   blockSelectionVertexIds,
 } from './commands'
-import { BLOCK_SUPPORT_REFUSAL, commitBlockTopologyEdit } from './hosted-edit'
+import { blockSupportRefusal, commitBlockTopologyEdit } from './hosted-edit'
+import { messages } from './messages'
 
 type SuccessfulBlockCommandResult = Extract<BlockCommandResult, { ok: true }>
 
@@ -121,13 +122,13 @@ export function commitBlockOperation(
   baseTopology: BlockTopology,
   command: BlockCommand,
 ): BlockOperationCommit {
-  if (services.readOnly) return { ok: false, error: 'Scene is read-only' }
+  if (services.readOnly) return { ok: false, error: translate(messages, 'error.readOnly') }
   const result = applyBlockCommand(baseTopology, command)
   if (!result.ok) return result
   if (sameTopology(baseTopology, result.topology)) return { ok: true, changed: false }
 
   if (!commitBlockTopologyEdit(services.sceneApi, nodeId, result.topology))
-    return { ok: false, error: BLOCK_SUPPORT_REFUSAL }
+    return { ok: false, error: blockSupportRefusal() }
   return {
     ok: true,
     changed: true,
@@ -148,13 +149,13 @@ export function replaceCommittedBlockOperation(
   operation: BlockLastOperation,
   command: BlockCommand,
 ): BlockLastOperationReplacement {
-  if (services.readOnly) return { ok: false, error: 'Scene is read-only' }
+  if (services.readOnly) return { ok: false, error: translate(messages, 'error.readOnly') }
   const current = services.sceneApi.get<BlockNode>(operation.nodeId)
   if (current?.type !== 'block' || !sameTopology(current.topology, operation.resultTopology)) {
-    return { ok: false, error: 'The last operation is no longer the latest scene change' }
+    return { ok: false, error: translate(messages, 'error.notLatest') }
   }
   if (services.historyApi.depth() !== operation.historyDepth) {
-    return { ok: false, error: 'Scene history changed after the last operation' }
+    return { ok: false, error: translate(messages, 'error.historyChanged') }
   }
 
   const result = applyBlockCommand(operation.baseTopology, command)
@@ -167,7 +168,7 @@ export function replaceCommittedBlockOperation(
     }
     return commitBlockTopologyEdit(services.sceneApi, operation.nodeId, result.topology)
   })
-  if (!restored) return { ok: false, error: 'Could not restore the operation baseline' }
+  if (!restored) return { ok: false, error: translate(messages, 'error.restore') }
 
   return {
     ok: true,
@@ -187,20 +188,20 @@ export function repeatCommittedBlockOperation(
   operation: BlockLastOperation,
   selection: RepeatSelection,
 ): BlockLastOperationReplacement {
-  if (services.readOnly) return { ok: false, error: 'Scene is read-only' }
+  if (services.readOnly) return { ok: false, error: translate(messages, 'error.readOnly') }
   const current = services.sceneApi.get<BlockNode>(operation.nodeId)
   if (current?.type !== 'block' || !sameTopology(current.topology, operation.resultTopology)) {
-    return { ok: false, error: 'The last operation is no longer the latest scene change' }
+    return { ok: false, error: translate(messages, 'error.notLatest') }
   }
   if (services.historyApi.depth() !== operation.historyDepth) {
-    return { ok: false, error: 'Scene history changed after the last operation' }
+    return { ok: false, error: translate(messages, 'error.historyChanged') }
   }
   const command = commandForRepeat(operation.command, current.topology, selection)
-  if (!command) return { ok: false, error: 'The current selection cannot repeat this operation' }
+  if (!command) return { ok: false, error: translate(messages, 'error.cannotRepeat') }
   const result = applyBlockCommand(current.topology, command)
   if (!result.ok) return result
   if (!commitBlockTopologyEdit(services.sceneApi, operation.nodeId, result.topology))
-    return { ok: false, error: BLOCK_SUPPORT_REFUSAL }
+    return { ok: false, error: blockSupportRefusal() }
   return {
     ok: true,
     operation: recordCommittedBlockOperation(

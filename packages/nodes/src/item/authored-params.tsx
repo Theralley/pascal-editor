@@ -14,9 +14,11 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  useT,
 } from '@pascal-app/editor'
 import { RotateCcw } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { messages } from './messages'
 import { isScriptDefault, scriptDefault, scriptDefaultsPatch } from './script-param-defaults'
 
 /**
@@ -31,6 +33,7 @@ export function AuthoredParams({
 }: {
   node: { id: string; source?: ScriptedNode['source'] }
 }) {
+  const t = useT(messages)
   const source = node.source
   const [drafts, setDrafts] = useState<Record<string, number>>({})
   const [busy, setBusy] = useState(false)
@@ -46,7 +49,7 @@ export function AuthoredParams({
     rebuildAuthoredObject(node.id, patch)
       .catch((reason: unknown) => {
         console.error('[authored object] rebuild failed', reason)
-        setError("Couldn't rebuild with these values.")
+        setError(t('params.failed'))
       })
       .finally(() => {
         rebuilding.current = false
@@ -115,7 +118,7 @@ export function AuthoredParams({
         <div className="min-w-0 flex-1">{input}</div>
         {isScriptDefault(spec, source.params[spec.id]) ? null : (
           <ResetButton
-            label={`Reset ${spec.label ?? spec.id}`}
+            label={t('params.reset', { name: spec.label ?? spec.id })}
             onClick={() => rebuild({ [spec.id]: scriptDefault(spec) })}
           />
         )}
@@ -126,7 +129,7 @@ export function AuthoredParams({
   const resetAll = scriptDefaultsPatch(source.manifest.params, source.params)
 
   return (
-    <PanelSection title="Parameters">
+    <PanelSection title={t('params.heading')}>
       {source.manifest.params.map(row)}
       {Object.keys(resetAll).length > 0 ? (
         <button
@@ -137,12 +140,12 @@ export function AuthoredParams({
           type="button"
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Reset parameters
+          {t('params.resetAll')}
         </button>
       ) : null}
       {busy ? (
         <div className="px-2 py-1 text-muted-foreground text-xs">
-          {source.language === 'bpy' ? 'Rebuilding in Blender…' : 'Rebuilding…'}
+          {source.language === 'bpy' ? t('params.rebuildingBlender') : t('params.rebuilding')}
         </div>
       ) : null}
       {error ? <div className="px-2 py-1 text-red-400 text-xs">{error}</div> : null}
@@ -151,6 +154,7 @@ export function AuthoredParams({
 }
 
 function ResetButton({ label, onClick }: { label: string; onClick: () => void }) {
+  const t = useT(messages)
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -164,7 +168,7 @@ function ResetButton({ label, onClick }: { label: string; onClick: () => void })
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top">Reset to default</TooltipContent>
+      <TooltipContent side="top">{t('params.resetTooltip')}</TooltipContent>
     </Tooltip>
   )
 }

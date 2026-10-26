@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { setLocale } from '@pascal-app/editor'
 import {
   blockBevelWidthFromDrag,
   blockComponentStatus,
@@ -39,6 +40,17 @@ describe('block toolbar state', () => {
     expect(formatBlockSelectionStatus('face', 1)).toBe('1 FACE')
     expect(formatBlockSelectionStatus('edge', 2)).toBe('2 EDGES')
     expect(formatBlockSelectionStatus('vertex', 3)).toBe('3 VERTICES')
+  })
+
+  test('reads in Swedish with the right plural', () => {
+    setLocale('sv')
+    try {
+      expect(formatBlockSelectionStatus('face', 1)).toBe('1 YTA')
+      expect(formatBlockSelectionStatus('face', 2)).toBe('2 YTOR')
+      expect(formatBlockSelectionStatus('vertex', 3)).toBe('3 HÖRNPUNKTER')
+    } finally {
+      setLocale('en')
+    }
   })
 
   test('does not show a secondary help strip for a selected transform', () => {

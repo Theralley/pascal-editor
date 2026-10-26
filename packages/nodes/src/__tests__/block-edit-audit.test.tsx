@@ -27,7 +27,7 @@ import React, { type ReactNode, useMemo } from 'react'
 import { Ray, Vector3 } from 'three'
 import { applyBlockCommand } from '../block/commands'
 import useBlockEditSession from '../block/edit-session'
-import { BLOCK_SUPPORT_REFUSAL, planBlockTopologyEdit } from '../block/hosted-edit'
+import { blockSupportRefusal, planBlockTopologyEdit } from '../block/hosted-edit'
 import BlockSelectionAffordance from '../block/selection'
 import {
   boxAsset as asset,
@@ -241,7 +241,7 @@ for (const kind of ['catalog', 'generated'] as const)
         })
       } else {
         expect(nodes()).toEqual(before)
-        expect(ui(renderer)).toContain(BLOCK_SUPPORT_REFUSAL)
+        expect(ui(renderer)).toContain(blockSupportRefusal())
         expect(useScene.temporal.getState().pastStates).toHaveLength(0)
         await key('Escape')
       }
@@ -262,16 +262,16 @@ for (const finish of ['Escape', 'correct'])
       expect(ui(renderer)).toContain('0.1')
       await key('9')
       await settle(renderer)
-      expect(ui(renderer)).toContain(BLOCK_SUPPORT_REFUSAL)
+      expect(ui(renderer)).toContain(blockSupportRefusal())
       await key('Enter')
       await settle(renderer)
       expect(nodes()).toEqual(before)
       expect(useInteractionScope.getState().scope).toMatchObject({ phase: 'operating' })
-      expect(ui(renderer)).toContain(BLOCK_SUPPORT_REFUSAL)
+      expect(ui(renderer)).toContain(blockSupportRefusal())
       if (finish === 'correct') {
         await key('Backspace')
         await settle(renderer)
-        expect(ui(renderer)).not.toContain(BLOCK_SUPPORT_REFUSAL)
+        expect(ui(renderer)).not.toContain(blockSupportRefusal())
         await key('Enter')
         await settle(renderer)
         expect(useBlockEditSession.getState().lastOperation?.command).toMatchObject({
@@ -339,7 +339,7 @@ for (const kind of ['catalog', 'generated'] as const)
         nativeEvent: { button: 0, stopImmediatePropagation() {}, clientX: 500, clientY: 500 },
       })
       await settle(renderer)
-      expect(ui(renderer)).not.toContain(BLOCK_SUPPORT_REFUSAL)
+      expect(ui(renderer)).not.toContain(blockSupportRefusal())
       expect(useInteractionScope.getState().scope).toMatchObject({ phase: 'operating' })
       await act(async () =>
         window.dispatchEvent(
@@ -601,7 +601,7 @@ test('small occupied BlockEditor preview and commit still reconcile children', a
   await keys(['e', '0', '.', '2', 'Enter'])
   await settle(renderer)
   expect(useScene.temporal.getState().pastStates).toHaveLength(1)
-  expect(ui(renderer)).not.toContain(BLOCK_SUPPORT_REFUSAL)
+  expect(ui(renderer)).not.toContain(blockSupportRefusal())
   expect(pose(child.id)[1]).toBeCloseTo(1.7)
   expect(valid(host.id, child.id)).toBe(true)
 })

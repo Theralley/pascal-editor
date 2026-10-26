@@ -14,6 +14,7 @@ import { blockPaint } from './paint'
 import { blockParametrics } from './parametrics'
 import { BlockNode } from './schema'
 import { blockSurfaceProvider } from './surface'
+import { blockTranslations } from './translations'
 
 /** Bottom within this of the floor (and top above it): the block stands on the floor. */
 const BLOCK_ON_FLOOR_MAX_BOTTOM = 0.1
@@ -154,6 +155,8 @@ export const blockDefinition: NodeDefinition<typeof BlockNode> = {
     paletteOrder: 75,
     actionMenu: false,
   },
+  translations: blockTranslations,
+
   mcp: {
     description:
       'An editable block solid with persistent vertex, edge, and face topology. Positions are level-local meters.',

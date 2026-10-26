@@ -1,15 +1,17 @@
 'use client'
 import { type AnyNodeId, nodeMechanism, useInteractive, useScene } from '@pascal-app/core'
-import { ActionMenuButton } from '@pascal-app/editor'
+import { ActionMenuButton, useT } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Lightbulb, LightbulbOff } from 'lucide-react'
 import { itemHasLights, itemLightsOn, toggleItemLights } from './item-interactions'
+import { messages } from './messages'
 
 /**
  * The light switch for a single selected item or procedural item. Play/Stop
  * comes from the action menu's `capabilities.mechanism` button.
  */
 export default function ItemInteractionActions() {
+  const t = useT(messages)
   const selected = useViewer((s) => s.selection.selectedIds)
   const node = useScene((s) =>
     selected.length === 1 ? s.nodes[selected[0] as AnyNodeId] : undefined,
@@ -21,7 +23,7 @@ export default function ItemInteractionActions() {
     <ActionMenuButton
       // E runs the mechanism when there is one, and only otherwise the light.
       keys={nodeMechanism(node) ? undefined : ['E']}
-      label={lit ? 'Turn light off' : 'Turn light on'}
+      label={lit ? t('light.off') : t('light.on')}
       onClick={(event) => {
         event.stopPropagation()
         toggleItemLights(node)

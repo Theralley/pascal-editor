@@ -1,3 +1,6 @@
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
+
 export type BlockToolbarMode = 'vertex' | 'edge' | 'face'
 export type BlockScaleAxis = 'uniform' | 'x' | 'y' | 'z'
 export type BlockTransformTool = 'transform' | 'loop-cut' | 'bevel'
@@ -35,6 +38,8 @@ const FIXED_BLOCK_GIZMO_DIMENSIONS: BlockGizmoDimensions = {
   planeHandleOffset: 0.175,
 }
 
+const MODE_KEYS = { vertex: 'Vertex', edge: 'Edge', face: 'Face' } as const
+
 export function blockOperationAvailability(
   mode: BlockToolbarMode,
   selectedCount: number,
@@ -49,8 +54,7 @@ export function blockOperationAvailability(
 }
 
 export function formatBlockSelectionStatus(mode: BlockToolbarMode, selectedCount: number): string {
-  const label = selectedCount === 1 ? mode : mode === 'vertex' ? 'vertices' : `${mode}s`
-  return `${selectedCount} ${label}`.toUpperCase()
+  return translate(messages, `status.${mode}`, { count: selectedCount }).toUpperCase()
 }
 
 export function blockComponentStatus({
@@ -71,13 +75,16 @@ export function blockComponentStatus({
   bevelWidth: number
 }): string | null {
   if (tool === 'loop-cut') {
-    return `Loop Cut · ${loopCutCount} cut${loopCutCount === 1 ? '' : 's'} · factor ${loopCutFactor.toFixed(2)} · click or drag an edge · release applies · wheel changes count`
+    return translate(messages, 'status.loopCut', {
+      cuts: translate(messages, 'status.cuts', { count: loopCutCount }),
+      factor: loopCutFactor.toFixed(2),
+    })
   }
   if (tool === 'bevel') {
     const width = String(Math.round(bevelWidth * 1000) / 1000)
-    return `Bevel · width ${width} m · ${bevelSegments} segments · drag changes width · wheel changes segments`
+    return translate(messages, 'status.bevel', { width, segments: bevelSegments })
   }
-  return selectedCount === 0 ? `Click a ${mode} to select it` : null
+  return selectedCount === 0 ? translate(messages, `status.click${MODE_KEYS[mode]}`) : null
 }
 
 export function blockScaleFactors(axis: BlockScaleAxis, factor: number): [number, number, number] {

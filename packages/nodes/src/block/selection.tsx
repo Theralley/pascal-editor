@@ -23,6 +23,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
+  useT,
 } from '@pascal-app/editor'
 import { Html } from '@react-three/drei'
 import { createPortal, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
@@ -88,7 +89,7 @@ import { triangulateBlockFace } from './geometry'
 import { blockGeometrySnapThreshold, resolveBlockGeometrySnap } from './geometry-snap'
 import { BLOCK_WHEEL_OPTIONS, consumeBlockGestureWheel } from './gesture-wheel'
 import {
-  BLOCK_SUPPORT_REFUSAL,
+  blockSupportRefusal,
   commitBlockTopologyEdit,
   createBlockTopologyPreview,
 } from './hosted-edit'
@@ -101,6 +102,7 @@ import {
 } from './last-operation'
 import { resolveLoopCutPointerAction, resolveLoopCutSlideFactor } from './loop-cut-interaction'
 import { unpaintedBlockMaterialSlotIds } from './material-slots'
+import { messages } from './messages'
 import {
   type BlockExtrudeAxis,
   type BlockModalFaceOperation,
@@ -1345,6 +1347,7 @@ function LastOperationControls({
   operation: BlockLastOperation
   onChange: (command: BlockCommand) => void
 }) {
+  const t = useT(messages)
   const command = operation.command
   const input = (
     label: string,
@@ -1375,7 +1378,7 @@ function LastOperationControls({
       return (
         <div className="space-y-1">
           {(['X', 'Y', 'Z'] as const).map((axis, index) =>
-            input(`${axis} distance`, command.delta[index]!, (value) => ({
+            input(t('last.distanceAxis', { axis }), command.delta[index]!, (value) => ({
               ...command,
               delta: command.delta.map((current, currentIndex) =>
                 currentIndex === index ? value : current,
@@ -1386,7 +1389,7 @@ function LastOperationControls({
       )
     case 'rotate-components':
       return input(
-        'Angle',
+        t('last.angle'),
         (command.angle * 180) / Math.PI,
         (value) => ({ ...command, angle: (value * Math.PI) / 180 }),
         { step: 1 },
@@ -1395,7 +1398,7 @@ function LastOperationControls({
       return (
         <div className="space-y-1">
           {(['X', 'Y', 'Z'] as const).map((axis, index) =>
-            input(`${axis} scale`, command.factors[index]!, (value) => ({
+            input(t('last.scaleAxis', { axis }), command.factors[index]!, (value) => ({
               ...command,
               factors: command.factors.map((current, currentIndex) =>
                 currentIndex === index ? value : current,
@@ -1405,18 +1408,18 @@ function LastOperationControls({
         </div>
       )
     case 'extrude-faces':
-      return input('Distance', command.distance, (distance) => ({ ...command, distance }))
+      return input(t('last.distance'), command.distance, (distance) => ({ ...command, distance }))
     case 'inset-faces':
-      return input('Amount', command.amount, (amount) => ({ ...command, amount }), {
+      return input(t('last.amount'), command.amount, (amount) => ({ ...command, amount }), {
         min: 0,
         max: 0.95,
       })
     case 'bevel-edges':
       return (
         <div className="space-y-1">
-          {input('Width', command.width, (width) => ({ ...command, width }), { min: 0 })}
+          {input(t('last.width'), command.width, (width) => ({ ...command, width }), { min: 0 })}
           {input(
-            'Segments',
+            t('last.segments'),
             command.segments,
             (segments) => ({ ...command, segments: Math.min(12, Math.max(1, segments)) }),
             { min: 1, max: 12, step: 1 },
@@ -1426,12 +1429,12 @@ function LastOperationControls({
     case 'loop-cut':
       return (
         <div className="space-y-1">
-          {input('Position', command.factor, (factor) => ({ ...command, factor }), {
+          {input(t('last.position'), command.factor, (factor) => ({ ...command, factor }), {
             min: 0.02,
             max: 0.98,
           })}
           {input(
-            'Cuts',
+            t('last.cuts'),
             command.cuts ?? 1,
             (cuts) => ({ ...command, cuts: Math.min(32, Math.max(1, cuts)) }),
             { min: 1, max: 32, step: 1 },
@@ -1441,6 +1444,25 @@ function LastOperationControls({
     default:
       return null
   }
+}
+
+const GIZMO_AXES = ['x', 'y', 'z'] as const // i18n-ignore: axis ids
+
+const OPERATION_LABELS = [
+  'Move',
+  'Rotate',
+  'Scale',
+  'Extrude',
+  'Inset',
+  'Bevel',
+  'Loop Cut',
+] as const
+
+/** The labels the edit commands record are their English names. */
+function operationLabel(t: ReturnType<typeof useT<typeof messages>>, label: string) {
+  return (OPERATION_LABELS as readonly string[]).includes(label)
+    ? t(`operation.${label as (typeof OPERATION_LABELS)[number]}`)
+    : label
 }
 
 function LastOperationPanel({
@@ -1454,9 +1476,11 @@ function LastOperationPanel({
   onClose: () => void
   onRepeat: () => void
 }) {
+  const t = useT(messages)
+  const label = operationLabel(t, operation.label)
   return (
     <div
-      aria-label={`Adjust ${operation.label}`}
+      aria-label={t('last.adjust', { operation: label })}
       className="pointer-events-auto absolute bottom-16 left-4 w-64 max-w-[calc(100%-2rem)] rounded-xl border border-border/50 bg-background/98 p-2 shadow-elevation-4 backdrop-blur-xl"
       onContextMenu={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
@@ -1465,11 +1489,11 @@ function LastOperationPanel({
     >
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <div className="font-medium text-xs">{operation.label}</div>
-          <div className="text-[10px] text-muted-foreground">Adjust Last Operation · F9</div>
+          <div className="font-medium text-xs">{label}</div>
+          <div className="text-[10px] text-muted-foreground">{t('last.title')}</div>
         </div>
         <button
-          aria-label="Close last operation panel"
+          aria-label={t('last.close')}
           className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={onClose}
           type="button"
@@ -1483,8 +1507,10 @@ function LastOperationPanel({
         onClick={onRepeat}
         type="button"
       >
-        <span>Repeat {operation.label}</span>
-        <kbd className="font-mono text-[9px] text-muted-foreground">Shift+R</kbd>
+        <span>{t('last.repeat', { operation: label })}</span>
+        <kbd className="font-mono text-[9px] text-muted-foreground">
+          {/* i18n-ignore: key names */}Shift+R
+        </kbd>
       </button>
     </div>
   )
@@ -1507,6 +1533,7 @@ function BlockEditor({
   target: Object3D
   mirrorTarget: boolean
 }) {
+  const t = useT(messages)
   const { camera, gl } = useThree()
   const topologyPreview = useMemo(
     () => createBlockTopologyPreview(node.id, sceneApi),
@@ -2138,7 +2165,7 @@ function BlockEditor({
           return
         }
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return
         }
         latestTopology = result.topology
@@ -2392,7 +2419,7 @@ function BlockEditor({
         }
         const wasSupportRefused = !topologyPreview.valid
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return
         }
         if (wasSupportRefused) setError(null)
@@ -2541,7 +2568,7 @@ function BlockEditor({
         }
         const wasSupportRefused = !topologyPreview.valid
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return
         }
         if (wasSupportRefused) setError(null)
@@ -2679,7 +2706,7 @@ function BlockEditor({
           return
         }
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return
         }
         latestFactor = factor
@@ -2807,7 +2834,7 @@ function BlockEditor({
       setTransformNumericInput(typedInput || blockTransformDisplayValue('scale', factor))
       setModalFeedbackMode(typedInput ? 'exact' : snapStep > 0 ? 'grid' : 'free')
       if (!topologyPreview.set(result.topology)) {
-        setError(BLOCK_SUPPORT_REFUSAL)
+        setError(blockSupportRefusal())
         return
       }
       latestFactor = factor
@@ -2975,7 +3002,7 @@ function BlockEditor({
         }
         setBevelWidth(width)
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return false
         }
         activeSegments = segments
@@ -3093,8 +3120,8 @@ function BlockEditor({
     const segments = blockLoopCutSegments(node.topology, loopCutEdgeId, 0.5, loopCutCount)
     setLoopCutSegments(segments)
     setLoopCutFactor(0.5)
-    setError(segments ? null : 'Loop cut requires a connected ring of quad faces')
-  }, [editing, loopCutCount, loopCutEdgeId, loopCutSliding, node.topology, transformTool])
+    setError(segments ? null : t('error.loopRing'))
+  }, [editing, loopCutCount, loopCutEdgeId, loopCutSliding, node.topology, transformTool, t])
 
   useEffect(() => {
     if (transformTool === 'loop-cut' || loopCutSliding) return
@@ -3175,11 +3202,11 @@ function BlockEditor({
         })
         const segments = blockLoopCutSegments(baseTopology, edgeId, effectiveFactor, activeCuts)
         if (!result.ok || !segments) {
-          setError(result.ok ? 'Could not preview loop cut' : result.error)
+          setError(result.ok ? t('error.loopPreview') : result.error)
           return false
         }
         if (!topologyPreview.set(result.topology)) {
-          setError(BLOCK_SUPPORT_REFUSAL)
+          setError(blockSupportRefusal())
           return false
         }
         latestFactor = effectiveFactor
@@ -3299,6 +3326,7 @@ function BlockEditor({
       ownsEditSession,
       target,
       sceneApi.markDirty,
+      t,
       topologyPreview,
     ],
   )
@@ -3340,7 +3368,7 @@ function BlockEditor({
     }
     if (!commitBlockTopologyEdit(sceneApi, node.id, result.topology)) {
       useInteractionScope.getState().begin(meshEditScope(node.id))
-      setError(BLOCK_SUPPORT_REFUSAL)
+      setError(blockSupportRefusal())
       return
     }
     const session = useBlockEditSession.getState()
@@ -3648,7 +3676,7 @@ function BlockEditor({
             : null}
           {gizmoOrigin && transformTool === 'transform' ? (
             <group position={gizmoOrigin}>
-              {(['x', 'y', 'z'] as const).map((axis) => (
+              {GIZMO_AXES.map((axis) => (
                 <AxisTransformHandle
                   axis={axis}
                   disabled={gizmoDisabled}
@@ -3675,7 +3703,7 @@ function BlockEditor({
                   state={blockPlaneVisualState(gizmoTransform, plane)}
                 />
               ))}
-              {(['x', 'y', 'z'] as const).map((axis) => (
+              {GIZMO_AXES.map((axis) => (
                 <RotationHandle
                   arc={gizmoHitDimensions.rotationArc}
                   axis={axis}
@@ -3731,7 +3759,7 @@ function BlockEditor({
               <ToolbarButton
                 active={transformTool === 'transform'}
                 disabled={Boolean(selectedIds.length === 0 || cancelDragRef.current)}
-                label="Transform selected components (G / R / S)"
+                label={t('toolbar.transform')}
                 onClick={() => setTransformTool('transform')}
               >
                 <Move3D className="h-4 w-4" />
@@ -3739,7 +3767,7 @@ function BlockEditor({
               <ToolbarButton
                 active={mode === 'vertex'}
                 disabled={Boolean(cancelDragRef.current)}
-                label="Vertex select (1)"
+                label={t('toolbar.vertex')}
                 onClick={() => switchMode('vertex')}
               >
                 <CircleDot className="h-4 w-4" />
@@ -3747,7 +3775,7 @@ function BlockEditor({
               <ToolbarButton
                 active={mode === 'edge'}
                 disabled={Boolean(cancelDragRef.current)}
-                label="Edge select (2)"
+                label={t('toolbar.edge')}
                 onClick={() => switchMode('edge')}
               >
                 <ScanLine className="h-4 w-4" />
@@ -3755,7 +3783,7 @@ function BlockEditor({
               <ToolbarButton
                 active={mode === 'face'}
                 disabled={Boolean(cancelDragRef.current)}
-                label="Face select (3)"
+                label={t('toolbar.face')}
                 onClick={() => switchMode('face')}
               >
                 <Square className="h-4 w-4" />
@@ -3783,15 +3811,21 @@ function BlockEditor({
                 >
                   {loopCutActive ? <Rows3 className="h-4 w-4" /> : null}
                   {bevelActive ? <Scaling className="h-4 w-4" /> : null}
-                  <span>{loopCutActive ? 'LOOP CUT' : bevelActive ? 'BEVEL' : 'Operations'}</span>
+                  <span>
+                    {loopCutActive
+                      ? t('toolbar.loopCut')
+                      : bevelActive
+                        ? t('toolbar.bevel')
+                        : t('toolbar.operations')}
+                  </span>
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
                 {toolbarPanel === 'operations' ? (
-                  <ToolbarPanelFrame label="Mesh operations" className="w-80 p-1.5">
+                  <ToolbarPanelFrame label={t('toolbar.meshOperations')} className="w-80 p-1.5">
                     <div className="space-y-0.5">
                       <ToolbarOperationItem
                         disabled={selectedIds.length === 0}
-                        label="Move selection"
+                        label={t('toolbar.move')}
                         onClick={() => beginKeyboardTransformModal('translate')}
                         shortcut="G"
                       >
@@ -3799,7 +3833,7 @@ function BlockEditor({
                       </ToolbarOperationItem>
                       <ToolbarOperationItem
                         disabled={selectedIds.length === 0}
-                        label="Rotate selection"
+                        label={t('toolbar.rotate')}
                         onClick={() => beginKeyboardTransformModal('rotate')}
                         shortcut="R"
                       >
@@ -3807,7 +3841,7 @@ function BlockEditor({
                       </ToolbarOperationItem>
                       <ToolbarOperationItem
                         disabled={!operationAvailability.extrude}
-                        label="Extrude selected faces"
+                        label={t('toolbar.extrude')}
                         onClick={extrudeSelectedFace}
                         shortcut="E"
                       >
@@ -3815,7 +3849,7 @@ function BlockEditor({
                       </ToolbarOperationItem>
                       <ToolbarOperationItem
                         disabled={!operationAvailability.inset}
-                        label="Inset selected faces"
+                        label={t('toolbar.inset')}
                         onClick={insetSelectedFace}
                         shortcut="I"
                       >
@@ -3825,7 +3859,7 @@ function BlockEditor({
                         active={loopCutActive}
                         controls={
                           <input
-                            aria-label="Loop cut count"
+                            aria-label={t('toolbar.loopCutCount')}
                             className={OPERATION_INPUT_CLASS}
                             max="32"
                             min="1"
@@ -3839,7 +3873,7 @@ function BlockEditor({
                             value={loopCutCount}
                           />
                         }
-                        label="Loop Cut and Slide"
+                        label={t('toolbar.loopCutSlide')}
                         onClick={() => {
                           playBlockSfx('tool-select')
                           setTransformTool('loop-cut')
@@ -3851,7 +3885,7 @@ function BlockEditor({
                       </ToolbarOperationItem>
                       <ToolbarOperationItem
                         disabled={!operationAvailability.merge}
-                        label="Merge vertices"
+                        label={t('toolbar.merge')}
                         onClick={mergeSelection}
                         shortcut="M"
                       >
@@ -3859,7 +3893,7 @@ function BlockEditor({
                       </ToolbarOperationItem>
                       <ToolbarOperationItem
                         disabled={!operationAvailability.dissolve}
-                        label="Dissolve selection"
+                        label={t('toolbar.dissolve')}
                         onClick={dissolveSelection}
                         shortcut="D"
                       >
@@ -3868,7 +3902,7 @@ function BlockEditor({
                       <ToolbarOperationItem
                         active={bevelActive}
                         disabled={!operationAvailability.bevel}
-                        label="Bevel selected edges"
+                        label={t('toolbar.bevelEdges')}
                         onClick={() => {
                           playBlockSfx('tool-select')
                           setBevelSegments(DEFAULT_BEVEL_SEGMENTS)
@@ -3887,21 +3921,21 @@ function BlockEditor({
               {lastOperation ? (
                 <ToolbarButton
                   active={lastOperationPanelOpen}
-                  label={`Adjust ${lastOperation.label} (F9)`}
+                  label={t('toolbar.adjust', { operation: operationLabel(t, lastOperation.label) })}
                   onClick={() => setLastOperationPanelOpen((open) => !open)}
                 >
                   <Rotate3D className="h-4 w-4" />
                 </ToolbarButton>
               ) : null}
 
-              <ToolbarButton label="Finish edit mode (Tab)" onClick={exitEditMode} sound={false}>
+              <ToolbarButton label={t('toolbar.finish')} onClick={exitEditMode} sound={false}>
                 <Check className="h-4 w-4" />
               </ToolbarButton>
 
               <div className="relative">
                 <ToolbarButton
                   active={toolbarPanel === 'selection'}
-                  label="Selection and more"
+                  label={t('toolbar.selectionMore')}
                   onClick={() =>
                     setToolbarPanel((current) => (current === 'selection' ? null : 'selection'))
                   }
@@ -3910,12 +3944,12 @@ function BlockEditor({
                 </ToolbarButton>
                 {toolbarPanel === 'selection' ? (
                   <ToolbarPanelFrame
-                    label="Selection actions"
+                    label={t('toolbar.selectionActions')}
                     className="right-0 left-auto w-60 translate-x-0"
                   >
                     <div className="space-y-1">
                       <ToolbarMenuItem
-                        label="Select all"
+                        label={t('toolbar.selectAll')}
                         onClick={selectAll}
                         shortcut="A"
                         sound={false}
@@ -3923,7 +3957,7 @@ function BlockEditor({
                         <CircleDot className="h-4 w-4" />
                       </ToolbarMenuItem>
                       <ToolbarMenuItem
-                        label="Invert selection"
+                        label={t('toolbar.invert')}
                         onClick={invertSelection}
                         shortcut="Ctrl+I"
                         sound={false}
@@ -3932,7 +3966,7 @@ function BlockEditor({
                       </ToolbarMenuItem>
                       <ToolbarMenuItem
                         disabled={selectedIds.length === 0}
-                        label="Clear selection"
+                        label={t('toolbar.clear')}
                         onClick={clearSelection}
                         shortcut="Alt+A"
                         sound={false}
@@ -3941,7 +3975,7 @@ function BlockEditor({
                       </ToolbarMenuItem>
                       <ToolbarMenuItem
                         active={xray}
-                        label="X-ray selection"
+                        label={t('toolbar.xray')}
                         onClick={() => setXray((value) => !value)}
                       >
                         {xray ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -3950,7 +3984,7 @@ function BlockEditor({
                       <ToolbarMenuItem
                         destructive
                         disabled={selectedIds.length === 0}
-                        label="Delete components"
+                        label={t('toolbar.deleteComponents')}
                         onClick={deleteSelection}
                         shortcut="X"
                         sound={false}

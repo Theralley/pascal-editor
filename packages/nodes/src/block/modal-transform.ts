@@ -1,3 +1,6 @@
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
+
 export type BlockTransformAxis = 'x' | 'y' | 'z'
 export type BlockTransformPlane = 'xy' | 'xz' | 'yz'
 export type BlockTransformOperation = 'translate' | 'rotate' | 'scale'
@@ -74,15 +77,7 @@ export function blockTransformDisplayValue(
 }
 
 export function blockModalFeedbackLabel(mode: BlockModalFeedbackMode): string {
-  return mode === 'grid'
-    ? 'Grid snap'
-    : mode === 'angle'
-      ? 'Angle snap'
-      : mode === 'exact'
-        ? 'Exact'
-        : mode === 'geometry'
-          ? 'Geometry snap'
-          : 'Free'
+  return translate(messages, `feedback.${mode}`)
 }
 
 export function blockAxisDelta(
@@ -176,20 +171,22 @@ export function blockModalTransformStatus(
   typedInput = '',
   feedbackMode: BlockModalFeedbackMode = 'free',
 ): string {
-  const operation =
+  const operation = translate(
+    messages,
     activeTransform.operation === 'translate'
-      ? 'Move'
+      ? 'operation.Move'
       : activeTransform.operation === 'rotate'
-        ? 'Rotate'
-        : 'Scale'
+        ? 'operation.Rotate'
+        : 'operation.Scale',
+  )
   const constraint =
     activeTransform.constraint === 'free'
-      ? 'free'
+      ? translate(messages, 'status.free')
       : activeTransform.constraint === 'uniform'
-        ? 'uniform'
+        ? translate(messages, 'status.uniform')
         : activeTransform.constraint.length === 2
-          ? `${activeTransform.constraint.toUpperCase()} plane`
-          : `${activeTransform.constraint.toUpperCase()} axis`
+          ? translate(messages, 'status.plane', { plane: activeTransform.constraint.toUpperCase() })
+          : translate(messages, 'status.axis', { axis: activeTransform.constraint.toUpperCase() })
   const typedValue = typedInput
     ? ` · ${typedInput}${
         activeTransform.operation === 'translate'
@@ -199,5 +196,10 @@ export function blockModalTransformStatus(
             : '×'
       }`
     : ''
-  return `${operation} · ${constraint}${typedValue} · ${blockModalFeedbackLabel(feedbackMode)} · X/Y/Z constrains · click applies · Esc cancels`
+  return translate(messages, 'status.transform', {
+    operation,
+    constraint,
+    typed: typedValue,
+    feedback: blockModalFeedbackLabel(feedbackMode),
+  })
 }
