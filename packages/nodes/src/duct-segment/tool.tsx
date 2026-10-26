@@ -1,7 +1,8 @@
 'use client'
 
-import { type AnyNode, type DuctFittingNode, DuctSegmentNode } from '@pascal-app/core'
+import { type AnyNode, type DuctFittingNode, DuctSegmentNode, nodeRegistry } from '@pascal-app/core'
 import {
+  definitionText,
   EDITOR_LAYER,
   triggerSFX,
   useEditor,
@@ -455,7 +456,10 @@ export function planDuctDraw(
       ...toolDefaults,
       autoHangers,
       hangerStyle,
-      name: profile.shape === 'rect' ? 'Trunk' : 'Duct run',
+      name: definitionText(
+        nodeRegistry.get('duct-segment'),
+        profile.shape === 'rect' ? 'Trunk' : 'Duct run',
+      ),
       path: [from, to],
       shape: profile.shape,
       diameter: profile.diameter,

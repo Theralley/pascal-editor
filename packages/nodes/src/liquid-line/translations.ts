@@ -7,7 +7,7 @@ export const liquidLineTranslations = {
     'Start liquid line': 'Starta vätskeledning',
     'Place it (locked to 45°)': 'Placera (låst till 45°)',
     'Go vertical ↕, click to place': 'Gå lodrätt ↕, klicka för att placera',
-    'Follow: trace a lineset': 'Följ: följ en köldmedieledning',
+    'Follow: trace a lineset': 'Följ: spåra en köldmedieledning',
     Cancel: 'Avbryt',
     Line: 'Ledning',
     Diameter: 'Diameter',

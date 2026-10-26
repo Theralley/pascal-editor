@@ -34,6 +34,7 @@ import { createLeanToAssembly } from './assembly'
 import { isConicalLeanToHostOccupied, resolveConicalLeanToSurfaceHit } from './conical-host'
 import { leanToExtensionGeometryKey } from './geometry'
 import { leanToWallLocalPose, resolveLeanToWallSurfaceHit } from './layout'
+import { localizedLeanToName } from './naming'
 import {
   findLeanToSlabEdgePlacement,
   LEAN_TO_RUN_CONNECT_SNAP_RADIUS,
@@ -136,9 +137,12 @@ const LeanToExtensionTool = () => {
       const nodes = sceneApi.nodes() as Record<AnyNodeId, AnyNode>
       const assembly = createLeanToAssembly(node, resolveLeanToHostRoof(node, nodes), nodes)
       sceneApi.createMany([
-        { node: assembly.extension, parentId },
+        {
+          node: { ...assembly.extension, name: localizedLeanToName(assembly.extension.name) },
+          parentId,
+        },
         ...assembly.children.map((child) => ({
-          node: child,
+          node: { ...child, name: localizedLeanToName(child.name) } as typeof child,
           parentId: (child.parentId as AnyNodeId | null) ?? undefined,
         })),
       ])

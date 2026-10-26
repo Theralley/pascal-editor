@@ -22,6 +22,7 @@ import {
 } from './conical-host'
 import { leanToFacetCount } from './geometry'
 import { resolveLeanToSpanArc } from './layout'
+import { localizedLeanToName } from './naming'
 import {
   LEAN_TO_RUN_CONNECT_SNAP_RADIUS,
   LEAN_TO_RUN_MAGNETIC_SNAP_RADIUS,
@@ -201,9 +202,12 @@ const FloorplanLeanToExtensionTool = ({
       const nodes = sceneApi.nodes() as Record<AnyNodeId, AnyNode>
       const assembly = createLeanToAssembly(node, resolveLeanToHostRoof(node, nodes), nodes)
       sceneApi.createMany?.([
-        { node: assembly.extension, parentId: node.parentId as AnyNodeId },
+        {
+          node: { ...assembly.extension, name: localizedLeanToName(assembly.extension.name) },
+          parentId: node.parentId as AnyNodeId,
+        },
         ...assembly.children.map((child) => ({
-          node: child,
+          node: { ...child, name: localizedLeanToName(child.name) } as typeof child,
           parentId: (child.parentId as AnyNodeId | null) ?? undefined,
         })),
       ])

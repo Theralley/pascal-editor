@@ -1,7 +1,7 @@
 'use client'
 
 import type { RoofSegmentNode } from '@pascal-app/core'
-import { EDITOR_LAYER, formatMeasurement } from '@pascal-app/editor'
+import { EDITOR_LAYER, formatMeasurement, useLocale } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
@@ -197,11 +197,12 @@ function Guide({
   metricNotation: 'meters' | 'millimeters'
   unit: 'metric' | 'imperial'
 }) {
+  const locale = useLocale()
   if (guide.kind === 'badge') {
     return (
       <GuideBadge
         at={guide.at}
-        pill={`= ${formatMeasurement(guide.value, unit, metricNotation)}`}
+        pill={`= ${formatMeasurement(guide.value, unit, metricNotation, locale)}`}
       />
     )
   }
@@ -211,7 +212,9 @@ function Guide({
       from={guide.from}
       kind={guide.kind}
       pill={
-        guide.value === undefined ? undefined : formatMeasurement(guide.value, unit, metricNotation)
+        guide.value === undefined
+          ? undefined
+          : formatMeasurement(guide.value, unit, metricNotation, locale)
       }
       to={guide.to}
     />

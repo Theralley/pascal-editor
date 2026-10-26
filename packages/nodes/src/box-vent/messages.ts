@@ -32,7 +32,7 @@ export const messages = defineMessages({
     baseFlange: 'Sockelfläns',
     baseHeight: 'Sockelhöjd',
     baseInset: 'Sockelindrag',
-    box: 'Låda',
+    box: 'Lådformad',
     boxVent: 'Takventil',
     cap: 'Huv',
     capHeight: 'Huvhöjd',

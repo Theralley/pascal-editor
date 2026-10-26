@@ -4,12 +4,13 @@ import {
   type AnyNodeId,
   EyebrowVentNode,
   emitter,
+  nodeRegistry,
   type RoofEvent,
   type RoofNode,
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
+import { definitionText, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -109,11 +110,7 @@ const EyebrowVentTool = () => {
 
       const vent = EyebrowVentNode.parse({
         ...eyebrowVentDefinition.defaults(),
-        name: numberedNodeName(
-          'eyebrow-vent',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'eyebrow-vent').length +
-            1,
-        ),
+        name: definitionText(nodeRegistry.get('eyebrow-vent'), 'Eyebrow Vent'),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: getDownSlopeYaw(hit.localX, hit.localZ, hit.segment),

@@ -9,6 +9,7 @@ import {
 } from '@pascal-app/core'
 import {
   ActionButton,
+  type MessageKey,
   PanelSection,
   SegmentedControl,
   SelectControl,
@@ -20,16 +21,12 @@ import { useState } from 'react'
 import { GLAZING_INFILL_OPTIONS } from './glazing-controls'
 import { messages } from './messages'
 
-function faceLabel(id: string): string {
-  if (id.startsWith('barrel-')) return `Arch bay ${Number(id.slice(7)) + 1}`
-  const labels: Record<string, string> = {
-    front: 'Front slope',
-    back: 'Back slope',
-    slope: 'Shed slope',
-    'end-left': 'Left end',
-    'end-right': 'Right end',
-  }
-  return labels[id] ?? id
+const FACE_MESSAGE_KEYS: Record<string, MessageKey<typeof messages>> = {
+  front: 'faceFront',
+  back: 'faceBack',
+  slope: 'faceSlope',
+  'end-left': 'faceEndLeft',
+  'end-right': 'faceEndRight',
 }
 
 export function GlazingPanelEditor({
@@ -40,6 +37,11 @@ export function GlazingPanelEditor({
   onUpdate: (patch: Partial<RoofGlazing>) => void
 }) {
   const t = useT(messages)
+  const faceLabel = (id: string): string => {
+    if (id.startsWith('barrel-')) return t('archBay', { n: Number(id.slice(7)) + 1 })
+    const key = FACE_MESSAGE_KEYS[id]
+    return key ? t(key) : id
+  }
   const [faceId, setFaceId] = useState('front')
   const [column, setColumn] = useState(0)
   const [row, setRow] = useState(0)

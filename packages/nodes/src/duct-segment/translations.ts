@@ -1,7 +1,7 @@
 /** Swedish for the text `ductSegmentDefinition` declares, keyed by its English source. */
 export const ductSegmentTranslations = {
   sv: {
-    Duct: 'Kanal',
+    Duct: 'Ventilationskanal',
     'HVAC duct run — polyline of round, rect, or flat-oval sections.':
       'Ventilationskanal — en linje av runda, rektangulära eller flatovala sektioner.',
     'Start segment': 'Starta sträcka',
@@ -9,17 +9,18 @@ export const ductSegmentTranslations = {
     'Go vertical ↕, click to place': 'Gå lodrätt ↕, klicka för att placera',
     'Duct diameter down / up': 'Kanaldiameter ned / upp',
     'Round / rectangular / oval': 'Rund / rektangulär / oval',
-    'Auto hangers': 'Autohängare',
-    'Auto hangers: Off': 'Autohängare: Av',
-    'Auto hangers: On': 'Autohängare: På',
-    'Auto hangers - click or press H to toggle': 'Autohängare — klicka eller tryck H för att växla',
+    'Auto hangers': 'Automatisk upphängning',
+    'Auto hangers: Off': 'Automatisk upphängning: Av',
+    'Auto hangers: On': 'Automatisk upphängning: På',
+    'Auto hangers - click or press H to toggle':
+      'Automatisk upphängning — klicka eller tryck H för att växla',
     'Exit drawing': 'Avsluta ritning',
     Hangers: 'Upphängning',
     'Hanger style': 'Upphängningstyp',
     Single: 'Enkel',
     Double: 'Dubbel',
     'Hanger spacing': 'Upphängningsavstånd',
-    'Hanger max reach': 'Största upphängningsavstånd',
+    'Hanger max reach': 'Största upphängningslängd',
     Air: 'Luft',
     System: 'System',
     Supply: 'Tilluft',
@@ -41,5 +42,7 @@ export const ductSegmentTranslations = {
     Insulated: 'Isolerad',
     'Insulation r': 'Isolering R-värde',
     Body: 'Kropp',
+    Trunk: 'Huvudkanal',
+    'Duct run': 'Kanalsträcka',
   },
 }

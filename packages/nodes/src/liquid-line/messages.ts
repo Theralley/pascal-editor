@@ -6,7 +6,7 @@ export const messages = defineMessages({
     followHoverALineset: 'Follow: hover a lineset',
   },
   sv: {
-    clickToTraceThisLineset: 'Klicka för att följa den här sträckan',
+    clickToTraceThisLineset: 'Klicka för att följa den här köldmedieledningen',
     followHoverALineset: 'Följ: håll över en köldmedieledning',
   },
 })

@@ -1,7 +1,8 @@
 'use client'
 
-import { type AnyNode, type PipeFittingNode, PipeSegmentNode } from '@pascal-app/core'
+import { type AnyNode, nodeRegistry, type PipeFittingNode, PipeSegmentNode } from '@pascal-app/core'
 import {
+  definitionText,
   EDITOR_LAYER,
   triggerSFX,
   useEditor,
@@ -250,7 +251,10 @@ const PipeSegmentTool = () => {
         ...useEditor.getState().toolDefaults['pipe-segment'],
         autoHangers: autoHangersRef.current,
         hangerStyle: hangerStyleRef.current,
-        name: systemRef.current === 'vent' ? 'Vent' : 'Drain',
+        name: definitionText(
+          nodeRegistry.get('pipe-segment'),
+          systemRef.current === 'vent' ? 'Vent' : 'Drain',
+        ),
         path: [from, to],
         diameter: diameterRef.current,
         pipeMaterial: pipeMaterialRef.current,

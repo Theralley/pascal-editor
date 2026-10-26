@@ -18,8 +18,8 @@ export const skylightTranslations = {
     'Frame thickness': 'Ramtjocklek',
     'Frame depth': 'Ramdjup',
     'Glass thickness': 'Glasets tjocklek',
-    Curb: 'Karm',
-    'Curb height': 'Karmhöjd',
+    Curb: 'Sarg',
+    'Curb height': 'Sarghöjd',
     'Operation state': 'Öppningsläge',
     'Opening angle': 'Öppningsvinkel',
     'Opening side': 'Öppningssida',
@@ -31,6 +31,6 @@ export const skylightTranslations = {
     X: 'X',
     Z: 'Z',
     'Lantern height': 'Lanterninens höjd',
-    'Lantern top scale': 'Lanterninens toppskala',
+    'Lantern top scale': 'Lanterninens toppstorlek',
   },
 }

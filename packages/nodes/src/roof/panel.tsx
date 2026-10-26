@@ -360,7 +360,7 @@ export default function RoofPanel() {
         {node.support?.kind === 'walls' ? (
           <div className="px-1 text-[11px] text-muted-foreground">
             {t('currently', {
-              value: formatLinearMeasurement(node.position[1], unit, metricNotation),
+              value: formatLinearMeasurement(node.position[1], unit, metricNotation, t.locale),
             })}
           </div>
         ) : (

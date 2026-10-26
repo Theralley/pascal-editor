@@ -91,6 +91,7 @@ const SAMPLE_NODES: Record<string, object[]> = {
 /** Visible text the callbacks cannot produce from a sample: paint role labels, room-only options. */
 const COMPUTED_TEXT: Record<string, string[]> = {
   wall: ['Face', 'Room', 'Outside face', 'Inside face'],
+  'roof-segment': ['Roof ridge', 'Roof hip', 'Roof break'],
 }
 
 const EMPTY_GEOMETRY_CONTEXT = {

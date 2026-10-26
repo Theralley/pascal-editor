@@ -5,15 +5,18 @@ import {
   type AnyNodeId,
   emitter,
   type GridEvent,
+  nodeRegistry,
   PipeFittingNode,
   PipeSegmentNode,
 } from '@pascal-app/core'
 import {
   CursorSphere,
+  definitionText,
   EDITOR_LAYER,
   isGridSnapActive,
   isMagneticSnapActive,
   isTypingTarget,
+  prettifyEnumValue,
   triggerSFX,
   useEditor,
   useInteractionScope,
@@ -336,7 +339,10 @@ const PipeFittingTool = () => {
       const fitting = PipeFittingNode.parse({
         ...resolved.node,
         id: undefined,
-        name: resolved.node.fittingType.replaceAll('-', ' ').replace(/^./, (c) => c.toUpperCase()),
+        name: definitionText(
+          nodeRegistry.get('pipe-fitting'),
+          prettifyEnumValue(resolved.node.fittingType),
+        ),
         position: resolved.position,
         rotation: resolved.rotation,
       })

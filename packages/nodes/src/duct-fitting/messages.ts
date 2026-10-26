@@ -13,7 +13,7 @@ export const messages = defineMessages({
   sv: {
     axis: '⌥ axel',
     axisValue: 'Axel {axis}',
-    hoverADuctFaceThat: 'Håll över en kanalyta som luckan får plats på',
+    hoverADuctFaceThat: 'Håll muspekaren över en kanalyta som luckan får plats på',
     placeAccessDoor: 'Placera inspektionslucka',
     rTRotate: 'R/T rotera',
     swapWH: 'Byt B/H',

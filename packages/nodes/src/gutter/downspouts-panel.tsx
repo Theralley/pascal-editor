@@ -6,13 +6,14 @@ import {
   type DownspoutNode as DownspoutNodeType,
   type GutterNode,
   generateId,
+  nodeRegistry,
   type RoofSegmentNode,
   useScene,
 } from '@pascal-app/core'
 import {
   ActionButton,
   ActionGroup,
-  numberedNodeName,
+  definitionText,
   PanelSection,
   triggerSFX,
   useT,
@@ -110,10 +111,7 @@ export default function DownspoutsPanel() {
     const dropLength = Math.max(0.1, computeEaveY(segment) + (outlet?.y ?? -gutter.size))
 
     const downspout = DownspoutNode.parse({
-      name: numberedNodeName(
-        'downspout',
-        Object.values(state.nodes).filter((n) => n.type === 'downspout').length + 1,
-      ),
+      name: definitionText(nodeRegistry.get('downspout'), 'Downspout'),
       gutterId: gutter.id,
       outletId,
       length: dropLength,

@@ -35,7 +35,7 @@ export const messages = defineMessages({
     position: 'Placering',
     rotation: 'Rotation',
     scoop: 'Skopa',
-    slantBox: 'Sluttande låda',
+    slantBox: 'Sned lådform',
     style: 'Stil',
     width: 'Bredd',
   },

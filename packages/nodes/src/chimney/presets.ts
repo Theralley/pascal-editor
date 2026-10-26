@@ -18,12 +18,6 @@ export type ChimneyPresetKey = 'brick' | 'modern' | 'round'
 
 export const CHIMNEY_PRESET_KEYS: ChimneyPresetKey[] = ['brick', 'modern', 'round']
 
-export const CHIMNEY_PRESET_LABELS: Record<ChimneyPresetKey, string> = {
-  brick: 'Brick',
-  modern: 'Modern',
-  round: 'Round',
-}
-
 export const chimneyPresets: Record<ChimneyPresetKey, Partial<ChimneyNode>> = {
   brick: {
     bodyShape: 'square',

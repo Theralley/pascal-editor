@@ -3,8 +3,8 @@ export const boxVentTranslations = {
   sv: {
     'Box Vent': 'Takventil',
     'Small louvered exhaust vent that sits on a roof slope.':
-      'Liten spjälförsedd frånluftsventil som sitter på en takfall.',
-    'Place box vent on roof': 'Placera takventil på taket',
+      'Liten spjälförsedd frånluftsventil som sitter på ett takfall.',
+    'Place box vent on roof': 'Placera takventilen på taket',
     Cancel: 'Avbryt',
     Style: 'Stil',
     Standard: 'Standard',

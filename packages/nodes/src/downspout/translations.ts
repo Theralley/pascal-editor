@@ -20,7 +20,7 @@ export const downspoutTranslations = {
     None: 'Ingen',
     'Strap spacing': 'Stuprörsbandens avstånd',
     Terminal: 'Utlopp',
-    Splash: 'Skvättplatta',
+    Splash: 'Stänkplatta',
     Kickout: 'Utkastare',
     Straight: 'Rakt',
     Placement: 'Placering',

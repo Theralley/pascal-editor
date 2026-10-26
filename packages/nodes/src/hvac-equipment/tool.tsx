@@ -4,10 +4,12 @@ import {
   emitter,
   type GridEvent,
   HvacEquipmentNode,
+  nodeRegistry,
   resolveSupportSlabPatch,
   useScene,
 } from '@pascal-app/core'
 import {
+  definitionText,
   isGridSnapActive,
   isMagneticSnapActive,
   isTypingTarget,
@@ -100,7 +102,7 @@ const HvacEquipmentTool = () => {
       const unit = HvacEquipmentNode.parse({
         ...hvacEquipmentDefinition.defaults(),
         ...toolDefaults,
-        name: 'Furnace',
+        name: definitionText(nodeRegistry.get('hvac-equipment'), 'Furnace'),
         position,
         rotation: yawRef.current,
         parentId: activeLevelId,

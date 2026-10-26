@@ -7,6 +7,7 @@ import {
   emitter,
   type GridEvent,
   type NodeEvent,
+  nodeRegistry,
   pointInPolygon,
   resolveCeilingHeight,
   resolveLevelId,
@@ -17,12 +18,12 @@ import {
 } from '@pascal-app/core'
 import {
   CursorSphere,
+  definitionText,
   getFloorStackPreviewPosition,
   getSpatialPointerId,
   isGridSnapActive,
   isMagneticSnapActive,
   isTypingTarget,
-  numberedNodeName,
   triggerSFX,
   useEditor,
   useT,
@@ -310,11 +311,7 @@ const DuctTerminalTool = () => {
       const terminal = DuctTerminalNode.parse({
         ...ductTerminalDefinition.defaults(),
         ...toolDefaults,
-        name: numberedNodeName(
-          'duct-terminal',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'duct-terminal')
-            .length + 1,
-        ),
+        name: definitionText(nodeRegistry.get('duct-terminal'), 'Register'),
         mount: p.mount,
         position: p.position,
         rotation: p.yaw,

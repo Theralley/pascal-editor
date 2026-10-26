@@ -4,13 +4,14 @@ import {
   type AnyNodeId,
   ChimneyNode,
   emitter,
+  nodeRegistry,
   type RoofEvent,
   type RoofNode,
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { numberedNodeName, triggerSFX, usePlacementPreview } from '@pascal-app/editor'
+import { definitionText, triggerSFX, usePlacementPreview } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -137,10 +138,7 @@ const ChimneyTool = () => {
 
       const chimney = ChimneyNode.parse({
         ...chimneyDefinition.defaults(),
-        name: numberedNodeName(
-          'chimney',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'chimney').length + 1,
-        ),
+        name: definitionText(nodeRegistry.get('chimney'), 'Chimney'),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: 0,

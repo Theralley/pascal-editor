@@ -16,6 +16,7 @@ import {
 import {
   ActionButton,
   ActionGroup,
+  type MessageKey,
   PanelSection,
   PanelWrapper,
   SegmentedControl,
@@ -31,6 +32,14 @@ import { messages } from './messages'
 
 const cn = (...classes: Array<string | false | undefined | null>): string =>
   classes.filter(Boolean).join(' ')
+
+const SKYLIGHT_TYPE_MESSAGE_KEYS: Record<SkylightType, MessageKey<typeof messages>> = {
+  flat: 'typeFlat',
+  'walk-on': 'typeWalkOn',
+  lantern: 'typeLantern',
+  opening: 'typeOpening',
+  sliding: 'typeSliding',
+}
 
 export default function SkylightPanel() {
   const t = useT(messages)
@@ -284,7 +293,7 @@ export default function SkylightPanel() {
                 type="button"
               >
                 <span className="min-w-0 truncate font-medium">
-                  {SKYLIGHT_TYPE_PRESETS[skylightType].label}
+                  {t(SKYLIGHT_TYPE_MESSAGE_KEYS[skylightType])}
                 </span>
               </button>
             )

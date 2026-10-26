@@ -29,7 +29,6 @@ import { Vector3 } from 'three'
 import { messages } from './messages'
 import {
   CHIMNEY_PRESET_KEYS,
-  CHIMNEY_PRESET_LABELS,
   type ChimneyPresetKey,
   chimneyPresets,
   detectActiveChimneyPreset,
@@ -39,6 +38,12 @@ import {
 // legacy `cn` helper; inlining keeps this panel self-contained.
 const cn = (...classes: Array<string | false | undefined | null>): string =>
   classes.filter(Boolean).join(' ')
+
+const CHIMNEY_PRESET_MESSAGE_KEYS: Record<ChimneyPresetKey, MessageKey<typeof messages>> = {
+  brick: 'presetBrick',
+  modern: 'presetModern',
+  round: 'presetRound',
+}
 
 type ChimneyType = 'cap' | 'flues' | 'shoulder' | 'bands' | 'cricket' | 'panels'
 
@@ -353,7 +358,7 @@ export default function ChimneyPanel() {
         <SegmentedControl
           onChange={(v) => applyPreset(v as ChimneyPresetKey)}
           options={CHIMNEY_PRESET_KEYS.map((k) => ({
-            label: CHIMNEY_PRESET_LABELS[k],
+            label: t(CHIMNEY_PRESET_MESSAGE_KEYS[k]),
             value: k,
           }))}
           // Empty string when no preset matches — nothing highlighted,

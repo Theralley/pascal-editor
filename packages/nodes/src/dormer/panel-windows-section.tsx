@@ -1,9 +1,11 @@
 'use client'
 
 import type { WindowNode } from '@pascal-app/core'
-import { ActionButton, PanelSection, useT } from '@pascal-app/editor'
+import { ActionButton, formatDecimal, PanelSection, useT } from '@pascal-app/editor'
 import { Move, Pencil, Plus } from 'lucide-react'
 import { messages } from './messages'
+
+const FIXED_2 = { minFractionDigits: 2, maxFractionDigits: 2 }
 
 export function DormerWindowsSection({
   windows,
@@ -37,8 +39,9 @@ export function DormerWindowsSection({
                   {window.name || t('windowN', { n: index + 1 })}
                 </span>
                 <span className="block truncate text-[10px] text-muted-foreground capitalize">
-                  {t(window.dormerFace ?? 'front')} · {window.width.toFixed(2)} ×{' '}
-                  {window.height.toFixed(2)} m
+                  {t(window.dormerFace ?? 'front')} ·{' '}
+                  {formatDecimal(window.width, FIXED_2, t.locale)} ×{' '}
+                  {formatDecimal(window.height, FIXED_2, t.locale)} m
                 </span>
               </button>
               <button

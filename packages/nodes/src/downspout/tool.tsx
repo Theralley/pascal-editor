@@ -7,11 +7,12 @@ import {
   type GutterEvent,
   type GutterNode,
   generateId,
+  nodeRegistry,
   type RoofSegmentNode,
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
+import { definitionText, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useState } from 'react'
 import { Vector3 } from 'three'
@@ -139,10 +140,7 @@ const DownspoutTool = () => {
 
       const downspout = DownspoutNode.parse({
         ...downspoutDefinition.defaults(),
-        name: numberedNodeName(
-          'downspout',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'downspout').length + 1,
-        ),
+        name: definitionText(nodeRegistry.get('downspout'), 'Downspout'),
         gutterId: gutter.id,
         outletId,
         length: dropLength,

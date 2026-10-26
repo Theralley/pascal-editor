@@ -11,9 +11,9 @@ export const messages = defineMessages({
     wall: 'Wall',
   },
   sv: {
-    ceiling: 'tak',
+    ceiling: 'innertak',
     floor: 'golv',
-    mSurface: 'M yta',
+    mSurface: 'M byt yta',
     mountValue: 'Montering: {mount}',
     rTRotate: 'R/T rotera',
     snappedToDuct: 'Fäst på kanal',

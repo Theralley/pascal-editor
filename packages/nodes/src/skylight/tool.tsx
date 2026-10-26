@@ -3,13 +3,14 @@
 import {
   type AnyNodeId,
   emitter,
+  nodeRegistry,
   type RoofEvent,
   type RoofNode,
   SkylightNode,
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { numberedNodeName, triggerSFX, usePlacementPreview } from '@pascal-app/editor'
+import { definitionText, triggerSFX, usePlacementPreview } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -107,10 +108,7 @@ const SkylightTool = () => {
 
       const skylight = SkylightNode.parse({
         ...skylightDefinition.defaults(),
-        name: numberedNodeName(
-          'skylight',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'skylight').length + 1,
-        ),
+        name: definitionText(nodeRegistry.get('skylight'), 'Skylight'),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: 0,

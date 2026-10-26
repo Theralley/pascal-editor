@@ -4,11 +4,12 @@ import {
   type AnyNodeId,
   emitter,
   GutterNode,
+  nodeRegistry,
   type RoofEvent,
   type RoofNode,
   useScene,
 } from '@pascal-app/core'
-import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
+import { definitionText, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
@@ -128,10 +129,7 @@ const GutterTool = () => {
 
       const gutter = GutterNode.parse({
         ...gutterDefinition.defaults(),
-        name: numberedNodeName(
-          'gutter',
-          Object.values(useScene.getState().nodes).filter((n) => n.type === 'gutter').length + 1,
-        ),
+        name: definitionText(nodeRegistry.get('gutter'), 'Gutter'),
         roofSegmentId: hit.segment.id,
         // (X, Y, Z) all come from the eave snap — on ±Z eaves X stays
         // free along the cursor; on ±X eaves Z stays free instead.

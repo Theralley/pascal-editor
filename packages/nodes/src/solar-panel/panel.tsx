@@ -4,7 +4,6 @@ import {
   type AnyNode,
   type AnyNodeId,
   type RoofSegmentNode,
-  SOLAR_PANEL_PRESET_LABELS,
   SOLAR_PANEL_PRESETS,
   type SolarPanelNode,
   type SolarPanelPresetKey,
@@ -14,6 +13,8 @@ import {
 import {
   ActionButton,
   ActionGroup,
+  formatDecimal,
+  type MessageKey,
   PanelSection,
   PanelWrapper,
   SegmentedControl,
@@ -39,11 +40,11 @@ const PRESET_OWNED_FIELDS: ReadonlyArray<keyof SolarPanelNode> = [
   'frameDepth',
 ]
 
-const PRESET_CARDS: { key: SolarPanelPresetKey; label: string }[] = [
-  { key: 'residential', label: SOLAR_PANEL_PRESET_LABELS.residential },
-  { key: 'residential-large', label: SOLAR_PANEL_PRESET_LABELS['residential-large'] },
-  { key: 'compact', label: SOLAR_PANEL_PRESET_LABELS.compact },
-  { key: 'frameless', label: SOLAR_PANEL_PRESET_LABELS.frameless },
+const PRESET_CARDS: { key: SolarPanelPresetKey; labelKey: MessageKey<typeof messages> }[] = [
+  { key: 'residential', labelKey: 'presetResidential' },
+  { key: 'residential-large', labelKey: 'presetResidentialLarge' },
+  { key: 'compact', labelKey: 'presetCompact' },
+  { key: 'frameless', labelKey: 'presetFrameless' },
 ]
 
 function dimsTouchedByUpdate(updates: Partial<SolarPanelNode>): boolean {
@@ -80,12 +81,12 @@ export default function SolarPanelPanel() {
       : undefined,
   )
 
-  const [autoFitMessage, setAutoFitMessage] = useState<string | null>(null)
+  const [autoFitFailed, setAutoFitFailed] = useState(false)
   useEffect(() => {
-    if (!autoFitMessage) return
-    const t = window.setTimeout(() => setAutoFitMessage(null), 3500)
+    if (!autoFitFailed) return
+    const t = window.setTimeout(() => setAutoFitFailed(false), 3500)
     return () => window.clearTimeout(t)
-  }, [autoFitMessage])
+  }, [autoFitFailed])
 
   const handleUpdate = useCallback(
     (updates: Partial<SolarPanelNode>) => {
@@ -148,11 +149,11 @@ export default function SolarPanelPanel() {
     if (!(selectedId && node && segment)) return
     const fit = computeAutoFit(segment, node)
     if (!fit) {
-      setAutoFitMessage(t('setbacksTooLargeToFit'))
+      setAutoFitFailed(true)
       return
     }
     updateNode(selectedId as AnyNode['id'], { rows: fit.rows, columns: fit.columns })
-    setAutoFitMessage(null)
+    setAutoFitFailed(false)
   }, [selectedId, node, segment, updateNode])
 
   const handleDelete = useCallback(() => {
@@ -180,7 +181,9 @@ export default function SolarPanelPanel() {
   if (!(node && node.type === 'solar-panel' && selectedId)) return null
 
   const activePreset = node.panelTypePreset
-  const formatDims = (w: number, h: number) => `${w.toFixed(2)} × ${h.toFixed(2)} m`
+  const fixed2 = { minFractionDigits: 2, maxFractionDigits: 2 }
+  const formatDims = (w: number, h: number) =>
+    `${formatDecimal(w, fixed2, t.locale)} × ${formatDecimal(h, fixed2, t.locale)} m`
 
   return (
     <PanelWrapper
@@ -209,7 +212,7 @@ export default function SolarPanelPanel() {
               >
                 <span className="flex items-center gap-1.5 font-medium">
                   <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{card.label}</span>
+                  <span className="truncate">{t(card.labelKey)}</span>
                 </span>
                 <span className="pl-[20px] text-[10px] tabular-nums opacity-70">
                   {formatDims(dims.panelWidth, dims.panelHeight)}
@@ -275,8 +278,10 @@ export default function SolarPanelPanel() {
         <ActionGroup>
           <ActionButton disabled={!segment} label={t('autoFitToRoof')} onClick={handleAutoFit} />
         </ActionGroup>
-        {autoFitMessage ? (
-          <p className="px-1 text-amber-700 dark:text-amber-400 text-xs">{autoFitMessage}</p>
+        {autoFitFailed ? (
+          <p className="px-1 text-amber-700 dark:text-amber-400 text-xs">
+            {t('setbacksTooLargeToFit')}
+          </p>
         ) : null}
       </PanelSection>
 

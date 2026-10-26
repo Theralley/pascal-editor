@@ -72,7 +72,7 @@ export const messages = defineMessages({
     right: 'höger',
     riseBack: 'Höjd bak',
     riseFront: 'Höjd fram',
-    roofHeight: 'Takhöjd',
+    roofHeight: 'Takets höjd',
     roofType: 'Taktyp',
     rotation: 'Rotation',
     section: 'Sektion',

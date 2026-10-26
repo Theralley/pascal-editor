@@ -1,12 +1,14 @@
 'use client'
 
-import { DuctFittingNode, emitter, type GridEvent, useScene } from '@pascal-app/core'
+import { DuctFittingNode, emitter, type GridEvent, nodeRegistry, useScene } from '@pascal-app/core'
 import {
   CursorSphere,
+  definitionText,
   EDITOR_LAYER,
   isGridSnapActive,
   isMagneticSnapActive,
   isTypingTarget,
+  prettifyEnumValue,
   triggerSFX,
   useEditor,
   useInteractionScope,
@@ -284,7 +286,10 @@ const DuctFittingTool = () => {
       const fitting = DuctFittingNode.parse({
         ...resolved.node,
         id: undefined,
-        name: resolved.node.fittingType.replaceAll('-', ' ').replace(/^./, (c) => c.toUpperCase()),
+        name: definitionText(
+          nodeRegistry.get('duct-fitting'),
+          prettifyEnumValue(resolved.node.fittingType),
+        ),
         position: resolved.position,
         rotation: resolved.rotation,
       })

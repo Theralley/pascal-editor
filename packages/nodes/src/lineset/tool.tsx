@@ -1,9 +1,10 @@
 'use client'
 
-import { emitter, type GridEvent, LinesetNode, useScene } from '@pascal-app/core'
+import { emitter, type GridEvent, LinesetNode, nodeRegistry, useScene } from '@pascal-app/core'
 import {
   CursorSphere,
   DimensionPill,
+  definitionText,
   EDITOR_LAYER,
   isAngleSnapActive,
   isGridSnapActive,
@@ -127,7 +128,7 @@ const LinesetTool = () => {
       const lineset = LinesetNode.parse({
         ...linesetDefinition.defaults(),
         ...useEditor.getState().toolDefaults.lineset,
-        name: 'Lineset',
+        name: definitionText(nodeRegistry.get('lineset'), 'Lineset'),
         path: [start, end],
       })
       useScene.getState().createNode(lineset, activeLevelId)

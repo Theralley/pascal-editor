@@ -9,7 +9,7 @@ export const eyebrowVentTranslations = {
     Style: 'Stil',
     Scoop: 'Skopa',
     'Half round': 'Halvrund',
-    'Slant box': 'Sluttande låda',
+    'Slant box': 'Sned lådform',
     'Louver count': 'Antal spjälor',
     'Back ratio': 'Bakförhållande',
     Dimensions: 'Mått',

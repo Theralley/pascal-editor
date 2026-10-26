@@ -6,11 +6,13 @@ import {
   type GridEvent,
   type LinesetNode,
   LiquidLineNode,
+  nodeRegistry,
   useScene,
 } from '@pascal-app/core'
 import {
   CursorSphere,
   DimensionPill,
+  definitionText,
   EDITOR_LAYER,
   isAngleSnapActive,
   isGridSnapActive,
@@ -318,7 +320,7 @@ const LiquidLineTool = () => {
       const line = LiquidLineNode.parse({
         ...liquidLineDefinition.defaults(),
         ...useEditor.getState().toolDefaults['liquid-line'],
-        name: 'Liquid Line',
+        name: definitionText(nodeRegistry.get('liquid-line'), 'Liquid Line'),
         path: [start, end],
       })
       useScene.getState().createNode(line, activeLevelId)
@@ -344,7 +346,11 @@ const LiquidLineTool = () => {
         const a = traced[i]!
         const b = traced[i + 1]!
         if (samePt(a, b)) continue
-        const node = LiquidLineNode.parse({ ...defaults, name: 'Liquid Line', path: [a, b] })
+        const node = LiquidLineNode.parse({
+          ...defaults,
+          name: definitionText(nodeRegistry.get('liquid-line'), 'Liquid Line'),
+          path: [a, b],
+        })
         create.push({ node, parentId: activeLevelId })
       }
       if (create.length === 0) return

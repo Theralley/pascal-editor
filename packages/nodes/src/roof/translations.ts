@@ -3,7 +3,7 @@ export const roofTranslations = {
   sv: {
     Roof: 'Tak',
     'A pitched / hip / gable roof composed of one or more segments.':
-      'Ett sadel-, valm- eller annat lutande tak som består av ett eller flera takparti.',
+      'Ett sadel-, valm- eller annat lutande tak som består av ett eller flera takpartier.',
     'Set roof footprint': 'Ange takets grundyta',
     Placement: 'Placering',
     'Placement: Auto': 'Placering: Auto',
