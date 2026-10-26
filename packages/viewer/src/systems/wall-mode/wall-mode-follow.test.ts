@@ -549,4 +549,94 @@ describe('followers in Low', () => {
     WallModeFollowCache.refreshPlanes()
     expect(clipGroup.clippingPlanes[0]!.constant).toBeCloseTo(3.25, 6)
   })
+
+  test('a column dragged from below the cut into it is clipped and capped at once, and out of it, let go', () => {
+    const { clipGroup, mesh, level, id } = addScene('column', {}, { clip: true, y: -1 })
+    setMode('low')
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(false)
+    // A live drag moves the mesh without a scene write.
+    mesh.position.y = 0
+    level.updateMatrixWorld(true)
+    useLiveTransforms.getState().set(id as never, { position: [0, 0, 0], rotation: 0 } as never)
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(true)
+    expect(isWallModeAffected(id)).toBe(true)
+    expect(capsOf(level)).toBeDefined()
+    mesh.position.y = -1
+    level.updateMatrixWorld(true)
+    useLiveTransforms.getState().set(id as never, { position: [0, 1, 0], rotation: 0 } as never)
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(false)
+    expect(isWallModeAffected(id)).toBe(false)
+  })
+
+  test('a hidden column, or a hidden part hosted on one, feeds no cap', () => {
+    const { group, level } = addScene('column', {}, { clip: true, y: 0 })
+    const hosted = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial())
+    hosted.position.set(10, 0, 3)
+    group.add(hosted)
+    level.updateMatrixWorld(true)
+    setMode('low')
+    cache.update(camera)
+    const area = () => {
+      const cap = capsOf(level)
+      return cap ? cap.geometry.getIndex()!.count / 3 : 0
+    }
+    const both = area()
+    hosted.visible = false
+    viewerStore.setState({ geometryRevision: 1 })
+    cache.update(camera)
+    expect(area()).toBeLessThan(both)
+    expect(area()).toBeGreaterThan(0)
+    group.visible = false
+    viewerStore.setState({ geometryRevision: 2 })
+    cache.update(camera)
+    expect(capsOf(level)).toBeUndefined()
+  })
+
+  test('a column drawn in both windings, as the braced styles are, still gets a cap', () => {
+    const { mesh, level } = addScene('column', {}, { clip: true, y: 0 })
+    const geometry = new BoxGeometry(0.2, 2, 0.2)
+    const index = geometry.getIndex()!
+    const all = Array.from({ length: index.count }, (_, i) => index.getX(i))
+    for (let i = 0; i < index.count; i += 3)
+      all.push(index.getX(i), index.getX(i + 2), index.getX(i + 1))
+    geometry.setIndex(all)
+    mesh.geometry = geometry
+    level.updateMatrixWorld(true)
+    setMode('low')
+    cache.update(camera)
+    expect(capsOf(level)).toBeDefined()
+  })
+
+  test('a column whose section will not close is capped from its base', () => {
+    const { mesh, level } = addScene('column', {}, { clip: true, y: 1 })
+    const geometry = new BoxGeometry(0.4, 2, 0.4)
+    const index = geometry.getIndex()!
+    // Without its +x end the section is a U.
+    geometry.setIndex(Array.from({ length: index.count - 6 }, (_, i) => index.getX(i + 6)))
+    mesh.geometry = geometry
+    level.updateMatrixWorld(true)
+    setMode('low')
+    cache.update(camera)
+    const cap = capsOf(level)!
+    expect(cap).toBeDefined()
+    expect(cap.geometry.getIndex()!.count).toBeGreaterThan(0)
+  })
+
+  test('a cap let go is disposed with its mesh, over and over', () => {
+    const { level } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    let disposed = 0
+    for (let cycle = 0; cycle < 5; cycle++) {
+      viewerStore.setState({ wallCutHeight: 0.25 })
+      cache.update(camera)
+      capsOf(level)!.addEventListener('dispose', () => disposed++)
+      viewerStore.setState({ wallCutHeight: 5 })
+      cache.update(camera)
+      expect(capsOf(level)).toBeUndefined()
+    }
+    expect(disposed).toBe(5)
+  })
 })

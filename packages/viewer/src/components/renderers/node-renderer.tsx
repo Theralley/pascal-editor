@@ -39,10 +39,11 @@ export function getRegistryRenderer(
 }
 
 /**
- * A kind that follows the wall mode (`capabilities.followsWallMode`) is rendered inside a
+ * Every node of a kind that follows the wall mode (`capabilities.followsWallMode`) is rendered inside a
  * `ClippingGroup` that stands at the identity and clips nothing until the Low cut passes through
  * the node (`WallModeFollowSystem` turns it on and sets its plane). It is always mounted, so the
- * wall mode never remounts the node, and clipping leaves every material alone.
+ * wall mode, or a flag that turns following on or off (`appliesTo`), never remounts the node; a
+ * node that does not follow keeps its clip disabled. Clipping leaves every material alone.
  */
 function FollowerClip({ children }: { children: ReactNode }) {
   const clip = useMemo(() => {
@@ -76,12 +77,7 @@ export const NodeRenderer = ({ nodeId }: { nodeId: AnyNode['id'] }) => {
   //     <ParametricNodeRenderer> is filled by <GeometrySystem> from the
   //     pure builder.
   const follows = def.capabilities?.followsWallMode
-  const wrap = (content: ReactNode) =>
-    follows && follows.appliesTo?.(node) !== false ? (
-      <FollowerClip>{content}</FollowerClip>
-    ) : (
-      content
-    )
+  const wrap = (content: ReactNode) => (follows ? <FollowerClip>{content}</FollowerClip> : content)
   if (def.renderer) {
     const Renderer = getRegistryRenderer(def.renderer as RendererSource<AnyNode>)
     if (!Renderer) return null

@@ -17,6 +17,7 @@ import {
   Raycaster,
   Vector3,
 } from 'three'
+import { isDisplayCut } from '../../lib/display-cut'
 import { generateExtrudedWall } from '../../systems/wall/wall-system'
 import { cutBakedWalls, GLB_WALL_CAPS_NAME } from './glb-wall-cut'
 
@@ -256,5 +257,43 @@ describe('cutBakedWalls caps', () => {
     expect(capArea(level)).toBeCloseTo(0, 4)
     cut.dispose()
     expect(shaft.material).toBe(material)
+  })
+
+  test('what is hosted on a follower is cut only while the cut passes through the follower itself', () => {
+    const { level } = bakedLevel()
+    const column = new Group()
+    column.userData = { pascalId: 'column_2', kind: 'column', followsWallMode: true }
+    const stub = new Mesh(
+      new BoxGeometry(0.4, 0.2, 0.4).translate(5, 0.1, 0),
+      new MeshBasicMaterial(),
+    )
+    const hosted = new Group()
+    hosted.userData = { pascalId: 'item_2', kind: 'item' }
+    const tall = new Mesh(
+      new BoxGeometry(0.2, 1, 0.2).translate(5, 0.5, 1),
+      new MeshBasicMaterial(),
+    )
+    hosted.add(tall)
+    column.add(stub, hosted)
+    level.add(column)
+    level.updateMatrixWorld(true)
+    const material = tall.material
+    const cut = cutBakedWalls(
+      [{ object: column, level, follower: true }],
+      0.25,
+      new MeshBasicMaterial(),
+    )
+    // The column is 0.2 m tall, wholly under the 0.25 cut: the item on it stays whole.
+    expect(tall.material).toBe(material)
+    expect(isDisplayCut(tall)).toBe(false)
+    expect(capArea(level)).toBeCloseTo(0, 4)
+    // Lower the cut into the column and the item is cut with it, and capped.
+    cut.setHeight(0.1)
+    expect(tall.material).not.toBe(material)
+    expect(capArea(level)).toBeCloseTo(0.4 * 0.4 + 0.2 * 0.2, 4)
+    cut.setHeight(0.25)
+    expect(tall.material).toBe(material)
+    cut.dispose()
+    expect(tall.material).toBe(material)
   })
 })

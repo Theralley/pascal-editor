@@ -128,6 +128,7 @@ type Clipped = {
   clip: ClippingGroup
   level: Object3D
   meshes: Mesh[]
+  own: Mesh[]
   group: Object3D
   constant: number
 }
@@ -186,7 +187,11 @@ export class WallModeFollowCache {
    * has announced itself, so it calls this once they are where the picture needs them.
    */
   static refreshPlanes(): void {
-    for (const cache of WallModeFollowCache.live) cache.syncPlanes()
+    for (const cache of WallModeFollowCache.live) {
+      cache.syncPlanes()
+      // What the capture has lifted decides what is drawn, so the caps are taken again too.
+      cache.remakeCaps(cache.effectiveViewer())
+    }
   }
 
   /** The viewer's state, or what a capture presenting the walls low needs in its place. */
@@ -279,7 +284,12 @@ export class WallModeFollowCache {
         this.tracked.set(id, follower)
         // Holds are per mesh and a rebuild brings fresh meshes, so a pass that saw new inputs
         // re-holds them (idempotent); a camera or live-drag pass acts on a changed decision.
-        if (!inputsChanged && previousFollower?.hidden === follower.hidden) continue
+        if (
+          !inputsChanged &&
+          previousFollower?.hidden === follower.hidden &&
+          previousFollower?.straddle === follower.straddle
+        )
+          continue
         setHidden(meshesOf(group, node), follower.hidden)
         this.applyClip(id, group, node, follower, scene.nodes)
         setAffected(id, follower.hidden || follower.straddle === true)
@@ -317,7 +327,14 @@ export class WallModeFollowCache {
     }
     clip.enabled = true
     clip.clipShadows = true
-    this.clipped.set(id, { clip, level, meshes, group, constant: before?.constant ?? Number.NaN })
+    this.clipped.set(id, {
+      clip,
+      level,
+      meshes,
+      own: meshesOf(group, node),
+      group,
+      constant: before?.constant ?? Number.NaN,
+    })
   }
 
   private levelObjectOf(
@@ -352,7 +369,13 @@ export class WallModeFollowCache {
   private remakeCaps(viewer: WallModeFollowViewerState): void {
     const followers: CappedFollower[] = []
     for (const [id, entry] of this.clipped)
-      followers.push({ id, group: entry.group, meshes: entry.meshes, level: entry.level })
+      followers.push({
+        id,
+        group: entry.group,
+        own: entry.own,
+        meshes: entry.meshes,
+        level: entry.level,
+      })
     this.caps.update(followers, this.cutHeight(viewer), useViewer.getState().shading)
   }
 

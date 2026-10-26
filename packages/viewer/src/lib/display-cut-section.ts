@@ -6,6 +6,7 @@ import {
   type Object3D,
   ShapeUtils,
   Vector2,
+  Vector3,
 } from 'three'
 
 /**
@@ -29,6 +30,53 @@ export type Solid = readonly SectionLoop[]
  * missing a piece and the caller should not trust it for a cap.
  */
 export type Section = { solids: Solid[]; complete: boolean }
+
+const toLevel = new Matrix4()
+const footA = new Vector3()
+const footB = new Vector3()
+const footC = new Vector3()
+
+const BASE_BAND = 0.02
+const FACES_DOWN = -0.7
+
+/**
+ * The footprint of a baked wall, read off its base: the faces that look down at the lowest height
+ * are the wall standing on the floor. What a wall is capped from when its section will not close.
+ * One solid per triangle, in the level's frame.
+ */
+export function baseFootprint(meshes: readonly Mesh[], level: Object3D): Solid[] {
+  const solids: Solid[] = []
+  level.updateWorldMatrix(true, false)
+  for (const mesh of meshes) {
+    const position = mesh.geometry.getAttribute('position')
+    if (!position) continue
+    mesh.updateWorldMatrix(true, false)
+    toLevel.copy(level.matrixWorld).invert().multiply(mesh.matrixWorld)
+    const index = mesh.geometry.getIndex()
+    const count = index ? index.count : position.count
+    const vertex = (i: number, into: Vector3) =>
+      into.fromBufferAttribute(position, index ? index.getX(i) : i).applyMatrix4(toLevel)
+    let lowest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < position.count; i++)
+      lowest = Math.min(lowest, footA.fromBufferAttribute(position, i).applyMatrix4(toLevel).y)
+    for (let i = 0; i + 2 < count; i += 3) {
+      vertex(i, footA)
+      vertex(i + 1, footB)
+      vertex(i + 2, footC)
+      if (Math.max(footA.y, footB.y, footC.y) > lowest + BASE_BAND) continue
+      const normal = footB.clone().sub(footA).cross(footC.clone().sub(footA)).normalize()
+      if (!Number.isFinite(normal.y) || normal.y > FACES_DOWN) continue
+      solids.push([
+        [
+          new Vector2(footA.x, footA.z),
+          new Vector2(footB.x, footB.z),
+          new Vector2(footC.x, footC.z),
+        ],
+      ])
+    }
+  }
+  return solids
+}
 
 /** Endpoints this close are one point. */
 const WELD = 1e-5
@@ -159,7 +207,75 @@ function prepareBody(meshes: readonly Mesh[], inverse: Matrix4): Body {
     for (let i = Math.max(0, start); i + 2 < end; i += 3)
       for (let k = 0; k < 3; k++) corners.push(index ? index.getX(i + k) : i + k)
   }
-  return { xyz, corners, min, max }
+  return { xyz, corners: dropOppositeTwins(xyz, corners), min, max }
+}
+
+/**
+ * A shell drawn in both windings (a beam emitted double-sided) would cancel to nothing: each face's
+ * outline is met once each way. Where a triangle has an exact twin of the opposite winding, only the
+ * winding that faces away from the body's middle is kept, so the shell reads as a single-sided one.
+ */
+function dropOppositeTwins(xyz: Float64Array, corners: number[]): number[] {
+  const canonical = new Map<string, number>()
+  const idOf = (vertex: number) => {
+    const key = `${Math.round(xyz[vertex * 3]! / WELD)},${Math.round(xyz[vertex * 3 + 1]! / WELD)},${Math.round(xyz[vertex * 3 + 2]! / WELD)}`
+    let id = canonical.get(key)
+    if (id === undefined) {
+      id = canonical.size
+      canonical.set(key, id)
+    }
+    return id
+  }
+  // Per sorted triple: the triangles with an even and with an odd arrangement of its corners.
+  const twins = new Map<string, [number[], number[]]>()
+  for (let i = 0; i < corners.length; i += 3) {
+    const ids = [idOf(corners[i]!), idOf(corners[i + 1]!), idOf(corners[i + 2]!)]
+    const sorted = [...ids].sort((a, b) => a - b)
+    const key = sorted.join(',')
+    if (sorted[0] === sorted[1] || sorted[1] === sorted[2]) continue
+    // The parity of the permutation that sorts the corners.
+    const swaps =
+      (ids[0]! > ids[1]! ? 1 : 0) + (ids[0]! > ids[2]! ? 1 : 0) + (ids[1]! > ids[2]! ? 1 : 0)
+    const entry = twins.get(key) ?? [[], []]
+    entry[swaps % 2]!.push(i)
+    twins.set(key, entry)
+  }
+  let doubled = false
+  for (const [even, odd] of twins.values()) if (even.length > 0 && odd.length > 0) doubled = true
+  if (!doubled) return corners
+  let cx = 0
+  let cy = 0
+  let cz = 0
+  const count = xyz.length / 3
+  for (let v = 0; v < count; v++) {
+    cx += xyz[v * 3]!
+    cy += xyz[v * 3 + 1]!
+    cz += xyz[v * 3 + 2]!
+  }
+  cx /= count
+  cy /= count
+  cz /= count
+  const dropped = new Set<number>()
+  for (const [even, odd] of twins.values()) {
+    if (even.length === 0 || odd.length === 0) continue
+    const i = even[0]!
+    const [a, b, c] = [corners[i]! * 3, corners[i + 1]! * 3, corners[i + 2]! * 3]
+    const ux = xyz[b]! - xyz[a]!
+    const uy = xyz[b + 1]! - xyz[a + 1]!
+    const uz = xyz[b + 2]! - xyz[a + 2]!
+    const vx = xyz[c]! - xyz[a]!
+    const vy = xyz[c + 1]! - xyz[a + 1]!
+    const vz = xyz[c + 2]! - xyz[a + 2]!
+    const outward =
+      (uy * vz - uz * vy) * ((xyz[a]! + xyz[b]! + xyz[c]!) / 3 - cx) +
+      (uz * vx - ux * vz) * ((xyz[a + 1]! + xyz[b + 1]! + xyz[c + 1]!) / 3 - cy) +
+      (ux * vy - uy * vx) * ((xyz[a + 2]! + xyz[b + 2]! + xyz[c + 2]!) / 3 - cz)
+    for (const j of outward >= 0 ? odd : even) dropped.add(j)
+  }
+  const kept: number[] = []
+  for (let i = 0; i < corners.length; i += 3)
+    if (!dropped.has(i)) kept.push(corners[i]!, corners[i + 1]!, corners[i + 2]!)
+  return kept
 }
 
 const NONE = { loops: [] as SectionLoop[], complete: true }

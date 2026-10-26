@@ -1,13 +1,4 @@
-import {
-  Box3,
-  type Intersection,
-  type Material,
-  Matrix4,
-  Mesh,
-  type Object3D,
-  Vector2,
-  Vector3,
-} from 'three'
+import { Box3, type Intersection, type Material, Mesh, type Object3D, Vector3 } from 'three'
 import {
   cutLike,
   setDisplayCutHeight,
@@ -15,6 +6,7 @@ import {
   setDisplayCutRoot,
 } from '../../lib/display-cut'
 import {
+  baseFootprint,
   buildCutCapGeometry,
   groupInstances,
   type PreparedSection,
@@ -70,47 +62,6 @@ function splitBody(all: readonly Mesh[]): { body: Mesh[]; trims: Mesh[] } {
   return { body, trims: meshes.filter((mesh) => !body.includes(mesh)) }
 }
 
-const toLevel = new Matrix4()
-const a = new Vector3()
-const b = new Vector3()
-const c = new Vector3()
-
-const BASE_BAND = 0.02
-const FACES_DOWN = -0.7
-
-/**
- * The footprint of a baked wall, read off its base: the faces that look down at the lowest height
- * are the wall standing on the floor. What a wall is capped from when its section will not close.
- * One solid per triangle, in the level's frame.
- */
-function baseFootprint(meshes: readonly Mesh[], level: Object3D): Solid[] {
-  const solids: Solid[] = []
-  level.updateWorldMatrix(true, false)
-  for (const mesh of meshes) {
-    const position = mesh.geometry.getAttribute('position')
-    if (!position) continue
-    mesh.updateWorldMatrix(true, false)
-    toLevel.copy(level.matrixWorld).invert().multiply(mesh.matrixWorld)
-    const index = mesh.geometry.getIndex()
-    const count = index ? index.count : position.count
-    const vertex = (i: number, into: Vector3) =>
-      into.fromBufferAttribute(position, index ? index.getX(i) : i).applyMatrix4(toLevel)
-    let lowest = Number.POSITIVE_INFINITY
-    for (let i = 0; i < position.count; i++)
-      lowest = Math.min(lowest, a.fromBufferAttribute(position, i).applyMatrix4(toLevel).y)
-    for (let i = 0; i + 2 < count; i += 3) {
-      vertex(i, a)
-      vertex(i + 1, b)
-      vertex(i + 2, c)
-      if (Math.max(a.y, b.y, c.y) > lowest + BASE_BAND) continue
-      const normal = b.clone().sub(a).cross(c.clone().sub(a)).normalize()
-      if (!Number.isFinite(normal.y) || normal.y > FACES_DOWN) continue
-      solids.push([[new Vector2(a.x, a.z), new Vector2(b.x, b.z), new Vector2(c.x, c.z)]])
-    }
-  }
-  return solids
-}
-
 /**
  * Whether a baked material is glass: an alpha blend, or the transmission a bake exports glass as
  * (opaque, `transparent` off, with its authored opacity kept in the material's extras).
@@ -163,18 +114,25 @@ export function cutBakedWalls(
       /** Each instance of the body on its own: its bounds, its fallback, its completeness. */
       instances: { section: PreparedSection; meshes: Mesh[]; footprint?: Solid[] }[]
       trims: PreparedSection
+      /**
+       * A follower's hosted meshes: cut with it only while the cut passes through the follower's
+       * own geometry, as the live clip does, and left whole when it is wholly under or over it.
+       */
+      hosted?: { meshes: Mesh[]; section: PreparedSection; on: boolean }
     }[]
   >()
   for (const { object, level, follower } of walls) {
-    // A follower is cut with what is hosted on it (as the live clip does); a wall's own meshes only.
-    const own = ownMeshes(object, follower)
+    // A follower is cut by its own geometry, and what is hosted on it follows that (see `hosted`).
+    const own = ownMeshes(object)
     if (!follower && !cutApplies(object, own)) continue
     const entries = perLevel.get(level) ?? []
     perLevel.set(level, entries)
-    // A follower has no body to fall back to: all of it is solids, capped where they close.
     const { body, trims } = follower
-      ? { body: [], trims: own.filter((m) => m.visible) }
+      ? { body: own.filter((m) => m.visible), trims: [] }
       : splitBody(own)
+    const hostedMeshes = follower
+      ? ownMeshes(object, true).filter((mesh) => !own.includes(mesh) && mesh.visible)
+      : []
     entries.push({
       object,
       instances: groupInstances(body).map((meshes) => ({
@@ -182,12 +140,42 @@ export function cutBakedWalls(
         meshes,
       })),
       trims: prepareSection(trims, level),
+      ...(follower
+        ? {
+            hosted: {
+              meshes: hostedMeshes,
+              section: prepareSection(hostedMeshes, level),
+              on: false,
+            },
+          }
+        : {}),
     })
     for (const mesh of own) {
       worn.set(mesh, mesh.material)
       setDisplayCutRoot(mesh, level)
       setDisplayCutRaycast(mesh, true)
       mesh.material = cutLike(mesh, mesh.material)
+    }
+  }
+  const setHosted = (
+    hosted: { meshes: Mesh[]; on: boolean },
+    level: Object3D,
+    on: boolean,
+  ): void => {
+    if (hosted.on === on) return
+    hosted.on = on
+    for (const mesh of hosted.meshes) {
+      if (on) {
+        worn.set(mesh, mesh.material)
+        setDisplayCutRoot(mesh, level)
+        setDisplayCutRaycast(mesh, true)
+        mesh.material = cutLike(mesh, mesh.material)
+      } else {
+        mesh.material = worn.get(mesh) ?? mesh.material
+        worn.delete(mesh)
+        setDisplayCutRaycast(mesh, false)
+        setDisplayCutRoot(mesh, null)
+      }
     }
   }
   const caps = new Map<Object3D, Mesh>()
@@ -212,6 +200,18 @@ export function cutBakedWalls(
           }
           // A trim never decides that.
           solids.push(...entry.trims.at(at).solids)
+          if (entry.hosted) {
+            const reach = entry.instances.reduce(
+              (range, instance) => ({
+                min: Math.min(range.min, instance.section.bounds.min),
+                max: Math.max(range.max, instance.section.bounds.max),
+              }),
+              { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
+            )
+            const straddles = reach.min < at && reach.max > at
+            setHosted(entry.hosted, level, straddles)
+            if (straddles) solids.push(...entry.hosted.section.at(at).solids)
+          }
           return { owner: entry.object, solids }
         }),
       )

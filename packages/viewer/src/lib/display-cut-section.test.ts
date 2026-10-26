@@ -332,3 +332,33 @@ describe('buildCutCapGeometry', () => {
     expect(covers(0.5, -3)).toBe(true)
   })
 })
+
+describe('double-sided shells', () => {
+  /** A beam drawn in both windings, as the column's braces are. */
+  const doubleSided = (geometry: BufferGeometry) => {
+    const index = geometry.getIndex()!
+    const flipped: number[] = []
+    for (let i = 0; i < index.count; i += 3)
+      flipped.push(index.getX(i), index.getX(i + 2), index.getX(i + 1))
+    const all = Array.from({ length: index.count }, (_, i) => index.getX(i)).concat(flipped)
+    const copy = geometry.clone()
+    copy.setIndex(all)
+    return copy
+  }
+
+  test('a shell in both windings keeps its section, not an empty one', () => {
+    const beam = doubleSided(new BoxGeometry(0.2, 2, 0.2).translate(0, 1, 0))
+    const section = sectionOfBody(beam, 0.5)
+    expect(section.complete).toBe(true)
+    expect(loopCount(section)).toBe(1)
+    expect(sectionArea(section)).toBeCloseTo(0.04, 5)
+  })
+
+  test('a slanted beam in both windings, as an A-frame brace is, is capped', () => {
+    const beam = new BoxGeometry(0.1, 2, 0.1).translate(0, 1, 0)
+    beam.rotateZ(0.3)
+    const section = sectionOfBody(doubleSided(beam), 0.6)
+    expect(section.complete).toBe(true)
+    expect(sectionArea(section)).toBeGreaterThan(0.009)
+  })
+})
