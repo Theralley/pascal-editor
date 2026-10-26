@@ -1866,6 +1866,14 @@ function stampIdentity(
     // A baked scene cuts its walls low like the live viewer does: the same walls, not the curtain
     // ones. Stamped either way, so a bake made before it did can be told apart.
     if (node.type === 'wall') extras.displayCut = wallCutApplies(node as WallNode)
+    // A kind that follows the wall mode is cut by Low with the walls: the baked viewer cuts what is stamped.
+    const follows = nodeRegistry.get(node.type)?.capabilities?.followsWallMode
+    if (
+      follows &&
+      follows.appliesTo?.(node) !== false &&
+      (!follows.modes || follows.modes.includes('low'))
+    )
+      extras.followsWallMode = true
     if (node.type === 'zone') {
       // Zone fills are stripped from the bake; /viewer rebuilds the room from
       // this polygon. Force the identity node visible so GLTFExporter's

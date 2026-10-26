@@ -229,4 +229,32 @@ describe('cutBakedWalls caps', () => {
     expect(capArea(level)).toBeCloseTo(4 * 0.2, 4)
     cut.dispose()
   })
+
+  test('a stamped follower (a column) is cut with the walls and capped, hosted parts too, and not when it is wholly above', () => {
+    const { level } = bakedLevel()
+    const column = new Group()
+    column.userData = { pascalId: 'column_1', kind: 'column', followsWallMode: true }
+    const shaft = new Mesh(
+      new BoxGeometry(0.4, 2.5, 0.4).translate(5, 1.25, 0),
+      new MeshBasicMaterial(),
+    )
+    const hosted = new Group()
+    hosted.userData = { pascalId: 'item_1', kind: 'item' }
+    hosted.add(new Mesh(new BoxGeometry(0.2, 1, 0.2).translate(5, 0.5, 1), new MeshBasicMaterial()))
+    column.add(shaft, hosted)
+    level.add(column)
+    level.updateMatrixWorld(true)
+    const material = shaft.material
+    const cut = cutBakedWalls(
+      [{ object: column, level, follower: true }],
+      0.25,
+      new MeshBasicMaterial(),
+    )
+    expect(shaft.material).not.toBe(material)
+    expect(capArea(level)).toBeCloseTo(0.4 * 0.4 + 0.2 * 0.2, 4)
+    cut.setHeight(3)
+    expect(capArea(level)).toBeCloseTo(0, 4)
+    cut.dispose()
+    expect(shaft.material).toBe(material)
+  })
 })

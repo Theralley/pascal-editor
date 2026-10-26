@@ -1164,6 +1164,47 @@ describe('prepareSceneForExport', () => {
     expect(hasMesh).toBe(false)
   })
 
+  test('stamps the kinds that follow the wall mode in Low, and only the nodes that follow', () => {
+    const restore = nodeRegistry._snapshot()
+    nodeRegistry._register({
+      kind: 'post',
+      schemaVersion: 1,
+      capabilities: {
+        followsWallMode: {
+          appliesTo: (node: { role?: string }) => node.role !== 'ornament',
+          modes: ['down', 'low'],
+        },
+      },
+    } as never)
+    nodeRegistry._register({
+      kind: 'awning',
+      schemaVersion: 1,
+      capabilities: { followsWallMode: { modes: ['cutaway'] } },
+    } as never)
+    try {
+      const root = new THREE.Group()
+      const nodes: Record<string, AnyNode> = {}
+      for (const [id, type, extra] of [
+        ['post_a', 'post', {}],
+        ['post_b', 'post', { role: 'ornament' }],
+        ['awning_a', 'awning', {}],
+      ] as const) {
+        const group = new THREE.Group()
+        group.add(meshWithNodeMaterial(nodeMaterial()))
+        root.add(group)
+        sceneRegistry.nodes.set(id, group)
+        nodes[id] = { object: 'node', id, type, ...extra } as unknown as AnyNode
+      }
+      const { scene } = prepareSceneForExport(root, nodes)
+      const stamp = (id: string) => scene.getObjectByProperty('name', id)?.userData.followsWallMode
+      expect(stamp('post_a')).toBe(true)
+      expect(stamp('post_b')).toBeUndefined()
+      expect(stamp('awning_a')).toBeUndefined()
+    } finally {
+      restore()
+    }
+  })
+
   test('stamps whether the low cut applies on every wall, curtain or not', () => {
     const root = new THREE.Group()
     const nodes: Record<string, AnyNode> = {}

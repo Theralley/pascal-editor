@@ -22,7 +22,11 @@ import {
   type Solid,
 } from '../../lib/display-cut-section'
 
-type BakedWall = { object: Object3D; level: Object3D }
+/**
+ * `follower`: a node of a kind that follows the wall mode (a column), stamped by the bake. It is cut
+ * as the walls are, with what is hosted on it, and every one of its meshes is a solid of its own.
+ */
+type BakedWall = { object: Object3D; level: Object3D; follower?: boolean }
 
 export const GLB_WALL_CAPS_NAME = 'wall-cut-caps'
 
@@ -30,11 +34,11 @@ const isIdentity = (object: Object3D) =>
   Boolean((object.userData as { pascalId?: string }).pascalId)
 
 /** The meshes a baked wall draws itself: its own, not those of the openings and items hosted on it. */
-function ownMeshes(wall: Object3D): Mesh[] {
+function ownMeshes(wall: Object3D, hosted = false): Mesh[] {
   const meshes: Mesh[] = []
   const walk = (node: Object3D) => {
     if ((node as Mesh).isMesh) meshes.push(node as Mesh)
-    for (const child of node.children) if (!isIdentity(child)) walk(child)
+    for (const child of node.children) if (hosted || !isIdentity(child)) walk(child)
   }
   walk(wall)
   return meshes
@@ -161,12 +165,16 @@ export function cutBakedWalls(
       trims: PreparedSection
     }[]
   >()
-  for (const { object, level } of walls) {
-    const own = ownMeshes(object)
-    if (!cutApplies(object, own)) continue
+  for (const { object, level, follower } of walls) {
+    // A follower is cut with what is hosted on it (as the live clip does); a wall's own meshes only.
+    const own = ownMeshes(object, follower)
+    if (!follower && !cutApplies(object, own)) continue
     const entries = perLevel.get(level) ?? []
     perLevel.set(level, entries)
-    const { body, trims } = splitBody(own)
+    // A follower has no body to fall back to: all of it is solids, capped where they close.
+    const { body, trims } = follower
+      ? { body: [], trims: own.filter((m) => m.visible) }
+      : splitBody(own)
     entries.push({
       object,
       instances: groupInstances(body).map((meshes) => ({

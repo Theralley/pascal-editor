@@ -105,6 +105,8 @@ type PascalExtras = {
   polygon?: [number, number][]
   holes?: [number, number][][]
   color?: string
+  /** Stamped by the bake on a node of a kind that follows the wall mode (a column): Low cuts it with the walls. */
+  followsWallMode?: boolean
   /** Whether the display cut applies to a wall; false on a curtain wall. Absent on a bake made before it was stamped. */
   displayCut?: boolean
   camera?: { position: [number, number, number]; target: [number, number, number] }
@@ -492,13 +494,15 @@ export function GlbScene({
   // biome-ignore lint/correctness/useExhaustiveDependencies: textures and sceneTheme re-dress the walls this cuts
   useEffect(() => {
     if (!wallsDown) return
-    const walls: { object: THREE.Object3D; level: THREE.Object3D }[] = []
+    const walls: { object: THREE.Object3D; level: THREE.Object3D; follower?: boolean }[] = []
     gltf.scene.traverse((object) => {
       const extras = object.userData as PascalExtras
-      if (extras.kind !== 'wall') return
+      // The walls, and the followers the bake stamped: both are cut and capped at the slider's height.
+      if (extras.kind !== 'wall' && extras.followsWallMode !== true) return
       const levelId = findAncestorLevelId(object)
       const level = levelId ? identity.get(levelId) : undefined
-      if (level) walls.push({ object, level })
+      if (level)
+        walls.push({ object, level, ...(extras.kind === 'wall' ? {} : { follower: true }) })
     })
     const capMaterial = createDefaultMaterial('#e9e7e3', 0.9, textures ? 'rendered' : 'solid')
     const cut = cutBakedWalls(walls, useViewer.getState().wallCutHeight, capMaterial)
