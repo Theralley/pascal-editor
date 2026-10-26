@@ -1,4 +1,5 @@
 import type { AnyNode } from '@pascal-app/core'
+import { getLocale, type Locale } from '../i18n'
 
 /** A titled group of the room-name combobox. */
 export type RoomNameSection = { id: string; title: string; names: readonly string[] }
@@ -6,94 +7,184 @@ export type RoomNameSection = { id: string; title: string; names: readonly strin
 /** What the room reads as, which decides the section shown first. */
 export type RoomNameContext = 'room' | 'outdoor' | 'mezzanine'
 
-/** Names for any room, in the order the dropdown lists their sections. */
-export const ROOM_NAME_SECTIONS: readonly RoomNameSection[] = [
+type RoomNameSectionSource = {
+  id: string
+  title: Record<Locale, string>
+  names: Record<Locale, readonly string[]>
+}
+
+/** Names for any room, in the order the dropdown lists their sections. Suggestions only: a picked name is stored as is. */
+const ROOM_NAME_CATALOG: readonly RoomNameSectionSource[] = [
   {
     id: 'living',
-    title: 'Living',
-    names: [
-      'Living room',
-      'Family room',
-      'Dining room',
-      'Kitchen',
-      'Kitchenette',
-      'Pantry',
-      'Lounge',
-      'Den',
-      'Library',
-      'Playroom',
-      'Home cinema',
-      'Games room',
-      'Sunroom',
-    ],
+    title: { en: 'Living', sv: 'Vardag' },
+    names: {
+      en: [
+        'Living room',
+        'Family room',
+        'Dining room',
+        'Kitchen',
+        'Kitchenette',
+        'Pantry',
+        'Lounge',
+        'Den',
+        'Library',
+        'Playroom',
+        'Home cinema',
+        'Games room',
+        'Sunroom',
+      ],
+      sv: [
+        'Vardagsrum',
+        'Allrum',
+        'Matsal',
+        'Kök',
+        'Pentry',
+        'Skafferi',
+        'Lounge',
+        'Mysrum',
+        'Bibliotek',
+        'Lekrum',
+        'Hemmabio',
+        'Spelrum',
+        'Uterum',
+      ],
+    },
   },
   {
     id: 'sleeping',
-    title: 'Sleeping',
-    names: [
-      'Bedroom',
-      'Primary bedroom',
-      'Guest room',
-      "Kids' room",
-      'Nursery',
-      'Dressing room',
-      'Walk-in closet',
-    ],
+    title: { en: 'Sleeping', sv: 'Sova' },
+    names: {
+      en: [
+        'Bedroom',
+        'Primary bedroom',
+        'Guest room',
+        "Kids' room",
+        'Nursery',
+        'Dressing room',
+        'Walk-in closet',
+      ],
+      sv: [
+        'Sovrum',
+        'Stora sovrummet',
+        'Gästrum',
+        'Barnrum',
+        'Babyrum',
+        'Klädkammare',
+        'Walk-in closet',
+      ],
+    },
   },
   {
     id: 'bathrooms',
-    title: 'Bathrooms',
-    names: ['Bathroom', 'En-suite', 'Shower room', 'Toilet', 'Powder room'],
+    title: { en: 'Bathrooms', sv: 'Badrum' },
+    names: {
+      en: ['Bathroom', 'En-suite', 'Shower room', 'Toilet', 'Powder room'],
+      sv: ['Badrum', 'Eget badrum', 'Duschrum', 'Toalett', 'Gästtoalett'],
+    },
   },
   {
     id: 'work',
-    title: 'Work & hobbies',
-    names: ['Office', 'Study', 'Studio', 'Workshop', 'Gym'],
+    title: { en: 'Work & hobbies', sv: 'Arbete och hobby' },
+    names: {
+      en: ['Office', 'Study', 'Studio', 'Workshop', 'Gym'],
+      sv: ['Kontor', 'Arbetsrum', 'Ateljé', 'Verkstad', 'Gym'],
+    },
   },
   {
     id: 'circulation',
-    title: 'Circulation',
-    names: ['Entrance', 'Hallway', 'Corridor', 'Landing', 'Stairwell', 'Mudroom'],
+    title: { en: 'Circulation', sv: 'Förflyttning' },
+    names: {
+      en: ['Entrance', 'Hallway', 'Corridor', 'Landing', 'Stairwell', 'Mudroom'],
+      sv: ['Entré', 'Hall', 'Korridor', 'Trappavsats', 'Trapphus', 'Kapprum'],
+    },
   },
   {
     id: 'utility',
-    title: 'Utility & storage',
-    names: [
-      'Laundry',
-      'Utility room',
-      'Storage',
-      'Closet',
-      'Boiler room',
-      'Cellar',
-      'Basement',
-      'Attic',
-      'Garage',
-    ],
+    title: { en: 'Utility & storage', sv: 'Tvätt och förvaring' },
+    names: {
+      en: [
+        'Laundry',
+        'Utility room',
+        'Storage',
+        'Closet',
+        'Boiler room',
+        'Cellar',
+        'Basement',
+        'Attic',
+        'Garage',
+      ],
+      sv: [
+        'Tvättstuga',
+        'Hushållsrum',
+        'Förråd',
+        'Garderob',
+        'Pannrum',
+        'Jordkällare',
+        'Källarvåning',
+        'Vind',
+        'Garage',
+      ],
+    },
   },
   {
     id: 'outdoor',
-    title: 'Outdoor',
-    names: [
-      'Garden',
-      'Patio',
-      'Terrace',
-      'Balcony',
-      'Porch',
-      'Veranda',
-      'Deck',
-      'Courtyard',
-      'Pool area',
-      'Carport',
-      'Garden shed',
-    ],
+    title: { en: 'Outdoor', sv: 'Utomhus' },
+    names: {
+      en: [
+        'Garden',
+        'Patio',
+        'Terrace',
+        'Balcony',
+        'Porch',
+        'Veranda',
+        'Deck',
+        'Courtyard',
+        'Pool area',
+        'Carport',
+        'Garden shed',
+      ],
+      sv: [
+        'Trädgård',
+        'Uteplats',
+        'Terrass',
+        'Balkong',
+        'Farstukvist',
+        'Veranda',
+        'Trädäck',
+        'Innergård',
+        'Poolområde',
+        'Carport',
+        'Trädgårdsskjul',
+      ],
+    },
   },
 ]
 
 /** Only offered, and first, when the selection is a mezzanine. */
-export const MEZZANINE_NAME_SECTION: RoomNameSection = {
+const MEZZANINE_NAME_CATALOG: RoomNameSectionSource = {
   id: 'mezzanine',
-  title: 'Mezzanine',
-  names: ['Mezzanine', 'Loft', 'Reading nook', 'Gallery'],
+  title: { en: 'Mezzanine', sv: 'Entresol' },
+  names: {
+    en: ['Mezzanine', 'Loft', 'Reading nook', 'Gallery'],
+    sv: ['Entresol', 'Loft', 'Läshörna', 'Galleri'],
+  },
+}
+
+const inLocale = (source: RoomNameSectionSource, locale: Locale): RoomNameSection => ({
+  id: source.id,
+  title: source.title[locale],
+  names: source.names[locale],
+})
+
+/** The catalog's sections in `locale`, in their usual order. */
+export function roomNameCatalog(locale: Locale = getLocale()): RoomNameSection[] {
+  return ROOM_NAME_CATALOG.map((source) => inLocale(source, locale))
+}
+
+/** The mezzanine section in `locale`. */
+export function mezzanineNameSection(locale: Locale = getLocale()): RoomNameSection {
+  return inLocale(MEZZANINE_NAME_CATALOG, locale)
 }
 
 /**
@@ -156,13 +247,15 @@ export function numberedRoomName(nodes: Record<string, AnyNode>, zoneId: string,
 export function roomNameSections(
   nodes: Record<string, AnyNode>,
   zoneId: string,
+  locale: Locale = getLocale(),
 ): RoomNameSection[] {
   const context = roomNameContext(nodes, zoneId)
+  const catalog = roomNameCatalog(locale)
   const first =
     context === 'mezzanine'
-      ? [MEZZANINE_NAME_SECTION]
+      ? [mezzanineNameSection(locale)]
       : context === 'outdoor'
-        ? ROOM_NAME_SECTIONS.filter((section) => section.id === 'outdoor')
+        ? catalog.filter((section) => section.id === 'outdoor')
         : []
-  return [...first, ...ROOM_NAME_SECTIONS.filter((section) => !first.includes(section))]
+  return [...first, ...catalog.filter((section) => !first.some((other) => other.id === section.id))]
 }

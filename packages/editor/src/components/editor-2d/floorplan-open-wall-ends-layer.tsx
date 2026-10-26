@@ -9,7 +9,7 @@ import {
   useOpenWallEnds,
   useOpenWallEndsSuppressed,
 } from '../../hooks/use-open-wall-ends'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { openWallEndKey, openWallEndLabel } from '../../lib/floorplan/open-wall-ends'
 import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
 import useEditor from '../../store/use-editor'
@@ -39,6 +39,7 @@ function sceneScreenPoint(point: [number, number]): { left: number; top: number 
  * otherwise only when a wall that bounds no room has a near miss.
  */
 export const FloorplanOpenWallEndsLayer = memo(function FloorplanOpenWallEndsLayer() {
+  useLocale() // the end labels read the active language
   const visible = useEditor((state) => isViewVisible(state, VIEW_2D))
   const suppressed = useOpenWallEndsSuppressed()
   return visible && !suppressed ? <ActiveOpenWallEndsLayer /> : null

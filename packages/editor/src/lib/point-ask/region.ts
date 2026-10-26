@@ -1,4 +1,6 @@
+import { translate } from '../../i18n'
 import { formatLinearMeasurement } from '../measurements'
+import { messages } from './messages'
 import type { Rect, ScreenPoint } from './types'
 
 // A region is a view, not a selection (spec 2.3, "A region is a view, not a selection"): a
@@ -111,8 +113,8 @@ export function rankInRegion(
 
 /** The region chip's words: "Area · 6 elements". */
 export function regionLabel(count: number): string {
-  if (count <= 0) return 'Area'
-  return `Area · ${count} element${count === 1 ? '' : 's'}`
+  if (count <= 0) return translate(messages, 'region.area')
+  return translate(messages, 'region.elements', { count })
 }
 
 /**

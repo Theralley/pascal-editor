@@ -12,7 +12,7 @@ import {
   useOpenWallEnds,
   useOpenWallEndsSuppressed,
 } from '../../hooks/use-open-wall-ends'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import { openWallEndKey, openWallEndLabel } from '../../lib/floorplan/open-wall-ends'
 import { MEASUREMENT_DANGLING_COLOR } from '../../lib/measurements'
@@ -69,6 +69,7 @@ type MarkerResources = ReturnType<typeof createMarkerResources>
 type Vec3 = [number, number, number]
 
 export const OpenWallEnds3DLayer = memo(function OpenWallEnds3DLayer() {
+  useLocale() // the end labels read the active language
   const visible = useEditor((state) => isViewVisible(state, VIEW_3D))
   const suppressed = useOpenWallEndsSuppressed()
   return visible && !suppressed ? <ActiveOpenWallEnds3DLayer /> : null

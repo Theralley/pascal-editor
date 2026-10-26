@@ -15,8 +15,12 @@ import {
   collectRoofFeatures,
   MEP_ITEMS,
 } from '@/lib/build-palette'
-import { useBuildPanelModel, useBuildToolOptions } from '@/lib/build-panel-model'
-import { getRoofFootprintSources, ROOF_TYPE_OPTIONS } from '@/lib/build-tab-state'
+import {
+  localizedFootprintSources,
+  localizedRoofTypeOptions,
+  useBuildPanelModel,
+  useBuildToolOptions,
+} from '@/lib/build-panel-model'
 
 export const webXRWandBindings: PascalXRWandBindings = {
   useBuildPalette: useBuildPanelModel,
@@ -34,7 +38,9 @@ export const webXRWandBindings: PascalXRWandBindings = {
   activateTerrainSculptMode,
   collectBuildTypes,
   collectRoofFeatures,
-  getRoofFootprintSources,
-  roofTypeOptions: ROOF_TYPE_OPTIONS,
+  getRoofFootprintSources: localizedFootprintSources,
+  get roofTypeOptions() {
+    return localizedRoofTypeOptions()
+  },
   xrMepItems: MEP_ITEMS,
 }

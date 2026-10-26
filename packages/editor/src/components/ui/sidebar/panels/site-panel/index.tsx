@@ -1,3 +1,4 @@
+import { defaultLevelName, levelDisplayName } from '../../../../../lib/level-display-name'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -53,7 +54,6 @@ import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
 } from '@pascal-app/core/building'
-import { getDefaultLevelName, getLevelDisplayName } from '@pascal-app/core'
 import { translate, useLocale, useT } from './../../../../../i18n'
 import { addStoreyOnTop } from './../../../../../lib/add-storey'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
@@ -861,8 +861,8 @@ const LevelItem = memo(function LevelItem({
             src="/icons/level.webp"
           />
           <InlineRenameInput
-            defaultName={getDefaultLevelName(level.level)}
-            displayName={getLevelDisplayName(level)}
+            defaultName={defaultLevelName(level.level)}
+            displayName={levelDisplayName(level)}
             isEditing={isEditing}
             nodeId={level.id}
             onStartEditing={() => setIsEditing(true)}

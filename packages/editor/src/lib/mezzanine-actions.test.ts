@@ -21,9 +21,9 @@ import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import { cancelGestures, hasLiveGestures } from './gesture-lifecycle'
 import {
-  MEZZANINE_NO_STAIR_MESSAGE,
-  MEZZANINE_OUTSIDE_MESSAGE,
-  MEZZANINE_OVERLAP_MESSAGE,
+  mezzanineNoStairMessage,
+  mezzanineOutsideMessage,
+  mezzanineOverlapMessage,
 } from './mezzanine-messages'
 import { addMezzanineStairs } from './mezzanine-stairs'
 import {
@@ -171,13 +171,13 @@ describe('moving a mezzanine', () => {
     previewRoomTransform([6, 0], 0)
     expect(useRoomTransform.getState().session).toMatchObject({
       valid: false,
-      message: MEZZANINE_OUTSIDE_MESSAGE,
+      message: mezzanineOutsideMessage(),
     })
     expect(commitRoomTransform()).toBe(false)
     previewRoomTransform([1.5, 1], 0)
     expect(useRoomTransform.getState().session).toMatchObject({
       valid: false,
-      message: MEZZANINE_OVERLAP_MESSAGE,
+      message: mezzanineOverlapMessage(),
     })
     expect(commitRoomTransform()).toBe(false)
     expect(history()).toBe(0)
@@ -210,7 +210,7 @@ describe('turning and copying a mezzanine', () => {
     previewRoomTransform([0, 0], 0)
     expect(useRoomTransform.getState().session).toMatchObject({
       valid: false,
-      message: MEZZANINE_OVERLAP_MESSAGE,
+      message: mezzanineOverlapMessage(),
     })
     previewRoomTransform([3.5, 0], 0)
     expect(useRoomTransform.getState().session).toMatchObject({ valid: true })
@@ -255,7 +255,7 @@ describe('pushing a mezzanine edge', () => {
     move(10)
     expect(useRoomHandleDrag.getState().drag).toMatchObject({
       kind: 'mezzanine-edge',
-      message: MEZZANINE_OUTSIDE_MESSAGE,
+      message: mezzanineOutsideMessage(),
     })
     move(1)
     const drag = useRoomHandleDrag.getState().drag as { message?: string; outline: Point[] }
@@ -335,7 +335,7 @@ describe('adding stairs', () => {
     )
     clearSceneHistory()
     const result = addMezzanineStairs(mezzanineId)
-    expect(result).toEqual({ ok: false, message: MEZZANINE_NO_STAIR_MESSAGE })
+    expect(result).toEqual({ ok: false, message: mezzanineNoStairMessage() })
     expect(Object.values(nodes()).some((node) => node.type === 'stair')).toBe(false)
     expect(history()).toBe(0)
   })

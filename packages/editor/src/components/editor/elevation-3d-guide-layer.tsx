@@ -7,6 +7,7 @@ import { useFrame } from '@react-three/fiber'
 import { memo, useMemo, useRef } from 'react'
 import { BoxGeometry, CircleGeometry, type Group } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { useLocale } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import useElevationGuides from '../../store/use-elevation-guides'
 import { formatMeasurement } from './measurement-pill'
@@ -44,6 +45,7 @@ type Vec3 = [number, number, number]
 export const Elevation3DGuideLayer = memo(function Elevation3DGuideLayer() {
   const guide = useElevationGuides((state) => state.guide)
   const unit = useViewer((state) => state.unit)
+  const locale = useLocale()
   const metricNotation = useViewer((state) => state.metricNotation)
   const groupRef = useRef<Group>(null)
 
@@ -77,8 +79,8 @@ export const Elevation3DGuideLayer = memo(function Elevation3DGuideLayer() {
   ]
   const elevationText =
     Math.abs(guide.elevation) < 1e-6
-      ? formatMeasurement(0, unit, metricNotation)
-      : `${guide.elevation < 0 ? '-' : '+'}${formatMeasurement(Math.abs(guide.elevation), unit, metricNotation)}`
+      ? formatMeasurement(0, unit, metricNotation, locale)
+      : `${guide.elevation < 0 ? '-' : '+'}${formatMeasurement(Math.abs(guide.elevation), unit, metricNotation, locale)}`
 
   return (
     <group ref={groupRef}>

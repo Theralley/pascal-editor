@@ -7,6 +7,7 @@ import { useFrame } from '@react-three/fiber'
 import { memo, useMemo, useRef } from 'react'
 import { BoxGeometry, CircleGeometry, type Group, Vector3 } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { useLocale } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import useAlignmentGuides from '../../store/use-alignment-guides'
 import { formatMeasurement } from './measurement-pill'
@@ -103,7 +104,8 @@ function GuideLine({
 }) {
   const { x: fx, z: fz } = guide.from
   const { x: tx, z: tz } = guide.to
-  const distLabel = formatMeasurement(guide.distance, unit, metricNotation)
+  const locale = useLocale()
+  const distLabel = formatMeasurement(guide.distance, unit, metricNotation, locale)
 
   // Lay out the dash centres along the from→to direction. The ribbon
   // stretches the dash period up if the line is long enough to exceed the

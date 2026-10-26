@@ -13,6 +13,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { create } from 'zustand'
 import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
+import { conflictMessage } from './conflict-message'
 import { crossingMessage, floorRegionSelfIntersects } from './floor-region-geometry'
 import {
   cancelFloorRegion,
@@ -76,7 +77,7 @@ export function planTerrace(
       mintId: generateId,
     })
     const conflict = plan.conflicts?.[0]
-    return conflict ? { message: conflict.message || terraceFailedMessage() } : { plan }
+    return conflict ? { message: conflictMessage(conflict) || terraceFailedMessage() } : { plan }
   } catch {
     return { message: terraceFailedMessage() }
   }

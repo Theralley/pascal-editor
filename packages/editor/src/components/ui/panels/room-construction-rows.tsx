@@ -2,7 +2,6 @@
 
 import {
   type AnyNodeId,
-  floorFootprintName,
   floorFootprintSupportClass,
   floorPlateAtGroundContact,
   MIN_GROUND_FLOOR_THICKNESS,
@@ -27,7 +26,7 @@ import {
 import { formatLinearMeasurement } from '../../../lib/measurements'
 import { startMezzanineDraft } from '../../../lib/mezzanine-draft'
 import { resolveRoomAssemblyHeights } from '../../../lib/room-assembly-overlay'
-import { roomBuiltOn, separateFloorSummary } from '../../../lib/room-built-on'
+import { footprintDisplayName, roomBuiltOn, separateFloorSummary } from '../../../lib/room-built-on'
 import type { RoomConstructionState } from '../../../lib/room-construction'
 import { roomConstructionState } from '../../../lib/room-construction'
 import {
@@ -286,7 +285,8 @@ export function DrawnFloorRow({ zoneId }: { zoneId: string }) {
 export function BuiltOnField({ zoneId }: { zoneId: string }) {
   const t = useT(messages)
   const nodes = useScene((scene) => scene.nodes)
-  const model = useMemo(() => roomBuiltOn(nodes, zoneId), [nodes, zoneId])
+  const locale = useLocale()
+  const model = useMemo(() => roomBuiltOn(nodes, zoneId, locale), [nodes, zoneId, locale])
   const [error, setError] = useState<string | null>(null)
   if (!model) return null
   const choose = (key: string | null) => {
@@ -380,7 +380,7 @@ function SitsOn({ zoneId, noFloor }: { zoneId: string; noFloor: boolean }) {
         }
       return {
         id: plate.id as string,
-        name: floorFootprintName(scene.nodes, plate),
+        name: footprintDisplayName(scene.nodes, plate, locale),
         drawn: false,
         ...footprintStanding(scene.nodes, plate),
       }
@@ -609,7 +609,7 @@ export function RoomConstructionRows({ room }: { room: RoomSelectionRecord }) {
 
   const floorElevation = roomRelativeFloorHeight(nodes, zoneId)
   const drawnSlab = drawnFloor ? nodes[drawnFloor.slabId as AnyNodeId] : undefined
-  const builtOn = roomBuiltOn(nodes, zoneId)
+  const builtOn = roomBuiltOn(nodes, zoneId, locale)
   const floorMeta =
     state.floor.state === 'partial'
       ? t('build.floorPartial', { percent: Math.round(state.floor.coverage * 100) })
@@ -619,6 +619,7 @@ export function RoomConstructionRows({ room }: { room: RoomSelectionRecord }) {
           ? separateFloorSummary(
               { ...builtOn, offset: separateFloorOffset(nodes, zoneId) },
               length,
+              locale,
             )
           : Math.abs(floorElevation) < 0.005
             ? t('build.floorLevel')

@@ -1,3 +1,4 @@
+import { levelDisplayName } from '../../../../../lib/level-display-name'
 import { downloadProjectFile } from '../../../../../lib/download-project-file'
 import {
   getProjectFileSink,
@@ -5,7 +6,6 @@ import {
   DEFAULT_LEVEL_HEIGHT,
   emitter,
   getArtifactStore,
-  getLevelDisplayName,
   LevelNode,
   type AnyNodeId,
   type BuildingNode,
@@ -561,13 +561,13 @@ function FloorSettingsSection() {
                   type="button"
                 >
                   <Layers className="size-3.5 shrink-0" />
-                  <span className="truncate">{getLevelDisplayName(level)}</span>
+                  <span className="truncate">{levelDisplayName(level)}</span>
                   <span className="ml-auto shrink-0 text-muted-foreground text-xs">
                     {level.level === 0 ? '0' : level.level > 0 ? `+${level.level}` : level.level}
                   </span>
                 </button>
                 <button
-                  aria-label={t('floors.remove', { name: getLevelDisplayName(level) })}
+                  aria-label={t('floors.remove', { name: levelDisplayName(level) })}
                   className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
                   disabled={!canDelete}
                   onClick={() => deleteLevelWithFallbackSelection(level.id)}

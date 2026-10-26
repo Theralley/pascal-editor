@@ -1,3 +1,5 @@
+import { translate } from '../../i18n'
+import { messages } from './messages'
 import type { PinState } from './types'
 
 /**
@@ -174,16 +176,16 @@ export function reducePin(pin: PinModel, event: PinEvent): PinModel {
 const firstLines = (text: string, count: number) => text.split('\n').slice(0, count).join('\n')
 
 /** The card's headline: the error's words, an answer's first two lines, "Undone", or the title. */
-export function cardTitle(pin: PinModel, fallback = 'Done'): string {
+export function cardTitle(pin: PinModel, fallback = translate(messages, 'card.done')): string {
   if (pin.state === 'error' && pin.error) return pin.error
   if (pin.state === 'answered' && pin.answer) return firstLines(pin.answer, 2)
-  if (pin.state === 'undone') return 'Undone'
+  if (pin.state === 'undone') return translate(messages, 'card.undone')
   if (pin.title) return pin.title
   if (pin.state === 'done' && pin.committed) {
     const count = new Set([...pin.changedTargetIds, ...pin.alsoChangedIds]).size
     return count
-      ? `Pascal changed ${count} element${count === 1 ? '' : 's'}`
-      : 'Pascal updated the scene'
+      ? translate(messages, 'card.changed', { count })
+      : translate(messages, 'card.updated')
   }
   return fallback
 }
@@ -192,7 +194,7 @@ export function cardTitle(pin: PinModel, fallback = 'Done'): string {
 export function alsoChangedLine(pin: PinModel): string | null {
   const count = pin.alsoChangedIds.length
   if (count === 0) return null
-  return `Also changed ${count} other element${count === 1 ? '' : 's'}`
+  return translate(messages, 'card.also', { count })
 }
 
 /**

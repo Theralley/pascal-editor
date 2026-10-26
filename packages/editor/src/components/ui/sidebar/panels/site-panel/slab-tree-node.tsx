@@ -7,6 +7,7 @@ import { InlineRenameInput } from './inline-rename-input'
 import { focusTreeNode, handleTreeSelection, TreeNodeWrapper } from './tree-node'
 import { TreeNodeActions } from './tree-node-actions'
 import { messages } from './messages'
+import { localizeFootprintName } from '../../../../../lib/room-built-on'
 import { useLocale, useT } from '../../../../../i18n'
 
 interface SlabTreeNodeProps {
@@ -36,6 +37,7 @@ export const SlabTreeNode = memo(function SlabTreeNode({
     const node = s.nodes[nodeId]
     return node?.type === 'slab' && node.plateRole === 'base' ? floorFootprintName(s.nodes, node) : null
   })
+  const ownName = useScene((s) => s.nodes[nodeId]?.name)
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -74,7 +76,7 @@ export const SlabTreeNode = memo(function SlabTreeNode({
       label={
         footprint ? (
           <span className="truncate" data-footprint-entry={nodeId}>
-            {footprint}
+            {localizeFootprintName(footprint, ownName, locale)}
           </span>
         ) : (
           <InlineRenameInput

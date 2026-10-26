@@ -1,5 +1,6 @@
 'use client'
 
+import { levelDisplayName } from '../../../lib/level-display-name'
 import type { AnyNodeId, LevelNode } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
 import { markPerfAction, useViewer, WALL_MODE_OPTIONS } from '@pascal-app/viewer'
@@ -10,7 +11,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { Dialog, DialogContent, DialogTitle } from './../../../components/ui/primitives/dialog'
-import { getLevelDisplayName } from '@pascal-app/core'
 import { type MessageKey, useT } from '../../../i18n'
 import { type CommandAction, useCommandRegistry } from '../../../store/use-command-registry'
 import { usePaletteViewRegistry } from '../../../store/use-palette-view-registry'
@@ -412,7 +412,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
                     <OptionItem
                       isActive={level.id === activeLevelId}
                       key={level.id}
-                      label={getLevelDisplayName(level)}
+                      label={levelDisplayName(level)}
                       onSelect={() =>
                         run(() => {
                           if (level.id !== useViewer.getState().selection.levelId) {

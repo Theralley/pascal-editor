@@ -1,10 +1,13 @@
 import {
   type AnyNode,
   roomFloorChoices as coreRoomFloorChoices,
+  floorFootprintName,
   roomDrawnFloor,
   type SlabNode,
   type ZoneNode,
 } from '@pascal-app/core'
+import { defineMessages, getLocale, type Locale } from '../i18n'
+import { formatMessage } from '../i18n/messages'
 import { levelFootprints } from './floor-footprints'
 
 // "Built on": which floor a room stands on. By default a room is part of its
@@ -24,7 +27,49 @@ export type FloorChoice = { key: string | null; plateId: string | null; name: st
 /** A floor that exists: its plate is in the scene. */
 export type PlateChoice = FloorChoice & { plateId: string }
 
-const SHARED_FLOOR: FloorChoice = { key: null, plateId: null, name: 'Shared floor' }
+const messages = defineMessages({
+  en: {
+    shared: 'Shared floor',
+    area: 'Floor area',
+    named: '{name} floor',
+    levelWith: '{name} · level with {shared}',
+    above: '{name} · {length} above {shared}',
+    below: '{name} · {length} below {shared}',
+  },
+  sv: {
+    shared: 'Gemensamt golv',
+    area: 'Golvyta',
+    named: 'Golv · {name}',
+    levelWith: '{name} · i nivå med {shared}',
+    above: '{name} · {length} över {shared}',
+    below: '{name} · {length} under {shared}',
+  },
+})
+
+/**
+ * A footprint's name in `locale`. Core names a generated one in English ("Shared floor", "Floor
+ * area", "<room> floor"); a name the person gave the plate is kept.
+ */
+export function footprintDisplayName(
+  nodes: Nodes,
+  plate: SlabNode,
+  locale: Locale = getLocale(),
+): string {
+  return localizeFootprintName(floorFootprintName(nodes, plate), plate.name, locale)
+}
+
+/** `footprintDisplayName` for a name core already produced, `ownName` being the plate's stored name. */
+export function localizeFootprintName(
+  coreName: string,
+  ownName: string | undefined,
+  locale: Locale = getLocale(),
+): string {
+  if (locale === 'en' || coreName === ownName?.trim()) return coreName
+  if (coreName === 'Shared floor') return formatMessage(messages, locale, 'shared')
+  if (coreName === 'Floor area') return formatMessage(messages, locale, 'area')
+  const room = /^(.+) floor$/i.exec(coreName)?.[1]
+  return room ? formatMessage(messages, locale, 'named', { name: room }) : coreName
+}
 
 const isRoom = (node: AnyNode | undefined): node is ZoneNode =>
   node?.type === 'zone' && node.spaceRole === 'room'
@@ -54,10 +99,18 @@ function listingPlate(nodes: Nodes, zone: ZoneNode): SlabNode | null {
  * `floorFootprintName`. Drawn slabs and mezzanine decks are no floor to move
  * a room onto.
  */
-export function roomFloorChoices(nodes: Nodes, zoneId: string): PlateChoice[] {
+export function roomFloorChoices(
+  nodes: Nodes,
+  zoneId: string,
+  locale: Locale = getLocale(),
+): PlateChoice[] {
   return coreRoomFloorChoices(nodes, zoneId)
     .filter((choice) => !choice.drawn && !choice.mezzanine)
-    .map(({ key, plateId, name }) => ({ key, plateId, name }))
+    .map(({ key, plateId, name }) => ({
+      key,
+      plateId,
+      name: localizeFootprintName(name, (nodes[plateId] as SlabNode | undefined)?.name, locale),
+    }))
 }
 
 /**
@@ -82,7 +135,7 @@ export function roomSharedFootprint(nodes: Nodes, zoneId: string): SlabNode | nu
   const zone = nodes[zoneId]
   if (!isRoom(zone) || !zone.parentId) return null
   if (!zone.floor?.footprint) return listingPlate(nodes, zone)
-  const shared = roomFloorChoices(nodes, zoneId).find((choice) => choice.key === null)
+  const shared = roomFloorChoices(nodes, zoneId, 'en').find((choice) => choice.key === null)
   const plate = shared ? nodes[shared.plateId] : undefined
   return plate?.type === 'slab' ? plate : null
 }
@@ -102,11 +155,15 @@ export type RoomBuiltOnModel = {
  * floor alone on its footprint with no other floor touching it. A room on a
  * separate floor can always go back to the shared floor, touching one or not.
  */
-export function roomBuiltOn(nodes: Nodes, zoneId: string): RoomBuiltOnModel | null {
+export function roomBuiltOn(
+  nodes: Nodes,
+  zoneId: string,
+  locale: Locale = getLocale(),
+): RoomBuiltOnModel | null {
   const zone = nodes[zoneId]
   if (!isGroundRoom(zone)) return null
   if (roomDrawnFloor(nodes, zoneId)) return null
-  const choices = roomFloorChoices(nodes, zoneId)
+  const choices = roomFloorChoices(nodes, zoneId, locale)
   const plate = listingPlate(nodes, zone)
   const current = plate && choices.find((choice) => choice.plateId === plate.id)
   if (!plate || !current) return null
@@ -118,7 +175,13 @@ export function roomBuiltOn(nodes: Nodes, zoneId: string): RoomBuiltOnModel | nu
     ? (choices.find((choice) => choice.plateId === sharedPlate.id) ?? null)
     : null
   const offersShared = choices.some((choice) => choice.key === null)
-  return { current, choices: offersShared ? choices : [...choices, SHARED_FLOOR], shared }
+  return {
+    current,
+    choices: offersShared
+      ? choices
+      : [...choices, { key: null, plateId: null, name: formatMessage(messages, locale, 'shared') }],
+    shared,
+  }
 }
 
 /**
@@ -130,9 +193,14 @@ export function roomBuiltOn(nodes: Nodes, zoneId: string): RoomBuiltOnModel | nu
 export function separateFloorSummary(
   model: { current: { name: string }; shared: { name: string } | null; offset: number | null },
   length: (meters: number) => string,
+  locale: Locale = getLocale(),
 ): string {
   const { current, shared, offset } = model
   if (!shared || offset === null) return current.name
-  if (Math.abs(offset) < 0.005) return `${current.name} · level with ${shared.name}`
-  return `${current.name} · ${length(Math.abs(offset))} ${offset > 0 ? 'above' : 'below'} ${shared.name}`
+  const vars = { name: current.name, shared: shared.name }
+  if (Math.abs(offset) < 0.005) return formatMessage(messages, locale, 'levelWith', vars)
+  return formatMessage(messages, locale, offset > 0 ? 'above' : 'below', {
+    ...vars,
+    length: length(Math.abs(offset)),
+  })
 }

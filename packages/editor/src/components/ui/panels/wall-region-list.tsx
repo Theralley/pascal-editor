@@ -19,7 +19,7 @@ import {
 } from '../../../lib/wall-region-list'
 import { useWallRegionSelection } from '../../../store/use-wall-region-handles-selection'
 import { PanelSection } from '../controls/panel-section'
-import { useT } from '../../../i18n'
+import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 
 const ROW_ACTION_CLASS =
@@ -28,6 +28,7 @@ const ROW_ACTION_CLASS =
 /** The wall panel's "Paint regions" section: one row per region, select or delete. */
 export function WallPaintRegionList({ wallId }: { wallId: string }) {
   const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
   const materials = useScene((state) => state.materials)
   const unit = useViewer((state) => state.unit)
@@ -40,13 +41,13 @@ export function WallPaintRegionList({ wallId }: { wallId: string }) {
   )
   const sceneWall = nodes[wallId as AnyNodeId]
   const wall = sceneWall?.type === 'wall' ? sceneWall : null
-  const faceLabels = useMemo(() => wallRegionFaceLabels(nodes, wallId), [nodes, wallId])
+  const faceLabels = useMemo(() => wallRegionFaceLabels(nodes, wallId, locale), [nodes, wallId, locale])
 
   if (!wall) return null
   const faceRegions = liveRegions ?? wall.faceRegions
   if (!faceRegions?.length) return null
-  const rows = wallRegionRows({ faceRegions }, faceLabels, materials, unit)
-  const capNotice = wallRegionCapNotice({ faceRegions }, faceLabels)
+  const rows = wallRegionRows({ faceRegions }, faceLabels, materials, unit, locale)
+  const capNotice = wallRegionCapNotice({ faceRegions }, faceLabels, locale)
 
   return (
     // Focus inside this list still lets Delete target the active region.

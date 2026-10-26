@@ -1,5 +1,6 @@
 'use client'
 
+import { defaultLevelName, levelDisplayName } from '../../lib/level-display-name'
 import {
   closestCenter,
   DndContext,
@@ -55,8 +56,6 @@ import {
   type LevelDuplicatePreset,
 } from '@pascal-app/core/building'
 import {
-  getDefaultLevelName,
-  getLevelDisplayName,
   roofLevelOrderBreach,
   servesAsRoofLevel,
 } from '@pascal-app/core'
@@ -94,7 +93,7 @@ function LevelInlineRename({
   onStopEditing: () => void
 }) {
   const updateNode = useScene((s) => s.updateNode)
-  const defaultName = getDefaultLevelName(level.level)
+  const defaultName = defaultLevelName(level.level)
   const [value, setValue] = useState(level.name || '')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -228,7 +227,7 @@ function LevelRow({
         >
           <button
             {...dragHandleProps}
-            aria-label={t('levels.reorder', { name: getLevelDisplayName(level) })}
+            aria-label={t('levels.reorder', { name: levelDisplayName(level) })}
             className={cn(
               'ml-0.5 flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground/35 opacity-0 transition-colors hover:bg-black/4 dark:hover:bg-white/5 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 group-hover/level:opacity-100',
               isDragging && 'cursor-grabbing opacity-100',
@@ -251,10 +250,10 @@ function LevelRow({
               e.stopPropagation()
               setIsEditing(true)
             }}
-            title={getLevelDisplayName(level)}
+            title={levelDisplayName(level)}
             type="button"
           >
-            <span className="truncate">{getLevelDisplayName(level)}</span>
+            <span className="truncate">{levelDisplayName(level)}</span>
             {unitDotColor && (
               <span
                 className="ml-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
@@ -865,7 +864,7 @@ export function FloatingLevelSelector() {
               {t.rich(
                 'levels.deleteDescription',
                 { name: (text) => <strong>{text}</strong> },
-                { name: deletingLevel ? getLevelDisplayName(deletingLevel) : '' },
+                { name: deletingLevel ? levelDisplayName(deletingLevel) : '' },
               )}
             </DialogDescription>
           </DialogHeader>

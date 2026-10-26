@@ -41,7 +41,7 @@ import { footprintHeightPatch, footprintHeightValue } from './floor-footprints'
 import { clientToPlan } from './floorplan/plan-coords'
 import { beginGesture } from './gesture-lifecycle'
 import { isHistoryShortcut } from './history'
-import { MEZZANINE_FAILED_MESSAGE, mezzanineConflictMessage } from './mezzanine-messages'
+import { mezzanineConflictMessage, mezzanineFailedMessage } from './mezzanine-messages'
 import { roomOwnPlate } from './room-built-on'
 import {
   mezzanineEdgeDimensions,
@@ -661,7 +661,7 @@ export function runMezzanineEdgeDrag({
       outline = polygon ?? pushedOutline(rest, handle.edgeIndex, handle.outward, distance)
       publish(
         conflict
-          ? (mezzanineConflictMessage(conflict.code) ?? MEZZANINE_FAILED_MESSAGE)
+          ? (mezzanineConflictMessage(conflict.code) ?? mezzanineFailedMessage())
           : undefined,
       )
     },

@@ -15,7 +15,6 @@ import {
   getElevatorShaftDepth,
   getElevatorShaftWallThickness,
   getElevatorShaftWidth,
-  getLevelDisplayName,
   getLevelElevations,
   getResolvedElevatorDoorStyle,
   itemPrompt,
@@ -73,6 +72,7 @@ import {
   Vector3,
 } from 'three'
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh'
+import { levelDisplayName } from '../../lib/level-display-name'
 import '../../three-types'
 import { type MessageKey, translate, useT } from '../../i18n'
 import {
@@ -368,7 +368,7 @@ function resolveFirstPersonHudLabels(worldPoint: Vector3) {
     )
 
     return {
-      floorLabel: getLevelDisplayName(activeLevel),
+      floorLabel: levelDisplayName(activeLevel),
       zoneLabel: zone?.type === 'zone' ? zone.name : null,
     }
   }

@@ -13,53 +13,26 @@ export type WallDrawVariantInfo = {
   id: WallDrawVariant
   /** The wall continuation mode the tool reads. */
   mode: ContinuationMode
-  /** Tile label. */
-  label: string
-  /** The name the HUD shows while the variant is armed. */
-  title: string
   iconSrc: string
-  /** Caption under the Rooms tiles: a bold lead, then the rest. */
-  caption: { lead: string; rest: string }
 }
 
 export const WALL_DRAW_VARIANTS: readonly WallDrawVariantInfo[] = [
   {
     id: 'rectangle',
     mode: 'rectangle',
-    label: 'Rectangle',
-    title: 'Rectangle room',
     iconSrc: '/icons/room.webp',
-    caption: {
-      lead: 'Click two corners',
-      rest: 'on the grid. Walls, floor and ceiling are created together.',
-    },
   },
   {
     id: 'polygon',
     mode: 'room',
-    label: 'Polygon',
-    title: 'Polygon room',
     iconSrc: '/icons/polygon-room.webp',
-    caption: {
-      lead: 'Click each corner,',
-      rest: 'then the first one again to close. For L-shapes and angled rooms.',
-    },
   },
   {
     id: 'walls',
     mode: 'single',
-    label: 'Walls',
-    title: 'Walls',
     iconSrc: '/icons/wall.webp',
-    caption: {
-      lead: 'Draw one wall at a time.',
-      rest: 'Close a loop and it becomes a room; leave it open for partitions.',
-    },
   },
 ]
-
-export const WALL_DRAW_IDLE_CAPTION =
-  'Pick a shape to start. Every room brings its own walls, floor and ceiling.'
 
 export function getWallDrawVariantInfo(variant: WallDrawVariant): WallDrawVariantInfo {
   return WALL_DRAW_VARIANTS.find((info) => info.id === variant) ?? WALL_DRAW_VARIANTS[1]!

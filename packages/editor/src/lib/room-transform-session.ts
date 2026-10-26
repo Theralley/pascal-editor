@@ -16,6 +16,7 @@ import { create } from 'zustand'
 import { levelFrame } from '../components/editor/group-transform-shared'
 import { swallowNextClick } from '../components/editor/handles/use-handle-drag'
 import { getEditorThreeContext } from '../components/editor/three-context-bridge'
+import { defineMessages, translate } from '../i18n'
 import useEditor, { isGridSnapActive } from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import { clientToPlan } from './floorplan/plan-coords'
@@ -120,16 +121,30 @@ export function roomPivot(rings: Point[][]): Point {
 // Short cursor-side wording for what the planner still refuses: overlaps
 // resolve (crossings split, collinear walls merge), so only an opening in the
 // way, a deck resting on the room, or an open room can stop a placement.
-const TRANSFORM_MESSAGES: Record<string, string> = {
-  'open-room': 'Room is open',
-  'occupied-split': 'Door or window in the way · Alt slides it',
-  'deck-reference': 'A deck rests on this room',
-}
+const messages = defineMessages({
+  en: {
+    'open-room': 'Room is open',
+    'occupied-split': 'Door or window in the way · Alt slides it',
+    'deck-reference': 'A deck rests on this room',
+    slideBlocked: 'No room to slide the opening',
+    fallback: "Can't place here",
+  },
+  sv: {
+    'open-room': 'Rummet är öppet',
+    'occupied-split': 'En dörr eller ett fönster är i vägen · Alt flyttar den',
+    'deck-reference': 'Ett däck vilar på det här rummet',
+    slideBlocked: 'Det finns inte plats att flytta öppningen',
+    fallback: 'Det går inte att placera här',
+  },
+})
+const TRANSFORM_MESSAGES = ['open-room', 'occupied-split', 'deck-reference'] as const
+
 export function roomTransformMessage(code?: string, force = false) {
-  if (code === 'occupied-split' && force) return 'No room to slide the opening'
+  if (code === 'occupied-split' && force) return translate(messages, 'slideBlocked')
   const mezzanine = mezzanineConflictMessage(code)
   if (mezzanine) return mezzanine
-  return (code && TRANSFORM_MESSAGES[code]) || "Can't place here"
+  const known = TRANSFORM_MESSAGES.find((key) => key === code)
+  return translate(messages, known ?? 'fallback')
 }
 
 export function planRoomTransform(

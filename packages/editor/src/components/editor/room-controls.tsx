@@ -34,6 +34,7 @@ import {
 import { markToolCancelConsumed } from '../../hooks/use-keyboard'
 import { getRoomSelectionIndex } from '../../hooks/use-selected-room'
 import { useT } from '../../i18n'
+import { conflictMessage } from '../../lib/conflict-message'
 import { EDITOR_LAYER } from '../../lib/constants'
 import { getFloatingMenuScale } from '../../lib/floating-menu-scale'
 import { clientToPlan } from '../../lib/floorplan/plan-coords'
@@ -132,7 +133,9 @@ export function startZoneRoomTransform(node: AnyNode, kind: RoomTransformKind): 
 export function roomDeleteBlockedReason(nodes: StructureNodes, zoneId: string) {
   if (nodes[zoneId]?.type !== 'zone') return undefined
   const plan = deleteZone(nodes, { zoneId, contents: 'keep' })
-  return plan.payload.mode === 'blocked' ? plan.conflicts?.[0]?.message : undefined
+  return plan.payload.mode === 'blocked' && plan.conflicts?.[0]
+    ? conflictMessage(plan.conflicts[0])
+    : undefined
 }
 
 /**

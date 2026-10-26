@@ -1,11 +1,11 @@
 'use client'
 
+import { levelDisplayName } from '../../../lib/level-display-name'
 import {
   type AnyNodeId,
   adjacentLevelId,
   area,
   floorOpeningHints,
-  getLevelDisplayName,
   useScene,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
@@ -59,7 +59,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
   const kicker = [
     t('opening.kicker'),
     roomName ? t('opening.kickerIn', { room: roomName }) : null,
-    level?.type === 'level' ? getLevelDisplayName(level) : null,
+    level?.type === 'level' ? levelDisplayName(level) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -101,7 +101,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
               <span className="font-medium text-[13px] text-foreground">{switchLabel}</span>
               <span className="text-muted-foreground text-xs">
                 {adjacent?.type === 'level'
-                  ? t('opening.adjacentOn', { level: getLevelDisplayName(adjacent) })
+                  ? t('opening.adjacentOn', { level: levelDisplayName(adjacent) })
                   : onCeiling
                     ? t('opening.noFloorAbove')
                     : t('opening.noStoreyBelow')}

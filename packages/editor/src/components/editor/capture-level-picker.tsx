@@ -1,9 +1,10 @@
 'use client'
 
-import { type BuildingNode, getLevelDisplayName, type LevelNode, useScene } from '@pascal-app/core'
+import { type BuildingNode, type LevelNode, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
+import { levelDisplayName } from '../../lib/level-display-name'
 import { cn } from '../../lib/utils'
 import useEditor from '../../store/use-editor'
 import { messages } from './messages'
@@ -64,10 +65,10 @@ export function CaptureLevelPicker() {
           className={rowClass(captureLevelId === level.id)}
           key={level.id}
           onClick={() => setCaptureLevel(level.id)}
-          title={getLevelDisplayName(level)}
+          title={levelDisplayName(level)}
           type="button"
         >
-          <span className="truncate">{getLevelDisplayName(level)}</span>
+          <span className="truncate">{levelDisplayName(level)}</span>
         </button>
       ))}
     </div>

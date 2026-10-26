@@ -39,10 +39,10 @@ import {
   useMezzanineDraft,
 } from './mezzanine-draft'
 import {
-  MEZZANINE_ELEVATION_MESSAGE,
-  MEZZANINE_OUTSIDE_MESSAGE,
-  MEZZANINE_OVERLAP_MESSAGE,
-  MEZZANINE_TOO_SMALL_MESSAGE,
+  mezzanineElevationMessage,
+  mezzanineOutsideMessage,
+  mezzanineOverlapMessage,
+  mezzanineTooSmallMessage,
 } from './mezzanine-messages'
 import { usePaintRegionMode } from './paint-region-mode'
 import { applyRoomPlan } from './room-structure-commands'
@@ -315,16 +315,16 @@ describe('refusals keep the tool armed and write nothing', () => {
   test('outside the room', () => {
     startMezzanineDraft(hostId)
     rectangle([7, 1], [9, 3])
-    expect(draft()).toMatchObject({ kind: 'rectangle', refusal: MEZZANINE_OUTSIDE_MESSAGE })
+    expect(draft()).toMatchObject({ kind: 'rectangle', refusal: mezzanineOutsideMessage() })
     // A refused box stays put until the next press.
     moveFloorRegion([10, 4], OFF, CLOSE)
     expect(draft()).toMatchObject({ end: [9, 3] })
     setMezzanineShape('polygon')
     click([7, 1])
-    expect(draft()).toMatchObject({ points: [], message: MEZZANINE_OUTSIDE_MESSAGE })
+    expect(draft()).toMatchObject({ points: [], message: mezzanineOutsideMessage() })
     // A point on the wall's inner face is inside; one on its centre line is not.
     click([0, 1])
-    expect(draft()).toMatchObject({ points: [], message: MEZZANINE_OUTSIDE_MESSAGE })
+    expect(draft()).toMatchObject({ points: [], message: mezzanineOutsideMessage() })
     const [minX] = clearBounds()
     click([minX, 1])
     expect(draft()).toMatchObject({ points: [[minX, 1]], message: null })
@@ -336,13 +336,13 @@ describe('refusals keep the tool armed and write nothing', () => {
   test('smaller than 1 m²', () => {
     startMezzanineDraft(hostId)
     rectangle([1, 1], [1.5, 1.5])
-    expect(draft()).toMatchObject({ refusal: MEZZANINE_TOO_SMALL_MESSAGE })
+    expect(draft()).toMatchObject({ refusal: mezzanineTooSmallMessage() })
     setMezzanineShape('polygon')
     click([1, 1])
     click([1.8, 1])
     click([1.4, 1.6])
     expect(finishFloorRegion()).toBe(true)
-    expect(draft()).toMatchObject({ refusal: MEZZANINE_TOO_SMALL_MESSAGE })
+    expect(draft()).toMatchObject({ refusal: mezzanineTooSmallMessage() })
     expect(mezzanines()).toEqual([])
     expect(history()).toBe(0)
     expectArmed()
@@ -358,7 +358,7 @@ describe('refusals keep the tool armed and write nothing', () => {
     clearSceneHistory()
     expect(startMezzanineDraft(hostId)).toBe(true)
     rectangle([2, 2], [4, 3.5])
-    expect(draft()).toMatchObject({ refusal: MEZZANINE_OVERLAP_MESSAGE })
+    expect(draft()).toMatchObject({ refusal: mezzanineOverlapMessage() })
     expect(mezzanines()).toHaveLength(1)
     expect(history()).toBe(0)
     // Butting against it snaps onto its edge and commits.
@@ -373,7 +373,7 @@ describe('refusals keep the tool armed and write nothing', () => {
     setup(0.5)
     startMezzanineDraft(hostId)
     rectangle([1, 1], [3, 3])
-    expect(draft()).toMatchObject({ refusal: MEZZANINE_ELEVATION_MESSAGE })
+    expect(draft()).toMatchObject({ refusal: mezzanineElevationMessage() })
     expect(mezzanines()).toEqual([])
     expect(history()).toBe(0)
   })

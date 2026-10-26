@@ -1,9 +1,9 @@
 'use client'
 
+import { levelDisplayName } from '../../lib/level-display-name'
 import type { LevelNode } from '@pascal-app/core'
 import { useEffect, useState } from 'react'
 import type { LevelDuplicatePreset } from '@pascal-app/core/building'
-import { getLevelDisplayName } from '@pascal-app/core'
 import { type MessageKey, useT } from '../../i18n'
 import { cn } from '../../lib/utils'
 import { messages } from './messages'
@@ -62,7 +62,7 @@ export function LevelDuplicateDialog({
           <DialogTitle>{t('duplicate.title')}</DialogTitle>
           <DialogDescription>
             {t('duplicate.description', {
-              name: level ? getLevelDisplayName(level) : t('duplicate.thisLevel'),
+              name: level ? levelDisplayName(level) : t('duplicate.thisLevel'),
             })}
           </DialogDescription>
         </DialogHeader>

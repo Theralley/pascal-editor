@@ -7,10 +7,19 @@ import {
   useRegistryVersion,
   useScene,
 } from '@pascal-app/core'
-import { type PanelToolOption, useEditor, useFloorplanMode } from '@pascal-app/editor'
+import {
+  type MessageKey,
+  type PanelToolOption,
+  translate,
+  useEditor,
+  useFloorplanMode,
+  useLocale,
+} from '@pascal-app/editor'
 import { useLiquidLineToolOptions } from '@pascal-app/nodes'
 import { useViewer } from '@pascal-app/viewer'
 import type { XRWandBuildItem, XRWandBuildModel } from '@webxr/plugin'
+import { messages as buildMessages } from '@/components/messages'
+import { BUILD_TYPE_KEYS, MEP_ITEM_KEYS, ROOF_TYPE_KEYS } from './build-label-keys'
 import {
   activateBuildTool,
   activateFenceFeaturePlacement,
@@ -31,8 +40,46 @@ import {
   getRoofFootprintSources,
   ROOF_TYPE_OPTIONS,
 } from './build-tab-state'
+import { messages } from './messages'
+
+const build = (key: MessageKey<typeof buildMessages>) => translate(buildMessages, key)
+const wand = (key: MessageKey<typeof messages>, vars?: Record<string, string | number>) =>
+  translate(messages, key, vars)
+
+/** An id-keyed palette label in the active language; a kind registered later keeps its own. */
+function labelOf(
+  table: Readonly<Record<string, MessageKey<typeof buildMessages>>>,
+  id: string,
+  fallback: string,
+) {
+  const key = table[id]
+  return key ? build(key) : fallback
+}
+
+const FOOTPRINT_SOURCE_KEYS = {
+  room: 'wand.fromRoom',
+  walls: 'wand.fromWalls',
+  draw: 'wand.fromDraw',
+} as const satisfies Record<string, MessageKey<typeof messages>>
+
+/** The roof types the wand lists, in the active language. */
+export function localizedRoofTypeOptions() {
+  return ROOF_TYPE_OPTIONS.map((option) => ({
+    ...option,
+    label: labelOf(ROOF_TYPE_KEYS, option.value, option.label),
+  }))
+}
+
+/** The footprint sources of a roof type, in the active language. */
+export function localizedFootprintSources(roofType: Parameters<typeof getRoofFootprintSources>[0]) {
+  return getRoofFootprintSources(roofType).map((source) => ({
+    ...source,
+    label: wand(FOOTPRINT_SOURCE_KEYS[source.value]),
+  }))
+}
 
 export function useBuildToolOptions(): PanelToolOption[] {
+  useLocale()
   const mode = useEditor((state) => state.mode)
   const tool = useEditor((state) => state.tool)
   const defaults = useEditor((state) => state.toolDefaults.roof)
@@ -43,11 +90,11 @@ export function useBuildToolOptions(): PanelToolOption[] {
     return [
       {
         id: 'liquid-line-follow',
-        label: 'Follow lineset',
+        label: build('build.followLineset'),
         value: follow ? 'on' : 'off',
         choices: [
-          { value: 'on', label: 'On' },
-          { value: 'off', label: 'Off' },
+          { value: 'on', label: wand('wand.on') },
+          { value: 'off', label: wand('wand.off') },
         ],
         set: (value) => {
           if ((value === 'on') !== useLiquidLineToolOptions.getState().follow) toggleFollow()
@@ -61,14 +108,11 @@ export function useBuildToolOptions(): PanelToolOption[] {
   return [
     {
       id: 'roof-footprint-source',
-      label: 'Create from',
+      label: wand('wand.createFrom'),
       value: getRoofFootprintSource(roofType, defaults?.footprintSource),
-      choices: getRoofFootprintSources(roofType).map((source) => ({
+      choices: localizedFootprintSources(roofType).map((source) => ({
         ...source,
-        description:
-          source.value === 'room'
-            ? 'Hover a room to preview its boundary, then click to place.'
-            : 'Draw the roof footprint with two corner clicks.',
+        description: source.value === 'room' ? wand('wand.roomHint') : wand('wand.drawHint'),
       })),
       set: (value) => activateRoofFootprintSource(getRoofFootprintSource(roofType, value)),
     },
@@ -76,6 +120,7 @@ export function useBuildToolOptions(): PanelToolOption[] {
 }
 
 export function useBuildPanelModel(): XRWandBuildModel {
+  useLocale()
   const mode = useEditor((state) => state.mode)
   const tool = useEditor((state) => state.tool)
   const selectedId = useViewer((state) => state.selection.selectedIds[0])
@@ -102,7 +147,7 @@ export function useBuildPanelModel(): XRWandBuildModel {
   const buildItems = collectBuildTypes(floorplanMode).map(
     (type): XRWandBuildItem => ({
       id: type.id,
-      label: type.label,
+      label: labelOf(BUILD_TYPE_KEYS, type.id, type.label),
       icon: { src: type.iconSrc },
       active: type.mode
         ? mode === type.mode
@@ -129,7 +174,7 @@ export function useBuildPanelModel(): XRWandBuildModel {
     ...buildItems,
     {
       id: 'painting',
-      label: 'Painting',
+      label: wand('wand.painting'),
       icon: { src: '/icons/paint.webp' },
       active: mode === 'material-paint',
       onSelect: activatePaintMode,
@@ -137,10 +182,10 @@ export function useBuildPanelModel(): XRWandBuildModel {
   ]
   const secondaryItems: XRWandBuildItem[] = roofActive
     ? [
-        ...ROOF_TYPE_OPTIONS.map((type) => ({
+        ...localizedRoofTypeOptions().map((type) => ({
           id: `roof-${type.value}`,
           label: type.label,
-          section: 'Roof type',
+          section: build('build.roofType'),
           active: tool === 'roof' && roofType === type.value,
           onSelect: () => activateRoofType(type.value),
         })),
@@ -148,7 +193,7 @@ export function useBuildPanelModel(): XRWandBuildModel {
           id: feature.id,
           label: feature.label,
           icon: { src: feature.iconSrc },
-          section: 'Features & extensions',
+          section: build('build.roofFeatures'),
           active: feature.kind === tool,
           onSelect: () => activateRoofFeatureTool(feature),
         })),
@@ -157,8 +202,8 @@ export function useBuildPanelModel(): XRWandBuildModel {
       ? [
           ...(['gate', 'opening'] as const).map((kind) => ({
             id: `fence-add-${kind}`,
-            label: kind === 'gate' ? 'Add Gate' : 'Add Open Passage',
-            section: 'Gates & openings',
+            label: wand(kind === 'gate' ? 'wand.addGate' : 'wand.addPassage'),
+            section: wand('wand.gatesOpenings'),
             active: false,
             onSelect: () => {
               activateFenceFeaturePlacement(kind)
@@ -169,9 +214,9 @@ export function useBuildPanelModel(): XRWandBuildModel {
         ? [
             ...MEP_ITEMS.map((item) => ({
               id: item.id,
-              label: item.label,
+              label: labelOf(MEP_ITEM_KEYS, item.id, item.label),
               icon: { src: item.iconSrc },
-              section: 'MEP',
+              section: build('build.mep'),
               active:
                 item.kind === 'duct-segment'
                   ? duct
@@ -184,8 +229,8 @@ export function useBuildPanelModel(): XRWandBuildModel {
               ? [
                   {
                     id: 'duct-fitting',
-                    label: 'Add Fitting',
-                    section: 'Duct',
+                    label: wand('wand.addFitting'),
+                    section: wand('wand.duct'),
                     icon: { src: '/icons/duct-fitting.webp' },
                     active: tool === 'duct-fitting',
                     onSelect: () =>
@@ -197,8 +242,8 @@ export function useBuildPanelModel(): XRWandBuildModel {
               ? [
                   {
                     id: 'pipe-fitting',
-                    label: 'Add Fitting',
-                    section: 'DWV Pipe',
+                    label: wand('wand.addFitting'),
+                    section: build('mep.pipe-segment'),
                     icon: { src: '/icons/duct-fitting.webp' },
                     active: tool === 'pipe-fitting',
                     onSelect: () =>
@@ -206,8 +251,8 @@ export function useBuildPanelModel(): XRWandBuildModel {
                   },
                   {
                     id: 'pipe-trap',
-                    label: 'Add Trap',
-                    section: 'DWV Pipe',
+                    label: wand('wand.addTrap'),
+                    section: build('mep.pipe-segment'),
                     icon: { src: '/icons/dwv-pipes.webp' },
                     active: tool === 'pipe-trap',
                     onSelect: () =>
@@ -220,8 +265,8 @@ export function useBuildPanelModel(): XRWandBuildModel {
           ? [
               {
                 id: 'modular-cabinet',
-                label: 'Modular Cabinet',
-                section: 'Kitchen',
+                label: wand('wand.modularCabinet'),
+                section: build('type.kitchen'),
                 icon: { src: MODULAR_CABINET_ICON },
                 active: true,
                 onSelect: activateModularCabinetTool,
@@ -240,10 +285,16 @@ export function useBuildPanelModel(): XRWandBuildModel {
   return {
     items,
     secondaryItems,
-    secondaryTitle: roofActive ? 'Roof' : fenceActive ? 'Fence' : mepActive ? 'MEP' : 'Kitchen',
+    secondaryTitle: roofActive
+      ? build('type.roof')
+      : fenceActive
+        ? build('type.fence')
+        : mepActive
+          ? build('build.mep')
+          : build('type.kitchen'),
     section,
-    title: 'Build',
-    mark: `${items.length} tools`,
+    title: build('loader.tabBuild'),
+    mark: wand('wand.tools', { count: items.length }),
     page: 0,
     pageCount: 1,
     detailMode: mode === 'material-paint' ? 'paint' : undefined,

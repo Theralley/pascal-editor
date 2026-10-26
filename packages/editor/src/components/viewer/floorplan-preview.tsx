@@ -6,7 +6,6 @@ import {
   type FloorplanGeometry,
   type FloorplanPalette,
   type GeometryContext,
-  getLevelDisplayName,
   isNodeKindEnabled,
   nodeRegistry,
   useScene,
@@ -35,6 +34,7 @@ import {
 } from '../../lib/floorplan'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
 import { buildFloorplanContext, floorplanLayerRank } from '../../lib/floorplan/floorplan-readonly'
+import { levelDisplayName } from '../../lib/level-display-name'
 import { subscribeNavigationSyncPose } from '../../store/navigation-sync-pose-store'
 import useEditor, { type NavigationSyncPose } from '../../store/use-editor'
 import {
@@ -146,7 +146,7 @@ function boundsToViewBox(bounds: FloorplanBounds): FloorplanViewBox {
 }
 
 function levelLabel(level: AnyNode): string {
-  return getLevelDisplayName({
+  return levelDisplayName({
     name: (level as { name?: string }).name,
     level: (level as { level?: number }).level ?? 0,
   })

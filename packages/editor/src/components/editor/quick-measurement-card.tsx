@@ -18,6 +18,21 @@ function formatMetric(
   return formatLinearMeasurement(metric.value, unit, metricNotation, locale)
 }
 
+// Reports come from the node kinds in English; the card shows the quantities in the active language.
+const METRIC_NAMES = {
+  Length: 'length',
+  Height: 'height',
+  Surface: 'surface',
+  Thickness: 'thickness',
+  Perimeter: 'perimeter',
+  Footprint: 'footprint',
+} as const
+const NOTE_KEYS = {
+  'Gross face area before openings.': 'quick.note.grossFace',
+  'Surface excludes slab openings.': 'quick.note.slabOpenings',
+  'Footprint only — room envelope not proven.': 'quick.note.footprintOnly',
+} as const
+
 export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   report,
   unit,
@@ -32,6 +47,13 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   const locale = useLocale()
   const t = useT(messages)
   const pinned = lensState === 'pinned'
+  const metricLabel = (metric: QuickMeasurementMetric) => {
+    const name = METRIC_NAMES[metric.label as keyof typeof METRIC_NAMES]
+    return name
+      ? { label: t(`quick.metric.${name}`), abbreviation: t(`quick.abbr.${name}`) }
+      : { label: metric.label, abbreviation: metric.abbreviation }
+  }
+  const noteKey = report.note ? NOTE_KEYS[report.note as keyof typeof NOTE_KEYS] : undefined
 
   return (
     <div
@@ -59,21 +81,28 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-1.5 p-2">
-        {report.metrics.map((metric) => (
-          <div className="min-w-0 rounded-md bg-muted/60 px-2.5 py-1.5" key={metric.key}>
-            <div className="flex items-baseline gap-1 text-[10px] text-muted-foreground">
-              <span className="font-medium text-foreground/80">{metric.abbreviation}</span>
-              <span className="truncate">{metric.label}</span>
+        {report.metrics.map((metric) => {
+          const { label, abbreviation } = metricLabel(metric)
+          return (
+            <div className="min-w-0 rounded-md bg-muted/60 px-2.5 py-1.5" key={metric.key}>
+              <div className="flex items-baseline gap-1 text-[10px] text-muted-foreground">
+                <span className="font-medium text-foreground/80">{abbreviation}</span>
+                <span className="truncate">{label}</span>
+              </div>
+              <div className="mt-0.5 truncate font-mono font-medium text-xs tabular-nums">
+                {formatMetric(metric, unit, metricNotation, locale)}
+              </div>
             </div>
-            <div className="mt-0.5 truncate font-mono font-medium text-xs tabular-nums">
-              {formatMetric(metric, unit, metricNotation, locale)}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-border/60 border-t px-3 py-1.5 text-[10px] text-muted-foreground leading-tight">
-        {report.note ? <span className="min-w-48 flex-1">{report.note}</span> : <span />}
+        {report.note ? (
+          <span className="min-w-48 flex-1">{noteKey ? t(noteKey) : report.note}</span>
+        ) : (
+          <span />
+        )}
         <span className="ml-auto shrink-0 text-foreground/70">
           {pinned ? t('quick.replace') : t('quick.pin')}
         </span>

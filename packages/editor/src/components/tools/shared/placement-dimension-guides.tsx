@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei'
 import { useLayoutEffect, useMemo } from 'react'
 import { BufferGeometry, Float32BufferAttribute, Line as ThreeLine } from 'three'
 import { LineBasicNodeMaterial } from 'three/webgpu'
+import { useLocale } from '../../../i18n'
 import { EDITOR_LAYER } from '../../../lib/constants'
 import type { PlacementPreviewDimension } from '../../../store/use-placement-preview'
 import usePlacementPreview from '../../../store/use-placement-preview'
@@ -54,6 +55,7 @@ function PlacementDimensionGuide({
   metricNotation: 'meters' | 'millimeters'
   unit: 'metric' | 'imperial'
 }) {
+  const locale = useLocale()
   const { line, position } = useMemo(() => {
     const position = new Float32BufferAttribute(new Float32Array(6), 3)
     const geometry = new BufferGeometry()
@@ -113,7 +115,7 @@ function PlacementDimensionGuide({
           }}
           style={{ cursor: 'text', pointerEvents: 'auto' }}
         >
-          {dimensionInput || formatMeasurement(dimension.value, unit, metricNotation)}
+          {dimensionInput || formatMeasurement(dimension.value, unit, metricNotation, locale)}
         </div>
       </Html>
     </>

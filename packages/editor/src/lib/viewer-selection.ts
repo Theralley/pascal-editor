@@ -7,7 +7,6 @@ import {
   containsPoint,
   DEFAULT_LEVEL_HEIGHT,
   emitter,
-  getLevelDisplayName,
   type LevelNode,
   type NodeEvent,
   resolveSelectionProxyId,
@@ -27,7 +26,9 @@ import {
   Sphere,
   Vector3,
 } from 'three'
+import { defineMessages, translate } from '../i18n'
 import { useBelowGrade } from './below-grade'
+import { levelDisplayName } from './level-display-name'
 import { nodeDisplayLabel } from './node-display-label'
 import { roomFloorElevation } from './room-handle-drag'
 import { RoomSelectionIndex, type RoomSelectionRecord, resolveRoomHit } from './room-selection'
@@ -455,8 +456,13 @@ export type ViewerCrumb = {
   label: string
 }
 
+const messages = defineMessages({
+  en: { building: 'Building', room: 'Room', zone: 'Zone' },
+  sv: { building: 'Byggnad', room: 'Rum', zone: 'Zon' },
+})
+
 export function zoneLabel(zone: ZoneNode): string {
-  return zone.name?.trim() || (zone.spaceRole === 'room' ? 'Room' : 'Zone')
+  return zone.name?.trim() || translate(messages, zone.spaceRole === 'room' ? 'room' : 'zone')
 }
 
 /**
@@ -477,11 +483,15 @@ export function viewerBreadcrumb(
   const buildingId = selection.buildingId ?? buildingOfLevel(levelId, nodes)
   const building = buildingId ? nodes[buildingId] : undefined
   if (building?.type === 'building') {
-    crumbs.push({ kind: 'building', id: building.id, label: building.name || 'Building' })
+    crumbs.push({
+      kind: 'building',
+      id: building.id,
+      label: building.name || translate(messages, 'building'),
+    })
   }
   const level = levelId ? nodes[levelId] : undefined
   if (level?.type !== 'level') return crumbs
-  crumbs.push({ kind: 'level', id: level.id, label: getLevelDisplayName(level) })
+  crumbs.push({ kind: 'level', id: level.id, label: levelDisplayName(level) })
   const unit = focusedUnitId ? nodes[focusedUnitId] : undefined
   if (unit?.type === 'unit') crumbs.push({ kind: 'unit', id: unit.id, label: unit.name })
   const roomId = selection.zoneId ?? (element ? roomOf(element.id, level.id) : null)

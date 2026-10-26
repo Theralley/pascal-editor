@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { type AnyNode, ZoneNode } from '@pascal-app/core'
 import {
-  MEZZANINE_NAME_SECTION,
+  mezzanineNameSection,
   numberedRoomName,
-  ROOM_NAME_SECTIONS,
+  roomNameCatalog,
   roomNameContext,
   roomNameSections,
   roomNameUseCount,
@@ -31,11 +31,20 @@ const ids = (nodes: Record<string, AnyNode>, zoneId: string) =>
   roomNameSections(nodes, zoneId).map((section) => section.id)
 
 describe('room name catalog', () => {
-  test('every catalog name is sentence case and listed once', () => {
-    const names = ROOM_NAME_SECTIONS.flatMap((section) => section.names)
-    expect(new Set(names).size).toBe(names.length)
-    for (const name of [...names, ...MEZZANINE_NAME_SECTION.names])
-      expect(name[0]).toBe(name[0]!.toUpperCase())
+  test.each(['en', 'sv'] as const)(
+    'every %s catalog name is sentence case and listed once',
+    (locale) => {
+      const names = roomNameCatalog(locale).flatMap((section) => section.names)
+      expect(new Set(names).size).toBe(names.length)
+      for (const name of [...names, ...mezzanineNameSection(locale).names])
+        expect(name[0]).toBe(name[0]!.toUpperCase())
+    },
+  )
+
+  test('the sections come in Swedish with the same ids', () => {
+    expect(roomNameCatalog('sv').map((s) => s.id)).toEqual(roomNameCatalog('en').map((s) => s.id))
+    expect(roomNameCatalog('sv')[0]?.names).toContain('Vardagsrum')
+    expect(mezzanineNameSection('sv').title).toBe('Entresol')
   })
 
   test('an indoor room lists the catalog in the usual order: no project names, no mezzanine names', () => {
@@ -44,7 +53,7 @@ describe('room name catalog', () => {
       zone('zone_c', { name: 'Snug' }),
       zone('zone_d', { name: '' }),
     )
-    expect(ids(nodes, 'zone_d')).toEqual(ROOM_NAME_SECTIONS.map((s) => s.id))
+    expect(ids(nodes, 'zone_d')).toEqual(roomNameCatalog().map((s) => s.id))
   })
 
   test('a picked name that is taken gets the next free number; counts ignore the number', () => {

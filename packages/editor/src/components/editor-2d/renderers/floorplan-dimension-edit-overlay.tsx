@@ -5,7 +5,7 @@ import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { translate, useT } from '../../../i18n'
+import { type MessageKey, translate, useT } from '../../../i18n'
 import {
   parseDimensionInput,
   planDimensionDrive,
@@ -216,6 +216,29 @@ export function FloorplanDimensionEditOverlay(): React.ReactElement | null {
   )
 }
 
+// `resolveDimensionDrive` words its refusals in English; the overlay shows them in the active language.
+const DRIVE_REASONS: Record<string, MessageKey<typeof messages>> = {
+  'unknown node': 'drive.unknownNode',
+  'node is locked': 'drive.nodeLocked',
+  'degenerate dimension': 'drive.degenerateDimension',
+  'degenerate wall': 'drive.degenerateWall',
+  'dimension is not along the wall': 'drive.notAlongWall',
+  'curved walls are not drivable yet': 'drive.curvedWall',
+  'dimension does not end on this wall': 'drive.notOnWall',
+  'opening has no host wall': 'drive.noHostWall',
+  'host wall is locked': 'drive.hostLocked',
+  'dimension is not along the host wall': 'drive.notAlongHostWall',
+  'anchored node is locked': 'drive.anchorLocked',
+  'dimension anchors are free points': 'drive.freePoints',
+}
+
+function driveReason(reason: string): string {
+  const key =
+    DRIVE_REASONS[reason] ??
+    (reason.endsWith(' dimensions are not drivable') ? 'drive.ownerType' : null)
+  return key ? translate(messages, key) : reason
+}
+
 type CommitOutcome = { ok: true } | { ok: false; reason: string }
 
 /**
@@ -243,7 +266,9 @@ export function commitDimensionValue(args: {
     if (owner?.type !== 'construction-dimension') {
       return {
         ok: false,
-        reason: translate(messages, 'dimension.notDrivable', { reason: resolution.reason }),
+        reason: translate(messages, 'dimension.notDrivable', {
+          reason: driveReason(resolution.reason),
+        }),
       }
     }
     store.updateNode(args.target.ownerNodeId, {

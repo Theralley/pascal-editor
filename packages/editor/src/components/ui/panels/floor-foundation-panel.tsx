@@ -1,13 +1,12 @@
 'use client'
 
+import { levelDisplayName } from '../../../lib/level-display-name'
 import {
   type AnyNode,
   type AnyNodeId,
   type FloorFoundationPatch,
-  floorFootprintName,
   floorFootprintSupportClass,
   upperFloorHeightControl,
-  getLevelDisplayName,
   getLevelElevations,
   getStoredLevelHeight,
   type LevelNode,
@@ -39,6 +38,7 @@ import { MetricControl } from '../controls/metric-control'
 import { SegmentedControl } from '../controls/segmented-control'
 import { Button } from '../primitives/button'
 import { PanelWrapper } from './panel-wrapper'
+import { footprintDisplayName } from '../../../lib/room-built-on'
 import { useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 import type { PanelT } from './node-display'
@@ -295,7 +295,7 @@ export function floorPlateKicker(
   t: PanelT,
 ): string {
   const level = plate.parentId ? nodes[plate.parentId] : undefined
-  const levelName = level?.type === 'level' ? ` · ${getLevelDisplayName(level)}` : ''
+  const levelName = level?.type === 'level' ? ` · ${levelDisplayName(level)}` : ''
   // A supported floor rests on the storey right below it.
   let below: LevelNode | null = null
   if (level?.type === 'level' && floorFootprintSupportClass(nodes, plate) === 'supported')
@@ -308,7 +308,7 @@ export function floorPlateKicker(
       )
         below = node
   const restsOn = below
-    ? ` · ${t('foundation.restsOn', { level: getLevelDisplayName(below) })}`
+    ? ` · ${t('foundation.restsOn', { level: levelDisplayName(below) })}`
     : ''
   return `${t('foundation.floorPlateHeading')}${levelName}${restsOn}`
 }
@@ -413,7 +413,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
       icon="/icons/floor.webp"
       kicker={kicker}
       onClose={onClose}
-      title={floorFootprintName(nodes, plate)}
+      title={footprintDisplayName(nodes, plate, locale)}
     >
       <div
         className="flex flex-col gap-3 px-4 pt-3 pb-4 text-sm"

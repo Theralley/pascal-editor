@@ -19,6 +19,7 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import useEditor from '../store/use-editor'
+import { conflictMessages } from './conflict-message'
 import { applyRoomPlan } from './room-structure-commands'
 import { createSessionWrites } from './session-writes'
 
@@ -212,7 +213,7 @@ export function applyFloorFoundation(
     typeof slabId === 'string'
       ? setFloorFoundation(nodes, { slabId, patch })
       : setFloorFoundation(nodes, { slabIds: [...slabId], patch })
-  if (plan.conflicts?.length) return plan.conflicts.map((conflict) => conflict.message).join(' ')
+  if (plan.conflicts?.length) return conflictMessages(plan.conflicts)
   applyRoomPlan(plan)
   return null
 }
@@ -230,7 +231,7 @@ export function applyRoomFloorConstruction(
   slabId?: string,
 ): string | null {
   const plan = setRoomFloorConstruction(useScene.getState().nodes, { zoneId, slabId, patch })
-  if (plan.conflicts?.length) return plan.conflicts.map((conflict) => conflict.message).join(' ')
+  if (plan.conflicts?.length) return conflictMessages(plan.conflicts)
   applyRoomPlan(plan)
   return null
 }

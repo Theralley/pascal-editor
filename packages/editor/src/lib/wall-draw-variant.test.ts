@@ -16,10 +16,10 @@ afterEach(() => {
 
 describe('Rooms variants', () => {
   test('are Rectangle, Polygon and Walls, in the Build panel order', () => {
-    expect(WALL_DRAW_VARIANTS.map((variant) => [variant.id, variant.label, variant.mode])).toEqual([
-      ['rectangle', 'Rectangle', 'rectangle'],
-      ['polygon', 'Polygon', 'room'],
-      ['walls', 'Walls', 'single'],
+    expect(WALL_DRAW_VARIANTS.map((variant) => [variant.id, variant.mode])).toEqual([
+      ['rectangle', 'rectangle'],
+      ['polygon', 'room'],
+      ['walls', 'single'],
     ])
   })
 

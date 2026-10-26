@@ -1,10 +1,10 @@
 'use client'
 
+import { levelDisplayName } from '../../../lib/level-display-name'
 import {
   type AnyNode,
   type AnyNodeId,
   area,
-  getLevelDisplayName,
   runAsSingleSceneHistoryStep,
   useScene,
   type ZoneNode,
@@ -77,7 +77,7 @@ export function roomKicker(
   if (options.open) return t('room.kicker.notEnclosed')
   const level = zone?.parentId ? nodes[zone.parentId] : undefined
   return level?.type === 'level'
-    ? t('room.kicker.roomLevel', { level: getLevelDisplayName(level) })
+    ? t('room.kicker.roomLevel', { level: levelDisplayName(level) })
     : t('room')
 }
 
@@ -89,8 +89,12 @@ export function RoomPanel({
   onClose?: () => void
 }) {
   const t = useT(messages)
+  const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
-  const sections = useMemo(() => roomNameSections(nodes, room.zoneId), [nodes, room.zoneId])
+  const sections = useMemo(
+    () => roomNameSections(nodes, room.zoneId, locale),
+    [nodes, room.zoneId, locale],
+  )
   const name = useScene((state) => state.nodes[room.zoneId as AnyNodeId]?.name ?? '')
   const visible = useInteractionScope(
     (state) => resolveOverlayPolicy(state.scope).conflictingControls === 'shown',
@@ -138,7 +142,10 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
   const t = useT(messages)
   const locale = useLocale()
   const nodes = useScene((state) => state.nodes)
-  const sections = useMemo(() => roomNameSections(nodes, zoneId), [nodes, zoneId])
+  const sections = useMemo(
+    () => roomNameSections(nodes, zoneId, locale),
+    [nodes, zoneId, locale],
+  )
   const name = useScene((state) => state.nodes[zoneId as AnyNodeId]?.name ?? '')
   const unit = useViewer((s) => s.unit)
   const zone = nodes[zoneId as AnyNodeId]

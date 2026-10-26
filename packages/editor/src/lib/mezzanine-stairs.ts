@@ -6,7 +6,7 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import useEditor from '../store/use-editor'
-import { MEZZANINE_NO_STAIR_MESSAGE, mezzanineConflictMessage } from './mezzanine-messages'
+import { mezzanineConflictMessage, mezzanineNoStairMessage } from './mezzanine-messages'
 import { applyRoomPlan } from './room-structure-commands'
 import { sfxEmitter } from './sfx-bus'
 
@@ -20,25 +20,25 @@ export type MezzanineStairResult = { ok: true; stairId: string } | { ok: false; 
 export function addMezzanineStairs(zoneId: string): MezzanineStairResult {
   const nodes = useScene.getState().nodes
   if (useScene.getState().readOnly || !nodes[zoneId as AnyNodeId])
-    return { ok: false, message: MEZZANINE_NO_STAIR_MESSAGE }
+    return { ok: false, message: mezzanineNoStairMessage() }
   let plan: ReturnType<typeof planMezzanineStair>
   try {
     plan = planMezzanineStair(nodes, zoneId)
   } catch {
-    return { ok: false, message: MEZZANINE_NO_STAIR_MESSAGE }
+    return { ok: false, message: mezzanineNoStairMessage() }
   }
   const conflict = plan.conflicts?.[0]
   if (conflict || !plan.stairId)
     return {
       ok: false,
-      message: mezzanineConflictMessage(conflict?.code) ?? MEZZANINE_NO_STAIR_MESSAGE,
+      message: mezzanineConflictMessage(conflict?.code) ?? mezzanineNoStairMessage(),
     }
   // The stair and its flight land as one step.
   let applied = false
   runAsSingleSceneHistoryStep(useScene, () => {
     applied = applyRoomPlan(plan)
   })
-  if (!applied) return { ok: false, message: MEZZANINE_NO_STAIR_MESSAGE }
+  if (!applied) return { ok: false, message: mezzanineNoStairMessage() }
   sfxEmitter.emit('sfx:structure-build')
   useEditor.getState().clearRoom()
   useViewer.getState().setSelection({ selectedIds: [plan.stairId as AnyNodeId] })

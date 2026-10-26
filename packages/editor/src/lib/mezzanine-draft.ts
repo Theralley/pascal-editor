@@ -31,10 +31,10 @@ import {
 import { type FloorRegionPoint, floorRegionSnapTargets } from './floor-region-snap'
 import { beginGesture, type GestureHandle } from './gesture-lifecycle'
 import {
-  MEZZANINE_FAILED_MESSAGE,
-  MEZZANINE_OUTSIDE_MESSAGE,
-  MEZZANINE_TOO_SMALL_MESSAGE,
   mezzanineConflictMessage,
+  mezzanineFailedMessage,
+  mezzanineOutsideMessage,
+  mezzanineTooSmallMessage,
 } from './mezzanine-messages'
 import { applyRoomPlan } from './room-structure-commands'
 import { sfxEmitter } from './sfx-bus'
@@ -110,11 +110,11 @@ export function planMezzanine(
     return {
       message:
         area([{ outer: polygon.map(([x, z]) => [x, z]), holes: [] }]) < 1
-          ? MEZZANINE_TOO_SMALL_MESSAGE
-          : MEZZANINE_OUTSIDE_MESSAGE,
+          ? mezzanineTooSmallMessage()
+          : mezzanineOutsideMessage(),
     }
-  if (clip.pieces.length !== 1) return { message: MEZZANINE_OUTSIDE_MESSAGE }
-  if (clip.area < 1) return { message: MEZZANINE_TOO_SMALL_MESSAGE }
+  if (clip.pieces.length !== 1) return { message: mezzanineOutsideMessage() }
+  if (clip.area < 1) return { message: mezzanineTooSmallMessage() }
   const outline = withoutRepeats(clip.polygon)
   let plan: StructurePlan & { zoneId: string }
   try {
@@ -131,13 +131,13 @@ export function planMezzanine(
       message: floorRegionSelfIntersects(outline)
         ? crossingMessage()
         : area([{ outer: outline, holes: [] }]) < 1
-          ? MEZZANINE_TOO_SMALL_MESSAGE
-          : MEZZANINE_FAILED_MESSAGE,
+          ? mezzanineTooSmallMessage()
+          : mezzanineFailedMessage(),
     }
   }
   const conflict = plan.conflicts?.[0]
   if (!conflict) return { plan }
-  return { message: mezzanineConflictMessage(conflict.code) ?? MEZZANINE_FAILED_MESSAGE }
+  return { message: mezzanineConflictMessage(conflict.code) ?? mezzanineFailedMessage() }
 }
 
 // The tool's lifecycle handle, from start until built or cancelled.
@@ -195,7 +195,7 @@ const MEZZANINE: FloorDraftPurpose = {
   persistent: true,
   own: (room) => (tool?.active ? tool : beginTool(room)),
   commit: commitMezzanine,
-  pointMessage: (room, point) => (insideOrOn(room.clear, point) ? null : MEZZANINE_OUTSIDE_MESSAGE),
+  pointMessage: (room, point) => (insideOrOn(room.clear, point) ? null : mezzanineOutsideMessage()),
   fill: '#818cf8',
 }
 

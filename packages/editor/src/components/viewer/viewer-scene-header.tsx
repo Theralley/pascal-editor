@@ -1,11 +1,12 @@
 'use client'
 
-import { getLevelDisplayName, type LevelNode, sceneRegistry, useScene } from '@pascal-app/core'
+import { type LevelNode, sceneRegistry, useScene } from '@pascal-app/core'
 import { markPerfAction, useViewer } from '@pascal-app/viewer'
 import { ArrowLeft, ChevronRight, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { type ReactNode, useMemo } from 'react'
 import { type MessageKey, useLocale, useT } from '../../i18n'
+import { levelDisplayName } from '../../lib/level-display-name'
 import { cn } from '../../lib/utils'
 import {
   applyViewerClick,
@@ -77,7 +78,7 @@ export const ViewerSceneHeader = ({
       viewerBreadcrumb(selection, focusedUnitId, nodes, (nodeId, levelId) =>
         roomOfObject(nodeId, levelId, source),
       ),
-    [selection, focusedUnitId, nodes, source],
+    [selection, focusedUnitId, nodes, source, locale],
   )
   const buildingId = crumbs.find((crumb) => crumb.kind === 'building')?.id ?? null
   // Highest first so the list reads top-down like a building section.
@@ -220,7 +221,7 @@ export const ViewerSceneHeader = ({
                         <Layers className="h-3.5 w-3.5" />
                       </span>
                       <div className="min-w-0 flex-1 truncate text-left">
-                        {getLevelDisplayName(lvl)}
+                        {levelDisplayName(lvl)}
                       </div>
                     </div>
                   </button>

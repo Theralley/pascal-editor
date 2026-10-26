@@ -11,6 +11,7 @@ import {
 import { useViewer } from '@pascal-app/viewer'
 import useDeleteConfirmation from '../store/use-delete-confirmation'
 import useEditor from '../store/use-editor'
+import { conflictMessages } from './conflict-message'
 import { showRoomNotice } from './room-transform-session'
 import { completeElementAction, type ElementActionOrigin } from './room-zone-routing'
 
@@ -33,7 +34,7 @@ export function renameRoom(zoneId: string, name: string) {
 export function requestRoomDeletion(zoneId: string) {
   const plan = deleteZone(useScene.getState().nodes, { zoneId, contents: 'delete' })
   if (plan.payload.mode === 'blocked') {
-    showRoomNotice({ zoneId, message: plan.conflicts?.[0]?.message ?? '' })
+    showRoomNotice({ zoneId, message: conflictMessages(plan.conflicts?.slice(0, 1) ?? []) })
     return
   }
   const commit = (contents: 'delete' | 'keep') => {
@@ -58,7 +59,7 @@ export function requestRoomDeletion(zoneId: string) {
   useDeleteConfirmation.getState().requestConfirmation({
     count: plan.changes.filter((c) => c.op === 'delete').length,
     room: plan.payload,
-    conflict: plan.conflicts?.map((c) => c.message).join(' '),
+    conflict: conflictMessages(plan.conflicts ?? []) || undefined,
     onConfirm: () => commit('delete'),
     onKeepContents: plan.payload.mode === 'merge' ? undefined : () => commit('keep'),
   })

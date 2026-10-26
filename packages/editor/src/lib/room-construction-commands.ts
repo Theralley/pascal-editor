@@ -31,6 +31,7 @@ import useDeleteConfirmation, {
   type DeleteConfirmationRequest,
 } from '../store/use-delete-confirmation'
 import useEditor from '../store/use-editor'
+import { conflictMessages } from './conflict-message'
 import { footprintHeightValue } from './floor-footprints'
 import { roomOwnPlate, roomSharedFootprint } from './room-built-on'
 import { roomClearPolygon, roomConstructionState, roomFloorContents } from './room-construction'
@@ -64,7 +65,9 @@ const CONFLICT_MESSAGES: Record<string, string> = {
 export const TRIVIAL_AREA_LOSS = 0.01
 
 export function roomConflictMessage(conflicts: readonly StructureConflict[] = []) {
-  return [...new Set(conflicts.map((c) => CONFLICT_MESSAGES[c.code] ?? c.message))].join(' ')
+  return conflictMessages(
+    conflicts.map((c) => ({ code: c.code, message: CONFLICT_MESSAGES[c.code] ?? c.message })),
+  )
 }
 
 function commit(plan: StructurePlan): RoomConstructionResult {

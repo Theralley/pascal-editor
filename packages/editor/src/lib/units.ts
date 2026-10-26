@@ -13,8 +13,14 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect } from 'react'
+import { defineMessages, translate } from '../i18n'
 import useEditor from '../store/use-editor'
 import { getActiveBuildingPose } from './world-grid-snap'
+
+const messages = defineMessages({
+  en: { defaultName: 'Unit {n}' },
+  sv: { defaultName: 'Enhet {n}' },
+})
 
 type Nodes = Readonly<Record<AnyNodeId, AnyNode>>
 
@@ -128,11 +134,11 @@ export function zoneUnits(
   }
 }
 
-/** Puts a zone in a new unit of its building (named "Unit N"), in one undo step, without focusing it. */
+/** Puts a zone in a new unit of its building (named "Unit N", in the active language), in one undo step, without focusing it. */
 export function addZoneToNewUnit(zoneId: ZoneNode['id']): UnitNode['id'] | null {
   const { buildingId, units } = zoneUnits(useScene.getState().nodes, zoneId)
   if (!buildingId) return null
-  const unit = UnitNode.parse({ name: `Unit ${units.length + 1}` })
+  const unit = UnitNode.parse({ name: translate(messages, 'defaultName', { n: units.length + 1 }) })
   runAsSingleSceneHistoryStep(useScene, () => {
     useScene.getState().createNode(unit, buildingId)
     assignZoneToUnit(zoneId, unit.id)
@@ -243,7 +249,7 @@ export function createUnitInBuilding(buildingId: BuildingNode['id']): UnitNode['
   const building = scene.nodes[buildingId]
   if (building?.type !== 'building') return null
   const unitCount = building.children.filter((id) => scene.nodes[id]?.type === 'unit').length
-  const unit = UnitNode.parse({ name: `Unit ${unitCount + 1}` })
+  const unit = UnitNode.parse({ name: translate(messages, 'defaultName', { n: unitCount + 1 }) })
   scene.createNode(unit, buildingId)
   enterUnitFocus(unit.id)
   return unit.id

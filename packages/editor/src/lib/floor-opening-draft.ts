@@ -16,6 +16,7 @@ import { create } from 'zustand'
 import { getRoomSelectionIndex } from '../hooks/use-selected-room'
 import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
+import { conflictMessage } from './conflict-message'
 import {
   clipFloorRegion,
   crossingMessage,
@@ -82,7 +83,7 @@ export function planFloorOpening(
       mintId: generateId,
     })
     const conflict = plan.conflicts?.[0]
-    return conflict ? { message: conflict.message || openingFailedMessage() } : { plan }
+    return conflict ? { message: conflictMessage(conflict) || openingFailedMessage() } : { plan }
   } catch {
     return { message: openingFailedMessage() }
   }
