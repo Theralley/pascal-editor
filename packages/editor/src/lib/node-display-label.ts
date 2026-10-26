@@ -5,10 +5,10 @@ import { definitionText, type Locale } from '../i18n'
  * A node's human label, the same in the baked artifact (`extras.label`) and the
  * viewer's breadcrumb: an explicit name wins, items fall back to their catalog
  * asset name, other kinds to a type word. The type word is English unless the
- * caller names a `locale`; the baked artifact names none. For a named node, a
- * caller that passes the scene gets the kind's own tree label, as the sidebar
- * shows it, so a stored English name such as "Base Cabinet" reads in the active
- * language.
+ * caller names a `locale`; the baked artifact names none. Outside English, a
+ * named node whose caller passes the scene gets the kind's own tree label, as
+ * the sidebar shows it, so a stored English name such as "Base Cabinet" reads in
+ * the active language.
  */
 export function nodeDisplayLabel(
   node: AnyNode,
@@ -16,7 +16,8 @@ export function nodeDisplayLabel(
   nodes?: Readonly<Partial<Record<AnyNodeId, AnyNode>>>,
 ): string {
   if (node.name) {
-    const treeLabel = locale && nodes ? nodeRegistry.get(node.type)?.tree?.label : undefined
+    const treeLabel =
+      locale && locale !== 'en' && nodes ? nodeRegistry.get(node.type)?.tree?.label : undefined
     return treeLabel && nodes ? treeLabel(node, nodes) : node.name
   }
   const typeWord = (english: string) => {

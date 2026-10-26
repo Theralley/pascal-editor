@@ -36,6 +36,10 @@ describe('nodeDisplayLabel', () => {
     expect(nodeDisplayLabel(named, 'sv', nodes)).toBe('Base Cabinet (shown)')
   })
 
+  test('English keeps the stored name even with the scene', () => {
+    expect(nodeDisplayLabel(named, 'en', nodes)).toBe('Base Cabinet')
+  })
+
   test('without the scene or a locale the stored name stands, as the baked artifact needs', () => {
     expect(nodeDisplayLabel(named)).toBe('Base Cabinet')
     expect(nodeDisplayLabel(named, 'sv')).toBe('Base Cabinet')

@@ -31,6 +31,8 @@ import { useViewer } from '@pascal-app/viewer'
 import { Copy, Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { StairConstructionControls } from '../stair/construction-controls'
+import { stairMessageKey } from '../stair/known-messages'
+import { messages as stairMessages } from '../stair/messages'
 import { messages } from './messages'
 
 type SegmentMessageKey = MessageKey<typeof messages>
@@ -48,6 +50,7 @@ const ATTACHMENT_SIDE_OPTIONS: { labelKey: SegmentMessageKey; value: AttachmentS
 
 export default function StairSegmentPanel() {
   const t = useT(messages)
+  const tStair = useT(stairMessages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const setSelection = useViewer((s) => s.setSelection)
   const updateNode = useScene((s) => s.updateNode)
@@ -148,6 +151,9 @@ export default function StairSegmentPanel() {
 
   if (!(node && node.type === 'stair-segment' && selectedId)) return null
 
+  const segmentError =
+    stairSegmentDetailError(node) ?? stairSegmentConstructionError(node, parentStair)
+
   return (
     <PanelWrapper
       icon="/icons/stairs.webp"
@@ -193,9 +199,9 @@ export default function StairSegmentPanel() {
         </PanelSection>
       )}
 
-      {(stairSegmentDetailError(node) ?? stairSegmentConstructionError(node, parentStair)) ? (
+      {segmentError ? (
         <div role="alert" className="px-3 text-xs">
-          {stairSegmentDetailError(node) ?? stairSegmentConstructionError(node, parentStair)}
+          {stairMessageKey(segmentError) ? tStair(stairMessageKey(segmentError)!) : segmentError}
         </div>
       ) : null}
       {node.segmentType === 'stair' && (
