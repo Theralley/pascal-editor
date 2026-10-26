@@ -20,15 +20,6 @@ import { messages } from './messages'
 
 const METRES_PER_FOOT = 0.3048
 
-const COMPASS_SV: Record<string, string> = {
-  NE: 'NO',
-  E: 'Ö',
-  SE: 'SO',
-  SW: 'SV',
-  W: 'V',
-  NW: 'NV',
-}
-
 interface Suggestion {
   label?: string
   line1?: string
@@ -150,8 +141,9 @@ export function SiteNodePanel() {
 
   if (!node) return null
 
+  // Swedish compass points swap E for O and W for V: NNO, OSO, VNV.
   const compassLabel = (compass: string) =>
-    locale === 'sv' ? (COMPASS_SV[compass] ?? compass) : compass
+    locale === 'sv' ? compass.replaceAll('E', 'O').replaceAll('W', 'V') : compass
   const setbacks = node.setbacks
   const setbackField = (
     key: 'front' | 'side' | 'rear' | 'left' | 'right',
