@@ -4,6 +4,7 @@ import { buildLiquidLineFloorplan } from './floorplan'
 import { buildLiquidLineGeometry } from './geometry'
 import { liquidLineParametrics } from './parametrics'
 import { LiquidLineNode } from './schema'
+import { liquidLineTranslations } from './translations'
 
 /**
  * Standalone refrigerant liquid line — the thin bare-copper line broken out of
@@ -112,6 +113,7 @@ export const liquidLineDefinition: NodeDefinition<typeof LiquidLineNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: liquidLineTranslations,
   presentation: {
     label: 'Liquid Line',
     description:

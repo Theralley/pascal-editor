@@ -8,6 +8,7 @@ import { buildDuctSegmentFloorplan } from './floorplan'
 import { buildDuctSegmentGeometry, ductPortDiameterIn } from './geometry'
 import { ductSegmentParametrics } from './parametrics'
 import { DuctSegmentNode } from './schema'
+import { ductSegmentTranslations } from './translations'
 
 /**
  * Phase 1 of the HVAC node system — round duct segment as a polyline.
@@ -184,6 +185,7 @@ export const ductSegmentDefinition: NodeDefinition<typeof DuctSegmentNode> = {
     { key: 'Esc', label: 'Exit drawing' },
   ],
 
+  translations: ductSegmentTranslations,
   presentation: {
     label: 'Duct',
     description: 'HVAC duct run — polyline of round, rect, or flat-oval sections.',

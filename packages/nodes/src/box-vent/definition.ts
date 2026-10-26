@@ -9,6 +9,7 @@ import { buildBoxVentFloorplan } from './floorplan'
 import { boxVentPaint } from './paint'
 import { boxVentParametrics } from './parametrics'
 import { BoxVentNode } from './schema'
+import { boxVentTranslations } from './translations'
 
 // Edge-to-arrow-center offset, matching the chimney / dormer cadence.
 const SIDE_HANDLE_OFFSET = 0.25
@@ -220,6 +221,7 @@ export const boxVentDefinition: NodeDefinition<typeof BoxVentNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: boxVentTranslations,
   presentation: {
     label: 'Box Vent',
     description: 'Small louvered exhaust vent that sits on a roof slope.',

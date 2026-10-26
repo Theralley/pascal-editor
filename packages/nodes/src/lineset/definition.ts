@@ -4,6 +4,7 @@ import { buildLinesetFloorplan } from './floorplan'
 import { buildLinesetGeometry } from './geometry'
 import { linesetParametrics } from './parametrics'
 import { LinesetNode } from './schema'
+import { linesetTranslations } from './translations'
 
 /**
  * Refrigerant lineset — the copper suction + liquid pair joining a split
@@ -120,6 +121,7 @@ export const linesetDefinition: NodeDefinition<typeof LinesetNode> = {
     { key: 'Esc', label: 'Cancel start point' },
   ],
 
+  translations: linesetTranslations,
   presentation: {
     label: 'Lineset',
     description:

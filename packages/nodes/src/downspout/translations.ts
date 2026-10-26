@@ -1,0 +1,30 @@
+/** Swedish for the text `downspoutDefinition` declares, keyed by its English source. */
+export const downspoutTranslations = {
+  sv: {
+    Downspout: 'Stuprör',
+    'Vertical drop pipe from a gutter outlet to the ground.':
+      'Lodrätt fallrör från hängrännans utlopp till marken.',
+    'Highlight outlet': 'Markera utlopp',
+    'Drop downspout from outlet': 'Dra stupröret från utloppet',
+    Cancel: 'Avbryt',
+    Dimensions: 'Mått',
+    Length: 'Längd',
+    Diameter: 'Diameter',
+    Shape: 'Form',
+    Auto: 'Auto',
+    Round: 'Rund',
+    Rect: 'Rektangulär',
+    Hardware: 'Beslag',
+    'Strap style': 'Stuprörsbandets stil',
+    Band: 'Band',
+    None: 'Ingen',
+    'Strap spacing': 'Stuprörsbandens avstånd',
+    Terminal: 'Utlopp',
+    Splash: 'Skvättplatta',
+    Kickout: 'Utkastare',
+    Straight: 'Rakt',
+    Placement: 'Placering',
+    Standoff: 'Avstånd från vägg',
+    Surface: 'Yta',
+  },
+}

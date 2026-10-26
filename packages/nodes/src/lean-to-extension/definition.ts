@@ -30,6 +30,7 @@ import { leanToPaint } from './paint'
 import { deriveLeanToResizePatch, leanToExtensionParametrics } from './parametrics'
 import { applyLeanToRoofAttachment, resolveLeanToRoofAttachment } from './roof-attachment'
 import { LeanToExtensionNode } from './schema'
+import { leanToExtensionTranslations } from './translations'
 
 const HEIGHT_HANDLE_OFFSET = 0.25
 const SPAN_HANDLE_OFFSET = 0.3
@@ -494,6 +495,7 @@ export const leanToExtensionDefinition: NodeDefinition<typeof LeanToExtensionNod
     { key: 'F', label: 'Cycle mono / gable / butterfly' },
     { key: 'Esc', label: 'End run / cancel' },
   ],
+  translations: leanToExtensionTranslations,
   presentation: {
     label: 'Canopy',
     description:

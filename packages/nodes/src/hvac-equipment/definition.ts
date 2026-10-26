@@ -4,6 +4,7 @@ import { buildHvacEquipmentGeometry } from './geometry'
 import { hvacEquipmentParametrics } from './parametrics'
 import { getHvacEquipmentPorts } from './ports'
 import { HvacEquipmentNode } from './schema'
+import { hvacEquipmentTranslations } from './translations'
 
 /**
  * Phase 3 of the HVAC node system — equipment cabinets (furnace /
@@ -90,6 +91,7 @@ export const hvacEquipmentDefinition: NodeDefinition<typeof HvacEquipmentNode> =
     { key: 'Esc', label: 'Exit' },
   ],
 
+  translations: hvacEquipmentTranslations,
   presentation: {
     label: 'HVAC Unit',
     description:

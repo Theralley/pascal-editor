@@ -10,6 +10,7 @@ import { snapLengthToCorner } from './length-snap'
 import { gutterPaint } from './paint'
 import { gutterParametrics } from './parametrics'
 import { GutterNode } from './schema'
+import { gutterTranslations } from './translations'
 
 // Edge-to-arrow-center offset, matching the box-vent / ridge-vent
 // cadence so a roof's worth of accessories all read at the same scale.
@@ -192,6 +193,7 @@ export const gutterDefinition: NodeDefinition<typeof GutterNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: gutterTranslations,
   presentation: {
     label: 'Gutter',
     description: 'Rain-water channel running along the eave of a roof segment.',

@@ -9,6 +9,7 @@ import { buildEyebrowVentFloorplan } from './floorplan'
 import { eyebrowVentPaint } from './paint'
 import { eyebrowVentParametrics } from './parametrics'
 import { EyebrowVentNode } from './schema'
+import { eyebrowVentTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.3
 const HEIGHT_HANDLE_OFFSET = 0.2
@@ -160,6 +161,7 @@ export const eyebrowVentDefinition: NodeDefinition<typeof EyebrowVentNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: eyebrowVentTranslations,
   presentation: {
     label: 'Eyebrow Vent',
     description: 'Low curved lens-shaped roof vent with a louvered front.',

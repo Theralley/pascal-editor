@@ -1,0 +1,28 @@
+/** Swedish for the text `dormerDefinition` declares, keyed by its English source. */
+export const dormerTranslations = {
+  sv: {
+    Dormer: 'Takkupa',
+    'House-shaped protrusion on a roof segment.': 'Husformad utbyggnad på ett takparti.',
+    'Place dormer on roof': 'Placera takkupan på taket',
+    'Rotate ghost ±15°': 'Rotera förhandsvisningen ±15°',
+    Cancel: 'Avbryt',
+    Width: 'Bredd',
+    Depth: 'Djup',
+    Height: 'Höjd',
+    'Dormer roof': 'Kupans tak',
+    'Roof type': 'Taktyp',
+    Hip: 'Valmat',
+    Gable: 'Sadel',
+    Shed: 'Pulpet',
+    Gambrel: 'Brutet',
+    Dutch: 'Holländskt',
+    Mansard: 'Mansard',
+    Flat: 'Platt',
+    'Roof height': 'Takhöjd',
+    'Shed high side': 'Pulpetens höga sida',
+    Back: 'Bak',
+    Front: 'Fram',
+    'Hung wall': 'Hängd vägg',
+    'Wall skirt height': 'Väggkjolens höjd',
+  },
+}

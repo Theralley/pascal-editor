@@ -6,6 +6,7 @@ import { buildPipeSegmentFloorplan } from './floorplan'
 import { buildPipeSegmentGeometry } from './geometry'
 import { pipeSegmentParametrics } from './parametrics'
 import { PipeSegmentNode } from './schema'
+import { pipeSegmentTranslations } from './translations'
 
 /**
  * Phase 4 of the distribution-system effort (the research doc's Phase 2)
@@ -133,6 +134,7 @@ export const pipeSegmentDefinition: NodeDefinition<typeof PipeSegmentNode> = {
     { key: 'Esc', label: 'Exit drawing' },
   ],
 
+  translations: pipeSegmentTranslations,
   presentation: {
     label: 'DWV Pipe',
     description: 'Drain / waste / vent pipe run — draw level or toggle a ¼″ per foot fall with S.',

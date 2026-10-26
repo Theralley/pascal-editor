@@ -15,6 +15,7 @@ import {
 import { skylightParametrics } from './parametrics'
 import { buildSkylightRoofCut } from './roof-cut'
 import { SkylightNode } from './schema'
+import { skylightTranslations } from './translations'
 
 // In-world handle constants. Offsets are measured from the skylight's
 // edge to the arrow's CENTER, so they need to clear half the chevron's
@@ -271,6 +272,7 @@ export const skylightDefinition: NodeDefinition<typeof SkylightNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: skylightTranslations,
   presentation: {
     label: 'Skylight',
     description: 'Framed glass opening on a roof segment.',

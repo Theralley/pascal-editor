@@ -21,6 +21,7 @@ import useRoofPlacementMode, {
   standardRoofToolHintVisibility,
 } from './roof-placement-mode'
 import { RoofNode } from './schema'
+import { roofTranslations } from './translations'
 
 const MOVE_FRONT_OFFSET = 0.35
 const MIN_ROOF_FOOTPRINT = 1
@@ -273,6 +274,7 @@ export const roofDefinition: NodeDefinition<typeof RoofNode> = {
     priority: 3,
   },
 
+  translations: roofTranslations,
   presentation: {
     label: 'Roof',
     description: 'A pitched / hip / gable roof composed of one or more segments.',

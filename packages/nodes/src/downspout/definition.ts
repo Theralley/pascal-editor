@@ -19,6 +19,7 @@ import {
   resolveDownspoutRouting,
 } from './routing'
 import { DownspoutNode } from './schema'
+import { downspoutTranslations } from './translations'
 
 // Mirrors the parametric `min`s so handle drags can't shrink the pipe
 // past what the inspector would accept.
@@ -210,6 +211,7 @@ export const downspoutDefinition: NodeDefinition<typeof DownspoutNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: downspoutTranslations,
   presentation: {
     label: 'Downspout',
     description: 'Vertical drop pipe from a gutter outlet to the ground.',

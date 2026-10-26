@@ -10,6 +10,7 @@ import { buildCupolaFloorplan } from './floorplan'
 import { cupolaPaint } from './paint'
 import { cupolaParametrics } from './parametrics'
 import { CupolaNode } from './schema'
+import { cupolaTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.3
 const HEIGHT_HANDLE_OFFSET = 0.25
@@ -157,6 +158,7 @@ export const cupolaDefinition: NodeDefinition<typeof CupolaNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: cupolaTranslations,
   presentation: {
     label: 'Cupola',
     description: 'Louvered roof lantern with a dome or pyramid cap and optional finial.',

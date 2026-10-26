@@ -9,6 +9,7 @@ import { buildTurbineVentFloorplan } from './floorplan'
 import { turbineVentPaint } from './paint'
 import { turbineVentParametrics } from './parametrics'
 import { TurbineVentNode } from './schema'
+import { turbineVentTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.25
 const HEIGHT_HANDLE_OFFSET = 0.2
@@ -126,6 +127,7 @@ export const turbineVentDefinition: NodeDefinition<typeof TurbineVentNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: turbineVentTranslations,
   presentation: {
     label: 'Turbine Vent',
     description: 'Wind-driven spinning whirlybird exhaust vent for a roof slope.',

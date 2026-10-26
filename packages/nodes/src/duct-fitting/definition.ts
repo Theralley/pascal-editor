@@ -8,6 +8,7 @@ import { buildDuctFittingGeometry } from './geometry'
 import { ductFittingParametrics } from './parametrics'
 import { getDuctFittingPorts } from './ports'
 import { DuctFittingNode } from './schema'
+import { ductFittingTranslations } from './translations'
 
 /**
  * Phase 2 of the HVAC node system — duct fittings (elbow / tee / reducer)
@@ -134,6 +135,7 @@ export const ductFittingDefinition: NodeDefinition<typeof DuctFittingNode> = {
     { key: 'Esc', label: 'Exit' },
   ],
 
+  translations: ductFittingTranslations,
   presentation: {
     label: 'Duct Fitting',
     description: 'Elbow, tee, reducer, or square-to-round transition connecting duct runs.',

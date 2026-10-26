@@ -8,6 +8,7 @@ import { buildPipeFittingGeometry } from './geometry'
 import { pipeFittingParametrics } from './parametrics'
 import { getPipeFittingPorts } from './ports'
 import { PipeFittingNode } from './schema'
+import { pipeFittingTranslations } from './translations'
 
 /**
  * DWV fittings — minted automatically by the pipe draw tool (corner
@@ -105,6 +106,7 @@ export const pipeFittingDefinition: NodeDefinition<typeof PipeFittingNode> = {
     { key: 'Esc', label: 'Exit' },
   ],
 
+  translations: pipeFittingTranslations,
   presentation: {
     label: 'Pipe Fitting',
     description: 'DWV joint — elbow bend, 45° wye, or sanitary tee.',

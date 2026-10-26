@@ -13,7 +13,6 @@ const PENDING = new Set([
   'spawn',
   'separator',
   'floor-opening',
-  'lean-to-extension',
   'fence',
   'fence-gate',
   'fence-opening',
@@ -28,8 +27,6 @@ const PENDING = new Set([
   'column',
   'elevator',
   'unit',
-  'roof',
-  'roof-segment',
   'stair',
   'stair-segment',
   'zone',
@@ -41,30 +38,48 @@ const PENDING = new Set([
   'measurement',
   'construction-dimension',
   'structural-grid',
-  'box-vent',
-  'ridge-vent',
-  'turbine-vent',
-  'cupola',
-  'eyebrow-vent',
-  'chimney',
-  'solar-panel',
-  'skylight',
-  'dormer',
-  'gutter',
-  'downspout',
-  'duct-segment',
-  'duct-fitting',
-  'duct-terminal',
-  'hvac-equipment',
-  'lineset',
-  'liquid-line',
-  'pipe-segment',
-  'pipe-fitting',
-  'pipe-trap',
 ])
 
 /** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */
 const SAMPLE_NODES: Record<string, object[]> = {
+  'lean-to-extension': [{ id: 'leanto_a' }],
+  'roof-segment': [{ id: 'rseg_a' }],
+  'box-vent': [{ id: 'bvent_a' }],
+  'ridge-vent': [{ id: 'rvent_a' }],
+  'turbine-vent': [{ id: 'tvent_a' }],
+  'solar-panel': [{ id: 'solarpanel_a' }],
+  'duct-segment': [
+    {
+      path: [
+        [0, 0, 0],
+        [1, 0, 0],
+      ],
+    },
+  ],
+  lineset: [
+    {
+      path: [
+        [0, 0, 0],
+        [1, 0, 0],
+      ],
+    },
+  ],
+  'liquid-line': [
+    {
+      path: [
+        [0, 0, 0],
+        [1, 0, 0],
+      ],
+    },
+  ],
+  'pipe-segment': [
+    {
+      path: [
+        [0, 0, 0],
+        [1, 0, 0],
+      ],
+    },
+  ],
   wall: [
     { id: 'wall_a', start: [0, 0], end: [4, 0] },
     { id: 'wall_b', start: [0, 0], end: [4, 0], curveOffset: 0.5 },

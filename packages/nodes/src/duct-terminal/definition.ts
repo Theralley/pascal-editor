@@ -4,6 +4,7 @@ import { buildDuctTerminalGeometry } from './geometry'
 import { ductTerminalParametrics } from './parametrics'
 import { getDuctTerminalPorts } from './ports'
 import { DuctTerminalNode } from './schema'
+import { ductTerminalTranslations } from './translations'
 
 /**
  * Phase 3 of the HVAC node system — duct terminals: supply registers,
@@ -85,6 +86,7 @@ export const ductTerminalDefinition: NodeDefinition<typeof DuctTerminalNode> = {
     { key: 'Esc', label: 'Exit' },
   ],
 
+  translations: ductTerminalTranslations,
   presentation: {
     label: 'Register',
     description:

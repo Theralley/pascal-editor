@@ -10,6 +10,7 @@ import { buildDormerFloorplan } from './floorplan'
 import { dormerPaint } from './paint'
 import { dormerParametrics } from './parametrics'
 import { DormerNode } from './schema'
+import { dormerTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.25
 const HEIGHT_HANDLE_OFFSET = 0.25
@@ -331,6 +332,7 @@ export const dormerDefinition: NodeDefinition<typeof DormerNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: dormerTranslations,
   presentation: {
     label: 'Dormer',
     description: 'House-shaped protrusion on a roof segment.',

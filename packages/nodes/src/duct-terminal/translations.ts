@@ -1,0 +1,33 @@
+/** Swedish for the text `ductTerminalDefinition` declares, keyed by its English source. */
+export const ductTerminalTranslations = {
+  sv: {
+    Register: 'Luftdon',
+    'Duct terminal — supply register, ceiling diffuser, or return grille. Duct runs end at its collar.':
+      'Luftdon — tilluftsdon, takdiffusor eller frånluftsgaller. Kanalerna slutar vid donets krage.',
+    'Place register': 'Placera luftdon',
+    'Mount: floor / ceiling / wall': 'Montering: golv / tak / vägg',
+    'Rotate ±45° (floor / ceiling)': 'Rotera ±45° (golv / tak)',
+    Exit: 'Avsluta',
+    Terminal: 'Luftdon',
+    'Terminal type': 'Typ av luftdon',
+    'Supply register': 'Tilluftsdon',
+    Diffuser: 'Diffusor',
+    'Return grille': 'Frånluftsgaller',
+    Mount: 'Montering',
+    Floor: 'Golv',
+    Ceiling: 'Tak',
+    Wall: 'Vägg',
+    Face: 'Yta',
+    Width: 'Bredd',
+    Depth: 'Djup',
+    Collar: 'Krage',
+    'Collar shape': 'Kragens form',
+    Round: 'Rund',
+    Rect: 'Rektangulär',
+    Oval: 'Oval',
+    'Collar diameter': 'Kragens diameter',
+    'Collar width': 'Kragens bredd',
+    'Collar height': 'Kragens höjd',
+    Placement: 'Placering',
+  },
+}

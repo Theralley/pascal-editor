@@ -7,6 +7,7 @@ import {
 import { buildSolarPanelFloorplan } from './floorplan'
 import { solarPanelParametrics } from './parametrics'
 import { SolarPanelNode } from './schema'
+import { solarPanelTranslations } from './translations'
 
 // Handle constants — same scheme as the skylight: edge-to-arrow-center
 // offsets that need to clear half the chevron's body (~13 cm at default
@@ -272,6 +273,7 @@ export const solarPanelDefinition: NodeDefinition<typeof SolarPanelNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: solarPanelTranslations,
   presentation: {
     label: 'Solar Panel',
     description: 'Grid of photovoltaic panels mounted on a roof segment.',

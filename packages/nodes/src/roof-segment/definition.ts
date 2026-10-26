@@ -17,6 +17,7 @@ import { matchRoofSegmentMeasurementFeature, roofSegmentMeasurementFeatures } fr
 import { roofSegmentPaint, roofSegmentSlots } from './paint'
 import { roofSegmentParametrics } from './parametrics'
 import { RoofSegmentNode } from './schema'
+import { roofSegmentTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.3
 const HEIGHT_HANDLE_OFFSET = 0.3
@@ -345,6 +346,7 @@ export const roofSegmentDefinition: NodeDefinition<typeof RoofSegmentNode> = {
     'roof-segment-rotate': roofSegmentRotateAffordance,
   },
 
+  translations: roofSegmentTranslations,
   presentation: {
     label: 'Roof Segment',
     description: 'A single pitched plane of a parent roof.',

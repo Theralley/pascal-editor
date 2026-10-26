@@ -4,6 +4,7 @@ import { buildPipeTrapGeometry } from './geometry'
 import { pipeTrapParametrics } from './parametrics'
 import { getPipeTrapPorts } from './ports'
 import { PipeTrapNode } from './schema'
+import { pipeTrapTranslations } from './translations'
 
 /**
  * DWV P-trap — the water-seal fitting on the waste line. Placed by its
@@ -56,6 +57,7 @@ export const pipeTrapDefinition: NodeDefinition<typeof PipeTrapNode> = {
     { key: 'Esc', label: 'Exit' },
   ],
 
+  translations: pipeTrapTranslations,
   presentation: {
     label: 'Trap',
     description: 'DWV P-trap — water seal on the waste line. The trap arm runs to the vent.',

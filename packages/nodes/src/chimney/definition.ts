@@ -12,6 +12,7 @@ import { buildChimneyFloorplan } from './floorplan'
 import { chimneyPaint } from './paint'
 import { chimneyParametrics } from './parametrics'
 import { ChimneyNode } from './schema'
+import { chimneyTranslations } from './translations'
 
 // Side handle offsets in metres. Match the roof-segment values so a
 // segment + chimney selected back-to-back use the same visual rhythm.
@@ -409,6 +410,7 @@ export const chimneyDefinition: NodeDefinition<typeof ChimneyNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: chimneyTranslations,
   presentation: {
     label: 'Chimney',
     description: 'Vertical masonry stack on a roof segment.',

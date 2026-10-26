@@ -1,0 +1,33 @@
+/** Swedish for the text `hvacEquipmentDefinition` declares, keyed by its English source. */
+export const hvacEquipmentTranslations = {
+  sv: {
+    'HVAC Unit': 'Klimatenhet',
+    'Furnace, air handler, or condenser — duct runs connect to its supply/return collars.':
+      'Värmeaggregat, luftbehandlingsaggregat eller kondensorenhet — kanalerna ansluts till dess till- och frånluftskragar.',
+    'Place unit': 'Placera enhet',
+    'Rotate ±45°': 'Rotera ±45°',
+    Exit: 'Avsluta',
+    Equipment: 'Utrustning',
+    'Equipment type': 'Typ av utrustning',
+    Furnace: 'Värmeaggregat',
+    'Air handler': 'Luftbehandlingsaggregat',
+    Condenser: 'Kondensorenhet',
+    Cabinet: 'Skåp',
+    Width: 'Bredd',
+    Depth: 'Djup',
+    Height: 'Höjd',
+    Supply: 'Tilluft',
+    'Supply shape': 'Tilluftens form',
+    Round: 'Rund',
+    Rect: 'Rektangulär',
+    Oval: 'Oval',
+    'Supply diameter': 'Tilluftens diameter',
+    'Supply width': 'Tilluftens bredd',
+    'Supply height': 'Tilluftens höjd',
+    Return: 'Frånluft',
+    'Return shape': 'Frånluftens form',
+    'Return diameter': 'Frånluftens diameter',
+    'Return width': 'Frånluftens bredd',
+    'Return height': 'Frånluftens höjd',
+  },
+}
