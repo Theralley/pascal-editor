@@ -3,7 +3,7 @@ export const shelfTranslations = {
   sv: {
     Shelf: 'Hylla',
     'A configurable shelving unit. Items host on each row.':
-      'En inställbar hyllenhet. Föremål kan placeras på varje hyllplan.',
+      'En inställbar hyllenhet. Objekt kan placeras på varje hyllplan.',
     'Place shelf': 'Placera hyllan',
     Cancel: 'Avbryt',
     Style: 'Stil',

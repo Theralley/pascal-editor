@@ -27,6 +27,7 @@ import {
   buildSvgArrowHeadPoints,
   floorplanGeometryMetadata,
   getArcPlanPoint,
+  translate,
 } from '@pascal-app/editor'
 import {
   buildStairDocumentation,
@@ -35,6 +36,7 @@ import {
   stairPlanBreakStep,
 } from './documentation'
 
+import { messages } from './messages'
 import { buildFloorplanStairEntry } from './plan-entry'
 
 /** The stair parent emits its complete cumulative segment chain. */
@@ -92,7 +94,7 @@ export function buildStairFloorplan(
           kind: 'text',
           x: stair.position[0],
           y: stair.position[2],
-          text: 'Stair detail unavailable — inspect dimensions',
+          text: translate(messages, 'detailUnavailable'),
           fontSize: 0.15,
           fill: '#b45309',
         },

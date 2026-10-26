@@ -87,6 +87,15 @@ import {
 
 type RunMessageKey = MessageKey<typeof messages>
 
+const FINISH_MESSAGES = new Map<string, RunMessageKey>([
+  ['Choose a kitchen run to finish.', 'msg.chooseRun'],
+  [
+    'Unable to finish while keeping hosted items supported. Move items on the countertop and try again.',
+    'msg.hostedUnsupported',
+  ],
+  ['Cabinet run changed', 'msg.runChanged'],
+])
+
 export type CabinetEditableNode = CabinetNodeType | CabinetModuleNodeType
 
 const RUN_POSITION_PATCH_KEYS = new Set<keyof CabinetNodeType>(['showPlinth', 'plinthHeight'])
@@ -575,7 +584,14 @@ export function CabinetRunPanel({
             ),
         )
     } catch (error) {
-      setFinishMessage(error instanceof Error ? error.message : t('unableToFinishThisKitchenRun'))
+      const known = error instanceof Error ? FINISH_MESSAGES.get(error.message) : undefined
+      setFinishMessage(
+        known
+          ? t(known)
+          : error instanceof Error
+            ? error.message
+            : t('unableToFinishThisKitchenRun'),
+      )
     }
   }
 
@@ -710,7 +726,7 @@ export function CabinetRunPanel({
                     }),
                   )
                   .join(' · ')
-              : t('fits50150MmGapsAtRunEndsBesidePerpendicu')}
+              : t('fillerHint')}
           </p>
         </div>
       </PanelSection>
@@ -744,7 +760,7 @@ export function CabinetRunPanel({
                 onClick={() => setArraySourceId(module.id as AnyNodeId)}
                 title={
                   module.moduleKind === 'corner-filler'
-                    ? t('cornerFillersCannotBeUsedAsArraySources')
+                    ? t('cornerFillerNotSource')
                     : t('useThisModuleAsTheArraySource')
                 }
                 type="button"
@@ -784,7 +800,7 @@ export function CabinetRunPanel({
             title={equalizeWidthsTitle}
           />
           <p className="px-1 pt-1 text-[10px] leading-4 text-muted-foreground">
-            {t('balancesStandardBaseCabinetsWhileKeeping')}
+            {t('equalizeNote')}
           </p>
         </div>
       </PanelSection>
@@ -864,7 +880,7 @@ export function CabinetRunPanel({
                 value={dimensionProfile === 'us-base' ? 'us-base' : 'metric-base'}
               />
               <p className="px-1 pt-1 text-[10px] leading-4 text-muted-foreground">
-                {t('appliesDepthCarcassPlinthAndCountertopTh')}
+                {t('profileNote')}
               </p>
             </div>
           )}
@@ -888,7 +904,7 @@ export function CabinetRunPanel({
                 value={wallHeightPreset === 'custom' ? '18' : wallHeightPreset}
               />
               <p className="px-1 pt-1 text-[10px] leading-4 text-muted-foreground">
-                {t('commonWallCabinetHeightsUseTheSliderBelo')}
+                {t('wallHeightsNote')}
               </p>
             </div>
           )}

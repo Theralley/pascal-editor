@@ -20,6 +20,7 @@ import {
   findLevelAncestorId,
   selectionProxyIdFromMetadata,
 } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
 import { findWallOpeningConflicts } from '../shared/wall-opening-clearance'
 import { bakeCabinetAnimationClip } from './animation'
 import { buildCabinetFloorplan, buildCabinetModuleFloorplan } from './floorplan'
@@ -28,11 +29,12 @@ import { cabinetFloorplanSiblingOverrides } from './floorplan-overrides'
 import { buildCabinetGeometry } from './geometry'
 import { withCabinetHostedChildren } from './hosted-resize'
 import { toggleCabinetOperationState } from './interaction'
+import { messages } from './messages'
 import { cabinetModuleParentFrame } from './move-frame'
 import { cabinetPaint } from './paint'
 import { cabinetModuleUsesFixedApplianceWidth } from './panel-visibility'
 import { cabinetModuleParametrics, cabinetParametrics } from './parametrics'
-import { cabinetPlacementNotice } from './placement-notice'
+import { cabinetPlacementNotice, OPENING_CLEARANCE_NOTICE } from './placement-notice'
 import { resolveCabinetGridPosition } from './placement-snap'
 import useCabinetPlacementType from './placement-type'
 import { metadataForSelectedWidth, metadataWithPresetWidthDebt } from './preset-width-debt'
@@ -2296,6 +2298,14 @@ function cabinetModuleHandles(): HandleDescriptor<CabinetModuleNodeType>[] {
   ]
 }
 
+/** The agent-facing notice stays English; the editor shows it in the active language. */
+const localizedPlacementNotice: typeof cabinetPlacementNotice = (node, context) => {
+  const notice = cabinetPlacementNotice(node, context)
+  return notice?.line === OPENING_CLEARANCE_NOTICE
+    ? { ...notice, line: translate(messages, 'openingClearance') }
+    : notice
+}
+
 export const cabinetDefinition: NodeDefinition<typeof CabinetNode> = {
   kind: 'cabinet',
   schemaVersion: 8,
@@ -2404,7 +2414,7 @@ export const cabinetDefinition: NodeDefinition<typeof CabinetNode> = {
 
   parametrics: cabinetParametrics,
   handles: (node, sceneApi) => cabinetHandles(node, sceneApi).map(withCabinetHostedChildren),
-  placementNotice: cabinetPlacementNotice,
+  placementNotice: localizedPlacementNotice,
   geometry: buildCabinetGeometry,
   exportAnimation: ({ node, object }) => bakeCabinetAnimationClip(node, object),
   system: {
@@ -2597,7 +2607,7 @@ export const cabinetModuleDefinition: NodeDefinition<typeof CabinetModuleNode> =
   relations: { hosts: ['cabinet', 'cabinet-module', 'item', 'procedural-item'] },
   parametrics: cabinetModuleParametrics,
   handles: () => cabinetModuleHandles().map(withCabinetHostedChildren),
-  placementNotice: cabinetPlacementNotice,
+  placementNotice: localizedPlacementNotice,
   geometry: buildCabinetGeometry,
   exportAnimation: ({ node, object }) => bakeCabinetAnimationClip(node, object),
   // `operationState` is deliberately absent — see cabinetDefinition.geometryKey.

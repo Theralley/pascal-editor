@@ -20,7 +20,8 @@ import {
   sampleFenceSpline,
   useScene,
 } from '@pascal-app/core'
-import { SliderControl, useT } from '@pascal-app/editor'
+import { SliderControl, useDefinitionText, useT } from '@pascal-app/editor'
+import { cabinetDisplayName } from '../cabinet/display-name'
 import { messages } from './messages'
 
 export function FencePatternInfo({ node }: { node: FenceNode }) {
@@ -71,6 +72,11 @@ export function FenceSurfaceEditor({
   onUpdate: (patch: Partial<FenceNode>) => void
 }) {
   const t = useT(messages)
+  const defText = useDefinitionText()
+  const kindLabel = (type: string) => {
+    const definition = nodeRegistry.get(type)
+    return definition?.presentation ? defText(definition, definition.presentation.label) : type
+  }
   const nodes = useScene((state) => state.nodes)
   const levelId = findLevelAncestorId(node.id as AnyNodeId, nodes)
   const hosts = Object.values(nodes).filter(
@@ -128,14 +134,15 @@ export function FenceSurfaceEditor({
             <option value="">{t('chooseASurface')}</option>
             {hosts.map((host) => (
               <option key={host.id} value={host.id}>
-                {host.name || host.type} ({host.type})
+                {host.name ? cabinetDisplayName(host.name) : kindLabel(host.type)} (
+                {kindLabel(host.type)})
               </option>
             ))}
           </select>
         </label>
       )}
       {node.surfaceMode === 'selected' && !selectedId && (
-        <p className="text-muted-foreground">{t('chooseASlabOrShapedSurfaceOnThisLevel')}</p>
+        <p className="text-muted-foreground">{t('chooseSurfaceHint')}</p>
       )}
     </div>
   )
@@ -276,10 +283,13 @@ export function FencePathEditor({
       <p>
         {t('pathSummary', {
           count: path.length,
-          length: getFenceCenterlineLength(node).toFixed(2),
+          length: getFenceCenterlineLength(node).toLocaleString(t.locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
         })}
       </p>
-      <p className="text-muted-foreground">{t('setEachSpanToStraightOrCurvedThenDragIts')}</p>
+      <p className="text-muted-foreground">{t('pathHint')}</p>
       {path.map((point, index) => (
         <details key={`curve-editor-${index}`} className="rounded border p-2">
           <summary className="cursor-pointer">{t('pointN', { n: index + 1 })}</summary>

@@ -34,8 +34,8 @@ const DEFAULT_NAME_KEYS = {
 export function cabinetDisplayName(name: string): string {
   const match = /^(.*?)(?: (\d+))?$/.exec(name)
   const base = match?.[1] ?? name
+  if (!Object.hasOwn(DEFAULT_NAME_KEYS, base)) return name
   const key = DEFAULT_NAME_KEYS[base as keyof typeof DEFAULT_NAME_KEYS]
-  if (!key) return name
   const label = translate(messages, key)
   return match?.[2] ? `${label} ${match[2]}` : label
 }

@@ -23,6 +23,7 @@ export const cabinetTranslations = {
     Front: 'Front',
     Carcass: 'Stomme',
     Countertop: 'Bänkskiva',
+    'Bar ledge': 'Barbänkens kant',
     Plinth: 'Sockel',
     Hardware: 'Beslag',
     Glass: 'Glas',

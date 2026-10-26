@@ -44,6 +44,7 @@ export const messages = defineMessages({
     doorTime: 'Door Time',
     dwell: 'Dwell',
     stopN: 'Stop {n}',
+    servedLevels: 'Service',
   },
   sv: {
     centerOpening: 'Mittöppnande',
@@ -88,5 +89,6 @@ export const messages = defineMessages({
     doorTime: 'Dörrtid',
     dwell: 'Väntetid',
     stopN: 'Stopp {n}',
+    servedLevels: 'Betjänade våningar',
   },
 })

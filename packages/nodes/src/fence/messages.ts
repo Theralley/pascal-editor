@@ -9,11 +9,11 @@ export const messages = defineMessages({
     holdStartingHeight: 'Hold starting height',
     surface: 'Surface',
     chooseASurface: 'Choose a surface',
-    chooseASlabOrShapedSurfaceOnThisLevel: 'Choose a slab or shaped surface on this level.',
+    chooseSurfaceHint: 'Choose a slab or shaped surface on this level.',
     length: 'Length',
     curve: 'Curve',
     editPath: 'Edit path',
-    setEachSpanToStraightOrCurvedThenDragIts:
+    pathHint:
       'Set each span to straight or curved, then drag its points and curve handles in either view.',
     straight: 'Straight',
     curved: 'Curved',
@@ -37,6 +37,12 @@ export const messages = defineMessages({
     gatesAndOpenings: 'Gates & openings',
     addGate: 'Add Gate',
     addOpening: 'Add Opening',
+    gateName: 'Gate',
+    openingName: 'Open passage',
+    clickOnFence: 'Click on a fence to place the feature.',
+    overlap: 'That spot overlaps another gate or passage. Choose a clear section.',
+    tooCloseToEnd: 'Move farther from the fence end or reduce the opening width.',
+    minWidth: 'Opening width must be at least 0.35 m.',
   },
   sv: {
     picketRailProjection: 'Spjälribbans utstick',
@@ -46,12 +52,11 @@ export const messages = defineMessages({
     holdStartingHeight: 'Behåll starthöjden',
     surface: 'Yta',
     chooseASurface: 'Välj en yta',
-    chooseASlabOrShapedSurfaceOnThisLevel:
-      'Välj ett bjälklag eller en formad yta på den här våningen.',
+    chooseSurfaceHint: 'Välj ett bjälklag eller en formad yta på den här våningen.',
     length: 'Längd',
     curve: 'Båge',
     editPath: 'Redigera bana',
-    setEachSpanToStraightOrCurvedThenDragIts:
+    pathHint:
       'Ställ in varje delsträcka som rak eller böjd och dra sedan dess punkter och böjhandtag i någon av vyerna.',
     straight: 'Rak',
     curved: 'Böjd',
@@ -75,5 +80,11 @@ export const messages = defineMessages({
     gatesAndOpenings: 'Grindar och öppningar',
     addGate: 'Lägg till grind',
     addOpening: 'Lägg till öppning',
+    gateName: 'Grind',
+    openingName: 'Öppen passage',
+    clickOnFence: 'Klicka på ett staket för att placera detaljen.',
+    overlap: 'Platsen överlappar en annan grind eller passage. Välj en ledig sträcka.',
+    tooCloseToEnd: 'Flytta längre från staketets ände eller minska öppningens bredd.',
+    minWidth: 'Öppningens bredd måste vara minst 0,35 m.',
   },
 })

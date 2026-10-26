@@ -93,7 +93,7 @@ export function KitchenCollection({
         })}
       {!items.length && (
         <p role="status" className="text-xs text-muted-foreground">
-          {t('noKitchenItemsMatchTryFridgeSinkOrCabine')}
+          {t('noItemsMatch')}
         </p>
       )}
     </div>

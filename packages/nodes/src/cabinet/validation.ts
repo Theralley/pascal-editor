@@ -20,7 +20,7 @@ export type CabinetPlanningIssue = {
   message: string
   nodeIds: string[]
   /** Reads `message` in another language: the panel builds its text from these. */
-  detail: { variant?: 'wall'; name: string; nextName?: string; mm?: number }
+  detail?: { variant?: 'wall'; name: string; nextName?: string; mm?: number }
 }
 
 export type CabinetPlanningReport = {
@@ -40,7 +40,7 @@ function issue(
   severity: CabinetPlanningIssue['severity'],
   message: string,
   nodeIds: string[],
-  detail: CabinetPlanningIssue['detail'],
+  detail?: CabinetPlanningIssue['detail'],
 ): CabinetPlanningIssue {
   return { code, severity, message, nodeIds, detail }
 }

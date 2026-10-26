@@ -187,11 +187,7 @@ export function KitchenModuleActions({
               </p>
               {fits && planned ? (
                 <>
-                  <div
-                    role="img"
-                    aria-label={t('kitchenRunPreviewHighlightedItemIsThePro')}
-                    className="flex h-12 gap-0.5"
-                  >
+                  <div role="img" aria-label={t('runPreviewLabel')} className="flex h-12 gap-0.5">
                     {[...planned]
                       .sort((a, b) => a.position[0] - b.position[0])
                       .map((entry) => (
@@ -237,9 +233,7 @@ export function KitchenModuleActions({
                   {action === 'replace' &&
                     patch?.cabinetType === 'tall' &&
                     node.children.length > 0 && (
-                      <p className="text-muted-foreground">
-                        {t('anUpperCabinetAttachedToThisItemWillBeRe')}
-                      </p>
+                      <p className="text-muted-foreground">{t('upperCabinetRemoved')}</p>
                     )}
                   <ActionButton
                     label={
