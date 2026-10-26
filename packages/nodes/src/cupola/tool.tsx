@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -103,7 +103,10 @@ const CupolaTool = () => {
 
       const cupola = CupolaNode.parse({
         ...cupolaDefinition.defaults(),
-        name: 'Cupola',
+        name: numberedNodeName(
+          'cupola',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'cupola').length + 1,
+        ),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: 0,

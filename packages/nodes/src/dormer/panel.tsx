@@ -15,16 +15,19 @@ import {
 import {
   cn,
   duplicateNodeAndPickUp,
+  type MessageKey,
   numberedNodeName,
   PanelSection,
   PanelWrapper,
   SliderControl,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { messages } from './messages'
 import { DormerActionsSection } from './panel-actions-section'
 import { DormerPositionSection } from './panel-position-section'
 import { DormerWindowsSection } from './panel-windows-section'
@@ -34,27 +37,31 @@ type RoofType = DormerNode['roofType']
 type ShedHighSide = DormerNode['shedHighSide']
 type DormerSection = 'dormer' | 'window'
 
-const ROOF_TYPE_OPTIONS: Array<{ label: string; value: RoofType }> = [
-  { label: 'Gable', value: 'gable' },
-  { label: 'Hip', value: 'hip' },
-  { label: 'Shed', value: 'shed' },
-  { label: 'Gambrel', value: 'gambrel' },
-  { label: 'Dutch', value: 'dutch' },
-  { label: 'Mansard', value: 'mansard' },
-  { label: 'Flat', value: 'flat' },
+const ROOF_TYPE_OPTIONS: Array<{ labelKey: MessageKey<typeof messages>; value: RoofType }> = [
+  { labelKey: 'gable', value: 'gable' },
+  { labelKey: 'hip', value: 'hip' },
+  { labelKey: 'shed', value: 'shed' },
+  { labelKey: 'gambrel', value: 'gambrel' },
+  { labelKey: 'dutch', value: 'dutch' },
+  { labelKey: 'mansard', value: 'mansard' },
+  { labelKey: 'flat', value: 'flat' },
 ]
 
-const SHED_HIGH_SIDE_OPTIONS: Array<{ label: string; value: ShedHighSide }> = [
-  { label: 'Rise Back', value: 'back' },
-  { label: 'Rise Front', value: 'front' },
+const SHED_HIGH_SIDE_OPTIONS: Array<{
+  labelKey: MessageKey<typeof messages>
+  value: ShedHighSide
+}> = [
+  { labelKey: 'riseBack', value: 'back' },
+  { labelKey: 'riseFront', value: 'front' },
 ]
 
-const SECTION_OPTIONS: Array<{ label: string; value: DormerSection }> = [
-  { label: 'Dormer', value: 'dormer' },
-  { label: 'Windows', value: 'window' },
+const SECTION_OPTIONS: Array<{ labelKey: MessageKey<typeof messages>; value: DormerSection }> = [
+  { labelKey: 'dormer', value: 'dormer' },
+  { labelKey: 'windows', value: 'window' },
 ]
 
 export default function DormerPanel() {
+  const t = useT(messages)
   const [section, setSection] = useState<DormerSection>('dormer')
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const setSelection = useViewer((s) => s.setSelection)
@@ -245,7 +252,7 @@ export default function DormerPanel() {
       icon="/icons/roof.webp"
       onBack={node.roofSegmentId ? handleBack : undefined}
       onClose={handleClose}
-      title={node.name || 'Dormer'}
+      title={node.name || t('dormer')}
       width={300}
     >
       <DormerPositionSection
@@ -257,7 +264,7 @@ export default function DormerPanel() {
         selectedId={selectedId}
       />
 
-      <PanelSection title="Section">
+      <PanelSection title={t('section')}>
         <div className="grid grid-cols-3 gap-1.5 px-1 pt-1">
           {SECTION_OPTIONS.map((option) => {
             const isSelected = section === option.value
@@ -273,7 +280,7 @@ export default function DormerPanel() {
                 onClick={() => setSection(option.value)}
                 type="button"
               >
-                <span className="truncate font-medium">{option.label}</span>
+                <span className="truncate font-medium">{t(option.labelKey)}</span>
               </button>
             )
           })}
@@ -282,9 +289,9 @@ export default function DormerPanel() {
 
       {section === 'dormer' && (
         <>
-          <PanelSection title="Dimensions">
+          <PanelSection title={t('dimensions')}>
             <SliderControl
-              label="Width"
+              label={t('width')}
               max={1000}
               min={0.5}
               onChange={(v) => previewProp({ width: v })}
@@ -296,7 +303,7 @@ export default function DormerPanel() {
               value={node.width}
             />
             <SliderControl
-              label="Depth"
+              label={t('depth')}
               max={1000}
               min={0.5}
               onChange={(v) => previewProp({ depth: v })}
@@ -308,7 +315,7 @@ export default function DormerPanel() {
               value={node.depth}
             />
             <SliderControl
-              label="Wall Height"
+              label={t('wallHeight')}
               max={1000}
               min={0}
               onChange={(v) => previewProp({ height: v })}
@@ -320,7 +327,7 @@ export default function DormerPanel() {
               value={node.height}
             />
             <SliderControl
-              label={node.roofType === 'shed' ? 'Pitch Rise' : 'Roof Height'}
+              label={node.roofType === 'shed' ? t('pitchRise') : t('roofHeight')}
               max={3}
               min={0}
               onChange={(v) => previewProp({ roofHeight: v })}
@@ -333,7 +340,7 @@ export default function DormerPanel() {
             />
           </PanelSection>
 
-          <PanelSection title="Roof Type">
+          <PanelSection title={t('roofType')}>
             <div className="grid grid-cols-3 gap-1.5 px-1 pt-1">
               {ROOF_TYPE_OPTIONS.map((option) => {
                 const isSelected = node.roofType === option.value
@@ -349,7 +356,7 @@ export default function DormerPanel() {
                     onClick={() => handleUpdate({ roofType: option.value })}
                     type="button"
                   >
-                    <span className="truncate font-medium">{option.label}</span>
+                    <span className="truncate font-medium">{t(option.labelKey)}</span>
                   </button>
                 )
               })}
@@ -357,7 +364,7 @@ export default function DormerPanel() {
           </PanelSection>
 
           {node.roofType === 'shed' && (
-            <PanelSection title="Pitch Direction">
+            <PanelSection title={t('pitchDirection')}>
               <div className="grid grid-cols-2 gap-1.5 px-1 pt-1">
                 {SHED_HIGH_SIDE_OPTIONS.map((option) => {
                   const isSelected = node.shedHighSide === option.value
@@ -373,7 +380,7 @@ export default function DormerPanel() {
                       onClick={() => handleUpdate({ shedHighSide: option.value })}
                       type="button"
                     >
-                      <span className="truncate font-medium">{option.label}</span>
+                      <span className="truncate font-medium">{t(option.labelKey)}</span>
                     </button>
                   )
                 })}

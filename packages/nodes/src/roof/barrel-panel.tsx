@@ -12,21 +12,24 @@ import {
   metersToLinearUnit,
   PanelSection,
   SliderControl,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo } from 'react'
 import { createRoofGlazingPreview } from './glazing-preview'
+import { messages } from './messages'
 
 export function BarrelRoofPanel({ node: stored }: { node: RoofSegmentNode }) {
+  const t = useT(messages)
   useLiveNodeOverrides((state) => state.overrides.get(stored.id))
   const node = getEffectiveNode(stored)
   const unit = useViewer((state) => state.unit)
   const preview = useMemo(() => createRoofGlazingPreview([stored.id]), [stored.id])
   useEffect(() => () => preview.cancel(), [preview])
   return (
-    <PanelSection title="Barrel arch">
+    <PanelSection title={t('barrelArch')}>
       <SliderControl
-        label="Rise"
+        label={t('rise')}
         min={metersToLinearUnit(0.01, unit)}
         max={metersToLinearUnit(node.depth / 2, unit)}
         step={0.1}
@@ -47,7 +50,7 @@ export function BarrelRoofPanel({ node: stored }: { node: RoofSegmentNode }) {
         previewWhileTyping
       />
       <SliderControl
-        label="Arch bays"
+        label={t('archBays')}
         min={4}
         max={32}
         step={1}
@@ -59,9 +62,7 @@ export function BarrelRoofPanel({ node: stored }: { node: RoofSegmentNode }) {
         restoreOnCommit={false}
         previewWhileTyping
       />
-      <p className="px-1 text-xs text-muted-foreground">
-        Flat panes follow a circular arch. Rise is measured from the eaves.
-      </p>
+      <p className="px-1 text-xs text-muted-foreground">{t('flatPanesFollowACircular')}</p>
     </PanelSection>
   )
 }

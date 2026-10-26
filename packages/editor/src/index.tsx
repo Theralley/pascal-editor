@@ -651,6 +651,7 @@ export {
   scopeNodeId,
 } from './lib/interaction/scope'
 export { isEditableKeyboardTarget } from './lib/keyboard-pan'
+export { levelDisplayName } from './lib/level-display-name'
 export { selectPlacedNode } from './lib/level-selection'
 // Lot drop-in — address → parcel → streets → front edge → setbacks, on the
 // site node, through the parcel provider the host sets.

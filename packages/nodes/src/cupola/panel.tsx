@@ -18,10 +18,12 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Copy, Move, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
+import { messages } from './messages'
 import type { CupolaNode } from './schema'
 
 /**
@@ -30,6 +32,7 @@ import type { CupolaNode } from './schema'
  * flow the placement tool uses. Mirrors the box-vent panel.
  */
 export default function CupolaPanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const setSelection = useViewer((s) => s.setSelection)
   const updateNode = useScene((s) => s.updateNode)
@@ -120,31 +123,31 @@ export default function CupolaPanel() {
       icon="/icons/roof.webp"
       onBack={node.roofSegmentId ? handleBack : undefined}
       onClose={handleClose}
-      title={node.name || 'Cupola'}
+      title={node.name || t('cupola')}
       width={300}
     >
-      <PanelSection title="Style">
+      <PanelSection title={t('style')}>
         <SegmentedControl
           onChange={(v) => handleUpdate({ roofStyle: v as CupolaNode['roofStyle'] })}
           options={[
-            { label: 'Dome', value: 'dome' },
-            { label: 'Pyramid', value: 'pyramid' },
+            { label: t('dome'), value: 'dome' },
+            { label: t('pyramid'), value: 'pyramid' },
           ]}
           value={node.roofStyle ?? 'dome'}
         />
         <SegmentedControl
           onChange={(v) => handleUpdate({ finial: v === 'on' })}
           options={[
-            { label: 'Finial', value: 'on' },
-            { label: 'No Finial', value: 'off' },
+            { label: t('finial'), value: 'on' },
+            { label: t('noFinial'), value: 'off' },
           ]}
           value={(node.finial ?? true) ? 'on' : 'off'}
         />
       </PanelSection>
 
-      <PanelSection title="Dimensions">
+      <PanelSection title={t('dimensions')}>
         <SliderControl
-          label="Width"
+          label={t('width')}
           max={1000}
           min={0.3}
           onChange={(v) => previewProp({ width: v })}
@@ -156,7 +159,7 @@ export default function CupolaPanel() {
           value={node.width}
         />
         <SliderControl
-          label="Depth"
+          label={t('depth')}
           max={1000}
           min={0.3}
           onChange={(v) => previewProp({ depth: v })}
@@ -168,7 +171,7 @@ export default function CupolaPanel() {
           value={node.depth}
         />
         <SliderControl
-          label="Height"
+          label={t('height')}
           max={1000}
           min={0.4}
           onChange={(v) => previewProp({ height: v })}
@@ -181,7 +184,7 @@ export default function CupolaPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Position">
+      <PanelSection title={t('position')}>
         <SliderControl
           label="X"
           max={Math.round(((segment?.width ?? 10) / 2) * 100) / 100}
@@ -234,7 +237,7 @@ export default function CupolaPanel() {
           value={node.position[2] ?? 0}
         />
         <SliderControl
-          label="Rotation"
+          label={t('rotation')}
           max={180}
           min={-180}
           onChange={(deg) => previewProp({ rotation: (deg * Math.PI) / 180 })}
@@ -247,18 +250,22 @@ export default function CupolaPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions')}>
         <ActionGroup>
-          <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+          <ActionButton
+            icon={<Move className="h-3.5 w-3.5" />}
+            label={t('move')}
+            onClick={handleMove}
+          />
           <ActionButton
             icon={<Copy className="h-3.5 w-3.5" />}
-            label="Duplicate"
+            label={t('duplicate')}
             onClick={handleDuplicate}
           />
           <ActionButton
             className="hover:bg-red-500/20"
             icon={<Trash2 className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-            label="Delete"
+            label={t('delete')}
             onClick={handleDelete}
           />
         </ActionGroup>

@@ -11,7 +11,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useState } from 'react'
 import { Vector3 } from 'three'
@@ -139,7 +139,10 @@ const DownspoutTool = () => {
 
       const downspout = DownspoutNode.parse({
         ...downspoutDefinition.defaults(),
-        name: 'Downspout',
+        name: numberedNodeName(
+          'downspout',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'downspout').length + 1,
+        ),
         gutterId: gutter.id,
         outletId,
         length: dropLength,

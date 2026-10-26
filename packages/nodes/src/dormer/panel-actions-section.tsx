@@ -1,7 +1,8 @@
 'use client'
 
-import { ActionButton, ActionGroup, PanelSection } from '@pascal-app/editor'
+import { ActionButton, ActionGroup, PanelSection, useT } from '@pascal-app/editor'
 import { Copy, Move, Trash2 } from 'lucide-react'
+import { messages } from './messages'
 
 /**
  * Move / Duplicate / Delete buttons at the bottom of the dormer
@@ -16,19 +17,20 @@ export function DormerActionsSection({
   onDuplicate: () => void
   onDelete: () => void
 }) {
+  const t = useT(messages)
   return (
-    <PanelSection title="Actions">
+    <PanelSection title={t('actions')}>
       <ActionGroup>
-        <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={onMove} />
+        <ActionButton icon={<Move className="h-3.5 w-3.5" />} label={t('move')} onClick={onMove} />
         <ActionButton
           icon={<Copy className="h-3.5 w-3.5" />}
-          label="Duplicate"
+          label={t('duplicate')}
           onClick={onDuplicate}
         />
         <ActionButton
           className="hover:bg-red-500/20"
           icon={<Trash2 className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-          label="Delete"
+          label={t('delete')}
           onClick={onDelete}
         />
       </ActionGroup>

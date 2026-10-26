@@ -7,7 +7,6 @@ import {
   type ChimneyNode,
   type DormerNode,
   type GutterNode,
-  getLevelDisplayName,
   isRoofOnStoreyWalls,
   type LevelNode,
   planRoofsOffStorey,
@@ -25,6 +24,7 @@ import {
   ActionGroup,
   duplicateNodeAndPickUp,
   formatLinearMeasurement,
+  levelDisplayName,
   PanelSection,
   PanelWrapper,
   parametricNodeUpdates,
@@ -32,15 +32,18 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Copy, Move, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { RoofGlazingPanel } from '../roof/glazing-panel'
+import { messages } from './messages'
 import { commitSeatedRoofEdit } from './roof-level-target'
 
 export default function RoofPanel() {
+  const t = useT(messages)
   const [ventType, setVentType] = useState<'box-vent' | 'ridge-vent' | 'turbine-vent'>('box-vent')
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const unit = useViewer((s) => s.unit)
@@ -163,11 +166,8 @@ export default function RoofPanel() {
       const level = s.nodes[node.parentId as AnyNodeId] as LevelNode
       const above = roofLevelAbove(s.nodes, level.id)
       return {
-        storey: getLevelDisplayName(level),
-        label:
-          above.kind === 'roof'
-            ? 'Move to the roof level'
-            : `Move to ${getLevelDisplayName(above.level)}`,
+        storey: levelDisplayName(level, t.locale),
+        target: above.kind === 'roof' ? null : levelDisplayName(above.level, t.locale),
         roofs: level.children.filter((id) => isRoofOnStoreyWalls(s.nodes, id)).length,
       }
     }),
@@ -285,30 +285,31 @@ export default function RoofPanel() {
     <PanelWrapper
       icon="/icons/roof.webp"
       onClose={handleClose}
-      title={node.name || 'Roof'}
+      title={node.name || t('roof')}
       width={300}
     >
       <RoofGlazingPanel segments={segments} />
       {levelMove && (
-        <PanelSection title="Level">
+        <PanelSection title={t('level')}>
           <div className="flex flex-col gap-2 px-1 pb-1">
             <p className="text-muted-foreground text-xs">
-              On {levelMove.storey} with its walls, so it hides that floor's plan in solo and
-              exploded views.
-              {levelMove.roofs > 1 && ` The floor's ${levelMove.roofs} roofs move together.`}
+              {t('levelNote', { storey: levelMove.storey })}
+              {levelMove.roofs > 1 && ` ${t('levelRoofsTogether', { n: levelMove.roofs })}`}
             </p>
             <button
               className="w-full rounded-full bg-foreground/[0.08] px-3 py-2 font-medium text-foreground text-xs transition-colors hover:bg-foreground/[0.14]"
               onClick={handleMoveOffStorey}
               type="button"
             >
-              {levelMove.label}
+              {levelMove.target === null
+                ? t('moveToTheRoofLevel')
+                : t('moveTo', { name: levelMove.target })}
             </button>
           </div>
         </PanelSection>
       )}
 
-      <PanelSection title="Segments">
+      <PanelSection title={t('segments')}>
         <div className="flex flex-col gap-1">
           {segments.map((seg, i) => (
             <button
@@ -317,21 +318,21 @@ export default function RoofPanel() {
               onClick={() => handleSelectSegment(seg.id)}
               type="button"
             >
-              <span className="truncate">{seg.name || `Segment ${i + 1}`}</span>
-              <span className="text-muted-foreground text-xs capitalize">{seg.roofType}</span>
+              <span className="truncate">{seg.name || t('segmentN', { n: i + 1 })}</span>
+              <span className="text-muted-foreground text-xs">{t(seg.roofType)}</span>
             </button>
           ))}
         </div>
         <ActionGroup>
           <ActionButton
             icon={<Plus className="h-3.5 w-3.5" />}
-            label="Draw Segment"
+            label={t('drawSegment')}
             onClick={handleAddSegment}
           />
         </ActionGroup>
       </PanelSection>
 
-      <PanelSection title="Position">
+      <PanelSection title={t('position')}>
         <SliderControl
           label="X"
           onChange={(v) => {
@@ -350,15 +351,17 @@ export default function RoofPanel() {
               handleUpdate({ support: { kind: mode === 'walls' ? 'walls' : 'level' } })
             }
             options={[
-              { label: 'Follows walls', value: 'walls' },
-              { label: 'Custom', value: 'custom' },
+              { label: t('followsWalls'), value: 'walls' },
+              { label: t('custom'), value: 'custom' },
             ]}
             value={node.support?.kind === 'walls' ? 'walls' : 'custom'}
           />
         )}
         {node.support?.kind === 'walls' ? (
           <div className="px-1 text-[11px] text-muted-foreground">
-            Currently {formatLinearMeasurement(node.position[1], unit, metricNotation)}
+            {t('currently', {
+              value: formatLinearMeasurement(node.position[1], unit, metricNotation),
+            })}
           </div>
         ) : (
           <SliderControl
@@ -395,7 +398,7 @@ export default function RoofPanel() {
           value={node.position[2]}
         />
         <SliderControl
-          label="Rotation"
+          label={t('rotation')}
           max={180}
           min={-180}
           onChange={(degrees) => {
@@ -424,7 +427,7 @@ export default function RoofPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Elements">
+      <PanelSection title={t('elements')}>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             {chimneys.map((chimney, i) => (
@@ -434,14 +437,14 @@ export default function RoofPanel() {
                 onClick={() => handleSelectElement(chimney.id)}
                 type="button"
               >
-                <span className="truncate">{chimney.name || `Chimney ${i + 1}`}</span>
-                <span className="text-muted-foreground text-xs">chimney</span>
+                <span className="truncate">{chimney.name || t('chimneyN', { n: i + 1 })}</span>
+                <span className="text-muted-foreground text-xs">{t('chimney')}</span>
               </button>
             ))}
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Chimney"
+                label={t('addChimney')}
                 onClick={() => activateTool('chimney')}
               />
             </ActionGroup>
@@ -455,14 +458,14 @@ export default function RoofPanel() {
                 onClick={() => handleSelectElement(dormer.id)}
                 type="button"
               >
-                <span className="truncate">{dormer.name || `Dormer ${i + 1}`}</span>
-                <span className="text-muted-foreground text-xs">dormer</span>
+                <span className="truncate">{dormer.name || t('dormerN', { n: i + 1 })}</span>
+                <span className="text-muted-foreground text-xs">{t('dormer')}</span>
               </button>
             ))}
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Dormer"
+                label={t('addDormer')}
                 onClick={() => activateTool('dormer')}
               />
             </ActionGroup>
@@ -476,14 +479,14 @@ export default function RoofPanel() {
                 onClick={() => handleSelectElement(skylight.id)}
                 type="button"
               >
-                <span className="truncate">{skylight.name || `Skylight ${i + 1}`}</span>
-                <span className="text-muted-foreground text-xs">skylight</span>
+                <span className="truncate">{skylight.name || t('skylightN', { n: i + 1 })}</span>
+                <span className="text-muted-foreground text-xs">{t('skylight')}</span>
               </button>
             ))}
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Skylight"
+                label={t('addSkylight')}
                 onClick={() => activateTool('skylight')}
               />
             </ActionGroup>
@@ -497,14 +500,14 @@ export default function RoofPanel() {
                 onClick={() => handleSelectElement(panel.id)}
                 type="button"
               >
-                <span className="truncate">{panel.name || `Solar Panel ${i + 1}`}</span>
-                <span className="text-muted-foreground text-xs">solar panel</span>
+                <span className="truncate">{panel.name || t('solarPanelN', { n: i + 1 })}</span>
+                <span className="text-muted-foreground text-xs">{t('solarPanel')}</span>
               </button>
             ))}
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Solar Panel"
+                label={t('addSolarPanel')}
                 onClick={() => activateTool('solar-panel')}
               />
             </ActionGroup>
@@ -521,33 +524,33 @@ export default function RoofPanel() {
                 <span className="truncate">
                   {vent.name ||
                     (vent.type === 'box-vent'
-                      ? `Box Vent ${i + 1}`
+                      ? t('boxVentN', { n: i + 1 })
                       : vent.type === 'ridge-vent'
-                        ? `Ridge Vent ${i + 1}`
-                        : `Turbine Vent ${i + 1}`)}
+                        ? t('ridgeVentN', { n: i + 1 })
+                        : t('turbineVentN', { n: i + 1 }))}
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {vent.type === 'box-vent'
-                    ? 'box vent'
+                    ? t('boxVent')
                     : vent.type === 'ridge-vent'
-                      ? 'ridge vent'
-                      : 'turbine vent'}
+                      ? t('ridgeVent')
+                      : t('turbineVent')}
                 </span>
               </button>
             ))}
             <SegmentedControl<'box-vent' | 'ridge-vent' | 'turbine-vent'>
               onChange={setVentType}
               options={[
-                { label: 'Box', value: 'box-vent' },
-                { label: 'Ridge', value: 'ridge-vent' },
-                { label: 'Turbine', value: 'turbine-vent' },
+                { label: t('box'), value: 'box-vent' },
+                { label: t('ridge'), value: 'ridge-vent' },
+                { label: t('turbine'), value: 'turbine-vent' },
               ]}
               value={ventType}
             />
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Vent"
+                label={t('addVent')}
                 onClick={() => activateTool(ventType)}
               />
             </ActionGroup>
@@ -557,7 +560,7 @@ export default function RoofPanel() {
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Cupola"
+                label={t('addCupola')}
                 onClick={() => activateTool('cupola')}
               />
             </ActionGroup>
@@ -567,7 +570,7 @@ export default function RoofPanel() {
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Eyebrow Vent"
+                label={t('addEyebrowVent')}
                 onClick={() => activateTool('eyebrow-vent')}
               />
             </ActionGroup>
@@ -581,14 +584,14 @@ export default function RoofPanel() {
                 onClick={() => handleSelectElement(gutter.id)}
                 type="button"
               >
-                <span className="truncate">{gutter.name || `Gutter ${i + 1}`}</span>
-                <span className="text-muted-foreground text-xs">gutter</span>
+                <span className="truncate">{gutter.name || t('gutterN', { n: i + 1 })}</span>
+                <span className="text-muted-foreground text-xs">{t('gutter')}</span>
               </button>
             ))}
             <ActionGroup>
               <ActionButton
                 icon={<Plus className="h-3.5 w-3.5" />}
-                label="Add Gutter"
+                label={t('addGutter')}
                 onClick={() => activateTool('gutter')}
               />
             </ActionGroup>
@@ -596,18 +599,22 @@ export default function RoofPanel() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions')}>
         <ActionGroup>
-          <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+          <ActionButton
+            icon={<Move className="h-3.5 w-3.5" />}
+            label={t('move')}
+            onClick={handleMove}
+          />
           <ActionButton
             icon={<Copy className="h-3.5 w-3.5" />}
-            label="Duplicate"
+            label={t('duplicate')}
             onClick={handleDuplicate}
           />
           <ActionButton
             className="hover:bg-red-500/20"
             icon={<Trash2 className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-            label="Delete"
+            label={t('delete')}
             onClick={handleDelete}
           />
         </ActionGroup>

@@ -9,7 +9,7 @@ import {
   TurbineVentNode,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -109,7 +109,11 @@ const TurbineVentTool = () => {
 
       const vent = TurbineVentNode.parse({
         ...turbineVentDefinition.defaults(),
-        name: 'Turbine Vent',
+        name: numberedNodeName(
+          'turbine-vent',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'turbine-vent').length +
+            1,
+        ),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: getDownSlopeYaw(hit.localX, hit.localZ, hit.segment),

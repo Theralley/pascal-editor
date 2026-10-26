@@ -7,7 +7,7 @@ import {
   getDormerDefaultWindowFace,
   useScene,
 } from '@pascal-app/core'
-import { usePlacementPreview } from '@pascal-app/editor'
+import { numberedNodeName, usePlacementPreview } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo } from 'react'
 import { RoofAttachmentFallbackPreview } from '../shared/roof-attachment-fallback-preview'
@@ -26,7 +26,7 @@ function nextDormerNumber(nodes: Record<string, unknown>): number {
     if (!node || typeof node !== 'object') continue
     const n = node as { type?: string; name?: string }
     if (n.type !== 'dormer') continue
-    const m = n.name?.match(/^Dormer (\d+)$/)
+    const m = n.name?.match(/^(?:Dormer|Takkupa) (\d+)$/)
     if (m?.[1]) used.add(Number.parseInt(m[1], 10))
   }
   let n = 1
@@ -62,7 +62,7 @@ const DormerTool = () => {
         const state = useScene.getState()
         const dormer = DormerNode.parse({
           ...dormerDefinition.defaults(),
-          name: `Dormer ${nextDormerNumber(state.nodes)}`,
+          name: numberedNodeName('dormer', nextDormerNumber(state.nodes)),
           roofSegmentId: hit.segment.id,
           parentId: hit.segment.id,
           // Anchor at the slope height so the renderer matches the ghost.

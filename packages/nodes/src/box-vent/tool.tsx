@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -114,7 +114,10 @@ const BoxVentTool = () => {
 
       const vent = BoxVentNode.parse({
         ...boxVentDefinition.defaults(),
-        name: 'Box Vent',
+        name: numberedNodeName(
+          'box-vent',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'box-vent').length + 1,
+        ),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: getDownSlopeYaw(hit.localX, hit.localZ, hit.segment),

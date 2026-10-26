@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -133,7 +133,11 @@ const RidgeVentTool = () => {
 
       const vent = RidgeVentNode.parse({
         ...ridgeVentDefinition.defaults(),
-        name: 'Ridge Vent',
+        name: numberedNodeName(
+          'ridge-vent',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'ridge-vent').length +
+            1,
+        ),
         roofSegmentId: hit.segment.id,
         position: [snap.localX, 0, snap.localZ],
         rotation: snap.rotation,

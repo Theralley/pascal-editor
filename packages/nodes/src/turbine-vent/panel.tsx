@@ -18,10 +18,12 @@ import {
   SliderControl,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Copy, Move, Pause, Play, Trash2 } from 'lucide-react'
 import { useCallback, useRef } from 'react'
+import { messages } from './messages'
 import type { TurbineVentNode } from './schema'
 
 // Speed restored when resuming a paused turbine that has no remembered
@@ -35,6 +37,7 @@ const DEFAULT_SPIN_SPEED = 0.8
  * Mirrors the box-vent panel.
  */
 export default function TurbineVentPanel() {
+  const t = useT(messages)
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const setSelection = useViewer((s) => s.setSelection)
   const updateNode = useScene((s) => s.updateNode)
@@ -144,23 +147,23 @@ export default function TurbineVentPanel() {
       icon="/icons/roof.webp"
       onBack={node.roofSegmentId ? handleBack : undefined}
       onClose={handleClose}
-      title={node.name || 'Turbine Vent'}
+      title={node.name || t('turbineVent')}
       width={300}
     >
-      <PanelSection title="Style">
+      <PanelSection title={t('style')}>
         <SegmentedControl
           onChange={(v) => handleUpdate({ style: v as TurbineVentNode['style'] })}
           options={[
-            { label: 'Globe', value: 'globe' },
-            { label: 'Cylinder', value: 'cylinder' },
+            { label: t('globe'), value: 'globe' },
+            { label: t('cylinder'), value: 'cylinder' },
           ]}
           value={node.style ?? 'globe'}
         />
       </PanelSection>
 
-      <PanelSection title="Dimensions">
+      <PanelSection title={t('dimensions')}>
         <SliderControl
-          label="Diameter"
+          label={t('diameter')}
           max={1000}
           min={0.15}
           onChange={(v) => previewProp({ diameter: v })}
@@ -172,7 +175,7 @@ export default function TurbineVentPanel() {
           value={node.diameter}
         />
         <SliderControl
-          label="Height"
+          label={t('height')}
           max={1000}
           min={0.2}
           onChange={(v) => previewProp({ height: v })}
@@ -184,7 +187,7 @@ export default function TurbineVentPanel() {
           value={node.height}
         />
         <SliderControl
-          label="Neck Height"
+          label={t('neckHeight')}
           max={Math.max(0.04, node.height * 0.5)}
           min={0.02}
           onChange={(v) => previewProp({ neckHeight: v })}
@@ -196,7 +199,7 @@ export default function TurbineVentPanel() {
           value={node.neckHeight ?? 0.09}
         />
         <SliderControl
-          label="Vanes"
+          label={t('vanes')}
           max={36}
           min={6}
           onChange={(v) => previewProp({ vaneCount: Math.round(v) })}
@@ -209,16 +212,16 @@ export default function TurbineVentPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Motion">
+      <PanelSection title={t('motion')}>
         <ActionGroup>
           <ActionButton
             icon={isSpinning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            label={isSpinning ? 'Pause' : 'Play'}
+            label={isSpinning ? t('pause') : t('play')}
             onClick={handleToggleSpin}
           />
         </ActionGroup>
         <SliderControl
-          label="Spin Speed"
+          label={t('spinSpeed')}
           max={4}
           min={0}
           onChange={(v) => previewProp({ spinSpeed: v })}
@@ -231,7 +234,7 @@ export default function TurbineVentPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Position">
+      <PanelSection title={t('position')}>
         <SliderControl
           label="X"
           max={Math.round(((segment?.width ?? 10) / 2) * 100) / 100}
@@ -284,7 +287,7 @@ export default function TurbineVentPanel() {
           value={node.position[2] ?? 0}
         />
         <SliderControl
-          label="Rotation"
+          label={t('rotation')}
           max={180}
           min={-180}
           onChange={(deg) => previewProp({ rotation: (deg * Math.PI) / 180 })}
@@ -297,18 +300,22 @@ export default function TurbineVentPanel() {
         />
       </PanelSection>
 
-      <PanelSection title="Actions">
+      <PanelSection title={t('actions')}>
         <ActionGroup>
-          <ActionButton icon={<Move className="h-3.5 w-3.5" />} label="Move" onClick={handleMove} />
+          <ActionButton
+            icon={<Move className="h-3.5 w-3.5" />}
+            label={t('move')}
+            onClick={handleMove}
+          />
           <ActionButton
             icon={<Copy className="h-3.5 w-3.5" />}
-            label="Duplicate"
+            label={t('duplicate')}
             onClick={handleDuplicate}
           />
           <ActionButton
             className="hover:bg-red-500/20"
             icon={<Trash2 className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
-            label="Delete"
+            label={t('delete')}
             onClick={handleDelete}
           />
         </ActionGroup>

@@ -4,15 +4,18 @@ import type { CurtainGrid, RoofGlazing } from '@pascal-app/core'
 import {
   getLinearUnitLabel,
   linearControlValueToMeters,
+  type MessageKey,
   metersToLinearUnit,
   PanelSection,
   SegmentedControl,
   SelectControl,
   SliderControl,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback } from 'react'
 import type { createRoofGlazingPreview } from './glazing-preview'
+import { messages } from './messages'
 
 type Preview = ReturnType<typeof createRoofGlazingPreview>
 type NumberField =
@@ -86,6 +89,7 @@ export function GlazingGridControls({
   grids: readonly CurtainGrid[]
   preview: Preview
 }) {
+  const t = useT(messages)
   const unit = useViewer((state) => state.unit)
   const patch = useCallback(
     (data: Partial<CurtainGrid>, commit = false) => {
@@ -98,21 +102,21 @@ export function GlazingGridControls({
   return (
     <PanelSection title={title}>
       <SelectControl
-        label="Layout"
+        label={t('layout')}
         value={grid.layout}
         mixed={mixedLayout}
         options={[
-          { value: 'maximum-spacing', label: 'Maximum spacing' },
-          { value: 'count', label: 'Panel count' },
-          { value: 'fixed-spacing', label: 'Fixed spacing' },
+          { value: 'maximum-spacing', label: t('maximumSpacing') },
+          { value: 'count', label: t('panelCount') },
+          { value: 'fixed-spacing', label: t('fixedSpacing') },
         ]}
         onChange={(layout) => patch({ layout }, true)}
       />
       {mixedLayout ? (
-        <p className="pt-1 text-[11px] text-muted-foreground">Choose a layout to edit the grid.</p>
+        <p className="pt-1 text-[11px] text-muted-foreground">{t('chooseALayoutToEdit')}</p>
       ) : grid.layout === 'count' ? (
         <SliderControl
-          label="Panels"
+          label={t('panels')}
           value={grid.count}
           mixed={grids.some((value) => value.count !== grid.count)}
           min={1}
@@ -127,7 +131,7 @@ export function GlazingGridControls({
         />
       ) : (
         <SliderControl
-          label={grid.layout === 'maximum-spacing' ? 'Max spacing' : 'Spacing'}
+          label={grid.layout === 'maximum-spacing' ? t('maxSpacing') : t('spacing')}
           value={metersToLinearUnit(grid.spacing, unit)}
           mixed={grids.some((value) => value.spacing !== grid.spacing)}
           min={metersToLinearUnit(0.2, unit)}
@@ -147,15 +151,19 @@ export function GlazingGridControls({
         />
       )}
       {!mixedLayout && grid.layout === 'fixed-spacing' && (
-        <div className="flex flex-col gap-2 pt-1" role="group" aria-label={`${title} alignment`}>
-          <span className="text-xs text-muted-foreground">Alignment</span>
+        <div
+          className="flex flex-col gap-2 pt-1"
+          role="group"
+          aria-label={t('alignmentOf', { title })}
+        >
+          <span className="text-xs text-muted-foreground">{t('alignment')}</span>
           <SegmentedControl
             value={grid.alignment}
             mixed={grids.some((value) => value.alignment !== grid.alignment)}
             options={[
-              { value: 'start', label: 'Start' },
-              { value: 'center', label: 'Center' },
-              { value: 'end', label: 'End' },
+              { value: 'start', label: t('start') },
+              { value: 'center', label: t('center') },
+              { value: 'end', label: t('end') },
             ]}
             onChange={(alignment) => patch({ alignment }, true)}
           />
@@ -179,12 +187,13 @@ export function GlazingColor({
   mixed: boolean
   preview: Preview
 }) {
+  const t = useT(messages)
   return (
     <label className="flex h-10 items-center justify-between gap-2 rounded-lg border border-border/50 bg-[#2C2C2E] px-3 text-xs">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-2">
         <span className="font-mono text-[11px] text-foreground">
-          {mixed ? 'Mixed' : value.toUpperCase()}
+          {mixed ? t('mixed') : value.toUpperCase()}
         </span>
         <input
           aria-label={label}
@@ -204,8 +213,11 @@ export function GlazingColor({
   )
 }
 
-export const GLAZING_INFILL_OPTIONS: { value: RoofGlazing['panelType']; label: string }[] = [
-  { value: 'glass', label: 'Glass' },
-  { value: 'solid', label: 'Solid' },
-  { value: 'empty', label: 'Empty' },
+export const GLAZING_INFILL_OPTIONS: {
+  value: RoofGlazing['panelType']
+  labelKey: MessageKey<typeof messages>
+}[] = [
+  { value: 'glass', labelKey: 'glass' },
+  { value: 'solid', labelKey: 'solid' },
+  { value: 'empty', labelKey: 'empty' },
 ]

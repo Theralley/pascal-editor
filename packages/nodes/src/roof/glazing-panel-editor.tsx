@@ -13,10 +13,12 @@ import {
   SegmentedControl,
   SelectControl,
   SliderControl,
+  useT,
 } from '@pascal-app/editor'
 import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { GLAZING_INFILL_OPTIONS } from './glazing-controls'
+import { messages } from './messages'
 
 function faceLabel(id: string): string {
   if (id.startsWith('barrel-')) return `Arch bay ${Number(id.slice(7)) + 1}`
@@ -37,6 +39,7 @@ export function GlazingPanelEditor({
   node: RoofSegmentNode
   onUpdate: (patch: Partial<RoofGlazing>) => void
 }) {
+  const t = useT(messages)
   const [faceId, setFaceId] = useState('front')
   const [column, setColumn] = useState(0)
   const [row, setRow] = useState(0)
@@ -61,12 +64,12 @@ export function GlazingPanelEditor({
       ],
     })
   return (
-    <PanelSection title="Individual panels" defaultExpanded={false}>
+    <PanelSection title={t('individualPanels')} defaultExpanded={false}>
       <p className="pb-1 text-[11px] leading-relaxed text-muted-foreground">
-        Choose a panel to override its default infill.
+        {t('chooseAPanelToOverride')}
       </p>
       <SelectControl
-        label="Roof face"
+        label={t('roofFace')}
         value={layout.face.id}
         options={layouts.map(({ face }) => ({ value: face.id, label: faceLabel(face.id) }))}
         onChange={(value) => {
@@ -76,11 +79,12 @@ export function GlazingPanelEditor({
         }}
       />
       <p className="py-1 text-[11px] text-muted-foreground">
-        {columns} {columns === 1 ? 'column' : 'columns'} · {rows} {rows === 1 ? 'row' : 'rows'}
+        {columns} {t(columns === 1 ? 'columnLower' : 'columnsLower')} · {rows}{' '}
+        {t(rows === 1 ? 'rowLower' : 'rowsLower')}
       </p>
       {columns > 1 && (
         <SliderControl
-          label="Column"
+          label={t('column')}
           value={activeColumn + 1}
           min={1}
           max={columns}
@@ -91,7 +95,7 @@ export function GlazingPanelEditor({
       )}
       {rows > 1 && (
         <SliderControl
-          label="Row"
+          label={t('row')}
           value={activeRow + 1}
           min={1}
           max={rows}
@@ -100,18 +104,22 @@ export function GlazingPanelEditor({
           onChange={(value) => setRow(Math.round(value) - 1)}
         />
       )}
-      <div className="flex flex-col gap-2 pt-1" role="group" aria-label="Selected panel infill">
+      <div className="flex flex-col gap-2 pt-1" role="group" aria-label={t('selectedPanelInfill')}>
         <span className="flex items-center justify-between text-xs text-muted-foreground">
-          Panel infill <span className="text-[11px]">{overridden ? 'Custom' : 'Default'}</span>
+          {t('panelInfill')}{' '}
+          <span className="text-[11px]">{overridden ? t('custom') : t('default')}</span>
         </span>
         <SegmentedControl
           value={getGlazedRoofPanelType(node, layout.face.id, activeColumn, activeRow)}
-          options={GLAZING_INFILL_OPTIONS}
+          options={GLAZING_INFILL_OPTIONS.map(({ labelKey, value }) => ({
+            label: t(labelKey),
+            value,
+          }))}
           onChange={(type) => update(type)}
         />
       </div>
       <ActionButton
-        label="Reset to default"
+        label={t('resetToDefault')}
         icon={<RotateCcw className="size-3.5" />}
         disabled={!overridden}
         className="mt-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#2C2C2E]"

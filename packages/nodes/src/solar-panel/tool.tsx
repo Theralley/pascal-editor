@@ -9,7 +9,7 @@ import {
   sceneRegistry,
   useScene,
 } from '@pascal-app/core'
-import { triggerSFX, usePlacementPreview } from '@pascal-app/editor'
+import { numberedNodeName, triggerSFX, usePlacementPreview } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -128,7 +128,11 @@ const SolarPanelTool = () => {
 
       const panel = SolarPanelNode.parse({
         ...solarPanelDefinition.defaults(),
-        name: 'Solar Panel',
+        name: numberedNodeName(
+          'solar-panel',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'solar-panel').length +
+            1,
+        ),
         roofSegmentId: hit.segment.id,
         position: [hit.localX, hit.localY, hit.localZ],
         rotation: 0,
