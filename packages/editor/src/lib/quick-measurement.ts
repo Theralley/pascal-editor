@@ -5,6 +5,7 @@ import {
   nodeRegistry,
   type QuickMeasurementReport,
 } from '@pascal-app/core'
+import { definitionText, getLocale, type Locale } from '../i18n'
 
 const QUICK_MEASUREMENT_QUERY_INTERVAL_MS = 30
 const QUICK_MEASUREMENT_MIN_DISTANCE_SQ = 1
@@ -100,10 +101,22 @@ export function quickMeasurementContext(
 export function resolveQuickMeasurementReport(
   nodeId: string | null,
   nodes: Record<AnyNodeId, AnyNode>,
+  locale: Locale = getLocale(),
 ): QuickMeasurementReport | null {
   if (!nodeId) return null
   const node = nodes[nodeId as AnyNodeId]
   if (!node || node.visible === false) return null
-  const quickMeasure = nodeRegistry.get(node.type)?.measurement?.quickMeasure
-  return quickMeasure ? quickMeasure(node, quickMeasurementContext(node, nodes)) : null
+  const definition = nodeRegistry.get(node.type)
+  const quickMeasure = definition?.measurement?.quickMeasure
+  const report = quickMeasure ? quickMeasure(node, quickMeasurementContext(node, nodes)) : null
+  if (!report) return null
+  const text = (source: string) => definitionText(definition, source, locale)
+  return {
+    ...report,
+    // A name the person typed stays as typed; only the generated fallback title is translated.
+    title: node.name ? report.title : text(report.title),
+    kindLabel: text(report.kindLabel),
+    metrics: report.metrics.map((metric) => ({ ...metric, label: text(metric.label) })),
+    note: report.note === undefined ? undefined : text(report.note),
+  }
 }

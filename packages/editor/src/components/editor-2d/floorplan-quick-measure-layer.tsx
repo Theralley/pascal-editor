@@ -3,6 +3,7 @@
 import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLocale } from '../../i18n'
 import {
   createQuickMeasurementPointerScheduler,
   resolveQuickMeasurementReport,
@@ -106,13 +107,14 @@ export function FloorplanQuickMeasureLayer() {
   const levelId = useViewer((state) => state.selection.levelId)
   const levelRef = useRef(levelId)
   const renderContext = useFloorplanRender()
+  const locale = useLocale()
   const hoverReport = useMemo(
-    () => resolveQuickMeasurementReport(hoverNodeId, nodes),
-    [hoverNodeId, nodes],
+    () => resolveQuickMeasurementReport(hoverNodeId, nodes, locale),
+    [hoverNodeId, nodes, locale],
   )
   const pinnedReport = useMemo(
-    () => resolveQuickMeasurementReport(pinned?.nodeId ?? null, nodes),
-    [pinned?.nodeId, nodes],
+    () => resolveQuickMeasurementReport(pinned?.nodeId ?? null, nodes, locale),
+    [pinned?.nodeId, nodes, locale],
   )
 
   useEffect(() => {

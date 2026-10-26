@@ -20,6 +20,7 @@ import {
   isGridSnapActive,
   isTypingTarget,
   markToolCancelConsumed,
+  numberedNodeName,
   publishHorizontalConstructionPlane,
   publishPlacementSurface,
   resampleTerrainConstructionPlane,
@@ -62,7 +63,7 @@ function commitSlabDrawing(
 ): string {
   const { createNode, nodes } = useScene.getState()
   const slabCount = Object.values(nodes).filter((n) => n.type === 'slab').length
-  const name = `Slab ${slabCount + 1}`
+  const name = numberedNodeName('slab', slabCount + 1)
   // A placed slab preset seeds `toolDefaults.slab` (thickness, material, …)
   // before the tool activates; the drawn polygon always wins.
   const defaults = useEditor.getState().toolDefaults.slab ?? {}

@@ -78,6 +78,7 @@ import {
   setLocale,
   useLocale,
   useT,
+  definitionText,
 } from './../../../../../i18n'
 import { cn } from './../../../../../lib/utils'
 import { addStoreyBelow, addStoreyOnTop } from './../../../../../lib/add-storey'
@@ -653,7 +654,9 @@ export function SettingsPanel({
       }
       options.push({
         type,
-        label: definition.presentation?.label ?? type,
+        label: definition.presentation
+          ? definitionText(definition, definition.presentation.label)
+          : type,
         supportsGeometryOnly: !definition.bakeGeometryAsync || Boolean(definition.bakeGeometry),
       })
     }

@@ -360,9 +360,6 @@ export {
   type WalkthroughInteract,
 } from './components/walkthrough-hud'
 export type { SaveStatus } from './hooks/use-auto-save'
-// useDragAction is the React-side glue for the registry's DragAction
-// primitive. Public so registry-driven kinds (Phase 5+ Stage D ports)
-// can express their affordances declaratively in their own folder.
 export { type UseDragActionArgs, useDragAction } from './hooks/use-drag-action'
 // Phase 5 Stage D — extras for kind-owned placement tools (FenceTool etc.).
 export { cancelActiveTool, markToolCancelConsumed } from './hooks/use-keyboard'
@@ -372,6 +369,7 @@ export { useSelectedRoom } from './hooks/use-selected-room'
 export { type Selection, useSelection } from './hooks/use-selection'
 export {
   defineMessages,
+  definitionText,
   detectLocale,
   getLocale,
   LOCALE_NAMES,
@@ -386,6 +384,7 @@ export {
   setLocale,
   translate,
   useApplyLocale,
+  useDefinitionText,
   useLocale,
   useT,
 } from './i18n'
@@ -433,6 +432,10 @@ export {
   continuationContextOf,
   nextContinuation,
 } from './lib/continuation'
+// useDragAction is the React-side glue for the registry's DragAction
+// primitive. Public so registry-driven kinds (Phase 5+ Stage D ports)
+// can express their affordances declaratively in their own folder.
+export { numberedNodeName } from './lib/default-node-name'
 export { canDirectMoveNode } from './lib/direct-manipulation'
 export {
   closeDoorOpenState,

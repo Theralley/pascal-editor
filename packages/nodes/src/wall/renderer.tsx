@@ -251,6 +251,7 @@ const WallRenderer = ({ node }: { node: WallNode }) => {
       )}
 
       {node.wallType !== 'curtain' &&
+        // i18n-ignore: face ids
         (['a', 'b'] as const).map((face) => {
           const script = node.finishScripts?.[face]
           return script ? (

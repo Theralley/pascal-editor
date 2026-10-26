@@ -1,5 +1,5 @@
 import { type AnyNode, nodeRegistry, scriptImages } from '@pascal-app/core'
-import type { MessageKey, MessageVars } from '../../../i18n'
+import { definitionText, type MessageKey, type MessageVars } from '../../../i18n'
 import { messages } from './messages'
 
 export type NodeDisplay = {
@@ -34,11 +34,14 @@ const TYPE_DEFAULTS: Record<string, NodeTypeDefault> = {
 /** A kind the table does not know is named by its definition, else by its id. */
 function typeDefault(type: string, t: PanelT): NodeDisplay {
   const known = TYPE_DEFAULTS[type]
+  const definition = nodeRegistry.get(type)
   return known
     ? { icon: known.icon, label: t(known.labelKey) }
     : {
         icon: '/icons/select.webp',
-        label: nodeRegistry.get(type)?.presentation?.label ?? type,
+        label: definition?.presentation
+          ? definitionText(definition, definition.presentation.label)
+          : type,
       }
 }
 

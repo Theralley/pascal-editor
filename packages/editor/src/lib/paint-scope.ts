@@ -23,7 +23,7 @@ import {
   type WallNode,
   wallRoomFinishRole,
 } from '@pascal-app/core'
-import { getLocale, type Locale, type MessageKey, translate } from '../i18n'
+import { definitionText, getLocale, type Locale, type MessageKey, translate } from '../i18n'
 import { formatMessage } from '../i18n/messages'
 import { messages } from './help-messages'
 
@@ -149,6 +149,13 @@ export function effectivePaintScope(scope: PaintScope, scopes: PaintScope[]): Pa
   return scopes.includes(scope) ? scope : 'single'
 }
 
+/** The kind's display name, lowercase, for "Whole {noun}"; a noun that is not a kind stays as given. */
+function kindNoun(noun: string, locale: Locale): string {
+  const definition = nodeRegistry.get(noun)
+  const label = definition?.presentation?.label
+  return label ? definitionText(definition, label, locale).toLowerCase() : noun
+}
+
 export function paintScopeLabel(
   scope: PaintScope,
   info: PaintHoverInfo,
@@ -160,7 +167,7 @@ export function paintScopeLabel(
   if (own) return say(own)
   switch (scope) {
     case 'object':
-      return say('scope.whole', { noun: info.nodeNoun })
+      return say('scope.whole', { noun: kindNoun(info.nodeNoun, locale) })
     case 'matching':
       return say('scope.allMatching')
     case 'room':
@@ -196,10 +203,12 @@ const isWallFace = (node: AnyNode, role: string) =>
 
 /** Display label for the hovered slot — declared label wins, else derived from the id. */
 export function slotDisplayLabel(node: AnyNode, role: string): string {
-  const capabilities = nodeRegistry.get(node.type)?.capabilities
+  const definition = nodeRegistry.get(node.type)
+  const capabilities = definition?.capabilities
   const declared = capabilities?.slots?.(node)?.find((slot) => slot.slotId === role)
-  if (declared) return declared.label
-  return capabilities?.paint?.roleLabel?.(node, role) ?? slotLabelFromId(role)
+  if (declared) return definitionText(definition, declared.label)
+  const custom = capabilities?.paint?.roleLabel?.(node, role)
+  return custom ? definitionText(definition, custom) : slotLabelFromId(role)
 }
 
 // ── Fan-out resolution ──────────────────────────────────────────────────────

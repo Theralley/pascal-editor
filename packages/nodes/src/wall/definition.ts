@@ -41,6 +41,7 @@ import { WallNode } from './schema'
 import { WALL_SPLIT_MAX_CUTS } from './split-preview'
 import { setWallSplitCuts } from './split-session'
 import { useWallSplit } from './split-store'
+import { wallTranslations } from './translations'
 
 /**
  * Wall — the Phase 3 stress test of the registry-driven node model.
@@ -292,6 +293,8 @@ export const wallDefinition: NodeDefinition<typeof WallNode> = {
       { key: 'Esc', label: 'Cancel' },
     ],
   },
+
+  translations: wallTranslations,
 
   presentation: {
     label: 'Wall',

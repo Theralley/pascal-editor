@@ -85,6 +85,7 @@ import {
 } from '../../hooks/use-selected-room'
 import { type Locale, useLocale, useT } from '../../i18n'
 import { resolveCeilingPlanPointSnap } from '../../lib/ceiling-plan-snap'
+import { numberedNodeName } from '../../lib/default-node-name'
 import {
   alignFloorplanDraftPoint,
   buildFloorplanItemEntry,
@@ -8036,7 +8037,7 @@ export function FloorplanPanel({
       const defaults = useEditor.getState().toolDefaults.slab ?? {}
       const authored = SlabNodeSchema.parse({
         ...defaults,
-        name: `Slab ${slabCount + 1}`,
+        name: numberedNodeName('slab', slabCount + 1),
         polygon: points.map(([x, z]) => [x, z] as [number, number]),
       })
       const slab = {
@@ -8061,7 +8062,7 @@ export function FloorplanPanel({
       const defaults = useEditor.getState().toolDefaults.ceiling ?? {}
       const ceiling = CeilingNodeSchema.parse({
         ...defaults,
-        name: `Ceiling ${ceilingCount + 1}`,
+        name: numberedNodeName('ceiling', ceilingCount + 1),
         polygon: points.map(([x, z]) => [x, z] as [number, number]),
       })
       createNode(ceiling, levelId)

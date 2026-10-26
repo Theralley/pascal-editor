@@ -15,6 +15,7 @@ import {
 import {
   cn,
   duplicateNodeAndPickUp,
+  numberedNodeName,
   PanelSection,
   PanelWrapper,
   SliderControl,
@@ -165,7 +166,7 @@ export default function DormerPanel() {
     const newWindow = WindowNode.parse({
       ...(template ? structuredClone(template) : defaultWindow),
       id,
-      name: `Window ${hostedWindows.length + 1}`,
+      name: numberedNodeName('window', hostedWindows.length + 1),
       parentId: node.id,
       dormerId: node.id,
       dormerFace: 'front',

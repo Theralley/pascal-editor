@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test'
-import { createToolHintsStore } from './panel-tool-options'
+import type { ToolHint } from '@pascal-app/core'
+import { definitionText } from '../i18n'
+import { createToolHintsStore, localizeToolHint } from './panel-tool-options'
 
 test('tool hints share subscriptions, react to visibility and chip state, and unsubscribe', () => {
   let visible = false
@@ -31,4 +33,32 @@ test('tool hints share subscriptions, react to visibility and chip state, and un
   expect(store.getSnapshot()).toBe(store.getSnapshot())
   cleanup()
   expect(cleanups).toBe(1)
+})
+
+test("a localized hint carries the definition's text in its label and chip, and keeps its behaviour", () => {
+  const definition = {
+    translations: {
+      sv: { Type: 'Typ', 'Type: Hinged': 'Typ: Svängd', 'Door type — click to cycle': 'Dörrtyp' },
+    },
+  }
+  let cycled = 0
+  const hint: ToolHint = {
+    key: 'O',
+    label: 'Type',
+    chip: {
+      subscribe: () => () => {},
+      value: () => 'hinged',
+      cycle: () => cycled++,
+      labels: { hinged: 'Type: Hinged', double: 'Type: Double' },
+      tooltip: 'Door type — click to cycle',
+    },
+  }
+  const sv = localizeToolHint(definition as never, hint, (def, text) =>
+    definitionText(def, text, 'sv'),
+  )
+  expect(sv.label).toBe('Typ')
+  expect(sv.chip?.labels).toEqual({ hinged: 'Typ: Svängd', double: 'Type: Double' })
+  expect(sv.chip?.tooltip).toBe('Dörrtyp')
+  sv.chip?.cycle()
+  expect(cycled).toBe(1)
 })

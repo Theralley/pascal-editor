@@ -19,6 +19,7 @@ import {
   findWallSnapTarget,
   getSegmentGridStep,
   isSegmentLongEnough,
+  numberedNodeName,
   snapPointToGrid,
   triggerSFX,
   useEditor,
@@ -327,7 +328,7 @@ export function createFenceOnCurrentLevel(
   }
   const authoredFence = FenceNode.parse({
     ...defaults,
-    name: `Fence ${fenceCount + 1}`,
+    name: numberedNodeName('fence', fenceCount + 1),
     start,
     end,
   })
@@ -373,7 +374,7 @@ export function createSplineFenceOnCurrentLevel(
   }
   const authoredFence = FenceNode.parse({
     ...defaults,
-    name: `Fence ${fenceCount + 1}`,
+    name: numberedNodeName('fence', fenceCount + 1),
     start,
     end,
     path,

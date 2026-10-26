@@ -72,6 +72,10 @@ can supply `supportHeight(node, x, z, { nodes })`; return its height where it
 supports a point and `null` elsewhere. Keep footprint and hole rules in the
 kind's definition so viewer code can discover support through the registry.
 
+### `translations`
+
+A definition's visible text (`presentation.label`, `toolHints`, tool options, inspector group and action labels, paint slot labels, quick actions, measurement and quick-measure labels) is English in the definition. A kind localizes it with `translations?: { [locale]: { [English source text]: text } }`; the editor looks text up with `definitionText(def, text, locale)` or `useDefinitionText()` and falls back to the English source. `core` stays locale-agnostic and never reads it. Agent-facing text (`mcp.description`, schema descriptions) is not translated. `packages/nodes/src/i18n-coverage.test.ts` fails when a kind that is not on its pending list lacks a Swedish entry. The kind's React panels and tools take their text from a colocated `messages.ts`.
+
 ### `surfaceRole`
 
 A kind may declare `surfaceRole?: SurfaceRole` on its definition. It is a colour token only (`core` stores no material), used to resolve the per-role clay/theme colour for untextured surfaces. See [materials-and-themes](materials-and-themes.md).

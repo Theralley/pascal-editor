@@ -34,7 +34,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/react/shallow'
 import { useReducedMotion } from '../../hooks/use-reduced-motion'
-import { useLocale, useT } from '../../i18n'
+import { useDefinitionText, useLocale, useT } from '../../i18n'
 import { resolveMoveActionNode } from '../../lib/direct-manipulation'
 import { getFloatingMenuScale } from '../../lib/floating-menu-scale'
 import { resolveFloatingActionMenuVisibility } from '../../lib/interaction/overlay-policy'
@@ -299,6 +299,7 @@ function getHeightPillDimensions(node: WallNode | FenceNode): {
 
 export function FloatingActionMenu() {
   const t = useT(messages)
+  const defText = useDefinitionText()
   const reducedMotion = useReducedMotion()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const updateNode = useScene((s) => s.updateNode)
@@ -351,6 +352,7 @@ export function FloatingActionMenu() {
   // re-render this menu.
   const node = useScene((s) => (selectedId ? (s.nodes[selectedId as AnyNodeId] ?? null) : null))
   const quickActionNodes = useScene(useShallow((s) => collectQuickActionNodes(s.nodes, selectedId)))
+  const quickActionDef = node ? nodeRegistry.get(node.type) : undefined
   const quickActions = useMemo<NodeQuickAction[]>(
     () =>
       node && quickActionNodes
@@ -701,7 +703,7 @@ export function FloatingActionMenu() {
                 {quickActions.map((action) => (
                   <button
                     aria-disabled={action.disabled || undefined}
-                    aria-label={action.title ?? action.label}
+                    aria-label={defText(quickActionDef, action.title ?? action.label)}
                     className={cn(
                       'tooltip-trigger flex items-center rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
                       action.disabled &&
@@ -710,7 +712,7 @@ export function FloatingActionMenu() {
                     disabled={action.disabled && !action.blockedFeedback}
                     key={action.id}
                     onClick={handleQuickAction(action)}
-                    title={action.title ?? action.label}
+                    title={defText(quickActionDef, action.title ?? action.label)}
                     type="button"
                   >
                     <span className="flex items-center gap-1.5" data-quick-action-feedback>
@@ -718,7 +720,7 @@ export function FloatingActionMenu() {
                         <QuickActionIcon action={action} />
                       </span>
                       <span className="whitespace-nowrap leading-none" data-quick-action-label>
-                        {action.label}
+                        {defText(quickActionDef, action.label)}
                       </span>
                     </span>
                   </button>

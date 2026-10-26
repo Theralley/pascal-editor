@@ -12,10 +12,12 @@ import {
   TooltipContent,
   TooltipTrigger,
   triggerSFX,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { FoldHorizontal, Scissors } from 'lucide-react'
 import { useMemo } from 'react'
+import { messages } from './messages'
 import { openWallSplit } from './split-session'
 
 const BUTTON =
@@ -32,6 +34,7 @@ export default function WallActions() {
 }
 
 function SplitWallAction() {
+  const t = useT(messages)
   const selected = useViewer((s) => s.selection.selectedIds)
   const wall = useScene((s) =>
     selected.length === 1 ? s.nodes[selected[0] as AnyNodeId] : undefined,
@@ -41,8 +44,8 @@ function SplitWallAction() {
   return (
     <button
       type="button"
-      aria-label="Split wall"
-      title="Split wall"
+      aria-label={t('split.action')}
+      title={t('split.action')}
       disabled={readOnly}
       className={BUTTON}
       onClick={(event) => {
@@ -57,6 +60,7 @@ function SplitWallAction() {
 
 /** Joins selected walls that continue each other into one — the inverse of Split. */
 function MergeWallsAction() {
+  const t = useT(messages)
   const selected = useViewer((s) => s.selection.selectedIds) as AnyNodeId[]
   const nodes = useScene((s) => s.nodes)
   const readOnly = useScene((s) => s.readOnly)
@@ -75,8 +79,8 @@ function MergeWallsAction() {
   const button = (
     <button
       type="button"
-      aria-label="Merge walls"
-      title={reason ? undefined : 'Merge walls'}
+      aria-label={t('merge.action')}
+      title={reason ? undefined : t('merge.action')}
       disabled={readOnly || reason !== null}
       className={BUTTON}
       onClick={(event) => {

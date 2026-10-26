@@ -20,7 +20,7 @@ import {
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocale, useT } from '../../i18n'
+import { definitionText, useLocale, useT } from '../../i18n'
 import { measurementPolygonLabelAnchor } from '../../lib/measurement-label'
 import {
   buildMeasurementAngleArcPoints,
@@ -147,7 +147,7 @@ function associatePlanPoint(
     },
     semantic: feature
       ? {
-          label: feature.label,
+          label: definitionText(nodeRegistry.get(node.type), feature.label),
           length: measurementFeatureLength(feature),
           snapKind: feature.snapKind,
         }

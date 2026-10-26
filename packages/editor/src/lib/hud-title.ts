@@ -1,5 +1,5 @@
 import { type IconRef, nodeRegistry, type TerrainVerb } from '@pascal-app/core'
-import { getLocale, type Locale, type MessageKey } from '../i18n'
+import { definitionText, getLocale, type Locale, type MessageKey } from '../i18n'
 import { formatMessage } from '../i18n/messages'
 import type { ContinuationMode } from './continuation'
 import { messages } from './help-messages'
@@ -103,9 +103,10 @@ export function wallVariantLabel(variant: WallDrawVariant, locale: Locale = getL
 
 /** A kind's registry name and icon, optionally behind a verb ("Move door"). */
 export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split'): HudTitle | null {
-  const presentation = nodeRegistry.get(kind)?.presentation
+  const definition = nodeRegistry.get(kind)
+  const presentation = definition?.presentation
   if (!presentation) return null
-  const name = presentation.label
+  const name = definitionText(definition, presentation.label)
   return {
     ...(verb
       ? { key: `title.${verb}` as const, vars: { name: name.toLowerCase() } }

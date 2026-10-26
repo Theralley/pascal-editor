@@ -33,6 +33,7 @@ import {
   triggerSFX,
   useAlignmentGuides,
   useInteractionScope,
+  useT,
   useWallSnapIndicator,
   WALL_CONNECT_SNAP_RADIUS,
   type WallPlanPoint,
@@ -42,6 +43,7 @@ import { Html } from '@react-three/drei'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
+import { messages } from './messages'
 
 /**
  * Wall endpoint move tool (kind-owned).
@@ -184,6 +186,7 @@ function getLinkedWallUpdates(
 }
 
 export const MoveWallEndpointTool: React.FC<{ target: MovingWallEndpoint }> = ({ target }) => {
+  const t = useT(messages)
   const previousGridPosRef = useRef<WallPlanPoint | null>(null)
   const altPressedRef = useRef(false)
   const nodeIdRef = useRef(target.wall.id)
@@ -713,7 +716,7 @@ export const MoveWallEndpointTool: React.FC<{ target: MovingWallEndpoint }> = ({
                     : 'border-border bg-background/95 text-muted-foreground'
                 }`}
               >
-                {altPressed ? 'Detaching corner' : 'Alt to detach'}
+                {altPressed ? t('detach.active') : t('detach.hint')}
               </div>
             </div>
           </Html>

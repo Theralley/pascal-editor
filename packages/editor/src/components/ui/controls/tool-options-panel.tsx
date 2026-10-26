@@ -1,8 +1,9 @@
 'use client'
 
-import { nodeRegistry, type ToolOption } from '@pascal-app/core'
+import { type AnyNodeDefinition, nodeRegistry, type ToolOption } from '@pascal-app/core'
 import Image from 'next/image'
 import { useSyncExternalStore } from 'react'
+import { useDefinitionText } from '../../../i18n'
 import { cn } from '../../../lib/utils'
 import { triggerSFX } from '../../../lib/sfx-bus'
 
@@ -12,16 +13,19 @@ const ALWAYS_VISIBLE = {
 }
 
 function ToolOptionRow({
+  definition,
   option,
   onSelect,
   getChoiceThumbnail,
   active = true,
 }: {
+  definition: AnyNodeDefinition
   option: ToolOption
   onSelect?: (option: ToolOption, value: string) => void
   getChoiceThumbnail?: (option: ToolOption, value: string) => string | undefined
   active?: boolean
 }) {
+  const defText = useDefinitionText()
   const visibility = option.visible ?? ALWAYS_VISIBLE
   const visible = useSyncExternalStore(visibility.subscribe, visibility.value, visibility.value)
   const value = useSyncExternalStore(option.subscribe, option.value, option.value)
@@ -33,7 +37,9 @@ function ToolOptionRow({
   const activeChoice = active && option.choices.find((choice) => choice.value === value)
   return (
     <div className="flex flex-col gap-2">
-      <div className="px-0.5 font-medium text-muted-foreground text-xs">{option.label}</div>
+      <div className="px-0.5 font-medium text-muted-foreground text-xs">
+        {defText(definition, option.label)}
+      </div>
       <div
         className="grid gap-1.5"
         style={{
@@ -73,14 +79,14 @@ function ToolOptionRow({
                   width={56}
                 />
               )}
-              {choice.label}
+              {defText(definition, choice.label)}
             </button>
           )
         })}
       </div>
       {activeChoice && activeChoice.description ? (
         <p className="px-0.5 text-[11px] text-muted-foreground leading-relaxed">
-          {activeChoice.description}
+          {defText(definition, activeChoice.description)}
         </p>
       ) : null}
     </div>
@@ -108,13 +114,15 @@ export function ToolOptionsPanel({
   getChoiceThumbnail?: (option: ToolOption, value: string) => string | undefined
   active?: boolean
 }) {
-  const options = (kind ? nodeRegistry.get(kind)?.toolOptions : undefined) ?? []
-  if (options.length === 0) return null
+  const definition = kind ? nodeRegistry.get(kind) : undefined
+  const options = definition?.toolOptions ?? []
+  if (!definition || options.length === 0) return null
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       {options.map((option) => (
         <ToolOptionRow
           active={active}
+          definition={definition}
           getChoiceThumbnail={getChoiceThumbnail}
           key={option.id}
           onSelect={onSelect}

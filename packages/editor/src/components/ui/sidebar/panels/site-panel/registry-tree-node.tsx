@@ -16,7 +16,7 @@ import {
 import { TreeNodeActions } from './tree-node-actions'
 import { resolveTreeChildIds, treeContainsDescendant } from './tree-structure'
 import { messages } from './messages'
-import { useT } from '../../../../../i18n'
+import { useDefinitionText, useT } from '../../../../../i18n'
 
 interface RegistryTreeNodeProps {
   nodeId: AnyNodeId
@@ -37,6 +37,7 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
   isLast,
 }: RegistryTreeNodeProps) {
   const t = useT(messages)
+  const defText = useDefinitionText()
   const [isEditing, setIsEditing] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const isVisible = useScene((s) => s.nodes[nodeId]?.visible !== false)
@@ -52,8 +53,9 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
     editorHostTreeChildrenRegistry.getSnapshot,
   )
 
-  const presentation = node ? nodeRegistry.get(node.type)?.presentation : undefined
-  const tree = node ? nodeRegistry.get(node.type)?.tree : undefined
+  const definition = node ? nodeRegistry.get(node.type) : undefined
+  const presentation = definition?.presentation
+  const tree = definition?.tree
   const hostChildren = node
     ? editorHostTreeChildrenRegistry.childrenForKind(node.type)
     : undefined
@@ -75,7 +77,12 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
     )
   const snapTarget = resolveNodeSnapTarget(node)
   const defaultName =
-    node ? tree?.label?.(node, useScene.getState().nodes) || node.name || presentation?.label || t('node.generic') : t('node.generic')
+    node
+      ? tree?.label?.(node, useScene.getState().nodes) ||
+        node.name ||
+        (presentation ? defText(definition, presentation.label) : '') ||
+        t('node.generic')
+      : t('node.generic')
   const hasChildren = children.length > 0 || hasHostChildren
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { emitter, nodeRegistry, type RoofType } from '@pascal-app/core'
 import {
   CATALOG_ITEMS,
+  definitionText,
   type FloorplanMode,
   getFloorplanNodeExtension,
   isFloorplanToolAvailableInMode,
@@ -136,7 +137,7 @@ export function collectBuildTypes(floorplanMode: FloorplanMode): BuildType[] {
     tools.push({
       id: kind,
       kind,
-      label: presentation.label,
+      label: definitionText(definition, presentation.label),
       iconSrc: presentation.icon.kind === 'url' ? presentation.icon.src : '/icons/spawn-point.webp',
       paletteOrder: presentation.paletteOrder ?? Number.MAX_SAFE_INTEGER,
       section: 'advanced',
@@ -153,7 +154,11 @@ export function activateBuildTool(kind: string): void {
   if (
     !isFloorplanToolAvailableInMode(extension?.availableModes, useFloorplanMode.getState().mode)
   ) {
-    useFloorplanMode.getState().showExpertModeNotice(definition?.presentation?.label ?? kind)
+    useFloorplanMode
+      .getState()
+      .showExpertModeNotice(
+        definition?.presentation ? definitionText(definition, definition.presentation.label) : kind,
+      )
     return
   }
   if (extension?.preferredView) editor.showView(extension.preferredView)
@@ -208,7 +213,9 @@ export function collectRoofFeatures(): RoofFeature[] {
     features.push({
       id: kind,
       kind,
-      label: definition.presentation?.label ?? kind,
+      label: definition.presentation
+        ? definitionText(definition, definition.presentation.label)
+        : kind,
       iconSrc: icon?.kind === 'url' ? icon.src : '/icons/roof.webp',
     })
   }

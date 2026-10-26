@@ -1,3 +1,4 @@
+export { definitionText, useDefinitionText } from './definition-text'
 export {
   detectLocale,
   getLocale,

@@ -20,6 +20,7 @@ import { type MouseEvent, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useReducedMotion } from '../../hooks/use-reduced-motion'
+import { useDefinitionText } from '../../i18n'
 import { resolveMoveActionNode } from '../../lib/direct-manipulation'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
 import {
@@ -129,6 +130,7 @@ function collectQuickActionNodes(
  */
 export function FloorplanRegistryActionMenu() {
   const reducedMotion = useReducedMotion()
+  const defText = useDefinitionText()
   // Sole selection only — a multi-selection gets the group menu
   // (`FloorplanGroupActionMenu`), whose actions target the whole selection.
   const selectedId = useViewer((s) =>
@@ -417,7 +419,7 @@ export function FloorplanRegistryActionMenu() {
           {quickActions.map((action) => (
             <button
               aria-disabled={action.disabled || undefined}
-              aria-label={action.title ?? action.label}
+              aria-label={defText(nodeRegistry.get(node.type), action.title ?? action.label)}
               className={cn(
                 'tooltip-trigger flex items-center rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
                 action.disabled &&
@@ -426,7 +428,7 @@ export function FloorplanRegistryActionMenu() {
               disabled={action.disabled && !action.blockedFeedback}
               key={action.id}
               onClick={(event) => handleQuickAction(action, event)}
-              title={action.title ?? action.label}
+              title={defText(nodeRegistry.get(node.type), action.title ?? action.label)}
               type="button"
             >
               <span className="flex items-center gap-1.5" data-quick-action-feedback>
@@ -434,7 +436,7 @@ export function FloorplanRegistryActionMenu() {
                   <QuickActionIcon action={action} />
                 </span>
                 <span className="whitespace-nowrap leading-none" data-quick-action-label>
-                  {action.label}
+                  {defText(nodeRegistry.get(node.type), action.label)}
                 </span>
               </span>
             </button>

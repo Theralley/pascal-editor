@@ -11,6 +11,7 @@ import {
 } from '@pascal-app/core'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { numberedNodeName } from '../../../lib/default-node-name'
 import { resolveCurrentBuildingId, resolveElevatorSupportY } from '../../../lib/elevator-support'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import { isTypingTarget } from '../../../lib/typing-target'
@@ -103,7 +104,7 @@ function commitElevatorPlacement(
     z,
   })
   const elevator = ElevatorNode.parse({
-    name: `Elevator ${elevatorCount + 1}`,
+    name: numberedNodeName('elevator', elevatorCount + 1),
     parentId: buildingId,
     position: [x, supportY, z],
     rotation,

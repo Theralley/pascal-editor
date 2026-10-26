@@ -1,7 +1,13 @@
 'use client'
 
-import { nodeRegistry, type ToolHint, useRegistryVersion } from '@pascal-app/core'
+import {
+  type AnyNodeDefinition,
+  nodeRegistry,
+  type ToolHint,
+  useRegistryVersion,
+} from '@pascal-app/core'
 import { useMemo, useSyncExternalStore } from 'react'
+import { useDefinitionText } from '../i18n'
 import useEditor from '../store/use-editor'
 
 export type PanelToolOption = {
@@ -40,7 +46,31 @@ export function useVisibleToolHints(hints: readonly ToolHint[] = []) {
   )
 }
 
+/** A hint with its label and chip text in the definition's translation for the active locale. */
+export function localizeToolHint(
+  definition: AnyNodeDefinition | undefined,
+  hint: ToolHint,
+  defText: ReturnType<typeof useDefinitionText>,
+): ToolHint {
+  const { chip } = hint
+  return {
+    ...hint,
+    label: defText(definition, hint.label),
+    chip: chip && {
+      ...chip,
+      labels: Object.fromEntries(
+        Object.entries(chip.labels).map(([value, label]) => [value, defText(definition, label)]),
+      ),
+      tooltip: chip.tooltip === undefined ? undefined : defText(definition, chip.tooltip),
+    },
+  }
+}
+
 export function usePanelToolHints(kind: string | null | undefined) {
   useRegistryVersion()
-  return useVisibleToolHints(kind ? nodeRegistry.get(kind)?.toolHints : undefined)
+  const defText = useDefinitionText()
+  const definition = kind ? nodeRegistry.get(kind) : undefined
+  return useVisibleToolHints(definition?.toolHints).map((hint) =>
+    localizeToolHint(definition, hint, defText),
+  )
 }

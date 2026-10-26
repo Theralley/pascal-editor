@@ -32,6 +32,7 @@ import {
   isGridSnapActive,
   isMagneticSnapActive,
   markToolCancelConsumed,
+  numberedNodeName,
   resolveSurfacePlanPointSnap,
   snapWorldXZForActiveBuilding,
   triggerSFX,
@@ -249,7 +250,7 @@ export const commitRoofPlacement = (
     })
     const roof = RoofNode.parse({
       ...defaults,
-      name: `Roof ${roofCount + 1}`,
+      name: numberedNodeName('roof', roofCount + 1),
       position: resolved.position,
       support: resolved.support,
       children: [segment.id],
@@ -331,7 +332,7 @@ export const commitRoofPlacement = (
 
   // Count existing roofs for naming
   const roofCount = Object.values(nodes).filter((n) => n.type === 'roof').length
-  const name = `Roof ${roofCount + 1}`
+  const name = numberedNodeName('roof', roofCount + 1)
   const roofRotation = typeof defaults.rotation === 'number' ? defaults.rotation : 0
   const placement = resolveRoofDraftPlacement(
     footprintWidth,
@@ -417,7 +418,7 @@ export const commitRoofFootprint = (
   const level = roofLevelTarget(nodes, wallsLevelId, getActiveRoofHeight(segment))
   const roof = RoofNode.parse({
     ...defaults,
-    name: `Roof ${roofCount + 1}`,
+    name: numberedNodeName('roof', roofCount + 1),
     position: [
       target.center[0],
       resolveRoofFootprintElevation(level.levelId, target, level.nodes),

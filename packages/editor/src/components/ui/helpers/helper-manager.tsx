@@ -526,15 +526,15 @@ export function HelperManager() {
   // never leak over an in-progress reshape — and it gets its own snapping chip.
   if (scope.kind === 'reshaping') {
     // A kind's own reshape brings its hints (`def.affordanceHints[reshape]`).
-    const hints = reshapingNode
-      ? nodeRegistry.get(reshapingNode.type)?.affordanceHints?.[scope.reshape]
-      : undefined
+    const reshapingDefinition = reshapingNode ? nodeRegistry.get(reshapingNode.type) : undefined
+    const hints = reshapingDefinition?.affordanceHints?.[scope.reshape]
     const title = reshapingNode
       ? nodeKindHudTitle(reshapingNode.type, scope.reshape === 'split' ? 'split' : 'edit')
       : null
     if (hints) {
       return (
         <RegisteredToolHelper
+          definition={reshapingDefinition}
           hints={hints}
           shiftPressed={modifiers.shift}
           snapContext={snapContext}
@@ -668,6 +668,7 @@ export function HelperManager() {
       return (
         <RegisteredToolHelper
           continuationContext={continuationContext}
+          definition={def}
           hints={hints}
           notice={placementNotice?.line ?? null}
           shiftPressed={modifiers.shift}

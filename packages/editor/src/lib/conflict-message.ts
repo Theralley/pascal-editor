@@ -1,4 +1,5 @@
-import { getLocale, type Locale } from '../i18n'
+import { nodeRegistry } from '@pascal-app/core'
+import { definitionText, getLocale, type Locale } from '../i18n'
 import { localizeFootprintName } from './room-built-on'
 
 // Core refuses with English sentences that carry numbers and names. In Swedish they are rebuilt
@@ -16,6 +17,16 @@ const KIND_SV: Record<string, string> = {
   'upper floor': 'bjälklaget ovanför',
   roof: 'taket',
   ceiling: 'innertaket',
+}
+
+/** The subject of a sentence: the table's definite form, else the kind's own Swedish name. */
+function kindSubject(kind: string): string | null {
+  const known = KIND_SV[kind]
+  if (known) return known
+  const definition = nodeRegistry.get(kind)
+  const label = definition?.presentation?.label
+  const translated = label && definitionText(definition, label, 'sv')
+  return translated && translated !== label ? translated.toLowerCase() : null
 }
 
 // The reasons "Level the floors first." can end in; one that is not here stays in core's English.
@@ -92,8 +103,8 @@ const PATTERNS: [RegExp, (match: RegExpExecArray) => string | null][] = [
   [
     /^The (upper floor|door|window|wall|[\w-]+) also sits over (.+); raise both or neither\.$/,
     ([, kind, over]) =>
-      (KIND_SV[kind!] ?? null) &&
-      `${capitalize(KIND_SV[kind!]!)} vilar också på ${localizeFootprintName(over!, undefined, 'sv')}. Höj båda eller ingen.`,
+      (kindSubject(kind!) ?? null) &&
+      `${capitalize(kindSubject(kind!)!)} vilar också på ${localizeFootprintName(over!, undefined, 'sv')}. Höj båda eller ingen.`,
   ],
   [
     /^Floor must be at least (.+) m to retain the level soffit\.$/,

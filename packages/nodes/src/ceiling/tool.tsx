@@ -16,6 +16,7 @@ import {
   isAngleSnapActive,
   isGridSnapActive,
   markToolCancelConsumed,
+  numberedNodeName,
   resolveCeilingPlanPointSnap,
   triggerSFX,
   useEditor,
@@ -41,7 +42,7 @@ const GRID_OFFSET = 0.02
 function commitCeilingDrawing(levelId: LevelNode['id'], points: Array<[number, number]>): string {
   const { createNode, nodes } = useScene.getState()
   const ceilingCount = Object.values(nodes).filter((n) => n.type === 'ceiling').length
-  const name = `Ceiling ${ceilingCount + 1}`
+  const name = numberedNodeName('ceiling', ceilingCount + 1)
   // A placed ceiling preset seeds `toolDefaults.ceiling` (thickness, height,
   // material, …) before the tool activates; the drawn polygon always wins.
   const defaults = useEditor.getState().toolDefaults.ceiling ?? {}

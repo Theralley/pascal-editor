@@ -33,6 +33,7 @@ import { doorPaint } from './paint'
 import { doorParametrics } from './parametrics'
 import { DOOR_PLACEMENT_HINTS } from './placement'
 import { DoorNode } from './schema'
+import { doorTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const HEIGHT_HANDLE_OFFSET = 0.24
@@ -328,6 +329,8 @@ export const doorDefinition: NodeDefinition<typeof DoorNode> = {
     { key: 'Alt', label: 'Force place' },
     { key: 'Esc', label: 'Cancel' },
   ],
+
+  translations: doorTranslations,
 
   presentation: {
     label: 'Door',

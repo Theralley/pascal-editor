@@ -102,6 +102,7 @@ export default function WallSplitFloorplanLayer(_props: FloorplanToolContext) {
           <FloorplanDraftMeasurement
             key={index}
             labelBackground={isDark ? '#0f172a' : '#ffffff'}
+            // i18n-ignore: a colour
             labelText={isDark ? '#e2e8f0' : '#171717'}
             measurement={{
               lengthLabel: `${formatLinearMeasurement(segment.length, unit, metricNotation)}${segment.count > 1 ? ` × ${segment.count}` : ''}`,

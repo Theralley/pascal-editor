@@ -32,11 +32,12 @@ import { getTypeDisplay } from './node-display'
 import { ParametricFieldControl } from './parametric-field-control'
 import { PanelWrapper } from './panel-wrapper'
 import { formatSelectionBreakdown, selectionKind } from './selection-breakdown'
-import { useT } from '../../../i18n'
+import { useDefinitionText, useT } from '../../../i18n'
 import { messages } from './messages'
 
 export function MultiParametricInspector({ footer }: { footer?: React.ReactNode }) {
   const t = useT(messages)
+  const defText = useDefinitionText()
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const setSelection = useViewer((s) => s.setSelection)
   const nodeIds = useScene(
@@ -83,7 +84,7 @@ export function MultiParametricInspector({ footer }: { footer?: React.ReactNode 
           nodeIds={nodeIds}
           nodeType={nodeType}
           parametrics={parametrics}
-          title={group.label}
+          title={defText(def, group.label)}
         >
           {hasKindControls ? (
             <MultiKindControls nodeIds={nodeIds} nodeType={nodeType} section={group.label} />
@@ -111,6 +112,8 @@ function MultiKindControls({
   nodeType: AnyNode['type']
   section: string
 }) {
+  const defText = useDefinitionText()
+  const def = nodeRegistry.get(nodeType)
   const nodes = useScene((s) => s.nodes)
   const controls = useMemo(() => {
     const model = getNodePanelModel(nodeRegistry.get(nodeType))
@@ -123,12 +126,15 @@ function MultiKindControls({
       {controls.map((control) => (
         <div className="flex flex-col gap-1" key={control.id}>
           <div className="px-1 font-medium text-[10px] text-muted-foreground/80">
-            {control.label}
+            {defText(def, control.label)}
           </div>
           <SegmentedControl
             mixed={control.value === null}
             onChange={control.onChange}
-            options={control.options.map((option) => ({ ...option }))}
+            options={control.options.map((option) => ({
+              ...option,
+              label: defText(def, option.label),
+            }))}
             value={control.value ?? ''}
           />
         </div>

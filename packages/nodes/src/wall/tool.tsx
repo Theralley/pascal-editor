@@ -167,7 +167,7 @@ function buildDraftWall(start: WallPlanPoint, end: WallPlanPoint): WallNode {
     object: 'node',
     id: 'wall_draft' as WallNode['id'],
     type: 'wall',
-    name: 'Draft wall',
+    name: 'Draft wall', // i18n-ignore: the preview node is never listed
     parentId: null,
     visible: true,
     metadata: {},

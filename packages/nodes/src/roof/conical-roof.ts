@@ -12,6 +12,7 @@ import {
   type SceneApi,
   type WallNode,
 } from '@pascal-app/core'
+import { numberedNodeName } from '@pascal-app/editor'
 import { roofLevelTarget, writeRoofNodes } from './roof-level-target'
 
 const DEFAULT_CONICAL_ROOF_PITCH = 40
@@ -61,7 +62,7 @@ export function createConicalRoofSectorAboveWall(
   })
   const target = roofLevelTarget(nodes, sourceLevelId, getActiveRoofHeight(segment))
   const roof = RoofNode.parse({
-    name: `Roof ${roofCount + 1}`,
+    name: numberedNodeName('roof', roofCount + 1),
     metadata: { conicalSourceWallId: wall.id },
     support: { kind: 'walls' },
     position: [

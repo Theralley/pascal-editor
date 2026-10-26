@@ -11,7 +11,7 @@ import {
   type WallPlanPoint,
   WallNode as WallSchema,
 } from '@pascal-app/core'
-import { isSegmentLongEnough } from '@pascal-app/editor'
+import { isSegmentLongEnough, numberedNodeName } from '@pascal-app/editor'
 import { resolveWallOpeningCeiling } from '../shared/wall-opening-ceiling'
 
 /**
@@ -188,7 +188,7 @@ export function buildBridgeWallCreates(args: {
     const { id: _id, parentId: _parentId, children: _children, ...sourceWall } = plan.wall
     const bridgeWall = WallSchema.parse({
       ...sourceWall,
-      name: `Wall ${wallCount + creates.length + 1}`,
+      name: numberedNodeName('wall', wallCount + creates.length + 1),
       start: plan.originalPoint,
       end: nextPoint,
       children: [],

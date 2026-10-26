@@ -1,9 +1,9 @@
-import type { ToolHint } from '@pascal-app/core'
-import { useT } from '../../../i18n'
+import type { AnyNodeDefinition, ToolHint } from '@pascal-app/core'
+import { useDefinitionText, useT } from '../../../i18n'
 import type { ContinuationContext } from '../../../lib/continuation'
 import type { HudTitle } from '../../../lib/hud-title'
 import type { SnapContext } from '../../../lib/snapping-mode'
-import { useVisibleToolHints } from '../../../lib/panel-tool-options'
+import { localizeToolHint, useVisibleToolHints } from '../../../lib/panel-tool-options'
 import { ContextualHelperPanel } from './contextual-helper-panel'
 import { messages } from './messages'
 
@@ -17,6 +17,7 @@ import { messages } from './messages'
  * their hints as static data in their `NodeDefinition`.
  */
 export function RegisteredToolHelper({
+  definition,
   hints,
   shiftPressed = false,
   snapContext = null,
@@ -24,6 +25,8 @@ export function RegisteredToolHelper({
   title = null,
   notice = null,
 }: {
+  /** The kind that declared `hints`; its translations localize them. */
+  definition?: AnyNodeDefinition
   hints: ToolHint[]
   shiftPressed?: boolean
   snapContext?: SnapContext | null
@@ -32,7 +35,10 @@ export function RegisteredToolHelper({
   notice?: string | null
 }) {
   const t = useT(messages)
-  const visible = useVisibleToolHints(hints)
+  const defText = useDefinitionText()
+  const visible = useVisibleToolHints(hints).map((hint) =>
+    localizeToolHint(definition, hint, defText),
+  )
   if (visible.length === 0 && !snapContext && !continuationContext && !notice) return null
   // Hints carrying a live-state `chip` render as mode chips next to the
   // snapping / continuation rows; the rest stay static key rows.

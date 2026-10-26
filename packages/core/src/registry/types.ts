@@ -1063,6 +1063,15 @@ export type NodeDefinition<S extends ZodObject<any>> = {
   category: NodeCategory
   /** Opaque host/plugin contributions. Core stores but never interprets them. */
   extensions?: Readonly<Record<string, unknown>>
+  /**
+   * Translations of the visible text this definition declares (`presentation`,
+   * `toolHints`, tool options, quick actions, quick-measure labels, ...), keyed by
+   * locale code and then by the English source text:
+   * `{ sv: { Door: 'Dörr', 'Place door on wall': 'Placera dörren på en vägg' } }`.
+   * Core never interprets it; the host looks text up and falls back to the English
+   * source. Agent-facing text (`mcp.description`, schema descriptions) is not translated.
+   */
+  translations?: Readonly<Record<string, Readonly<Record<string, string>>>>
   surfaceRole?: SurfaceRole
   /**
    * Show a floor direction-triangle while placing/moving — the kind has a

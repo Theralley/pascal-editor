@@ -24,7 +24,7 @@ import { ActionButton, ActionGroup } from '../controls/action-button'
 import { PanelSection } from '../controls/panel-section'
 import { ParametricFieldControl } from './parametric-field-control'
 import { InspectorFooterContext, PanelWrapper } from './panel-wrapper'
-import { useT } from '../../../i18n'
+import { useDefinitionText, useT } from '../../../i18n'
 import { messages } from './messages'
 
 /**
@@ -49,6 +49,7 @@ export function ParametricInspector({
   onClose,
 }: { footer?: React.ReactNode; nodeId?: AnyNodeId; onClose?: () => void } = {}) {
   const t = useT(messages)
+  const defText = useDefinitionText()
   const selectedIdFromSelection = useViewer((s) => s.selection.selectedIds[0]) as
     | AnyNodeId
     | undefined
@@ -130,7 +131,7 @@ export function ParametricInspector({
   }
 
   const presentation = def.presentation
-  const title = presentation?.label ?? nodeType ?? ''
+  const title = presentation ? defText(def, presentation.label) : (nodeType ?? '')
   const iconNode = renderIcon(presentation?.icon)
   const canMove = !!def.capabilities.movable
   const canDelete = def.capabilities.deletable !== false
@@ -152,7 +153,7 @@ export function ParametricInspector({
         <PanelSection
           defaultExpanded={group.defaultExpanded}
           key={`${nodeType}-${group.label}-${gi}`}
-          title={group.label}
+          title={defText(def, group.label)}
         >
           {group.fields.map((field, fi) => (
             <FieldRenderer
@@ -176,7 +177,12 @@ export function ParametricInspector({
               <ActionButton icon={<Move className="h-4 w-4" />} label={t('move')} onClick={handleMove} />
             )}
             {parametrics.actions?.map((action, i) => (
-              <ParamActionButton action={action} key={`paramaction-${i}`} nodeId={selectedId} />
+              <ParamActionButton
+                action={action}
+                key={`paramaction-${i}`}
+                label={defText(def, action.label)}
+                nodeId={selectedId}
+              />
             ))}
             {canDelete &&
               (isZone ? (
@@ -214,7 +220,15 @@ export function ParametricInspector({
 // live as the scene mutates — `===` on the boolean keeps unrelated ticks
 // from re-rendering it. The click handler re-reads the live node so the
 // handler always acts on current state.
-function ParamActionButton({ action, nodeId }: { action: ParamAction<AnyNode>; nodeId: AnyNodeId }) {
+function ParamActionButton({
+  action,
+  label,
+  nodeId,
+}: {
+  action: ParamAction<AnyNode>
+  label: string
+  nodeId: AnyNodeId
+}) {
   const disabled = useScene((s) => {
     if (!action.enabledIf) return false
     const n = s.nodes[nodeId]
@@ -228,7 +242,7 @@ function ParamActionButton({ action, nodeId }: { action: ParamAction<AnyNode>; n
           <img alt="" className="h-4 w-4 shrink-0 object-contain" src={action.iconSrc} />
         ) : undefined
       }
-      label={action.label}
+      label={label}
       onClick={() => {
         const live = useScene.getState().nodes[nodeId]
         if (live) action.onClick(live as AnyNode)

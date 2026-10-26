@@ -1,5 +1,5 @@
 import { nodeRegistry } from '@pascal-app/core'
-import type { MessageKey } from '../../../i18n'
+import { definitionText, type MessageKey } from '../../../i18n'
 import type { PanelT } from './node-display'
 import type { messages } from './messages'
 
@@ -50,7 +50,11 @@ export function formatSelectionBreakdown(
       parts.push(t(key, { count }))
       continue
     }
-    parts.push(`${nodeRegistry.get(type)?.presentation?.label ?? type}: ${count}`)
+    const definition = nodeRegistry.get(type)
+    const label = definition?.presentation
+      ? definitionText(definition, definition.presentation.label)
+      : type
+    parts.push(`${label}: ${count}`)
   }
   return parts.join(' · ')
 }

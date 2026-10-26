@@ -3,7 +3,7 @@
 import { emitter, nodeRegistry } from '@pascal-app/core'
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { translate, useT } from '../../i18n'
+import { definitionText, translate, useT } from '../../i18n'
 import { getFloorplanNodeExtension } from '../../lib/floorplan/floorplan-extension'
 import { isFloorplanToolAvailableInMode } from '../../lib/floorplan/floorplan-mode'
 import useEditor from '../../store/use-editor'
@@ -11,7 +11,8 @@ import useFloorplanMode from '../../store/use-floorplan-mode'
 import { messages } from './messages'
 
 function getToolLabel(tool: string): string {
-  return nodeRegistry.get(tool)?.presentation?.label ?? tool
+  const definition = nodeRegistry.get(tool)
+  return definition?.presentation ? definitionText(definition, definition.presentation.label) : tool
 }
 
 export function FloorplanModeCoordinator() {
