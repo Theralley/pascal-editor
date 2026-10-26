@@ -2,14 +2,19 @@
 
 import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
+import { type Locale, useLocale } from '../../i18n'
 import { nodeDisplayLabel } from '../../lib/node-display-label'
 import { type ViewerNodes, zoneLabel } from '../../lib/viewer-selection'
 
 /** The hovered node's name, for the bottom pill. A room reads as the room. */
-export function viewerHoverLabel(hoveredId: string | null, nodes: ViewerNodes): string | null {
+export function viewerHoverLabel(
+  hoveredId: string | null,
+  nodes: ViewerNodes,
+  locale?: Locale,
+): string | null {
   const node = hoveredId ? nodes[hoveredId] : undefined
   if (!node) return null
-  return node.type === 'zone' ? zoneLabel(node) : nodeDisplayLabel(node)
+  return node.type === 'zone' ? zoneLabel(node, locale) : nodeDisplayLabel(node)
 }
 
 /**
@@ -21,7 +26,10 @@ export function viewerHoverLabel(hoveredId: string | null, nodes: ViewerNodes): 
 export function ViewerHoverLabel({ nodes: nodesProp }: { nodes?: ViewerNodes }) {
   const sceneNodes = useScene((s) => s.nodes)
   const nodes = nodesProp ?? sceneNodes
-  const label = useViewer((s) => (s.walkthroughMode ? null : viewerHoverLabel(s.hoveredId, nodes)))
+  const locale = useLocale()
+  const label = useViewer((s) =>
+    s.walkthroughMode ? null : viewerHoverLabel(s.hoveredId, nodes, locale),
+  )
   if (!label) return null
   return (
     <div

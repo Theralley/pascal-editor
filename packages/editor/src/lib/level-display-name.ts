@@ -1,6 +1,5 @@
 import type { LevelNode } from '@pascal-app/core'
-import { useCallback } from 'react'
-import { defineMessages, getLocale, type Locale, useLocale } from '../i18n'
+import { defineMessages, getLocale, type Locale } from '../i18n'
 import { formatMessage } from '../i18n/messages'
 
 const messages = defineMessages({
@@ -47,16 +46,4 @@ export function levelDisplayName(level: NamedLevel, locale: Locale = getLocale()
   return deep
     ? formatMessage(messages, locale, 'basementN', { n: deep })
     : formatMessage(messages, locale, basement ? 'basement' : 'ground')
-}
-
-/** `levelDisplayName` bound to the active locale; it re-renders when the locale changes. */
-export function useLevelDisplayName() {
-  const locale = useLocale()
-  return useCallback((level: NamedLevel) => levelDisplayName(level, locale), [locale])
-}
-
-/** `defaultLevelName` bound to the active locale. */
-export function useDefaultLevelName() {
-  const locale = useLocale()
-  return useCallback((level: number) => defaultLevelName(level, locale), [locale])
 }

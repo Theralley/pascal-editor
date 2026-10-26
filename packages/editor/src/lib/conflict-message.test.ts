@@ -57,7 +57,7 @@ describe('conflictMessage', () => {
     [
       'level the floors first, unknown reason stays English',
       { code: 'room-floor-footprint', message: 'Level the floors first. Something new.' },
-      'Jämna ut golven först. Something new.',
+      'Level the floors first. Something new.',
     ],
     [
       'a door that does not fit',
@@ -76,12 +76,12 @@ describe('conflictMessage', () => {
       'Fönstret ryms inte: det går 0,2 m över väggens överkant.',
     ],
     [
-      'a door over two footprints',
+      'a roof over two footprints',
       {
         code: 'floor-foundation-shared-storey',
-        message: 'The door also sits over Shared floor; raise both or neither.',
+        message: 'The roof also sits over Shared floor; raise both or neither.',
       },
-      'Dörren vilar också på Gemensamt golv. Höj båda eller ingen.',
+      'Taket vilar också på Gemensamt golv. Höj båda eller ingen.',
     ],
     ['unknown stays as core wrote it', { code: 'x', message: 'Something odd.' }, 'Something odd.'],
   ]

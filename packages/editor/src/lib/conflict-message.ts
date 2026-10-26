@@ -14,6 +14,8 @@ const KIND_SV: Record<string, string> = {
   window: 'fönstret',
   wall: 'väggen',
   'upper floor': 'bjälklaget ovanför',
+  roof: 'taket',
+  ceiling: 'innertaket',
 }
 
 // The reasons "Level the floors first." can end in; one that is not here stays in core's English.
@@ -68,7 +70,7 @@ const BY_CODE: Record<string, string> = {
   'mezzanine-intent': 'En entresol måste behålla sitt öppna stöd och sin angivna höjd.',
 }
 
-const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
+const PATTERNS: [RegExp, (match: RegExpExecArray) => string | null][] = [
   [
     /^To remove this room, delete one of its walls\.$/,
     () => 'Ta bort rummet genom att ta bort en av dess väggar.',
@@ -84,13 +86,14 @@ const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
         const match = pattern.exec(detail!)
         if (match) return `Jämna ut golven först. ${build(match)}`
       }
-      return `Jämna ut golven först. ${detail}`
+      return null
     },
   ],
   [
     /^The (upper floor|door|window|wall|[\w-]+) also sits over (.+); raise both or neither\.$/,
     ([, kind, over]) =>
-      `${capitalize(KIND_SV[kind!] ?? kind!)} vilar också på ${localizeFootprintName(over!, undefined, 'sv')}. Höj båda eller ingen.`,
+      (KIND_SV[kind!] ?? null) &&
+      `${capitalize(KIND_SV[kind!]!)} vilar också på ${localizeFootprintName(over!, undefined, 'sv')}. Höj båda eller ingen.`,
   ],
   [
     /^Floor must be at least (.+) m to retain the level soffit\.$/,
@@ -153,7 +156,8 @@ export function conflictMessage(conflict: Conflict, locale: Locale = getLocale()
   if (locale === 'en') return conflict.message
   for (const [pattern, build] of PATTERNS) {
     const match = pattern.exec(conflict.message)
-    if (match) return build(match)
+    const built = match && build(match)
+    if (built) return built
   }
   return (conflict.code && BY_CODE[conflict.code]) || conflict.message
 }

@@ -10,6 +10,7 @@ import {
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useLocale } from '../../i18n'
 import { resolveRoomAssemblyHeights } from '../../lib/room-assembly-overlay'
 import { roomFloorElevation } from '../../lib/room-handle-drag'
 import { describeZoneOutline, type RoomSelectionRecord } from '../../lib/room-selection'
@@ -38,6 +39,7 @@ import {
  * mounted at all, so they never catch a click.
  */
 export function ViewerRooms({ source }: { source: ViewerSource }) {
+  const locale = useLocale()
   useEffect(() => {
     const before = useViewer.getState().showZones
     useViewer.getState().setShowZones(false)
@@ -119,7 +121,7 @@ export function ViewerRooms({ source }: { source: ViewerSource }) {
               <RoomPillDetail
                 areaM2={entry.area}
                 color={zone.color}
-                name={zoneLabel(zone)}
+                name={zoneLabel(zone, locale)}
                 view="3d"
                 zoneId={zone.id}
               />
@@ -138,7 +140,7 @@ export function ViewerRooms({ source }: { source: ViewerSource }) {
                   areaM2={entry.area}
                   color={zone.color}
                   elements={elements}
-                  name={zoneLabel(zone)}
+                  name={zoneLabel(zone, locale)}
                   onClick={() => selectViewerRoom(zone.id, source)}
                   onHover={() => useViewer.getState().setHoveredId(zone.id)}
                   onLeave={() => {
