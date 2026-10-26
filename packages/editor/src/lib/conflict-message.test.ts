@@ -9,7 +9,7 @@ describe('conflictMessage', () => {
         code: 'floor-foundation-shared-storey',
         message: 'The upper floor also sits over Kitchen floor; raise both or neither.',
       },
-      'Bjälklaget ovanför vilar också på Kitchen floor. Höj båda eller ingen.',
+      'Bjälklaget ovanför vilar också på Golv · Kitchen. Höj båda eller ingen.',
     ],
     [
       'opening fit',
@@ -29,6 +29,59 @@ describe('conflictMessage', () => {
           "This room's floor is the drawn slab \"Deck\" (slab_1). Its height is the slab's: change that slab's elevation instead.",
       },
       'Rummets golv är det ritade bjälklaget ”Deck” (slab_1). Höjden sitter på bjälklaget: ändra bjälklagets höjd i stället.',
+    ],
+    [
+      'floor key',
+      {
+        code: 'room-floor-footprint',
+        message: 'Choose an existing floor key on this level, or "new".',
+      },
+      'Välj en befintlig golvnyckel på den här våningen, eller ”new”.',
+    ],
+    [
+      'level the floors first, another storey',
+      {
+        code: 'room-floor-footprint',
+        message: 'Level the floors first. Changing the footprint would move another storey.',
+      },
+      'Jämna ut golven först. Ändrad golvyta skulle flytta en annan våning.',
+    ],
+    [
+      'level the floors first, door or window',
+      {
+        code: 'room-floor-footprint',
+        message: 'Level the floors first. Changing the footprint would move a door or window.',
+      },
+      'Jämna ut golven först. Ändrad golvyta skulle flytta en dörr eller ett fönster.',
+    ],
+    [
+      'level the floors first, unknown reason stays English',
+      { code: 'room-floor-footprint', message: 'Level the floors first. Something new.' },
+      'Jämna ut golven först. Something new.',
+    ],
+    [
+      'a door that does not fit',
+      {
+        code: 'floor-opening-fit',
+        message: 'The door does not fit: it exceeds its wall top by 0.2 m.',
+      },
+      'Dörren ryms inte: den går 0,2 m över väggens överkant.',
+    ],
+    [
+      'a window that does not fit',
+      {
+        code: 'floor-opening-fit',
+        message: 'The window does not fit: it exceeds its wall top by 0.2 m.',
+      },
+      'Fönstret ryms inte: det går 0,2 m över väggens överkant.',
+    ],
+    [
+      'a door over two footprints',
+      {
+        code: 'floor-foundation-shared-storey',
+        message: 'The door also sits over Shared floor; raise both or neither.',
+      },
+      'Dörren vilar också på Gemensamt golv. Höj båda eller ingen.',
     ],
     ['unknown stays as core wrote it', { code: 'x', message: 'Something odd.' }, 'Something odd.'],
   ]

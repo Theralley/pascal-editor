@@ -139,6 +139,10 @@ const cases: { name: string; read: () => string; en: string; sv: string }[] = [
 describe('Shared feeders in the active language', () => {
   afterEach(() => setLocale('en'))
 
+  test('a custom floor name that only ends in Floor is kept', () => {
+    expect(localizeFootprintName('Dance Floor', undefined, 'sv')).toBe('Dance Floor')
+  })
+
   for (const { name, read, en, sv } of cases) {
     test(`${name} reads English by default`, () => {
       const text = read()

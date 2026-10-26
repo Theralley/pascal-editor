@@ -13,7 +13,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { Check, ChevronDown, Eye, EyeOff, Layers2, Plus, Trash2, Waypoints } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { translate, useT } from '../../../i18n'
+import { translate, useLocale, useT } from '../../../i18n'
 import { createLocalGuideImage } from '../../../lib/local-guide-image'
 import { cn } from '../../../lib/utils'
 import useEditor from '../../../store/use-editor'
@@ -776,6 +776,7 @@ function ReferencesControl() {
 // ── Reference floor control ────────────────────────────────────────────────────────────────────
 
 function ReferenceFloorControl() {
+  const locale = useLocale()
   const t = useT(messages)
   const popupSide = useActionMenuPopupSide()
   const showReferenceFloor = useEditor((state) => state.showReferenceFloor)
@@ -788,7 +789,7 @@ function ReferenceFloorControl() {
   const lowerLevels = useLowerReferenceLevels()
   const hasLowerLevels = lowerLevels.length > 0
   const selectedLevel = lowerLevels[referenceFloorOffset - 1] ?? lowerLevels[0] ?? null
-  const selectedLevelName = selectedLevel ? levelDisplayName(selectedLevel) : null
+  const selectedLevelName = selectedLevel ? levelDisplayName(selectedLevel, locale) : null
 
   return (
     <Popover onOpenChange={setIsOpen} open={isOpen}>
@@ -879,7 +880,7 @@ function ReferenceFloorControl() {
               <div className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-border/45 bg-background/60 p-1.5">
                 {lowerLevels.map((level, index) => {
                   const isSelected = referenceFloorOffset === index + 1
-                  const levelName = levelDisplayName(level)
+                  const levelName = levelDisplayName(level, locale)
                   return (
                     <button
                       className={cn(

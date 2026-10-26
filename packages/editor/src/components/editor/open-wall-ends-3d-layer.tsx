@@ -69,13 +69,13 @@ type MarkerResources = ReturnType<typeof createMarkerResources>
 type Vec3 = [number, number, number]
 
 export const OpenWallEnds3DLayer = memo(function OpenWallEnds3DLayer() {
-  useLocale() // the end labels read the active language
   const visible = useEditor((state) => isViewVisible(state, VIEW_3D))
   const suppressed = useOpenWallEndsSuppressed()
   return visible && !suppressed ? <ActiveOpenWallEnds3DLayer /> : null
 })
 
 const ActiveOpenWallEnds3DLayer = memo(function ActiveOpenWallEnds3DLayer() {
+  useLocale() // the end labels read the active language
   const levelId = useViewer((state) => state.selection.levelId)
   const unit = useViewer((state) => state.unit)
   const { drafting, ends } = useOpenWallEnds()

@@ -27,7 +27,7 @@ import {
   Vector3,
 } from 'three'
 import { LineBasicNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import {
   clearStructuralElevationGuide,
@@ -355,6 +355,7 @@ const mezzanineEdgeRefusedFill = edgeFill('#ef4444')
 
 /** The mezzanine outline an edge push would leave, at plate height, red with its label when refused. */
 function MezzanineEdgeDragPreview({ drag }: { drag: MezzanineEdgeDrag }) {
+  const locale = useLocale()
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const geometry = useMemo(() => {
@@ -367,7 +368,7 @@ function MezzanineEdgeDragPreview({ drag }: { drag: MezzanineEdgeDrag }) {
     drag.anchor[0] + drag.outward[0] * drag.distance,
     drag.anchor[1] + drag.outward[1] * drag.distance,
   ]
-  const magnitude = formatMeasurement(Math.abs(drag.distance), unit, metricNotation)
+  const magnitude = formatMeasurement(Math.abs(drag.distance), unit, metricNotation, locale)
   const signed = `${drag.distance > 0 ? '+' : drag.distance < 0 ? '−' : ''}${magnitude}`
   return (
     <group>
@@ -417,6 +418,7 @@ const DIMENSION_LABEL_OUTLINE = [
  * the measurement's outlined label — apart from the moved-distance pill.
  */
 function RoomDimensionLines3D({ dimensions }: { dimensions: RoomDimension[] }) {
+  const locale = useLocale()
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
   const geometry = useMemo(() => {
@@ -460,7 +462,7 @@ function RoomDimensionLines3D({ dimensions }: { dimensions: RoomDimension[] }) {
             data-room-dimension-3d
             style={{ textShadow: DIMENSION_LABEL_OUTLINE }}
           >
-            {formatMeasurement(dimension.distance, unit, metricNotation)}
+            {formatMeasurement(dimension.distance, unit, metricNotation, locale)}
           </div>
         </Html>
       ))}
@@ -526,6 +528,7 @@ function MezzanineEdgeArrow({
 }
 
 export function RoomHandleDragPreview3D() {
+  const locale = useLocale()
   const t = useT(messages)
   const drag = useRoomHandleDrag((s) => s.drag)
   const unit = useViewer((s) => s.unit)
@@ -623,6 +626,7 @@ export function RoomHandleDragPreview3D() {
                 drag.value - roomFloorBase(useScene.getState().nodes, drag.zoneId),
                 unit,
                 metricNotation,
+                locale,
               )}
             </span>
           </div>
@@ -634,7 +638,7 @@ export function RoomHandleDragPreview3D() {
     drag.anchor[0] + drag.outward[0] * drag.distance,
     drag.anchor[1] + drag.outward[1] * drag.distance,
   ]
-  const magnitude = formatMeasurement(Math.abs(drag.distance), unit, metricNotation)
+  const magnitude = formatMeasurement(Math.abs(drag.distance), unit, metricNotation, locale)
   const signed = `${drag.distance > 0 ? '+' : drag.distance < 0 ? '−' : ''}${magnitude}`
   return (
     <group>

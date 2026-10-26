@@ -4,7 +4,7 @@ import { levelDisplayName } from '../../lib/level-display-name'
 import type { LevelNode } from '@pascal-app/core'
 import { useEffect, useState } from 'react'
 import type { LevelDuplicatePreset } from '@pascal-app/core/building'
-import { type MessageKey, useT } from '../../i18n'
+import { type MessageKey, useLocale, useT } from '../../i18n'
 import { cn } from '../../lib/utils'
 import { messages } from './messages'
 import {
@@ -46,6 +46,7 @@ export function LevelDuplicateDialog({
   onConfirm: (preset: LevelDuplicatePreset) => void
   onOpenChange: (open: boolean) => void
 }) {
+  const locale = useLocale()
   const t = useT(messages)
   const [preset, setPreset] = useState<LevelDuplicatePreset>('everything')
 
@@ -62,7 +63,7 @@ export function LevelDuplicateDialog({
           <DialogTitle>{t('duplicate.title')}</DialogTitle>
           <DialogDescription>
             {t('duplicate.description', {
-              name: level ? levelDisplayName(level) : t('duplicate.thisLevel'),
+              name: level ? levelDisplayName(level, locale) : t('duplicate.thisLevel'),
             })}
           </DialogDescription>
         </DialogHeader>

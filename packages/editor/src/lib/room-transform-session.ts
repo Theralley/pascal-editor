@@ -131,7 +131,7 @@ const messages = defineMessages({
   },
   sv: {
     'open-room': 'Rummet är öppet',
-    'occupied-split': 'En dörr eller ett fönster är i vägen · Alt flyttar den',
+    'occupied-split': 'En dörr eller ett fönster är i vägen · Alt flyttar öppningen',
     'deck-reference': 'Ett däck vilar på det här rummet',
     slideBlocked: 'Det finns inte plats att flytta öppningen',
     fallback: 'Det går inte att placera här',

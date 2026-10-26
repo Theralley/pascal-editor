@@ -59,7 +59,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
   const kicker = [
     t('opening.kicker'),
     roomName ? t('opening.kickerIn', { room: roomName }) : null,
-    level?.type === 'level' ? levelDisplayName(level) : null,
+    level?.type === 'level' ? levelDisplayName(level, locale) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -101,7 +101,7 @@ export function FloorOpeningPanel({ openingId }: { openingId: string }) {
               <span className="font-medium text-[13px] text-foreground">{switchLabel}</span>
               <span className="text-muted-foreground text-xs">
                 {adjacent?.type === 'level'
-                  ? t('opening.adjacentOn', { level: levelDisplayName(adjacent) })
+                  ? t('opening.adjacentOn', { level: levelDisplayName(adjacent, locale) })
                   : onCeiling
                     ? t('opening.noFloorAbove')
                     : t('opening.noStoreyBelow')}

@@ -56,7 +56,7 @@ import {
   roomInsideHeight,
 } from './room-construction-rows'
 import { type RoomNameOption, roomNameOptions } from './room-name-options'
-import { useLocale, useT } from '../../../i18n'
+import { getLocale, type Locale, useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 
 /** "Room · Ground floor", "Mezzanine · in Kitchen", "Room · not enclosed". */
@@ -65,6 +65,7 @@ export function roomKicker(
   zoneId: string,
   options: { mezzanine?: boolean; open?: boolean } = {},
   t: PanelT,
+  locale: Locale = getLocale(),
 ): string {
   const zone = nodes[zoneId]
   if (options.mezzanine && zone?.type === 'zone') {
@@ -77,7 +78,7 @@ export function roomKicker(
   if (options.open) return t('room.kicker.notEnclosed')
   const level = zone?.parentId ? nodes[zone.parentId] : undefined
   return level?.type === 'level'
-    ? t('room.kicker.roomLevel', { level: levelDisplayName(level) })
+    ? t('room.kicker.roomLevel', { level: levelDisplayName(level, locale) })
     : t('room')
 }
 
@@ -103,7 +104,7 @@ export function RoomPanel({
   const mezzanine = !!room.mezzanine
   return (
     <PanelWrapper
-      kicker={roomKicker(nodes, room.zoneId, { mezzanine }, t)}
+      kicker={roomKicker(nodes, room.zoneId, { mezzanine }, t, locale)}
       onClose={onClose}
       title={name.trim() || (mezzanine ? t('mezzanine') : t('room'))}
       titleContent={
@@ -152,7 +153,7 @@ export function OpenRoomPanel({ zoneId, onClose }: { zoneId: string; onClose: ()
   if (zone?.type !== 'zone') return null
   return (
     <PanelWrapper
-      kicker={roomKicker(nodes, zoneId, { open: true }, t)}
+      kicker={roomKicker(nodes, zoneId, { open: true }, t, locale)}
       onClose={onClose}
       title={name.trim() || t('room')}
       titleContent={

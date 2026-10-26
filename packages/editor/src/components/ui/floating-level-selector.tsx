@@ -92,8 +92,9 @@ function LevelInlineRename({
   isEditing: boolean
   onStopEditing: () => void
 }) {
+  const locale = useLocale()
   const updateNode = useScene((s) => s.updateNode)
-  const defaultName = defaultLevelName(level.level)
+  const defaultName = defaultLevelName(level.level, locale)
   const [value, setValue] = useState(level.name || '')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -227,7 +228,7 @@ function LevelRow({
         >
           <button
             {...dragHandleProps}
-            aria-label={t('levels.reorder', { name: levelDisplayName(level) })}
+            aria-label={t('levels.reorder', { name: levelDisplayName(level, locale) })}
             className={cn(
               'ml-0.5 flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground/35 opacity-0 transition-colors hover:bg-black/4 dark:hover:bg-white/5 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 group-hover/level:opacity-100',
               isDragging && 'cursor-grabbing opacity-100',
@@ -250,10 +251,10 @@ function LevelRow({
               e.stopPropagation()
               setIsEditing(true)
             }}
-            title={levelDisplayName(level)}
+            title={levelDisplayName(level, locale)}
             type="button"
           >
-            <span className="truncate">{levelDisplayName(level)}</span>
+            <span className="truncate">{levelDisplayName(level, locale)}</span>
             {unitDotColor && (
               <span
                 className="ml-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
@@ -556,6 +557,7 @@ function UnitFocusChip() {
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function FloatingLevelSelector() {
+  const locale = useLocale()
   const t = useT(messages)
   // Desktop's view bar is a row above the stage; mobile's floats over it.
   const isMobile = useIsMobile()
@@ -864,7 +866,7 @@ export function FloatingLevelSelector() {
               {t.rich(
                 'levels.deleteDescription',
                 { name: (text) => <strong>{text}</strong> },
-                { name: deletingLevel ? levelDisplayName(deletingLevel) : '' },
+                { name: deletingLevel ? levelDisplayName(deletingLevel, locale) : '' },
               )}
             </DialogDescription>
           </DialogHeader>

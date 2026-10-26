@@ -75,8 +75,12 @@ export const ViewerSceneHeader = ({
 
   const crumbs = useMemo(
     () =>
-      viewerBreadcrumb(selection, focusedUnitId, nodes, (nodeId, levelId) =>
-        roomOfObject(nodeId, levelId, source),
+      viewerBreadcrumb(
+        selection,
+        focusedUnitId,
+        nodes,
+        (nodeId, levelId) => roomOfObject(nodeId, levelId, source),
+        locale,
       ),
     [selection, focusedUnitId, nodes, source, locale],
   )
@@ -91,8 +95,8 @@ export const ViewerSceneHeader = ({
       .sort((a, b) => b.level - a.level)
   }, [buildingId, nodes])
   const sections = useMemo(
-    () => (selection.levelId ? viewerSidebarSections(selection.levelId, nodes) : []),
-    [selection.levelId, nodes],
+    () => (selection.levelId ? viewerSidebarSections(selection.levelId, nodes, locale) : []),
+    [selection.levelId, nodes, locale],
   )
 
   const handleCrumb = (crumb: ViewerCrumb) => {
@@ -221,7 +225,7 @@ export const ViewerSceneHeader = ({
                         <Layers className="h-3.5 w-3.5" />
                       </span>
                       <div className="min-w-0 flex-1 truncate text-left">
-                        {levelDisplayName(lvl)}
+                        {levelDisplayName(lvl, locale)}
                       </div>
                     </div>
                   </button>

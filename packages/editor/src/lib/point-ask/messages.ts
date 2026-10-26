@@ -107,10 +107,10 @@ export const messages = defineMessages({
     'room.furnish': 'Möblera rummet',
     'room.rearrange': 'Möblera om',
     'room.longer': 'Gör det 1 m längre',
-    'room.floor': 'Byt golvyta',
+    'room.floor': 'Byt golvbeläggning',
     'wall.moveWindow': 'Flytta fönstret längs väggen',
     'wall.addWindow': 'Lägg till ett fönster här',
-    'wall.finish': 'Byt yta på den här sidan',
+    'wall.finish': 'Byt ytskikt på den här sidan',
     'wall.move': 'Flytta den 50 cm',
 
     'window.1': 'Gör det bredare',
@@ -135,7 +135,7 @@ export const messages = defineMessages({
     'area.2': 'Gör så att det matchar referensen',
     'area.3': 'Städa upp här',
     'other.1': 'Berätta om det här',
-    'other.2': 'Byt yta',
+    'other.2': 'Byt ytskikt',
     'other.3': 'Ta bort det',
 
     'follow.room.1': 'Lägg till en matta',

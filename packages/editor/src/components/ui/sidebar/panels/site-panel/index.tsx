@@ -745,6 +745,7 @@ const LevelItem = memo(function LevelItem({
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
   onDeleteAsset?: (projectId: string, url: string) => void
 }) {
+  const locale = useLocale()
   const t = useT(messages)
   const [cameraPopoverOpen, setCameraPopoverOpen] = useState(false)
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
@@ -858,8 +859,8 @@ const LevelItem = memo(function LevelItem({
             src="/icons/level.webp"
           />
           <InlineRenameInput
-            defaultName={defaultLevelName(level.level)}
-            displayName={levelDisplayName(level)}
+            defaultName={defaultLevelName(level.level, locale)}
+            displayName={levelDisplayName(level, locale)}
             isEditing={isEditing}
             nodeId={level.id}
             onStartEditing={() => setIsEditing(true)}

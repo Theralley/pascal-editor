@@ -39,7 +39,7 @@ import { SegmentedControl } from '../controls/segmented-control'
 import { Button } from '../primitives/button'
 import { PanelWrapper } from './panel-wrapper'
 import { footprintDisplayName } from '../../../lib/room-built-on'
-import { useLocale, useT } from '../../../i18n'
+import { getLocale, type Locale, useLocale, useT } from '../../../i18n'
 import { messages } from './messages'
 import type { PanelT } from './node-display'
 
@@ -293,9 +293,10 @@ export function floorPlateKicker(
   nodes: Record<string, AnyNode>,
   plate: SlabNode,
   t: PanelT,
+  locale: Locale = getLocale(),
 ): string {
   const level = plate.parentId ? nodes[plate.parentId] : undefined
-  const levelName = level?.type === 'level' ? ` · ${levelDisplayName(level)}` : ''
+  const levelName = level?.type === 'level' ? ` · ${levelDisplayName(level, locale)}` : ''
   // A supported floor rests on the storey right below it.
   let below: LevelNode | null = null
   if (level?.type === 'level' && floorFootprintSupportClass(nodes, plate) === 'supported')
@@ -308,7 +309,7 @@ export function floorPlateKicker(
       )
         below = node
   const restsOn = below
-    ? ` · ${t('foundation.restsOn', { level: levelDisplayName(below) })}`
+    ? ` · ${t('foundation.restsOn', { level: levelDisplayName(below, locale) })}`
     : ''
   return `${t('foundation.floorPlateHeading')}${levelName}${restsOn}`
 }
@@ -324,6 +325,7 @@ export function floorFoundationModel(
   nodes: Record<string, AnyNode>,
   plate: SlabNode,
   t: PanelT,
+  locale: Locale = getLocale(),
 ) {
   const upper = upperFloorHeightControl(nodes, plate) !== null
   const height = footprintHeightValue(nodes, plate)
@@ -333,7 +335,7 @@ export function floorFoundationModel(
     : 0
   return {
     upper,
-    kicker: floorPlateKicker(nodes, plate, t),
+    kicker: floorPlateKicker(nodes, plate, t, locale),
     preset: upper ? ('ground' as const) : footprintPreset(nodes, plate),
     /** Upstairs: the floor top (level-local). On the ground: the foundation height. */
     height,
@@ -366,7 +368,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
   if (plate?.type !== 'slab' || plate.plateRole !== 'base') return null
   const length = (meters: number) => formatLinearMeasurement(meters, unit, metricNotation, locale)
   const { upper, kicker, preset, height, floorTop, minHeight, minThickness, underFloor, thickFloor } =
-    floorFoundationModel(nodes, plate, t)
+    floorFoundationModel(nodes, plate, t, locale)
   const level = plate.parentId ? nodes[plate.parentId as AnyNodeId] : undefined
   const maxHeight = level?.type === 'level' ? getStoredLevelHeight(level) - 0.5 : 3
   // A refused change says why, in the panel's words, never as an error; when

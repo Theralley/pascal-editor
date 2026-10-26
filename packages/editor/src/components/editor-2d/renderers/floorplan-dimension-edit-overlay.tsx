@@ -233,10 +233,10 @@ const DRIVE_REASONS: Record<string, MessageKey<typeof messages>> = {
 }
 
 function driveReason(reason: string): string {
-  const key =
-    DRIVE_REASONS[reason] ??
-    (reason.endsWith(' dimensions are not drivable') ? 'drive.ownerType' : null)
-  return key ? translate(messages, key) : reason
+  const key = DRIVE_REASONS[reason]
+  if (key) return translate(messages, key)
+  const owner = /^(.+) dimensions are not drivable$/.exec(reason)?.[1]
+  return owner ? translate(messages, 'drive.ownerType', { type: owner }) : reason
 }
 
 type CommitOutcome = { ok: true } | { ok: false; reason: string }

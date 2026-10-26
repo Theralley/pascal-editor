@@ -383,6 +383,8 @@ const HUD_VERB_KEYS: Readonly<Record<string, MessageKey<typeof messages>>> = {
   press: 'walkthrough.verbPress',
   'turn on': 'walkthrough.verbTurnOn',
   'turn off': 'walkthrough.verbTurnOff',
+  play: 'walkthrough.verbPlay',
+  pause: 'walkthrough.verbPause',
 }
 
 function resolveHudInteract(target: FirstPersonInteractableTarget | null): WalkthroughInteract {

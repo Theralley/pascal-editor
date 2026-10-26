@@ -357,7 +357,7 @@ export const messages = defineMessages({
     'shape.rectangle': 'Rektangel',
     'shape.polygon': 'Polygon',
 
-    'mobile.edit': 'Redigera: {name}',
+    'mobile.edit': 'Redigera {name}',
     'mobile.editProperties': 'Redigera egenskaper',
 
     'wallRegions.title': 'Målade ytor',
@@ -443,7 +443,7 @@ export const messages = defineMessages({
     'reference.scaledHidden': 'Skalad (dold) · {label}',
     'reference.scaleFlow': 'Klicka på båda ändarna av ett känt avstånd på ritningen och skriv sedan in dess verkliga längd.',
     'reference.scaleIdle': 'Dra en linje över ett känt mått på ritningen och skriv sedan in dess verkliga längd, så skalas bilden exakt.',
-    'reference.editScale': 'Ändra skala',
+    'reference.editScale': 'Redigera skala',
     'reference.setScale': 'Ställ in skala',
     'reference.hideScale': 'Dölj skalan',
     'reference.showScale': 'Visa skalan',

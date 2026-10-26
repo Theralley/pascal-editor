@@ -26,7 +26,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { useT } from '../../i18n'
+import { type Locale, useLocale, useT } from '../../i18n'
 import {
   FLOORPLAN_VIEW_ROTATION_DEG,
   floorplanLocalToWorldPoint,
@@ -145,11 +145,14 @@ function boundsToViewBox(bounds: FloorplanBounds): FloorplanViewBox {
   }
 }
 
-function levelLabel(level: AnyNode): string {
-  return levelDisplayName({
-    name: (level as { name?: string }).name,
-    level: (level as { level?: number }).level ?? 0,
-  })
+function levelLabel(level: AnyNode, locale: Locale): string {
+  return levelDisplayName(
+    {
+      name: (level as { name?: string }).name,
+      level: (level as { level?: number }).level ?? 0,
+    },
+    locale,
+  )
 }
 
 function collectLevelTree(root: AnyNode, nodes: Record<string, AnyNode>): AnyNode[] {
@@ -312,6 +315,7 @@ export function FloorplanPreview({
   synchronizeNavigation = false,
 }: FloorplanPreviewProps) {
   const t = useT(messages)
+  const locale = useLocale()
   const storeNodes = useScene((state) => (scene ? EMPTY_PREVIEW_NODES : state.nodes))
   const storeInstalledPlugins = useScene((state) =>
     scene ? EMPTY_INSTALLED_PLUGINS : state.installedPlugins,
@@ -886,7 +890,7 @@ export function FloorplanPreview({
       <div
         aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight + - 0 F"
         aria-label={t('plan.view', {
-          level: activeLevel ? levelLabel(activeLevel) : t('plan.floorPlan'),
+          level: activeLevel ? levelLabel(activeLevel, locale) : t('plan.floorPlan'),
         })}
         onKeyDown={onKeyDown}
         role="application"
@@ -990,7 +994,7 @@ export function FloorplanPreview({
           >
             {levels.map((level) => (
               <option key={level.id} value={level.id}>
-                {levelLabel(level)}
+                {levelLabel(level, locale)}
               </option>
             ))}
           </select>

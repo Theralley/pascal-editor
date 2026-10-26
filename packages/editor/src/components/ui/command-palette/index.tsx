@@ -11,7 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { Dialog, DialogContent, DialogTitle } from './../../../components/ui/primitives/dialog'
-import { type MessageKey, useT } from '../../../i18n'
+import { type MessageKey, useLocale, useT } from '../../../i18n'
 import { type CommandAction, useCommandRegistry } from '../../../store/use-command-registry'
 import { usePaletteViewRegistry } from '../../../store/use-palette-view-registry'
 import { messages } from './messages'
@@ -226,6 +226,7 @@ function EmptyActionItem({ action }: { action: CommandPaletteEmptyAction }) {
 // Main component
 // ---------------------------------------------------------------------------
 export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEmptyAction }) {
+  const locale = useLocale()
   const t = useT(messages)
   const { open, setOpen, mode, setMode, pages, inputValue, setInputValue, navigateTo, goBack } =
     useCommandPalette()
@@ -412,7 +413,7 @@ export function CommandPalette({ emptyAction }: { emptyAction?: CommandPaletteEm
                     <OptionItem
                       isActive={level.id === activeLevelId}
                       key={level.id}
-                      label={levelDisplayName(level)}
+                      label={levelDisplayName(level, locale)}
                       onSelect={() =>
                         run(() => {
                           if (level.id !== useViewer.getState().selection.levelId) {

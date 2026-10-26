@@ -42,11 +42,12 @@ export const UnitZoneRow = memo(function UnitZoneRow({
   isLast,
   onRemove,
 }: UnitZoneRowProps) {
+  const locale = useLocale()
   const t = useT(messages)
   const zone = useScene((s) => s.nodes[zoneId] as ZoneNode | undefined)
   const levelLabel = useScene((s) => {
     const level = zone?.parentId ? (s.nodes[zone.parentId as AnyNodeId] as LevelNode | undefined) : undefined
-    return level?.type === 'level' ? levelDisplayName(level) : null
+    return level?.type === 'level' ? levelDisplayName(level, locale) : null
   })
   const isSelected = useViewer((s) => s.selection.zoneId === zoneId)
   const isHovered = useViewer((s) => s.hoveredId === zoneId)

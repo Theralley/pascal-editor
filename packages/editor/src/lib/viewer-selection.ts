@@ -26,7 +26,8 @@ import {
   Sphere,
   Vector3,
 } from 'three'
-import { defineMessages, translate } from '../i18n'
+import { defineMessages, getLocale, type Locale } from '../i18n'
+import { formatMessage } from '../i18n/messages'
 import { useBelowGrade } from './below-grade'
 import { levelDisplayName } from './level-display-name'
 import { nodeDisplayLabel } from './node-display-label'
@@ -461,8 +462,11 @@ const messages = defineMessages({
   sv: { building: 'Byggnad', room: 'Rum', zone: 'Zon' },
 })
 
-export function zoneLabel(zone: ZoneNode): string {
-  return zone.name?.trim() || translate(messages, zone.spaceRole === 'room' ? 'room' : 'zone')
+export function zoneLabel(zone: ZoneNode, locale: Locale = getLocale()): string {
+  return (
+    zone.name?.trim() ||
+    formatMessage(messages, locale, zone.spaceRole === 'room' ? 'room' : 'zone')
+  )
 }
 
 /**
@@ -475,6 +479,7 @@ export function viewerBreadcrumb(
   focusedUnitId: string | null,
   nodes: ViewerNodes,
   roomOf: (nodeId: string, levelId: string) => string | null = () => null,
+  locale: Locale = getLocale(),
 ): ViewerCrumb[] {
   const crumbs: ViewerCrumb[] = []
   const elementId = selection.selectedIds[0] ?? null
@@ -486,17 +491,18 @@ export function viewerBreadcrumb(
     crumbs.push({
       kind: 'building',
       id: building.id,
-      label: building.name || translate(messages, 'building'),
+      label: building.name || formatMessage(messages, locale, 'building'),
     })
   }
   const level = levelId ? nodes[levelId] : undefined
   if (level?.type !== 'level') return crumbs
-  crumbs.push({ kind: 'level', id: level.id, label: levelDisplayName(level) })
+  crumbs.push({ kind: 'level', id: level.id, label: levelDisplayName(level, locale) })
   const unit = focusedUnitId ? nodes[focusedUnitId] : undefined
   if (unit?.type === 'unit') crumbs.push({ kind: 'unit', id: unit.id, label: unit.name })
   const roomId = selection.zoneId ?? (element ? roomOf(element.id, level.id) : null)
   const room = roomId ? nodes[roomId] : undefined
-  if (room?.type === 'zone') crumbs.push({ kind: 'room', id: room.id, label: zoneLabel(room) })
+  if (room?.type === 'zone')
+    crumbs.push({ kind: 'room', id: room.id, label: zoneLabel(room, locale) })
   if (element) crumbs.push({ kind: 'node', id: element.id, label: nodeDisplayLabel(element) })
   return crumbs
 }
@@ -541,14 +547,18 @@ export type ViewerSidebarSection = { kind: 'units' | 'rooms' | 'zones'; rows: Vi
  * What sits under the current floor: its units, its rooms, its other zones.
  * An empty section is left out.
  */
-export function viewerSidebarSections(levelId: string, nodes: ViewerNodes): ViewerSidebarSection[] {
+export function viewerSidebarSections(
+  levelId: string,
+  nodes: ViewerNodes,
+  locale: Locale = getLocale(),
+): ViewerSidebarSection[] {
   const zones = Object.values(nodes).filter(
     (node): node is ZoneNode =>
       node.type === 'zone' && node.parentId === levelId && node.visible !== false,
   )
   const zoneRow = (zone: ZoneNode): ViewerSidebarRow => ({
     id: zone.id,
-    label: zoneLabel(zone),
+    label: zoneLabel(zone, locale),
     color: zone.color,
     areaM2: area([{ outer: zone.polygon, holes: zone.holes ?? [] }]),
   })

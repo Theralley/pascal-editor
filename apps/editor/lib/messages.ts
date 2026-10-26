@@ -41,7 +41,7 @@ export const messages = defineMessages({
     'wand.addGate': 'Lägg till grind',
     'wand.addPassage': 'Lägg till öppen passage',
     'wand.gatesOpenings': 'Grindar och öppningar',
-    'wand.addFitting': 'Lägg till kopplingsdel',
+    'wand.addFitting': 'Lägg till rördel',
     'wand.addTrap': 'Lägg till vattenlås',
     'wand.duct': 'Kanal',
     'wand.modularCabinet': 'Modulskåp',

@@ -1,4 +1,5 @@
 import { getLocale, type Locale } from '../i18n'
+import { localizeFootprintName } from './room-built-on'
 
 // Core refuses with English sentences that carry numbers and names. In Swedish they are rebuilt
 // from the code and the pieces of the sentence; a refusal this table does not know reads as core
@@ -7,6 +8,45 @@ import { getLocale, type Locale } from '../i18n'
 type Conflict = { code?: string; message: string }
 
 const OPENING_SV: Record<string, string> = { door: 'dörren', window: 'fönstret' }
+const OPENING_PRONOUN: Record<string, string> = { door: 'den', window: 'det' }
+const KIND_SV: Record<string, string> = {
+  door: 'dörren',
+  window: 'fönstret',
+  wall: 'väggen',
+  'upper floor': 'bjälklaget ovanför',
+}
+
+// The reasons "Level the floors first." can end in; one that is not here stays in core's English.
+const FOOTPRINT_DETAILS: [RegExp, (match: RegExpExecArray) => string][] = [
+  [
+    /^This room has no single base plate to convert\.$/,
+    () => 'Rummet har inte en enda golvplatta att omvandla.',
+  ],
+  [
+    /^The floor must retain at least (.+) m above its soffit\.$/,
+    ([, n]) => `Golvet måste ligga kvar minst ${num(n!)} m över undersidan.`,
+  ],
+  [
+    /^Changing the footprint would move another storey\.$/,
+    () => 'Ändrad golvyta skulle flytta en annan våning.',
+  ],
+  [
+    /^Changing the footprint would move a door or window\.$/,
+    () => 'Ändrad golvyta skulle flytta en dörr eller ett fönster.',
+  ],
+  [
+    /^Only a grounded room with a generated floor can change its footprint\.$/,
+    () => 'Bara ett rum på mark med genererat golv kan ändra golvyta.',
+  ],
+  [
+    /^The preserved wall top would leave less than (.+) m of wall\.$/,
+    ([, n]) => `Väggens bevarade överkant skulle lämna mindre än ${num(n!)} m vägg.`,
+  ],
+  [
+    /^Changing the footprint cannot preserve the ceiling beneath the covering floor\.$/,
+    () => 'Ändrad golvyta kan inte bevara innertaket under golvet ovanför.',
+  ],
+]
 const num = (value: string) => value.replace('.', ',')
 
 const BY_CODE: Record<string, string> = {
@@ -26,7 +66,6 @@ const BY_CODE: Record<string, string> = {
   'floor-window-sill': 'Öppningens underkant ligger under rummets golv.',
   'floor-low-headroom': 'Takhöjden är under 2,10 m.',
   'mezzanine-intent': 'En entresol måste behålla sitt öppna stöd och sin angivna höjd.',
-  'room-floor-footprint': 'Välj en befintlig golvnyckel på den här våningen, eller ”new”.',
 }
 
 const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
@@ -35,8 +74,23 @@ const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
     () => 'Ta bort rummet genom att ta bort en av dess väggar.',
   ],
   [
-    /^The upper floor also sits over (.+); raise both or neither\.$/,
-    ([, over]) => `Bjälklaget ovanför vilar också på ${over}. Höj båda eller ingen.`,
+    /^Choose an existing floor key on this level, or "new"\.$/,
+    () => 'Välj en befintlig golvnyckel på den här våningen, eller ”new”.',
+  ],
+  [
+    /^Level the floors first\. (.*)$/,
+    ([, detail]) => {
+      for (const [pattern, build] of FOOTPRINT_DETAILS) {
+        const match = pattern.exec(detail!)
+        if (match) return `Jämna ut golven först. ${build(match)}`
+      }
+      return `Jämna ut golven först. ${detail}`
+    },
+  ],
+  [
+    /^The (upper floor|door|window|wall|[\w-]+) also sits over (.+); raise both or neither\.$/,
+    ([, kind, over]) =>
+      `${capitalize(KIND_SV[kind!] ?? kind!)} vilar också på ${localizeFootprintName(over!, undefined, 'sv')}. Höj båda eller ingen.`,
   ],
   [
     /^Floor must be at least (.+) m to retain the level soffit\.$/,
@@ -54,7 +108,7 @@ const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
   [
     /^The (door|window) does not fit: it exceeds its wall top by (.+) m\.$/,
     ([, type, n]) =>
-      `${capitalize(OPENING_SV[type!]!)} ryms inte: det går ${num(n!)} m över väggens överkant.`,
+      `${capitalize(OPENING_SV[type!]!)} ryms inte: ${OPENING_PRONOUN[type!]} går ${num(n!)} m över väggens överkant.`,
   ],
   [
     /^The wall top exceeds the floor above by (.+) m\.$/,
@@ -63,7 +117,7 @@ const PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
   [
     /^The floor plate (.+) cannot move that far: its thickness must remain at least (.+) m\.$/,
     ([, id, n]) =>
-      `Golvplattan ${id} kan inte flyttas så långt: tjockleken måste förbli minst ${num(n!)} m.`,
+      `Bjälklaget ${id} kan inte flyttas så långt: tjockleken måste förbli minst ${num(n!)} m.`,
   ],
   [
     /^Mezzanine elevation must be greater than thickness \((.+) m\) and at most (.+) m\.$/,

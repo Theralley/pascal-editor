@@ -3,7 +3,7 @@
 import { type BuildingNode, type LevelNode, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useShallow } from 'zustand/react/shallow'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { levelDisplayName } from '../../lib/level-display-name'
 import { cn } from '../../lib/utils'
 import useEditor from '../../store/use-editor'
@@ -23,6 +23,7 @@ const rowClass = (selected: boolean) =>
  * capture). A level shows itself and the levels below it, as while editing.
  */
 export function CaptureLevelPicker() {
+  const locale = useLocale()
   const t = useT(messages)
   const captureLevelId = useEditor((s) => s.captureLevelId)
   const setCaptureLevel = useEditor((s) => s.setCaptureLevel)
@@ -65,10 +66,10 @@ export function CaptureLevelPicker() {
           className={rowClass(captureLevelId === level.id)}
           key={level.id}
           onClick={() => setCaptureLevel(level.id)}
-          title={levelDisplayName(level)}
+          title={levelDisplayName(level, locale)}
           type="button"
         >
-          <span className="truncate">{levelDisplayName(level)}</span>
+          <span className="truncate">{levelDisplayName(level, locale)}</span>
         </button>
       ))}
     </div>

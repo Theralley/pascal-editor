@@ -7,10 +7,24 @@ import { useFrame } from '@react-three/fiber'
 import { memo, useMemo, useRef } from 'react'
 import { BoxGeometry, CircleGeometry, type Group } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { useLocale } from '../../i18n'
+import { type MessageKey, translate, useLocale } from '../../i18n'
 import { EDITOR_LAYER } from '../../lib/constants'
 import useElevationGuides from '../../store/use-elevation-guides'
 import { formatMeasurement } from './measurement-pill'
+import { messages } from './messages'
+
+// The guides name their targets in English; the pill shows them in the active language.
+const ELEVATION_LABELS: Record<string, MessageKey<typeof messages>> = {
+  Level: 'elev.level',
+  Ground: 'elev.ground',
+  'Slab top': 'elev.slabTop',
+  'Slab underside': 'elev.slabUnderside',
+  Ceiling: 'elev.ceiling',
+  'Wall base': 'elev.wallBase',
+  'Wall top': 'elev.wallTop',
+  'Fence base': 'elev.fenceBase',
+  'Fence top': 'elev.fenceTop',
+}
 
 const LINE_COLOR = 0x81_8c_f8
 const PILL_COLOR = '#6366f1'
@@ -115,7 +129,7 @@ export const Elevation3DGuideLayer = memo(function Elevation3DGuideLayer() {
           className="whitespace-nowrap rounded-[3px] px-[5px] py-[2px] font-medium font-sans text-[11px] text-white"
           style={{ backgroundColor: PILL_COLOR }}
         >
-          {`${guide.label} · Y ${elevationText}`}
+          {`${ELEVATION_LABELS[guide.label] ? translate(messages, ELEVATION_LABELS[guide.label]!) : guide.label} · Y ${elevationText}`}
         </div>
       </Html>
     </group>

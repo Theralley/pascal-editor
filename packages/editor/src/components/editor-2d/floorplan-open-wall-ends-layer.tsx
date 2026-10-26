@@ -39,13 +39,13 @@ function sceneScreenPoint(point: [number, number]): { left: number; top: number 
  * otherwise only when a wall that bounds no room has a near miss.
  */
 export const FloorplanOpenWallEndsLayer = memo(function FloorplanOpenWallEndsLayer() {
-  useLocale() // the end labels read the active language
   const visible = useEditor((state) => isViewVisible(state, VIEW_2D))
   const suppressed = useOpenWallEndsSuppressed()
   return visible && !suppressed ? <ActiveOpenWallEndsLayer /> : null
 })
 
 const ActiveOpenWallEndsLayer = memo(function ActiveOpenWallEndsLayer() {
+  useLocale() // the end labels read the active language
   const unit = useViewer((state) => state.unit)
   const renderContext = useFloorplanRender()
   const { drawing, drafting, ends: visibleEnds, roomlessWallIds, shown } = useOpenWallEnds()

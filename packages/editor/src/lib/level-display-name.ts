@@ -1,4 +1,4 @@
-import { getDefaultLevelName, type LevelNode } from '@pascal-app/core'
+import type { LevelNode } from '@pascal-app/core'
 import { useCallback } from 'react'
 import { defineMessages, getLocale, type Locale, useLocale } from '../i18n'
 import { formatMessage } from '../i18n/messages'
@@ -29,15 +29,24 @@ export function defaultLevelName(level: number, locale: Locale = getLocale()): s
     : formatMessage(messages, locale, 'basementN', { n: -level })
 }
 
+const GENERATED_NAME = /^(?:(Ground floor)|Floor (\d+)|(Basement)(?: (\d+))?)$/
+
 /**
- * A level's name as shown: a name the person gave wins; one that is empty, the old "Level N" or
- * core's English default reads by its place in the building, in `locale`. Stored names never change.
+ * A level's name as shown: a name the person gave wins. One that is empty, the old "Level N" or
+ * core's English default ("Ground floor", "Floor 2", "Basement 2") reads in `locale`; a stored
+ * default keeps its own number, so a level moved by a reorder is not renamed. Stored names never change.
  */
 export function levelDisplayName(level: NamedLevel, locale: Locale = getLocale()): string {
   const name = level.name?.trim()
-  const unnamed =
-    !name || name === `Level ${level.level}` || name === getDefaultLevelName(level.level)
-  return unnamed ? defaultLevelName(level.level, locale) : name
+  if (!name || name === `Level ${level.level}`) return defaultLevelName(level.level, locale)
+  const generated = GENERATED_NAME.exec(name)
+  if (!generated) return name
+  const [, ground, floor, basement, deep] = generated
+  if (ground) return formatMessage(messages, locale, 'ground')
+  if (floor) return formatMessage(messages, locale, 'floor', { n: floor })
+  return deep
+    ? formatMessage(messages, locale, 'basementN', { n: deep })
+    : formatMessage(messages, locale, basement ? 'basement' : 'ground')
 }
 
 /** `levelDisplayName` bound to the active locale; it re-renders when the locale changes. */

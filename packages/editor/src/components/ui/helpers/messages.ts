@@ -145,7 +145,7 @@ export const messages = defineMessages({
     'gesture.freeMoveSlide': 'Fri förflyttning · skjut dörrar och fönster',
 
     'measure.inspect': 'Granska ytans mått',
-    'measure.pin': 'Fäst mätlinsen',
+    'measure.pin': 'Lås mätlinsen',
     'measure.exit': 'Lämna smart mätning',
 
     'building.place': 'Placera byggnad',

@@ -18,7 +18,7 @@ export const messages = defineMessages({
     'drive.notAlongHostWall': 'dimension is not along the host wall',
     'drive.anchorLocked': 'anchored node is locked',
     'drive.freePoints': 'dimension anchors are free points',
-    'drive.ownerType': 'dimensions of this kind are not drivable',
+    'drive.ownerType': '{type} dimensions are not drivable',
   },
   sv: {
     'dimension.override': 'manuellt',
@@ -37,6 +37,6 @@ export const messages = defineMessages({
     'drive.notAlongHostWall': 'måttet går inte längs väggen',
     'drive.anchorLocked': 'det förankrade objektet är låst',
     'drive.freePoints': 'måttets ankare är fria punkter',
-    'drive.ownerType': 'mått av den här sorten kan inte styras',
+    'drive.ownerType': 'mått på {type} kan inte styras',
   },
 })

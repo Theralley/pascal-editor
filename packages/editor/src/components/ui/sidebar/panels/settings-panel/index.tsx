@@ -478,6 +478,7 @@ export interface SettingsPanelProps {
 }
 
 function FloorSettingsSection() {
+  const locale = useLocale()
   const t = useT(messages)
   const selectedBuildingId = useViewer((state) => state.selection.buildingId)
   const selectedLevelId = useViewer((state) => state.selection.levelId)
@@ -561,13 +562,13 @@ function FloorSettingsSection() {
                   type="button"
                 >
                   <Layers className="size-3.5 shrink-0" />
-                  <span className="truncate">{levelDisplayName(level)}</span>
+                  <span className="truncate">{levelDisplayName(level, locale)}</span>
                   <span className="ml-auto shrink-0 text-muted-foreground text-xs">
                     {level.level === 0 ? '0' : level.level > 0 ? `+${level.level}` : level.level}
                   </span>
                 </button>
                 <button
-                  aria-label={t('floors.remove', { name: levelDisplayName(level) })}
+                  aria-label={t('floors.remove', { name: levelDisplayName(level, locale) })}
                   className="flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-30"
                   disabled={!canDelete}
                   onClick={() => deleteLevelWithFallbackSelection(level.id)}

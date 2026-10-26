@@ -9,6 +9,9 @@ describe('levelDisplayName', () => {
     ['deep basement', { level: -2 }, 'Basement 2', 'Källare 2'],
     ['old level name', { name: 'Level 1', level: 1 }, 'Floor 1', 'Våning 1'],
     ['stored english default', { name: 'Floor 1', level: 1 }, 'Floor 1', 'Våning 1'],
+    ['stale default keeps its number', { name: 'Floor 2', level: 1 }, 'Floor 2', 'Våning 2'],
+    ['stale basement', { name: 'Basement 3', level: 0 }, 'Basement 3', 'Källare 3'],
+    ['stale ground', { name: 'Ground floor', level: 2 }, 'Ground floor', 'Bottenvåning'],
     ['custom name', { name: 'Attic', level: 2 }, 'Attic', 'Attic'],
     ['level number that moved', { name: 'Level 3', level: 1 }, 'Level 3', 'Level 3'],
   ]
