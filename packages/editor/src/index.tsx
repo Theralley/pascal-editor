@@ -275,6 +275,10 @@ export { applyMultiHeightMode } from './components/ui/panels/multi-height-mode'
 // ceiling height presets, etc.) use `parametrics.customPanel` to mount
 // a kind-owned panel and need PanelWrapper for the chrome.
 export { PanelWrapper } from './components/ui/panels/panel-wrapper'
+export {
+  prettifyEnumValue,
+  prettifyKey,
+} from './components/ui/panels/parametric-field-utils'
 export { ParametricInspector as Inspector } from './components/ui/panels/parametric-inspector'
 export { ShapeChoice } from './components/ui/panels/shape-choice'
 export { WallPaintRegionList } from './components/ui/panels/wall-region-list'
@@ -360,6 +364,9 @@ export {
   type WalkthroughInteract,
 } from './components/walkthrough-hud'
 export type { SaveStatus } from './hooks/use-auto-save'
+// useDragAction is the React-side glue for the registry's DragAction
+// primitive. Public so registry-driven kinds (Phase 5+ Stage D ports)
+// can express their affordances declaratively in their own folder.
 export { type UseDragActionArgs, useDragAction } from './hooks/use-drag-action'
 // Phase 5 Stage D — extras for kind-owned placement tools (FenceTool etc.).
 export { cancelActiveTool, markToolCancelConsumed } from './hooks/use-keyboard'
@@ -432,9 +439,6 @@ export {
   continuationContextOf,
   nextContinuation,
 } from './lib/continuation'
-// useDragAction is the React-side glue for the registry's DragAction
-// primitive. Public so registry-driven kinds (Phase 5+ Stage D ports)
-// can express their affordances declaratively in their own folder.
 export { numberedNodeName } from './lib/default-node-name'
 export { canDirectMoveNode } from './lib/direct-manipulation'
 export {

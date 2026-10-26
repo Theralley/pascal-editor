@@ -13,6 +13,7 @@ describe('definitionText', () => {
       { locale: 'sv', text: 'Door', expected: 'Dörr' },
       { locale: 'sv', text: 'Window', expected: 'Window' },
       { locale: 'en', text: 'Door', expected: 'Door' },
+      { locale: 'sv', text: 'constructor', expected: 'constructor' },
     ] as const
     for (const { locale, text, expected } of cases)
       expect(definitionText(definition, text, locale)).toBe(expected)

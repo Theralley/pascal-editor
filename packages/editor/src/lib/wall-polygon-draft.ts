@@ -20,6 +20,7 @@ import {
 import useEditor, { isMagneticSnapActive } from '../store/use-editor'
 import { useFloorplanDraftPreview } from '../store/use-floorplan-draft-preview'
 import { visibleScene } from '../store/view-layout'
+import { numberedNodeName } from './default-node-name'
 import { sfxEmitter } from './sfx-bus'
 
 /**
@@ -137,6 +138,7 @@ function planPolygon(
       end: corners[index + 1]!,
       joinRadius,
       wallDefaults,
+      wallName: (n) => numberedNodeName('wall', n),
     })
     if (!result.ok) continue
     const draftBefore = [...draftIds].flatMap((id) => {

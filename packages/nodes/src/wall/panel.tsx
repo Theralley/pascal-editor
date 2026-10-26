@@ -59,6 +59,7 @@ import {
   SliderControl,
   triggerSFX,
   useInteractionScope,
+  useLocale,
   useT,
   WallPaintRegionList,
 } from '@pascal-app/editor'
@@ -125,6 +126,7 @@ const WALL_TRIM_PROFILE_OPTIONS: Record<
 
 export default function WallPanel() {
   const t = useT(messages)
+  const locale = useLocale()
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const unit = useViewer((s) => s.unit)
   const setSelection = useViewer((s) => s.setSelection)
@@ -329,7 +331,7 @@ export default function WallPanel() {
         />
         {isPlaneBound ? (
           <div className="px-1 text-[11px] text-muted-foreground">
-            {t('top.current', { value: formatLinearMeasurement(height, unit) })}
+            {t('top.current', { value: formatLinearMeasurement(height, unit, 'meters', locale) })}
           </div>
         ) : (
           <SliderControl
@@ -374,7 +376,9 @@ export default function WallPanel() {
               {t('thickness')}
             </span>
             <span className="text-[11px] text-muted-foreground tabular-nums">
-              {t('thickness.fromAssembly', { value: formatLinearMeasurement(thickness, unit) })}
+              {t('thickness.fromAssembly', {
+                value: formatLinearMeasurement(thickness, unit, 'meters', locale),
+              })}
             </span>
           </div>
         ) : (

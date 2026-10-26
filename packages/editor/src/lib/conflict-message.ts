@@ -17,9 +17,16 @@ const KIND_SV: Record<string, string> = {
   'upper floor': 'bjälklaget ovanför',
   roof: 'taket',
   ceiling: 'innertaket',
+  slab: 'bjälklaget',
+  stair: 'trappan',
+  'roof-segment': 'takdelen',
+  column: 'pelaren',
+  fence: 'staketet',
+  elevator: 'hissen',
+  zone: 'rummet',
 }
 
-/** The subject of a sentence: the table's definite form, else the kind's own Swedish name. */
+/** The subject of a sentence: the table's definite form, else (for a kind it lacks) the kind's own Swedish name. */
 function kindSubject(kind: string): string | null {
   const known = KIND_SV[kind]
   if (known) return known

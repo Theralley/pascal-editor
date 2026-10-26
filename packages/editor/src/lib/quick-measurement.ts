@@ -98,11 +98,21 @@ export function quickMeasurementContext(
   return { resolve, children, parent, siblings }
 }
 
+/**
+ * A report whose texts are in the active language. The card maps common quantities and notes by
+ * their English source, so the source rides along: a kind that translates "Length" does not
+ * break that mapping.
+ */
+export type LocalizedQuickMeasurementReport = Omit<QuickMeasurementReport, 'metrics'> & {
+  metrics: (QuickMeasurementReport['metrics'][number] & { sourceLabel?: string })[]
+  sourceNote?: string
+}
+
 export function resolveQuickMeasurementReport(
   nodeId: string | null,
   nodes: Record<AnyNodeId, AnyNode>,
   locale: Locale = getLocale(),
-): QuickMeasurementReport | null {
+): LocalizedQuickMeasurementReport | null {
   if (!nodeId) return null
   const node = nodes[nodeId as AnyNodeId]
   if (!node || node.visible === false) return null
@@ -116,7 +126,12 @@ export function resolveQuickMeasurementReport(
     // A name the person typed stays as typed; only the generated fallback title is translated.
     title: node.name ? report.title : text(report.title),
     kindLabel: text(report.kindLabel),
-    metrics: report.metrics.map((metric) => ({ ...metric, label: text(metric.label) })),
+    metrics: report.metrics.map((metric) => ({
+      ...metric,
+      label: text(metric.label),
+      sourceLabel: metric.label,
+    })),
     note: report.note === undefined ? undefined : text(report.note),
+    sourceNote: report.note,
   }
 }

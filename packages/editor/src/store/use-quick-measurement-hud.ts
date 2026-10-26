@@ -1,12 +1,12 @@
-import type { QuickMeasurementReport } from '@pascal-app/core'
 import { create } from 'zustand'
+import type { LocalizedQuickMeasurementReport } from '../lib/quick-measurement'
 import type { VisibleScene } from './view-layout'
 
 export type QuickMeasurementHudSource = '2d' | '3d'
 
 export type QuickMeasurementHudEntry = {
   lensState: 'live' | 'pinned'
-  report: QuickMeasurementReport
+  report: LocalizedQuickMeasurementReport
 }
 
 export type QuickMeasurementHudState = {

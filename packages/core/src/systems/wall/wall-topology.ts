@@ -505,6 +505,8 @@ export function planWallInsertion(
     joinRadius: number
     wallDefaults?: Partial<WallNode>
     mintId?: () => string
+    /** Names the nth wall of the level; English "Wall n" when omitted. */
+    wallName?: (n: number) => string
   },
 ): WallInsertionResult {
   const walls = Object.values(nodes).filter(
@@ -556,7 +558,8 @@ export function planWallInsertion(
     WallSchema.parse({
       ...wallProperties,
       id: args.mintId?.(),
-      name: `Wall ${existingWallCount + index + 1}`,
+      name:
+        args.wallName?.(existingWallCount + index + 1) ?? `Wall ${existingWallCount + index + 1}`,
       start,
       end: vertices[index + 1]!,
     }),

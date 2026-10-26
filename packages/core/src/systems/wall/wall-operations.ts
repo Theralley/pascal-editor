@@ -35,6 +35,7 @@ export function planWallRectangle(
     start: WallPlanPoint
     end: WallPlanPoint
     wallDefaults?: Partial<WallNode>
+    wallName?: (n: number) => string
   },
 ): { changes: WallTopologyChanges; walls: WallNode[] } {
   if (nodes[args.levelId]?.type !== 'level') throw Error('Select an editable floor.')

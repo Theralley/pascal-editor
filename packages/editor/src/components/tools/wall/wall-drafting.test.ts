@@ -30,6 +30,7 @@ import {
   migrateRoomZones,
 } from '@pascal-app/core/scene-migrations'
 import { useViewer } from '@pascal-app/viewer'
+import { setLocale } from '../../../i18n'
 import useEditor from '../../../store/use-editor'
 import useInteractionScope from '../../../store/use-interaction-scope'
 import {
@@ -290,6 +291,31 @@ describe('createWallOnCurrentLevel', () => {
       expect(created?.thickness).toBe(0.3)
       expect(created?.assembly).toBeUndefined()
     })
+  })
+
+  test('names a new wall in the active language', () => {
+    restoreRegistry = nodeRegistry._snapshot()
+    nodeRegistry._reset()
+    registerNode({
+      kind: 'wall',
+      schemaVersion: 1,
+      schema: WallSchema,
+      category: 'structure',
+      defaults: () => ({}),
+      capabilities: {},
+      presentation: { label: 'Wall', icon: { kind: 'url', src: '/icons/wall.webp' } },
+      translations: { sv: { Wall: 'Vägg' } },
+    } as never)
+    const names = (locale: 'en' | 'sv', z: number) => {
+      setLocale(locale)
+      return createWallOnCurrentLevel([0, z], [4, z])?.name
+    }
+    try {
+      expect(names('en', 2)).toBe('Wall 2')
+      expect(names('sv', 6)).toBe('Vägg 3')
+    } finally {
+      setLocale('en')
+    }
   })
 
   test('endpoint near an existing corner attaches to the corner instead of splitting', () => {

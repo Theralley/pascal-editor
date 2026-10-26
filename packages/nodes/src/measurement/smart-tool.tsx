@@ -10,6 +10,7 @@ import {
   publishQuickMeasurementHudSource,
   resolveQuickMeasurementReport,
   useInteractionScope,
+  useLocale,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -204,6 +205,7 @@ function hideSmartSurfaceMarker(marker: Group | null) {
 }
 
 export function SmartMeasurementTool() {
+  const locale = useLocale()
   const { camera, gl, scene } = useThree()
   const buildingId = useViewer((state) => state.selection.buildingId)
   const levelId = useViewer((state) => state.selection.levelId)
@@ -222,12 +224,12 @@ export function SmartMeasurementTool() {
     [scene],
   )
   const hoverReport = useMemo(
-    () => resolveQuickMeasurementReport(hoverNodeId, nodes),
-    [hoverNodeId, nodes],
+    () => resolveQuickMeasurementReport(hoverNodeId, nodes, locale),
+    [hoverNodeId, nodes, locale],
   )
   const pinnedReport = useMemo(
-    () => resolveQuickMeasurementReport(pinned?.targetNodeId ?? null, nodes),
-    [pinned?.targetNodeId, nodes],
+    () => resolveQuickMeasurementReport(pinned?.targetNodeId ?? null, nodes, locale),
+    [pinned?.targetNodeId, nodes, locale],
   )
 
   useEffect(() => () => surfaceQuery.dispose(), [surfaceQuery])

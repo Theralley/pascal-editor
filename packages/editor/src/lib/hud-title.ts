@@ -102,11 +102,15 @@ export function wallVariantLabel(variant: WallDrawVariant, locale: Locale = getL
 }
 
 /** A kind's registry name and icon, optionally behind a verb ("Move door"). */
-export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split'): HudTitle | null {
+export function nodeKindHudTitle(
+  kind: string,
+  verb?: 'move' | 'edit' | 'split',
+  locale: Locale = getLocale(),
+): HudTitle | null {
   const definition = nodeRegistry.get(kind)
   const presentation = definition?.presentation
   if (!presentation) return null
-  const name = definitionText(definition, presentation.label)
+  const name = definitionText(definition, presentation.label, locale)
   return {
     ...(verb
       ? { key: `title.${verb}` as const, vars: { name: name.toLowerCase() } }
@@ -120,7 +124,11 @@ export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split')
  * The armed build tool. The wall tool is named after the Rooms variant it draws
  * (Rectangle room / Polygon room / Walls) — the tile the user picked.
  */
-export function toolHudTitle(tool: string, wallMode: ContinuationMode): HudTitle | null {
+export function toolHudTitle(
+  tool: string,
+  wallMode: ContinuationMode,
+  locale: Locale = getLocale(),
+): HudTitle | null {
   if (tool === 'wall') {
     const variant = getWallDrawVariantInfo(wallDrawVariantOf(wallMode))
     return {
@@ -129,5 +137,5 @@ export function toolHudTitle(tool: string, wallMode: ContinuationMode): HudTitle
       shortcut: TOOL_SHORTCUTS.wall,
     }
   }
-  return nodeKindHudTitle(tool)
+  return nodeKindHudTitle(tool, undefined, locale)
 }

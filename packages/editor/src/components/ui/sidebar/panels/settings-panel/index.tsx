@@ -600,6 +600,7 @@ export function SettingsPanel({
   projectSection,
 }: SettingsPanelProps = {}) {
   const t = useT(messages)
+  const locale = useLocale()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyResetTimeoutRef = useRef<number | null>(null)
   const nodes = useScene((state) => state.nodes)
@@ -655,7 +656,7 @@ export function SettingsPanel({
       options.push({
         type,
         label: definition.presentation
-          ? definitionText(definition, definition.presentation.label)
+          ? definitionText(definition, definition.presentation.label, locale)
           : type,
         supportsGeometryOnly: !definition.bakeGeometryAsync || Boolean(definition.bakeGeometry),
       })
@@ -665,7 +666,7 @@ export function SettingsPanel({
       const labelOrder = a.label.localeCompare(b.label)
       return labelOrder === 0 ? a.type.localeCompare(b.type) : labelOrder
     })
-  }, [installedPlugins, nodes, registryVersion])
+  }, [installedPlugins, locale, nodes, registryVersion])
   const registeredPresentations = useSyncExternalStore(
     viewerPresentationRegistry.subscribe,
     viewerPresentationRegistry.getSnapshot,

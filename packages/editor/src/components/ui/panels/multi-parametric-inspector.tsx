@@ -211,6 +211,8 @@ function MultiFieldRenderer({
   parametrics: ParametricDescriptor<AnyNode>
 }) {
   const key = String(field.key)
+  const nodeType = useScene((s) => (nodeIds[0] ? s.nodes[nodeIds[0]]?.type : undefined))
+  const definition = nodeType ? nodeRegistry.get(nodeType) : undefined
   const visible = useScene((s) =>
     fieldVisibleForAll(nodeIds, (field as { visibleIf?: (n: AnyNode) => boolean }).visibleIf, s.nodes),
   )
@@ -251,6 +253,7 @@ function MultiFieldRenderer({
 
   return (
     <ParametricFieldControl
+      definition={definition}
       field={field}
       mixed={reduced.kind === 'mixed'}
       onChange={field.kind === 'number' ? preview : commit}

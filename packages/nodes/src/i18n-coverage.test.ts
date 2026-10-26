@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AnyNode, AnyNodeDefinition, ToolHint } from '@pascal-app/core'
+import { prettifyEnumValue, prettifyKey, setLocale } from '@pascal-app/editor'
 import { builtinPlugin } from './index'
 
 /**
@@ -62,27 +63,26 @@ const PENDING = new Set([
   'pipe-trap',
 ])
 
-/** Slot declarations depend on the node, so a kind lists the nodes that show every label. */
-const SLOT_SAMPLES: Record<string, object[]> = {
-  wall: [{}, { wallType: 'curtain' }, { underpinning: true }],
+/** Nodes that feed a kind's callbacks (slots, quick actions, measurement, notices); `{}` when absent. */
+const SAMPLE_NODES: Record<string, object[]> = {
+  wall: [
+    { id: 'wall_a', start: [0, 0], end: [4, 0] },
+    { id: 'wall_b', start: [0, 0], end: [4, 0], curveOffset: 0.5 },
+    { id: 'wall_c', start: [0, 0], end: [4, 0], wallType: 'curtain' },
+    { id: 'wall_d', start: [0, 0], end: [4, 0], underpinning: { rim: 0.2, stem: 0.3 } },
+  ],
 }
 
-/** Visible text no definition field lists: a callback builds it from a node or a role. */
+/** Visible text the callbacks cannot produce from a sample: paint role labels, room-only options. */
 const COMPUTED_TEXT: Record<string, string[]> = {
-  wall: [
-    'Face',
-    'Room',
-    'Wall start',
-    'Wall end',
-    'Wall centerline',
-    'Wall midpoint',
-    'Wall arc center',
-    'Wall face',
-    'Wall height',
-    'Wall top',
-    'Outside face',
-    'Inside face',
-  ],
+  wall: ['Face', 'Room', 'Outside face', 'Inside face'],
+}
+
+const EMPTY_GEOMETRY_CONTEXT = {
+  resolve: () => undefined,
+  children: [],
+  parent: null,
+  siblings: [],
 }
 
 const hintTexts = (hints: readonly ToolHint[] = []) =>
@@ -92,46 +92,106 @@ const hintTexts = (hints: readonly ToolHint[] = []) =>
     ...(hint.chip?.tooltip ? [hint.chip.tooltip] : []),
   ])
 
+const sampleNodes = (definition: AnyNodeDefinition): AnyNode[] =>
+  (SAMPLE_NODES[definition.kind] ?? [{}]).map((input) => {
+    const parsed = definition.schema.safeParse({ id: `${definition.kind}_sample`, ...input })
+    if (!parsed.success)
+      throw new Error(`Add SAMPLE_NODES for ${definition.kind}: ${parsed.error.message}`)
+    return parsed.data as AnyNode
+  })
+
+/** Text built by the definition's callbacks, in the order the callbacks yield it. */
+function callbackTexts(definition: AnyNodeDefinition): string[] {
+  return sampleNodes(definition).flatMap((node) => {
+    const nodes = { [node.id]: node } as Record<string, AnyNode>
+    const measurement = definition.measurement
+    const report = measurement?.quickMeasure?.(node as never, EMPTY_GEOMETRY_CONTEXT as never)
+    const notice = definition.placementNotice?.(node as never, { nodes })
+    const panelModel = definition.extensions?.['pascal:editor/panel-model'] as
+      | {
+          multiControls?: (context: { selection: AnyNode[]; nodes: object }) => {
+            label: string
+            options: { label: string }[]
+          }[]
+        }
+      | undefined
+    return [
+      ...(definition.capabilities?.slots?.(node as never).map((slot) => slot.label) ?? []),
+      ...(definition.quickActions?.({ node: node as never, nodes }) ?? []).flatMap((action) => [
+        action.label,
+        ...(action.title ? [action.title] : []),
+      ]),
+      ...(definition.tree?.label ? [definition.tree.label(node, nodes)] : []),
+      ...(measurement
+        ?.features(node as never, EMPTY_GEOMETRY_CONTEXT as never)
+        .map((f) => f.label) ?? []),
+      ...(report
+        ? [
+            report.title,
+            report.kindLabel,
+            ...report.metrics.map((metric) => metric.label),
+            ...(report.note ? [report.note] : []),
+          ]
+        : []),
+      ...(notice ? [notice.line, ...(notice.detail ? [notice.detail] : [])] : []),
+      ...(panelModel?.multiControls
+        ?.call(panelModel, { selection: [node], nodes })
+        .flatMap((control) => [control.label, ...control.options.map((o) => o.label)]) ?? []),
+    ]
+  })
+}
+
 /** Every string the editor renders from this definition, in English. */
 function visibleDefinitionTexts(definition: AnyNodeDefinition): string[] {
-  const kind = definition.kind
-  const multiControls = definition.extensions?.['pascal:editor/panel-model'] as
-    | { multiControls?: (context: { selection: AnyNode[]; nodes: object }) => unknown[] }
-    | undefined
-  const wall = definition.schema.safeParse({ id: 'wall_a', start: [0, 0], end: [4, 0] })
-  const controls =
-    kind === 'wall' && wall.success
-      ? ((multiControls?.multiControls?.({
-          selection: [wall.data as AnyNode],
-          nodes: { [wall.data.id]: wall.data },
-        }) ?? []) as { label: string; options: { label: string }[] }[])
-      : []
   return [
-    ...(definition.presentation ? [definition.presentation.label] : []),
+    ...(definition.presentation
+      ? [definition.presentation.label, definition.presentation.description ?? '']
+      : []),
     ...hintTexts(definition.toolHints),
     ...Object.values(definition.affordanceHints ?? {}).flatMap(hintTexts),
     ...(definition.toolOptions ?? []).flatMap((option) => [
       option.label,
-      ...option.choices.flatMap((choice) => [
-        choice.label,
-        ...(choice.description ? [choice.description] : []),
-      ]),
+      ...option.choices.flatMap((choice) => [choice.label, choice.description ?? '']),
     ]),
-    ...(definition.parametrics?.groups.map((group) => group.label) ?? []),
+    ...(definition.parametrics?.groups.flatMap((group) => [
+      group.label,
+      ...group.fields.flatMap((field) => {
+        // The generic inspector prettifies the key; a custom field draws its own label.
+        if (field.kind === 'custom' || field.kind === 'vec3') return []
+        return [
+          prettifyKey(String(field.key)),
+          ...(field.kind === 'enum' ? field.options.map(prettifyEnumValue) : []),
+        ]
+      }),
+    ]) ?? []),
     ...(definition.parametrics?.actions?.map((action) => action.label) ?? []),
-    // A pending kind's slot builders may need real nodes, so only translated kinds are asked.
-    ...(PENDING.has(kind) ? [] : (SLOT_SAMPLES[kind] ?? [{}])).flatMap(
-      (node) => definition.capabilities?.slots?.(node as never).map((slot) => slot.label) ?? [],
-    ),
-    ...controls.flatMap((control) => [control.label, ...control.options.map((o) => o.label)]),
-    ...(COMPUTED_TEXT[kind] ?? []),
-  ]
+    ...(COMPUTED_TEXT[definition.kind] ?? []),
+  ].filter((text) => text !== '')
 }
 
-const missingSwedish = (definition: AnyNodeDefinition) =>
-  [...new Set(visibleDefinitionTexts(definition))].filter(
-    (text) => definition.translations?.sv?.[text] === undefined,
+/**
+ * English strings with no Swedish: not in `translations.sv`, and not translated where they are
+ * built (a callback that answers differently under `sv` has translated its own text).
+ */
+function missingSwedish(definition: AnyNodeDefinition): string[] {
+  const missing = new Set(
+    visibleDefinitionTexts(definition).filter(
+      (text) => definition.translations?.sv?.[text] === undefined,
+    ),
   )
+  if (!PENDING.has(definition.kind)) {
+    setLocale('en')
+    const english = callbackTexts(definition)
+    setLocale('sv')
+    const swedish = callbackTexts(definition)
+    setLocale('en')
+    english.forEach((text, index) => {
+      if (swedish[index] === text && definition.translations?.sv?.[text] === undefined)
+        missing.add(text)
+    })
+  }
+  return [...missing]
+}
 
 const definitions = (builtinPlugin.nodes ?? []) as AnyNodeDefinition[]
 

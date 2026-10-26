@@ -1,14 +1,16 @@
 'use client'
 
-import type { AnyNode, ParamField } from '@pascal-app/core'
+import type { AnyNode, AnyNodeDefinition, ParamField } from '@pascal-app/core'
 import { SegmentedControl } from '../controls/segmented-control'
 import { SliderControl } from '../controls/slider-control'
 import { ToggleControl } from '../controls/toggle-control'
 import { precisionForStep, prettifyEnumValue, prettifyKey } from './parametric-field-utils'
-import { useT } from '../../../i18n'
+import { useDefinitionText, useT } from '../../../i18n'
 import { messages } from './messages'
 
 interface ParametricFieldControlProps {
+  /** The kind that declared `field`; its translations key on the prettified label. */
+  definition?: AnyNodeDefinition
   field: ParamField<AnyNode>
   value: unknown
   mixed?: boolean
@@ -17,6 +19,7 @@ interface ParametricFieldControlProps {
 }
 
 export function ParametricFieldControl({
+  definition,
   field,
   value,
   mixed = false,
@@ -24,7 +27,9 @@ export function ParametricFieldControl({
   onCommit,
 }: ParametricFieldControlProps) {
   const t = useT(messages)
+  const defText = useDefinitionText()
   const key = String(field.key)
+  const labelOf = (text: string) => defText(definition, text)
 
   switch (field.kind) {
     case 'number': {
@@ -33,7 +38,7 @@ export function ParametricFieldControl({
       const precision = precisionForStep(step)
       return (
         <SliderControl
-          label={prettifyKey(key)}
+          label={labelOf(prettifyKey(key))}
           max={field.max}
           min={field.min}
           mixed={mixed}
@@ -53,7 +58,7 @@ export function ParametricFieldControl({
       return (
         <ToggleControl
           checked={checked}
-          label={prettifyKey(key)}
+          label={labelOf(prettifyKey(key))}
           mixed={mixed}
           onChange={(next) => {
             const patch = { [key]: next } as Partial<AnyNode>
@@ -76,14 +81,14 @@ export function ParametricFieldControl({
           <SegmentedControl
             mixed={mixed}
             onChange={apply}
-            options={field.options.map((opt) => ({ label: prettifyEnumValue(opt), value: opt }))}
+            options={field.options.map((opt) => ({ label: labelOf(prettifyEnumValue(opt)), value: opt }))}
             value={str}
           />
         )
       }
       return (
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-foreground/80 text-xs">{prettifyKey(key)}</span>
+          <span className="text-foreground/80 text-xs">{labelOf(prettifyKey(key))}</span>
           <select
             className="rounded-md border border-border/50 bg-black/4 dark:bg-[#2C2C2E] px-2 py-1 text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-foreground/30"
             onChange={(e) => apply(e.target.value)}
@@ -96,7 +101,7 @@ export function ParametricFieldControl({
             )}
             {field.options.map((opt) => (
               <option key={opt} value={opt}>
-                {prettifyEnumValue(opt)}
+                {labelOf(prettifyEnumValue(opt))}
               </option>
             ))}
           </select>
@@ -113,7 +118,7 @@ export function ParametricFieldControl({
       }
       return (
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-foreground/80 text-xs">{prettifyKey(key)}</span>
+          <span className="text-foreground/80 text-xs">{labelOf(prettifyKey(key))}</span>
           <div className="flex items-center gap-2">
             <input
               className="h-6 w-8 cursor-pointer rounded border border-border/50 bg-transparent"

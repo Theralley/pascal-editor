@@ -529,7 +529,7 @@ export function HelperManager() {
     const reshapingDefinition = reshapingNode ? nodeRegistry.get(reshapingNode.type) : undefined
     const hints = reshapingDefinition?.affordanceHints?.[scope.reshape]
     const title = reshapingNode
-      ? nodeKindHudTitle(reshapingNode.type, scope.reshape === 'split' ? 'split' : 'edit')
+      ? nodeKindHudTitle(reshapingNode.type, scope.reshape === 'split' ? 'split' : 'edit', locale)
       : null
     if (hints) {
       return (
@@ -556,7 +556,7 @@ export function HelperManager() {
     // once/repeat continuation, exactly like the GLB item tool — but an existing
     // node being *moved* is not a placement, so it gets no continuation chip.
     const isFreshPlacement = isFreshPlacementMetadata(movingNode.metadata)
-    const movingTitle = nodeKindHudTitle(movingNode.type, isFreshPlacement ? undefined : 'move')
+    const movingTitle = nodeKindHudTitle(movingNode.type, isFreshPlacement ? undefined : 'move', locale)
     if (movingNode.type === 'building') return <BuildingHelper showRotate title={movingTitle} />
     const movingContinuationContext = isFreshPlacement
       ? keyCyclableContinuationContext(continuationContextOf(movingNode.type))
@@ -619,7 +619,7 @@ export function HelperManager() {
       <ContextualHelperPanel
         hints={contextualEditHints}
         snapContext={snapContext}
-        title={contextualHelpNode ? nodeKindHudTitle(contextualHelpNode.type, 'edit') : null}
+        title={contextualHelpNode ? nodeKindHudTitle(contextualHelpNode.type, 'edit', locale) : null}
       />
     )
   }
@@ -673,7 +673,7 @@ export function HelperManager() {
           notice={placementNotice?.line ?? null}
           shiftPressed={modifiers.shift}
           snapContext={snapContext}
-          title={toolHudTitle(tool, wallMode)}
+          title={toolHudTitle(tool, wallMode, locale)}
         />
       )
     }

@@ -10,7 +10,8 @@ export function definitionText(
   text: string,
   locale: Locale = getLocale(),
 ): string {
-  return def?.translations?.[locale]?.[text] ?? text
+  const table = def?.translations?.[locale]
+  return table && Object.hasOwn(table, text) ? table[text]! : text
 }
 
 /** `definitionText` for a component; it re-renders when the locale changes. */

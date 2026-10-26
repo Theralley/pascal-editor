@@ -1,10 +1,11 @@
 'use client'
 
-import type { QuickMeasurementMetric, QuickMeasurementReport } from '@pascal-app/core'
+import type { QuickMeasurementMetric } from '@pascal-app/core'
 import { Crosshair, MapPin } from 'lucide-react'
 import { memo } from 'react'
 import { type Locale, useLocale, useT } from '../../i18n'
 import { formatAreaLabel, formatLinearMeasurement, formatVolumeLabel } from '../../lib/measurements'
+import type { LocalizedQuickMeasurementReport } from '../../lib/quick-measurement'
 import { messages } from './messages'
 
 function formatMetric(
@@ -39,7 +40,7 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   metricNotation,
   lensState,
 }: {
-  report: QuickMeasurementReport
+  report: LocalizedQuickMeasurementReport
   unit: 'metric' | 'imperial'
   metricNotation: 'meters' | 'millimeters'
   lensState: 'live' | 'pinned'
@@ -47,13 +48,15 @@ export const QuickMeasurementCard = memo(function QuickMeasurementCard({
   const locale = useLocale()
   const t = useT(messages)
   const pinned = lensState === 'pinned'
-  const metricLabel = (metric: QuickMeasurementMetric) => {
-    const name = METRIC_NAMES[metric.label as keyof typeof METRIC_NAMES]
+  const metricLabel = (metric: LocalizedQuickMeasurementReport['metrics'][number]) => {
+    const name = METRIC_NAMES[(metric.sourceLabel ?? metric.label) as keyof typeof METRIC_NAMES]
     return name
       ? { label: t(`quick.metric.${name}`), abbreviation: t(`quick.abbr.${name}`) }
       : { label: metric.label, abbreviation: metric.abbreviation }
   }
-  const noteKey = report.note ? NOTE_KEYS[report.note as keyof typeof NOTE_KEYS] : undefined
+  const noteKey = report.note
+    ? NOTE_KEYS[(report.sourceNote ?? report.note) as keyof typeof NOTE_KEYS]
+    : undefined
 
   return (
     <div

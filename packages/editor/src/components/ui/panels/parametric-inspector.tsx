@@ -316,6 +316,8 @@ interface FieldRendererProps {
 
 function FieldRenderer({ field, nodeId, onUpdate }: FieldRendererProps) {
   const key = String(field.key)
+  const nodeType = useScene((s) => s.nodes[nodeId]?.type)
+  const definition = nodeType ? nodeRegistry.get(nodeType) : undefined
   // Subscribe only to this field's value. Zustand compares with ===, so when
   // another field on the same node changes (which produces a new node object
   // reference), this primitive value stays equal and the field doesn't
@@ -339,7 +341,14 @@ function FieldRenderer({ field, nodeId, onUpdate }: FieldRendererProps) {
     return <CustomFieldRenderer Comp={field.component} nodeId={nodeId} onUpdate={onUpdate} />
   }
 
-  return <ParametricFieldControl field={field} onChange={onUpdate} value={value} />
+  return (
+    <ParametricFieldControl
+      definition={definition}
+      field={field}
+      onChange={onUpdate}
+      value={value}
+    />
+  )
 }
 
 function CustomFieldRenderer({

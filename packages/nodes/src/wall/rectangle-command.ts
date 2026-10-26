@@ -8,6 +8,7 @@ import {
   type WallNode,
   type WallPlanPoint,
 } from '@pascal-app/core'
+import { numberedNodeName } from '@pascal-app/editor'
 
 export function createWallRectangle(
   levelId: AnyNodeId,
@@ -18,7 +19,13 @@ export function createWallRectangle(
 ) {
   const scene = useScene.getState()
   if (scene.readOnly) throw Error('This scene is read-only.')
-  const plan = planWallRectangle(scene.nodes, { levelId, start, end, wallDefaults: defaults })
+  const plan = planWallRectangle(scene.nodes, {
+    levelId,
+    start,
+    end,
+    wallDefaults: defaults,
+    wallName: (n) => numberedNodeName('wall', n),
+  })
   if (!plan.changes.create.length && !plan.changes.update.length && !plan.changes.delete.length)
     return []
   const construction = resolveWallConstruction(scene.nodes, levelId, plan.walls, options)

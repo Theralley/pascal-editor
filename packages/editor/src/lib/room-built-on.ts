@@ -67,6 +67,7 @@ export function localizeFootprintName(
   if (locale === 'en' || coreName === ownName?.trim()) return coreName
   if (coreName === 'Shared floor') return formatMessage(messages, locale, 'shared')
   if (coreName === 'Floor area') return formatMessage(messages, locale, 'area')
+  // Core's name is all there is to go on: a custom "Dance floor" reads as generated and is translated.
   const room = /^(.+) floor$/.exec(coreName)?.[1]
   return room ? formatMessage(messages, locale, 'named', { name: room }) : coreName
 }

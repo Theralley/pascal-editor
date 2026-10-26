@@ -27,6 +27,7 @@ export function useT<Catalog extends MessageCatalog>(catalog: Catalog) {
   return useMemo(() => {
     const t = (key: MessageKey<Catalog>, vars?: MessageVars) =>
       formatMessage(catalog, locale, key, vars)
+    t.locale = locale
     t.rich = (key: MessageKey<Catalog>, tags: MessageTags, vars?: MessageVars) =>
       formatRichMessage(catalog, locale, key, tags, vars)
     return t

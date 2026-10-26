@@ -11,6 +11,7 @@ import {
   type WallNode,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
+import { numberedNodeName } from '../../../lib/default-node-name'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import { resolveSnapFlags } from '../../../lib/snapping-mode'
 import useEditor, { getActiveSnappingMode, isMagneticSnapActive } from '../../../store/use-editor'
@@ -226,6 +227,7 @@ export function createWallOnCurrentLevel(
       end,
       joinRadius,
       wallDefaults: useEditor.getState().toolDefaults.wall ?? {},
+      wallName: (n) => numberedNodeName('wall', n),
     })
     if (!result.ok) return null
     const { plan } = result

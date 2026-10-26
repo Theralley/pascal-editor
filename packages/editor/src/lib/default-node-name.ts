@@ -7,6 +7,6 @@ import { definitionText, getLocale, type Locale } from '../i18n'
  */
 export function numberedNodeName(kind: string, n: number, locale: Locale = getLocale()): string {
   const definition = nodeRegistry.get(kind)
-  const label = definition?.presentation?.label ?? kind
+  const label = definition?.presentation?.label ?? kind.charAt(0).toUpperCase() + kind.slice(1)
   return `${definitionText(definition, label, locale)} ${n}`
 }

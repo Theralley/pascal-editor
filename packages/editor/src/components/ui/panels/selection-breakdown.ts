@@ -52,7 +52,7 @@ export function formatSelectionBreakdown(
     }
     const definition = nodeRegistry.get(type)
     const label = definition?.presentation
-      ? definitionText(definition, definition.presentation.label)
+      ? definitionText(definition, definition.presentation.label, t.locale)
       : type
     parts.push(`${label}: ${count}`)
   }

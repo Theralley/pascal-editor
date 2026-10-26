@@ -1,5 +1,5 @@
 import { type AnyNode, nodeRegistry, scriptImages } from '@pascal-app/core'
-import { definitionText, type MessageKey, type MessageVars } from '../../../i18n'
+import { definitionText, type Locale, type MessageKey, type MessageVars } from '../../../i18n'
 import { messages } from './messages'
 
 export type NodeDisplay = {
@@ -8,7 +8,10 @@ export type NodeDisplay = {
 }
 
 /** `t` of `useT(messages)`: the helpers take it so a render never reads the global locale. */
-export type PanelT = (key: MessageKey<typeof messages>, vars?: MessageVars) => string
+export type PanelT = ((key: MessageKey<typeof messages>, vars?: MessageVars) => string) & {
+  /** The locale `t` translates in, for definition text that is not in the catalog. */
+  locale?: Locale
+}
 
 type NodeTypeDefault = { icon: string; labelKey: MessageKey<typeof messages> }
 
@@ -40,7 +43,7 @@ function typeDefault(type: string, t: PanelT): NodeDisplay {
     : {
         icon: '/icons/select.webp',
         label: definition?.presentation
-          ? definitionText(definition, definition.presentation.label)
+          ? definitionText(definition, definition.presentation.label, t.locale)
           : type,
       }
 }
