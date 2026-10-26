@@ -20,6 +20,7 @@ import {
   triggerSFX,
   useEditor,
   usePathDraftPreview,
+  useT,
 } from '@pascal-app/editor'
 import {
   alignDrawPoint,
@@ -35,6 +36,7 @@ import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { offsetPathHorizontal } from '../shared/path-offset'
 import { REFRIGERANT_PORT_SYSTEMS } from '../shared/port-systems'
 import { liquidLineDefinition } from './definition'
+import { messages } from './messages'
 import { useLiquidLineToolOptions } from './options'
 
 /**
@@ -264,6 +266,7 @@ function tracePath(target: FollowTarget): Vec3[] | null {
 }
 
 const LiquidLineTool = () => {
+  const t = useT(messages)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const unit = useViewer((s) => s.unit)
   const follow = useLiquidLineToolOptions((s) => s.follow)
@@ -579,8 +582,8 @@ const LiquidLineTool = () => {
                   }}
                 >
                   {followTargetRef.current
-                    ? 'Click to trace this lineset run'
-                    : 'Follow: hover a lineset'}
+                    ? t('clickToTraceThisLineset')
+                    : t('followHoverALineset')}
                 </div>
               </Html>
             </group>

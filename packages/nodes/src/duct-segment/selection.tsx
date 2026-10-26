@@ -1337,6 +1337,7 @@ const DuctPointHandles = ({ duct, target }: { duct: DuctSegmentNode; target: Obj
       {draggingIndex === null &&
         !rolling &&
         !runMoving &&
+        // i18n-ignore: endpoint ids
         (['start', 'end'] as const).map((endpoint) => (
           <DuctContinuationHandle duct={displayDuct} endpoint={endpoint} key={endpoint} />
         ))}

@@ -10,6 +10,7 @@ import {
   triggerSFX,
   useEditor,
   useInteractionScope,
+  useT,
 } from '@pascal-app/editor'
 import {
   alignDrawPoint,
@@ -44,6 +45,7 @@ import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { DUCT_PORT_SYSTEMS } from '../shared/port-systems'
 import { ductFittingDefinition } from './definition'
 import { buildDuctFittingGeometry } from './geometry'
+import { messages } from './messages'
 import { localFittingPorts } from './ports'
 
 const PREVIEW_OPACITY = 0.55
@@ -160,6 +162,7 @@ export function resolvePlacement(
  * node happens to be selected.
  */
 const DuctFittingTool = () => {
+  const t = useT(messages)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const [placement, setPlacement] = useState<Placement | null>(null)
   const toolDefaults = useEditor((s) => s.toolDefaults['duct-fitting'])
@@ -361,19 +364,19 @@ const DuctFittingTool = () => {
             the drawing / dragging readouts. */}
         <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
           {previewNode.fittingType === 'access-panel' && (
-            <span>
-              {placement.valid ? 'Place access door' : 'Hover a duct face that fits the door'}
-            </span>
+            <span>{placement.valid ? t('placeAccessDoor') : t('hoverADuctFaceThat')}</span>
           )}
-          <span className="font-medium text-foreground">Axis {axis.toUpperCase()}</span>
+          <span className="font-medium text-foreground">
+            {t('axisValue', { axis: axis.toUpperCase() })}
+          </span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">R/T rotate</span>
+          <span className="text-muted-foreground">{t('rTRotate')}</span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">⌥ axis</span>
+          <span className="text-muted-foreground">{t('axis')}</span>
         </div>
       </Html>
       {/* Port-snap halo so the user sees the click will mate, not free-place. */}

@@ -853,6 +853,7 @@ const PipePointHandles = ({ pipe, target }: { pipe: PipeSegmentNode; target: Obj
       {draggingIndex === null &&
         !runMoving &&
         openCluster === null &&
+        // i18n-ignore: endpoint ids
         (['start', 'end'] as const).map((endpoint) => (
           <PipeContinuationHandle endpoint={endpoint} key={endpoint} pipe={displayPipe} />
         ))}

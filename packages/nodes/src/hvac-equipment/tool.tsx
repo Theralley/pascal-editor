@@ -13,6 +13,7 @@ import {
   isTypingTarget,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { alignDrawPoint, clearDrawAlignment } from '@pascal-app/editor/distribution'
 import { useViewer } from '@pascal-app/viewer'
@@ -22,6 +23,7 @@ import { subscribeAccessorySnapping } from '../shared/accessory-snapping'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { hvacEquipmentDefinition } from './definition'
 import { buildHvacEquipmentGeometry } from './geometry'
+import { messages } from './messages'
 
 const PREVIEW_OPACITY = 0.55
 /** R/T yaw step — 45°, matching the editor's default rotate. */
@@ -41,6 +43,7 @@ function snap(value: number, step: number): number {
  * inspector after placement.
  */
 const HvacEquipmentTool = () => {
+  const t = useT(messages)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const toolDefaults = useEditor((s) => s.toolDefaults['hvac-equipment'])
   const [cursor, setCursor] = useState<[number, number, number] | null>(null)
@@ -154,7 +157,7 @@ const HvacEquipmentTool = () => {
         zIndexRange={[100, 0]}
       >
         <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
-          <span className="font-medium text-foreground">R/T rotate</span>
+          <span className="font-medium text-foreground">{t('rTRotate')}</span>
         </div>
       </Html>
     </LevelOffsetGroup>

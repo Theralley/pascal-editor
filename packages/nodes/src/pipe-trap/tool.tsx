@@ -7,6 +7,7 @@ import {
   isTypingTarget,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import { alignDrawPoint, clearDrawAlignment } from '@pascal-app/editor/distribution'
 import { useViewer } from '@pascal-app/viewer'
@@ -16,6 +17,7 @@ import { subscribeAccessorySnapping } from '../shared/accessory-snapping'
 import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { pipeTrapDefinition } from './definition'
 import { buildPipeTrapGeometry } from './geometry'
+import { messages } from './messages'
 
 const PREVIEW_OPACITY = 0.55
 const ROTATE_STEP_RAD = Math.PI / 4
@@ -32,6 +34,7 @@ function snap(value: number, step: number): number {
  * tool then draws the trap arm off the outlet toward the vent.
  */
 const PipeTrapTool = () => {
+  const t = useT(messages)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const toolDefaults = useEditor((s) => s.toolDefaults['pipe-trap'])
   const [cursor, setCursor] = useState<[number, number, number] | null>(null)
@@ -137,11 +140,13 @@ const PipeTrapTool = () => {
         zIndexRange={[100, 0]}
       >
         <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
-          <span className="font-medium text-foreground">{previewNode.diameter}" Trap</span>
+          <span className="font-medium text-foreground">
+            {t('trapSize', { size: previewNode.diameter })}
+          </span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">R/T rotate</span>
+          <span className="text-muted-foreground">{t('rTRotate')}</span>
         </div>
       </Html>
     </LevelOffsetGroup>

@@ -22,8 +22,10 @@ import {
   isGridSnapActive,
   isMagneticSnapActive,
   isTypingTarget,
+  numberedNodeName,
   triggerSFX,
   useEditor,
+  useT,
 } from '@pascal-app/editor'
 import {
   alignDrawPoint,
@@ -42,6 +44,7 @@ import { LevelOffsetGroup } from '../shared/level-offset-group'
 import { DUCT_PORT_SYSTEMS } from '../shared/port-systems'
 import { ductTerminalDefinition } from './definition'
 import { buildDuctTerminalGeometry } from './geometry'
+import { messages } from './messages'
 import { COLLAR_LENGTH, getDuctTerminalPorts, mountQuaternion } from './ports'
 
 const PREVIEW_OPACITY = 0.55
@@ -162,6 +165,7 @@ function resolvePortSnap(
  * yaw ±45°; wall yaw is fixed by the wall it mates to.
  */
 const DuctTerminalTool = () => {
+  const t = useT(messages)
   const { camera, gl } = useThree()
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const toolDefaults = useEditor((s) => s.toolDefaults['duct-terminal'])
@@ -306,7 +310,11 @@ const DuctTerminalTool = () => {
       const terminal = DuctTerminalNode.parse({
         ...ductTerminalDefinition.defaults(),
         ...toolDefaults,
-        name: 'Register',
+        name: numberedNodeName(
+          'duct-terminal',
+          Object.values(useScene.getState().nodes).filter((n) => n.type === 'duct-terminal')
+            .length + 1,
+        ),
         mount: p.mount,
         position: p.position,
         rotation: p.yaw,
@@ -489,8 +497,6 @@ const DuctTerminalTool = () => {
 
   if (!activeLevelId || !placement) return null
 
-  const mountLabel = effectiveMount.charAt(0).toUpperCase() + effectiveMount.slice(1)
-
   // The committed mesh's slab lift is applied by FloorElevationSystem, but the
   // ghost renders here directly — preview it on the slab top too so a floor
   // register doesn't appear to sink in before the click.
@@ -530,23 +536,25 @@ const DuctTerminalTool = () => {
         <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
           {placement.snapped && (
             <>
-              <span className="font-medium text-primary">Snapped to duct</span>
+              <span className="font-medium text-primary">{t('snappedToDuct')}</span>
               <span aria-hidden className="text-muted-foreground">
                 ·
               </span>
             </>
           )}
-          <span className="font-medium text-foreground">Mount {mountLabel}</span>
+          <span className="font-medium text-foreground">
+            {t('mountValue', { mount: t(effectiveMount) })}
+          </span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">M surface</span>
+          <span className="text-muted-foreground">{t('mSurface')}</span>
           {effectiveMount !== 'wall' && (
             <>
               <span aria-hidden className="text-muted-foreground">
                 ·
               </span>
-              <span className="text-muted-foreground">R/T rotate</span>
+              <span className="text-muted-foreground">{t('rTRotate')}</span>
             </>
           )}
         </div>

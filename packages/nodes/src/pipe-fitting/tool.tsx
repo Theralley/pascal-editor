@@ -18,6 +18,7 @@ import {
   useEditor,
   useInteractionScope,
   useRegistryToolContext,
+  useT,
 } from '@pascal-app/editor'
 import {
   alignDrawPoint,
@@ -54,6 +55,7 @@ import {
   type PipeInlineInsertionPlan,
   planPipeInlineInsertion,
 } from './inline-insertion'
+import { messages } from './messages'
 import { localPipeFittingPorts } from './ports'
 
 const PREVIEW_OPACITY = 0.55
@@ -207,6 +209,7 @@ export function resolvePlacement(
  * node happens to be selected.
  */
 const PipeFittingTool = () => {
+  const t = useT(messages)
   const { activeLevelId, sceneApi, selectNode } = useRegistryToolContext()
   const [placement, setPlacement] = useState<Placement | null>(null)
   const toolDefaults = useEditor((s) => s.toolDefaults['pipe-fitting'])
@@ -426,15 +429,17 @@ const PipeFittingTool = () => {
         {/* Same pill shell as DimensionPill so the placement HUD matches
             the drawing / dragging readouts. */}
         <div className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-background/90 px-4 py-1.5 text-xs tabular-nums shadow-sm backdrop-blur">
-          <span className="font-medium text-foreground">Axis {axis.toUpperCase()}</span>
+          <span className="font-medium text-foreground">
+            {t('axisValue', { axis: axis.toUpperCase() })}
+          </span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">R/T rotate</span>
+          <span className="text-muted-foreground">{t('rTRotate')}</span>
           <span aria-hidden className="text-muted-foreground">
             ·
           </span>
-          <span className="text-muted-foreground">⌥ axis</span>
+          <span className="text-muted-foreground">{t('axis')}</span>
         </div>
       </Html>
       {/* Port-snap halo so the user sees the click will mate, not free-place. */}
