@@ -16,8 +16,6 @@ const PENDING = new Set([
   'slab',
   'ceiling',
   'window',
-  'cabinet',
-  'cabinet-module',
   'item',
   'procedural-item',
   'imported-mesh',

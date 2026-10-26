@@ -80,6 +80,7 @@ import {
   stackForCabinet,
 } from './stack'
 import { cabinetModuleSurfaceProvider, cabinetSurfaceProvider } from './surfaces'
+import { cabinetTranslations } from './translations'
 import {
   cabinetFloorplanAffectedIds,
   cabinetTreeChildIds,
@@ -2493,6 +2494,7 @@ export const cabinetDefinition: NodeDefinition<typeof CabinetNode> = {
     { key: 'Esc', label: 'Cancel run / exit' },
   ],
 
+  translations: cabinetTranslations,
   presentation: {
     label: 'Modular Cabinet',
     description: 'A configurable parametric base cabinet.',
@@ -2667,6 +2669,7 @@ export const cabinetModuleDefinition: NodeDefinition<typeof CabinetModuleNode> =
     },
   },
 
+  translations: cabinetTranslations,
   presentation: {
     label: 'Cabinet Module',
     description: 'An editable module inside a modular cabinet run.',

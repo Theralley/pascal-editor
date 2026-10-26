@@ -1,4 +1,6 @@
 import type { AnyNode, AnyNodeId, CabinetModuleNode, CabinetNode } from '@pascal-app/core'
+import { translate } from '@pascal-app/editor'
+import { messages } from './messages'
 import { CABINET_PRESETS, type CabinetPresetId } from './presets'
 
 export const KITCHEN_ITEMS = CABINET_PRESETS.map((preset) => ({
@@ -23,7 +25,9 @@ export const KITCHEN_ITEMS = CABINET_PRESETS.map((preset) => ({
 export function kitchenItemMatches(id: CabinetPresetId, query: string): boolean {
   const item = KITCHEN_ITEMS.find((entry) => entry.id === id)
   if (!item) return false
-  const text = `${item.label} ${item.keywords} kitchen cabinet`.toLowerCase()
+  // Both languages match, so "fridge" finds the item while the interface reads Swedish.
+  const text =
+    `${item.label} ${item.keywords} kitchen cabinet ${translate(messages, `preset.${id}`)} ${translate(messages, `keywords.${id}`)} kök skåp`.toLowerCase()
   return query
     .trim()
     .toLowerCase()

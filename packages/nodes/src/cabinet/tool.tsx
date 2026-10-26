@@ -38,11 +38,13 @@ import {
   PlacementDimensionGuides,
   parseMeasurement,
   publishPlacementSurface,
+  translate,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
   useFacingPose,
   usePlacementPreview,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
@@ -78,8 +80,10 @@ import {
   cabinetModuleDefinition,
   cabinetRunFootprint,
 } from './definition'
+import { cabinetDisplayName } from './display-name'
 import { buildCabinetGeometry } from './geometry'
 import { applyCabinetModuleInsertion, cabinetModuleForRunInsertion } from './insertion'
+import { messages } from './messages'
 import { resolveCabinetNeighborPlacement } from './neighbor-placement'
 import {
   buildCabinetPlacementSizeDimensions,
@@ -407,6 +411,7 @@ function wallHitFromWallEvent(event: WallEvent): WallHit | null {
 }
 
 const CabinetPlacementTool = () => {
+  const t = useT(messages)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const unit = useViewer((s) => s.unit)
   const metricNotation = useViewer((s) => s.metricNotation)
@@ -1182,19 +1187,23 @@ const CabinetPlacementTool = () => {
       placementRef.current = next
       setPlacement(next)
       useCabinetPlacementStatus.getState().setBlocked(!next.valid)
-      useCabinetPlacementStatus
-        .getState()
-        .setTarget(
-          !next.valid
-            ? next.insertionFailure
-              ? 'No space in this kitchen run'
-              : 'Placement blocked: overlaps an item or wall opening'
-            : next.neighborJoin
-              ? `${next.valid ? 'Join' : 'Blocked beside'} ${next.neighborJoin.name} · ${next.neighborJoin.side} side · Depth matched`
-              : next.insertionFailure
-                ? 'No space in this kitchen run'
-                : null,
-        )
+      useCabinetPlacementStatus.getState().setTarget(
+        !next.valid
+          ? next.insertionFailure
+            ? translate(messages, 'noSpaceKitchenRun')
+            : translate(messages, 'placementBlocked')
+          : next.neighborJoin
+            ? translate(messages, 'neighborJoin', {
+                name: cabinetDisplayName(next.neighborJoin.name),
+                side: translate(
+                  messages,
+                  next.neighborJoin.side === 'left' ? 'sideLeft' : 'sideRight',
+                ),
+              })
+            : next.insertionFailure
+              ? translate(messages, 'noSpaceKitchenRun')
+              : null,
+      )
       publishFloorplanPreview(next)
       const nextSnapKey = movementSfxStepKey({
         coords:
@@ -1921,21 +1930,32 @@ const CabinetPlacementTool = () => {
     0,
   )
   const placementLabel = placement.insertionFailure
-    ? 'No space in this run to insert this cabinet'
+    ? t('noSpaceInsert')
     : placement.neighborJoin
-      ? `${placement.valid ? 'Join' : 'Blocked beside'} ${placement.neighborJoin.name} · ${placement.neighborJoin.side} side · Depth matched`
+      ? t(placement.valid ? 'neighborJoin' : 'neighborBlocked', {
+          name: cabinetDisplayName(placement.neighborJoin.name),
+          side: t(placement.neighborJoin.side === 'left' ? 'sideLeft' : 'sideRight'),
+        })
       : stretch
         ? placement.valid
-          ? `${draftSegments.length + 1} leg${draftSegments.length + 1 === 1 ? '' : 's'} · ${stretch.modules.length} module${stretch.modules.length === 1 ? '' : 's'} · Click to continue · Double-click/Esc to finish`
+          ? [
+              t('stretchLegs', { count: draftSegments.length + 1 }),
+              t('stretchModules', { count: stretch.modules.length }),
+              t('stretchHint'),
+            ].join(' · ')
           : null
         : placement.valid
           ? placement.snappedToWall
             ? placement.snapReason === 'cabinet-edge'
-              ? 'Edge snap'
+              ? t('edgeSnap')
               : placement.snapReason === 'corner'
-                ? 'Corner snap'
-                : 'Wall snap'
-            : `Place ${previewNode.name ?? 'cabinet'}`
+                ? t('cornerSnap')
+                : t('wallSnap')
+            : t('placeName', {
+                name: previewNode.name
+                  ? cabinetDisplayName(previewNode.name)
+                  : t('cabinetFallback'),
+              })
           : null
   const labelPosition = stretch
     ? runLocalToPlan({ position: placement.position, rotation: placement.yaw }, [
