@@ -14,7 +14,7 @@ export function viewerHoverLabel(
 ): string | null {
   const node = hoveredId ? nodes[hoveredId] : undefined
   if (!node) return null
-  return node.type === 'zone' ? zoneLabel(node, locale) : nodeDisplayLabel(node, locale)
+  return node.type === 'zone' ? zoneLabel(node, locale) : nodeDisplayLabel(node, locale, nodes)
 }
 
 /**

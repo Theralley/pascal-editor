@@ -24,6 +24,7 @@ const ELEVATION_LABELS: Record<string, MessageKey<typeof messages>> = {
   'Wall top': 'elev.wallTop',
   'Fence base': 'elev.fenceBase',
   'Fence top': 'elev.fenceTop',
+  'Neighbor shed edge': 'elev.neighborShedEdge',
 }
 
 const LINE_COLOR = 0x81_8c_f8

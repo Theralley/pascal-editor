@@ -504,7 +504,7 @@ export function viewerBreadcrumb(
   if (room?.type === 'zone')
     crumbs.push({ kind: 'room', id: room.id, label: zoneLabel(room, locale) })
   if (element)
-    crumbs.push({ kind: 'node', id: element.id, label: nodeDisplayLabel(element, locale) })
+    crumbs.push({ kind: 'node', id: element.id, label: nodeDisplayLabel(element, locale, nodes) })
   return crumbs
 }
 
