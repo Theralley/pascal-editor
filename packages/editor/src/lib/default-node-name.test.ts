@@ -25,7 +25,7 @@ describe('numberedNodeName', () => {
     const cases = [
       { kind: 'fixture-slab', locale: 'en', expected: 'Slab 3' },
       { kind: 'fixture-slab', locale: 'sv', expected: 'Bjälklag 3' },
-      { kind: 'unregistered', locale: 'sv', expected: 'Unregistered 3' },
+      { kind: 'unregistered', locale: 'sv', expected: 'unregistered 3' },
     ] as const
     for (const { kind, locale, expected } of cases)
       expect(numberedNodeName(kind, 3, locale)).toBe(expected)

@@ -1,5 +1,6 @@
 import type { AnyNode } from '@pascal-app/core'
 
+// "Zone N" and "Room N" stay English: this counter parses the English name.
 const ZONE_NAME = /^Zone (\d+)$/
 
 /**

@@ -100,45 +100,79 @@ const sampleNodes = (definition: AnyNodeDefinition): AnyNode[] =>
     return parsed.data as AnyNode
   })
 
-/** Text built by the definition's callbacks, in the order the callbacks yield it. */
-function callbackTexts(definition: AnyNodeDefinition): string[] {
+type Entry = [id: string, text: string]
+
+/** Text built by the definition's callbacks, each under a stable identity. */
+function callbackTexts(definition: AnyNodeDefinition): Entry[] {
   return sampleNodes(definition).flatMap((node) => {
     const nodes = { [node.id]: node } as Record<string, AnyNode>
+    const at = (id: string) => `${node.id}:${id}`
     const measurement = definition.measurement
     const report = measurement?.quickMeasure?.(node as never, EMPTY_GEOMETRY_CONTEXT as never)
     const notice = definition.placementNotice?.(node as never, { nodes })
     const panelModel = definition.extensions?.['pascal:editor/panel-model'] as
       | {
           multiControls?: (context: { selection: AnyNode[]; nodes: object }) => {
+            id: string
             label: string
-            options: { label: string }[]
+            options: { value: string; label: string }[]
           }[]
         }
       | undefined
-    return [
-      ...(definition.capabilities?.slots?.(node as never).map((slot) => slot.label) ?? []),
-      ...(definition.quickActions?.({ node: node as never, nodes }) ?? []).flatMap((action) => [
-        action.label,
-        ...(action.title ? [action.title] : []),
-      ]),
-      ...(definition.tree?.label ? [definition.tree.label(node, nodes)] : []),
-      ...(measurement
-        ?.features(node as never, EMPTY_GEOMETRY_CONTEXT as never)
-        .map((f) => f.label) ?? []),
+    const entries: Entry[] = [
+      ...(definition.capabilities?.slots?.(node as never) ?? []).map(
+        (slot): Entry => [at(`slot:${slot.slotId}`), slot.label],
+      ),
+      ...(definition.quickActions?.({ node: node as never, nodes }) ?? []).flatMap(
+        (action): Entry[] => [
+          [at(`action:${action.id}`), action.label],
+          ...(action.title ? [[at(`action-title:${action.id}`), action.title] as Entry] : []),
+        ],
+      ),
+      ...(definition.tree?.label
+        ? [[at('tree'), definition.tree.label(node, nodes)] as Entry]
+        : []),
+      ...(measurement?.features(node as never, EMPTY_GEOMETRY_CONTEXT as never) ?? []).map(
+        (feature): Entry => [at(`feature:${feature.id}`), feature.label],
+      ),
       ...(report
         ? [
-            report.title,
-            report.kindLabel,
-            ...report.metrics.map((metric) => metric.label),
-            ...(report.note ? [report.note] : []),
+            [at('report:title'), report.title] as Entry,
+            [at('report:kind'), report.kindLabel] as Entry,
+            ...report.metrics.map((metric): Entry => [at(`metric:${metric.key}`), metric.label]),
+            ...(report.note ? [[at('report:note'), report.note] as Entry] : []),
           ]
         : []),
-      ...(notice ? [notice.line, ...(notice.detail ? [notice.detail] : [])] : []),
-      ...(panelModel?.multiControls
-        ?.call(panelModel, { selection: [node], nodes })
-        .flatMap((control) => [control.label, ...control.options.map((o) => o.label)]) ?? []),
+      ...(notice
+        ? [
+            [at('notice:line'), notice.line] as Entry,
+            ...(notice.detail ? [[at('notice:detail'), notice.detail] as Entry] : []),
+          ]
+        : []),
+      ...(panelModel?.multiControls?.call(panelModel, { selection: [node], nodes }) ?? []).flatMap(
+        (control): Entry[] => [
+          [at(`control:${control.id}`), control.label],
+          ...control.options.map((o): Entry => [at(`option:${control.id}:${o.value}`), o.label]),
+        ],
+      ),
     ]
+    return entries
   })
+}
+
+/**
+ * The English texts a callback did not translate itself. The two outputs are paired by identity
+ * and must have the same shape; a pair that reads the same in both languages is untranslated.
+ */
+export function untranslatedCallbackTexts(english: Entry[], swedish: Entry[]): string[] {
+  const swedishById = new Map(swedish)
+  const englishIds = new Set(english.map(([id]) => id))
+  const reshaped = [
+    ...english.filter(([id]) => !swedishById.has(id)).map(([id]) => `${id} (missing in sv)`),
+    ...swedish.filter(([id]) => !englishIds.has(id)).map(([id]) => `${id} (only in sv)`),
+  ]
+  if (reshaped.length > 0) return reshaped
+  return english.filter(([id, text]) => swedishById.get(id) === text).map(([, text]) => text)
 }
 
 /** Every string the editor renders from this definition, in English. */
@@ -185,15 +219,38 @@ function missingSwedish(definition: AnyNodeDefinition): string[] {
     setLocale('sv')
     const swedish = callbackTexts(definition)
     setLocale('en')
-    english.forEach((text, index) => {
-      if (swedish[index] === text && definition.translations?.sv?.[text] === undefined)
-        missing.add(text)
-    })
+    for (const text of untranslatedCallbackTexts(english, swedish))
+      if (definition.translations?.sv?.[text] === undefined) missing.add(text)
   }
   return [...missing]
 }
 
 const definitions = (builtinPlugin.nodes ?? []) as AnyNodeDefinition[]
+
+describe('untranslatedCallbackTexts', () => {
+  const list = (...texts: string[]): Entry[] => texts.map((text) => [`id:${text}`, text])
+
+  test('pairs by identity, so a reordered untranslated list fails', () => {
+    const english: Entry[] = [
+      ['a:action:move', 'Move'],
+      ['a:action:delete', 'Delete'],
+    ]
+    const reordered: Entry[] = [
+      ['a:action:delete', 'Delete'],
+      ['a:action:move', 'Move'],
+    ]
+    expect(untranslatedCallbackTexts(english, reordered).sort()).toEqual(['Delete', 'Move'])
+  })
+
+  test('a different shape fails, and a translated pair passes', () => {
+    expect(untranslatedCallbackTexts(list('Move', 'Delete'), list('Flytta'))).toEqual([
+      'id:Move (missing in sv)',
+      'id:Delete (missing in sv)',
+      'id:Flytta (only in sv)',
+    ])
+    expect(untranslatedCallbackTexts([['a', 'Move']], [['a', 'Flytta']])).toEqual([])
+  })
+})
 
 describe('Swedish definition text', () => {
   test('every built-in kind outside the pending list is translated in full', () => {
