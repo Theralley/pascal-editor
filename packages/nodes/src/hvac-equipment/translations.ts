@@ -11,7 +11,7 @@ export const hvacEquipmentTranslations = {
     'Equipment type': 'Typ av utrustning',
     Furnace: 'Värmeaggregat',
     'Air handler': 'Luftbehandlingsaggregat',
-    Condenser: 'Kondensorenhet',
+    Condenser: 'Utedel',
     Cabinet: 'Skåp',
     Width: 'Bredd',
     Depth: 'Djup',
