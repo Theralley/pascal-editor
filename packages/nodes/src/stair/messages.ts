@@ -143,6 +143,29 @@ export const messages = defineMessages({
     'msg.turningLanding': 'A turning landing must be at least as deep as the stair is wide',
     'msg.noConverge': 'Stair support and arrival do not converge; choose an explicit rise or run',
     detailUnavailable: 'Stair detail unavailable — inspect dimensions',
+    'msg.headroomTarget': 'Overhead surfaces leave less than the target headroom.',
+    'msg.headroomUnresolved':
+      'Detailed headroom could not be evaluated: check riser counts and the surface query budget.',
+    'msg.nonuniform':
+      'Flight riser heights differ. Use uniform-riser repair only if this is a proposed design.',
+    'msg.raisedLanding': 'A landing has a stored rise; inspect its transition before repair.',
+    'msg.arrivalMismatch': 'The flight chain does not reach the declared destination.',
+    'msg.detailRisers': 'Detailed stair geometry requires a positive whole riser count.',
+    'msg.detailBudget':
+      'Detailed stair geometry exceeds the 10,000-surface computation budget. The authored count is preserved.',
+    'msg.arcGoing': 'Explicit arc construction requires a positive going.',
+    'msg.treadTurn': 'One tread spans more than one turn; add risers or reduce the sweep.',
+    'msg.winderBudget':
+      'Detailed winder construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
+    'msg.riserPanels': 'Riser panels must fit within their treads.',
+    'msg.stringers': 'Stringers must fit within the flight width.',
+    'msg.centerStringer':
+      'The center stringer must fit around the walking line within the winder width.',
+    'msg.winderNosing': 'Winder nosing must be smaller than the walking-line radius.',
+    'msg.winderDims': 'Winders require positive dimensions and 1–10,000 whole risers.',
+    'msg.winderLine': 'The winder walking line must lie within the flight width.',
+    'msg.constructionBudget':
+      'Detailed stair construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
   },
   sv: {
     original: 'Ursprunglig',
@@ -288,5 +311,27 @@ export const messages = defineMessages({
     'msg.noConverge':
       'Trappans stöd och ankomst går inte ihop. Välj en bestämd höjdskillnad eller längd.',
     detailUnavailable: 'Trappdetaljen är inte tillgänglig — kontrollera måtten',
+    'msg.headroomTarget': 'Ytor ovanför ger mindre fri höjd än målet.',
+    'msg.headroomUnresolved':
+      'Den detaljerade fria höjden kunde inte utvärderas. Kontrollera antalet steg och budgeten för ytfrågor.',
+    'msg.nonuniform':
+      'Löpens steghöjder skiljer sig åt. Använd reparation till lika steghöjd bara om det här är ett föreslaget utförande.',
+    'msg.raisedLanding': 'Ett vilplan har en lagrad höjd. Kontrollera övergången före reparation.',
+    'msg.arrivalMismatch': 'Löpen når inte det angivna målet.',
+    'msg.detailRisers': 'Detaljerad trappgeometri kräver ett positivt heltal som antal steg.',
+    'msg.detailBudget':
+      'Detaljerad trappgeometri överskrider beräkningsbudgeten på 10 000 ytor. Det angivna antalet behålls.',
+    'msg.arcGoing': 'Uttrycklig bågkonstruktion kräver ett positivt stegdjup.',
+    'msg.treadTurn': 'Ett steg spänner över mer än ett varv. Lägg till steg eller minska svepet.',
+    'msg.winderBudget':
+      'Detaljerad kilstegskonstruktion överskrider beräkningsbudgeten på 10 000 ytor. De angivna värdena behålls.',
+    'msg.riserPanels': 'Sättsteg måste rymmas inom sina steg.',
+    'msg.stringers': 'Vangar måste rymmas inom löpets bredd.',
+    'msg.centerStringer': 'Mittvangen måste rymmas kring gånglinjen inom kilstegets bredd.',
+    'msg.winderNosing': 'Kilstegets framkant måste vara mindre än gånglinjens radie.',
+    'msg.winderDims': 'Kilsteg kräver positiva mått och 1–10 000 hela steg.',
+    'msg.winderLine': 'Kilstegets gånglinje måste ligga inom löpets bredd.',
+    'msg.constructionBudget':
+      'Detaljerad trappkonstruktion överskrider beräkningsbudgeten på 10 000 ytor. De angivna värdena behålls.',
   },
 })

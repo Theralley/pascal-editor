@@ -20,7 +20,7 @@ import {
   sampleFenceSpline,
   useScene,
 } from '@pascal-app/core'
-import { SliderControl, useDefinitionText, useT } from '@pascal-app/editor'
+import { formatDecimal, SliderControl, useDefinitionText, useT } from '@pascal-app/editor'
 import { cabinetDisplayName } from '../cabinet/display-name'
 import { messages } from './messages'
 
@@ -75,6 +75,8 @@ export function FenceSurfaceEditor({
   const defText = useDefinitionText()
   const kindLabel = (type: string) => {
     const definition = nodeRegistry.get(type)
+    // English keeps the stored kind id, as before.
+    if (t.locale === 'en') return type
     return definition?.presentation ? defText(definition, definition.presentation.label) : type
   }
   const nodes = useScene((state) => state.nodes)
@@ -283,10 +285,11 @@ export function FencePathEditor({
       <p>
         {t('pathSummary', {
           count: path.length,
-          length: getFenceCenterlineLength(node).toLocaleString(t.locale, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
+          length: formatDecimal(
+            getFenceCenterlineLength(node),
+            { minFractionDigits: 2, maxFractionDigits: 2 },
+            t.locale,
+          ),
         })}
       </p>
       <p className="text-muted-foreground">{t('pathHint')}</p>
