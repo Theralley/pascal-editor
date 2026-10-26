@@ -119,7 +119,7 @@ export const messages = defineMessages({
 
     'finding.slopeFlat': 'Avloppet på {size} har fallet {slope} — IPC 704.1 kräver minst {min}.',
     'finding.slopeSteep':
-      'Avloppet på {size} har fallet {slope} — mer än en rördiameter per fot riskerar att sifonera vattenlåsen.',
+      'Avloppet på {size} har fallet {slope} — mer än en rördiameter per fot riskerar att suga ur vattenlåsen.',
     'finding.trapArm':
       'Vattenlåsets stickledning på {size} är {length}" till ventilationen — IPC 909.1 begränsar den till {max}".',
     'finding.openConnection': 'Öppen anslutning: {port}',

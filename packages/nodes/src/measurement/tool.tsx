@@ -1404,6 +1404,7 @@ const MeasurementDraftPreview: FC<{
     [draftActivePointMaterial, draftMidpointMaterial, draftPointMaterial],
   )
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the label words itself in the locale
   const preview = useMemo(() => {
     if (capturedLevelId && capturedLevelId !== levelId) return null
     const previewLevelId = capturedLevelId ?? levelId

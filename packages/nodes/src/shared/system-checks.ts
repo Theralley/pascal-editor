@@ -52,7 +52,7 @@ const DRAINAGE_MESSAGES: {
   },
 ]
 
-function drainageMessage(finding: { code: string; message: string }): string {
+export function drainageMessage(finding: { code: string; message: string }): string {
   for (const entry of DRAINAGE_MESSAGES) {
     if (entry.code !== finding.code) continue
     const match = entry.pattern.exec(finding.message)

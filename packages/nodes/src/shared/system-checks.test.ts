@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test'
+import { afterEach, expect, test } from 'bun:test'
 import {
   type AnyNode,
   type AnyNodeId,
@@ -7,8 +7,9 @@ import {
   registerNode,
   WallNode,
 } from '@pascal-app/core'
+import { setLocale } from '@pascal-app/editor'
 import { pipeSegmentDefinition } from '../pipe-segment/definition'
-import { checkDistributionSystems } from './system-checks'
+import { checkDistributionSystems, drainageMessage } from './system-checks'
 
 registerNode(pipeSegmentDefinition)
 const scene = (...nodes: AnyNode[]): Record<AnyNodeId, AnyNode> =>
@@ -108,4 +109,28 @@ test('intersections include affected node ids and ignore separated heights', () 
       (finding) => finding.code === 'possible-intersection',
     ),
   ).toBe(false)
+})
+
+afterEach(() => setLocale('en'))
+
+test.each([
+  [
+    'slope-too-flat',
+    '2" drain slopes 0.00"/ft — IPC 704.1 requires at least 0.25"/ft.',
+    'Avloppet på 2" har fallet 0.00"/ft — IPC 704.1 kräver minst 0.25"/ft.',
+  ],
+  [
+    'slope-too-steep',
+    '2" drain slopes 3.00"/ft — over one pipe-diameter per foot risks siphoning the traps.',
+    'Avloppet på 2" har fallet 3.00"/ft — mer än en rördiameter per fot riskerar att suga ur vattenlåsen.',
+  ],
+  [
+    'trap-arm-too-long',
+    '2" trap arm runs 80" to its vent — IPC 909.1 caps it at 60".',
+    'Vattenlåsets stickledning på 2" är 80" till ventilationen — IPC 909.1 begränsar den till 60".',
+  ],
+])('the %s finding reads in the locale', (code, english, swedish) => {
+  expect(drainageMessage({ code, message: english })).toBe(english)
+  setLocale('sv')
+  expect(drainageMessage({ code, message: english })).toBe(swedish)
 })

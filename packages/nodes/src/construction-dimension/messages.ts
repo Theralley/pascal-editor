@@ -96,9 +96,9 @@ export const messages = defineMessages({
   sv: {
     title: 'Måttsättning',
     unlinked: 'EJ LÄNKAD · ',
-    'unlinked.control': 'EJ LÄNKAD STYRNING · ',
+    'unlinked.control': 'EJ LÄNKAT STYRMÅTT · ',
     'drawing.arc': 'BÅGE',
-    'name.continuous': 'Löpande mått',
+    'name.continuous': 'Kedjemått',
     'name.dimension': 'Mått: {mode}',
     'name.mode.linear': 'rakt',
     'name.mode.radius': 'radie',

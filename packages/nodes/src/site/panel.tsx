@@ -6,6 +6,7 @@ import {
   ActionGroup,
   describeSiteEdges,
   dropInLot,
+  formatFeetInches,
   PanelSection,
   PanelWrapper,
   useLocale,
@@ -18,6 +19,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { messages } from './messages'
 
 const METRES_PER_FOOT = 0.3048
+
+const COMPASS_SV: Record<string, string> = {
+  NE: 'NO',
+  E: 'Ö',
+  SE: 'SO',
+  SW: 'SV',
+  W: 'V',
+  NW: 'NV',
+}
 
 interface Suggestion {
   label?: string
@@ -140,20 +150,8 @@ export function SiteNodePanel() {
 
   if (!node) return null
 
-  // The editor words an edge in English; the same parts read in the locale here.
   const compassLabel = (compass: string) =>
-    locale === 'sv' ? compass.replaceAll('W', 'V').replaceAll('E', 'Ö') : compass
-  const edgeLabel = (label: string) => {
-    const match = /^Edge (\d+) — faces (\S+) \((-?\d+)°\), (.+)$/.exec(label)
-    return match
-      ? t('orientation.edge', {
-          n: match[1]!,
-          compass: compassLabel(match[2]!),
-          deg: match[3]!,
-          length: match[4]!,
-        })
-      : label
-  }
+    locale === 'sv' ? (COMPASS_SV[compass] ?? compass) : compass
   const setbacks = node.setbacks
   const setbackField = (
     key: 'front' | 'side' | 'rear' | 'left' | 'right',
@@ -391,7 +389,12 @@ export function SiteNodePanel() {
             <option value="">{t('orientation.auto')}</option>
             {edges.map((edge) => (
               <option key={edge.index} value={String(edge.index)}>
-                {edgeLabel(edge.label)}
+                {t('orientation.edge', {
+                  n: edge.index + 1,
+                  compass: compassLabel(edge.compass),
+                  deg: Math.round(edge.headingDeg),
+                  length: formatFeetInches(edge.lengthM),
+                })}
               </option>
             ))}
           </select>
