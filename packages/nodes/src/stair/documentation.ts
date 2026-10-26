@@ -223,7 +223,12 @@ function buildCurvedDocumentation(
       ANNOTATION_FONT_SIZE,
       stroke,
     ),
-    annotationText(directionPoint, direction === 'up' ? 'UP' : 'DN', DIRECTION_FONT_SIZE, stroke),
+    annotationText(
+      directionPoint,
+      translate(messages, direction === 'up' ? 'planUp' : 'planDown'),
+      DIRECTION_FONT_SIZE,
+      stroke,
+    ),
     buildCurvedBreakLine(center, innerRadius, outerRadius, breakAngle, stroke),
   ]
   if (stair.railingMode !== 'none') {

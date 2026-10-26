@@ -54,6 +54,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { StairConstructionControls } from './construction-controls'
 import { getStairDestinationUpdates } from './destination'
+import { stairMessageKey } from './known-messages'
 import { messages } from './messages'
 import { StairRailingControls } from './railing-controls'
 import { getStairTypeChange } from './stair-type'
@@ -97,6 +98,10 @@ const DECK_DESTINATION_MIN_ELEVATION = 0.5
 
 export default function StairPanel() {
   const t = useT(messages)
+  const messageKey = (message: string) => {
+    const key = stairMessageKey(message)
+    return key ? t(key) : message
+  }
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   const selectedCount = useViewer((s) => s.selection.selectedIds.length)
   const unit = useViewer((s) => s.unit)
@@ -517,7 +522,9 @@ export default function StairPanel() {
                       ? '—'
                       : formatLinearMeasurement(flight.going, unit, metricNotation),
                   slope:
-                    flight.slope === null ? '—' : `${((flight.slope * 180) / Math.PI).toFixed(1)}°`,
+                    flight.slope === null
+                      ? '—'
+                      : `${((flight.slope * 180) / Math.PI).toLocaleString(t.locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}°`,
                 })}
               </div>
             ))}
@@ -545,7 +552,7 @@ export default function StairPanel() {
               role="status"
               className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
             >
-              {message}
+              {messageKey(message)}
             </div>
           ),
         )}
@@ -622,8 +629,8 @@ export default function StairPanel() {
                 {node.autoSurfaceSnap !== false
                   ? connectedSurface
                     ? t('connectedTo', { name: connectedSurface.name || t('surface') })
-                    : t('dragNearADeckPatioConcreteSlabOrLandingE')
-                  : t('movingThisStairKeepsItsCurrentRiseStepsA')}
+                    : t('dragNearSurface')
+                  : t('surfaceSnapOff')}
               </p>
             </div>
           </PanelSection>
@@ -715,7 +722,7 @@ export default function StairPanel() {
 
           {riseError?.id === node.id ? (
             <div role="alert" className="text-destructive text-xs">
-              {riseError.message}
+              {messageKey(riseError.message)}
             </div>
           ) : null}
 

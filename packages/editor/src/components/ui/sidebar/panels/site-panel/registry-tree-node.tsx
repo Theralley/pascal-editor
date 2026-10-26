@@ -132,6 +132,7 @@ export const RegistryTreeNode = memo(function RegistryTreeNode({
       label={
         <InlineRenameInput
           defaultName={defaultName}
+          displayName={tree?.label && node ? defaultName : undefined}
           isEditing={isEditing}
           nodeId={nodeId}
           onStartEditing={() => setIsEditing(true)}

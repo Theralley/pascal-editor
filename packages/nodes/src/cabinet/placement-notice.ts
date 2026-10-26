@@ -13,6 +13,9 @@ import {
   cabinetOpeningObstacles,
 } from './opening-clearance'
 
+export const OPENING_CLEARANCE_NOTICE =
+  'Opening clearance: nearby objects may block a door or drawer'
+
 export function cabinetPlacementNotice(
   node: CabinetNode | CabinetModuleNode,
   { nodes, live }: { nodes: Readonly<Record<string, AnyNode>>; live?: LiveTransformLike },
@@ -49,7 +52,7 @@ export function cabinetPlacementNotice(
         levelObstacles,
       ).length
     )
-      return { line: 'Opening clearance: nearby objects may block a door or drawer' }
+      return { line: OPENING_CLEARANCE_NOTICE }
   }
   return null
 }

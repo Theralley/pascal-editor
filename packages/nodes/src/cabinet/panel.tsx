@@ -141,6 +141,7 @@ const EMPTY_MODULE_IDS: AnyNodeId[] = []
 export default function CabinetPanel() {
   const t = useT(messages)
   const planningIssueText = (planningIssue: CabinetPlanningIssue) => {
+    if (!planningIssue.detail) return planningIssue.message
     const { variant, name, nextName, mm } = planningIssue.detail
     const vars = {
       name: name ? cabinetDisplayName(name) : t('cabinetModule'),
@@ -725,7 +726,7 @@ export default function CabinetPanel() {
               value={wallHeightPreset === 'custom' ? '18' : wallHeightPreset}
             />
             <p className="px-1 pt-1 text-[10px] leading-4 text-muted-foreground">
-              {t('commonWallCabinetHeightsUseTheSliderBelo')}
+              {t('wallHeightsNote')}
             </p>
           </div>
         )}
@@ -821,7 +822,7 @@ export default function CabinetPanel() {
                 </div>
                 {node.panelReady && (
                   <p className="px-1 text-xs leading-5 text-muted-foreground">
-                    {t('usesTheCabinetFrontStyleRevealHandleAndF')}
+                    {t('panelReadyNote')}
                   </p>
                 )}
               </div>
@@ -914,9 +915,7 @@ export default function CabinetPanel() {
         <summary className="cursor-pointer px-3 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           {t('advanced')}
         </summary>
-        <p className="px-3 pb-2 text-xs text-muted-foreground">
-          {t('cabinetConstructionCompartmentsAndOpenin')}
-        </p>
+        <p className="px-3 pb-2 text-xs text-muted-foreground">{t('advancedNote')}</p>
         {!isHoodOnlyNode && (
           <PanelSection title={t('frontConstruction')} defaultExpanded={false}>
             <div>
