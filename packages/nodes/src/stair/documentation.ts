@@ -9,12 +9,13 @@ import {
   type StairNode,
   useScene,
 } from '@pascal-app/core'
-import { floorplanGeometryMetadata, readFloorplanContext } from '@pascal-app/editor'
+import { floorplanGeometryMetadata, readFloorplanContext, translate } from '@pascal-app/editor'
 import {
   type ConstructionLengthProfile,
   type ConstructionMetricNotation,
   formatConstructionLength,
 } from '../shared/construction-length'
+import { messages } from './messages'
 import type {
   FloorplanStairArrowEntry,
   FloorplanStairEntry,
@@ -121,7 +122,12 @@ function buildStraightDocumentation(
         }
       : arrowStart
     geometries.push(
-      annotationText(labelPoint, direction === 'up' ? 'UP' : 'DN', DIRECTION_FONT_SIZE, stroke),
+      annotationText(
+        labelPoint,
+        translate(messages, direction === 'up' ? 'planUp' : 'planDown'),
+        DIRECTION_FONT_SIZE,
+        stroke,
+      ),
     )
   }
 

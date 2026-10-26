@@ -10,6 +10,7 @@ import {
 import { stairSegmentPaint } from '../stair/paint'
 import { stairSegmentParametrics } from './parametrics'
 import { StairSegmentNode } from './schema'
+import { stairSegmentTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.24
 const LENGTH_HANDLE_OFFSET = 0.24
@@ -178,6 +179,7 @@ export const stairSegmentDefinition: NodeDefinition<typeof StairSegmentNode> = {
     module: () => import('./renderer'),
   },
 
+  translations: stairSegmentTranslations,
   presentation: {
     label: 'Stair Segment',
     description: 'A single flight of a parent stair.',

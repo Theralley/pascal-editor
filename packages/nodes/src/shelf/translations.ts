@@ -1,0 +1,33 @@
+/** Swedish for the text `shelfDefinition` declares, keyed by its English source. */
+export const shelfTranslations = {
+  sv: {
+    Shelf: 'Hylla',
+    'A configurable shelving unit. Items host on each row.':
+      'En inställbar hyllenhet. Föremål kan placeras på varje hyllplan.',
+    'Place shelf': 'Placera hyllan',
+    Cancel: 'Avbryt',
+    Style: 'Stil',
+    'Wall shelf': 'Vägghylla',
+    Bookshelf: 'Bokhylla',
+    'Open rack': 'Öppen ställning',
+    Cubby: 'Fackhylla',
+    Topology: 'Uppbyggnad',
+    Rows: 'Rader',
+    Columns: 'Kolumner',
+    'With sides': 'Med sidor',
+    'With back': 'Med bakstycke',
+    'With bottom': 'Med botten',
+    'Bracket style': 'Konsolstil',
+    Minimal: 'Minimal',
+    Industrial: 'Industriell',
+    Hidden: 'Dold',
+    Dimensions: 'Mått',
+    Width: 'Bredd',
+    Depth: 'Djup',
+    Thickness: 'Tjocklek',
+    Height: 'Höjd',
+    Position: 'Position',
+    Shelves: 'Hyllplan',
+    Frame: 'Stomme',
+  },
+}

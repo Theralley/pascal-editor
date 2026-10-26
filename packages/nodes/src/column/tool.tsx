@@ -19,6 +19,7 @@ import {
   movementSfxStepKey,
   type PointerSupportSurface,
   resolvePointerSupportSurface,
+  translate,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
@@ -40,14 +41,15 @@ import {
   collectStructuralGridAxes,
   resolveStructuralGridSnap,
 } from '../structural-grid/coordination'
+import { messages } from './messages'
 import { ColumnPreview } from './renderer'
 
 const DEFAULT_COLUMN_PRESET_ID = 'basicPillar' satisfies ColumnPresetId
 
 function createColumnFromPreset(presetId: ColumnPresetId, position: [number, number, number]) {
-  const { label, ...preset } = COLUMN_PRESETS[presetId]
+  const { label: _label, ...preset } = COLUMN_PRESETS[presetId]
   return ColumnNode.parse({
-    name: label,
+    name: translate(messages, `preset.${presetId}`),
     position,
     rotation: 0,
     ...preset,

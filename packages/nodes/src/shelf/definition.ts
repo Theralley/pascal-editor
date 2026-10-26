@@ -9,6 +9,7 @@ import { buildShelfGeometry, shelfRowSurfaceYs } from './geometry'
 import { shelfPaint } from './paint'
 import { shelfParametrics } from './parametrics'
 import { ShelfNode } from './schema'
+import { shelfTranslations } from './translations'
 
 const SIDE_HANDLE_OFFSET = 0.18
 const HEIGHT_HANDLE_OFFSET = 0.22
@@ -274,6 +275,7 @@ export const shelfDefinition: NodeDefinition<typeof ShelfNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
 
+  translations: shelfTranslations,
   presentation: {
     label: 'Shelf',
     description: 'A configurable shelving unit. Items host on each row.',
