@@ -278,7 +278,7 @@ export function buildConstructionDimensionPreviewGeometries(
             kind: 'dimension-label',
             cx: baselinePoint[0],
             cy: baselinePoint[2],
-            text: `ARC ${formatLinearMeasurement(layout.arcLength, unit, metricNotation)}`,
+            text: `ARC ${formatLinearMeasurement(layout.arcLength, unit, metricNotation)}`, // i18n-ignore: drawing label
             angle: 0,
             screenUpright: true,
             appearance: 'outlined',

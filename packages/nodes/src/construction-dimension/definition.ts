@@ -8,6 +8,7 @@ import {
 } from './floorplan-affordances'
 import { constructionDimensionParametrics } from './parametrics'
 import { ConstructionDimensionNode } from './schema'
+import { constructionDimensionTranslations } from './translations'
 
 export const constructionDimensionDefinition: NodeDefinition<typeof ConstructionDimensionNode> = {
   kind: 'construction-dimension',
@@ -84,6 +85,8 @@ export const constructionDimensionDefinition: NodeDefinition<typeof Construction
     hidden: true,
     actionMenu: false,
   },
+
+  translations: constructionDimensionTranslations,
 
   mcp: {
     description:

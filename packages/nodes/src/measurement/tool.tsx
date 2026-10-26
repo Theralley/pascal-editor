@@ -44,6 +44,7 @@ import {
   useEditor,
   useInteractionScope,
   useMeasurementDraft,
+  useT,
 } from '@pascal-app/editor'
 import { setSurfaceRaycastLayers, useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
@@ -70,6 +71,7 @@ import {
   Vector3,
 } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { messages } from './messages'
 import { matchMeasurementFeatureForNode } from './resolve'
 import {
   createMeasurementSurfaceQuerySession,
@@ -1223,6 +1225,7 @@ function DraftLabel({
 }
 
 function DraftExtrusionControl({ position }: { position: Vector3 }) {
+  const t = useT(messages)
   const unit = useViewer((state) => state.unit)
   const extrusionHeight = useMeasurementDraft((state) => state.extrusionHeight)
   const points = useMeasurementDraft((state) => state.points)
@@ -1282,14 +1285,14 @@ function DraftExtrusionControl({ position }: { position: Vector3 }) {
         }}
       >
         <label className="sr-only" htmlFor="measurement-3d-extrusion-height">
-          Extrusion height
+          {t('extrusion.height')}
         </label>
         <div className="relative min-w-0 flex-1">
           <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center font-medium text-muted-foreground text-xs">
-            H
+            {/* i18n-ignore: quantity symbol */}H
           </span>
           <input
-            aria-label="Extrusion height"
+            aria-label={t('extrusion.height')}
             className="h-8 w-full rounded-md border border-border bg-background pr-7 pl-6 text-sm outline-none focus:border-indigo-400"
             id="measurement-3d-extrusion-height"
             inputMode="decimal"
@@ -1321,7 +1324,7 @@ function DraftExtrusionControl({ position }: { position: Vector3 }) {
           </span>
         </div>
         <span className="shrink-0 font-mono font-semibold text-[11px] tabular-nums text-foreground">
-          V {volumeLabel}
+          {/* i18n-ignore: quantity symbol */}V {volumeLabel}
         </span>
         <button
           className="h-8 shrink-0 rounded-full bg-indigo-500 px-3 font-medium text-white text-xs disabled:cursor-not-allowed disabled:opacity-40"
@@ -1329,7 +1332,7 @@ function DraftExtrusionControl({ position }: { position: Vector3 }) {
           onClick={commit}
           type="button"
         >
-          Create
+          {t('extrusion.create')}
         </button>
       </div>
     </Html>
@@ -1547,12 +1550,8 @@ const MeasurementDraftPreview: FC<{
           position: localToPreviewFrame(levelObject, buildingObject, center),
           text:
             kind === 'area'
-              ? `A ${formatAreaLabel(measurementArea(livePoints), unit)}`
-              : `P ${formatLinearMeasurement(
-                  measurementPerimeter(livePoints),
-                  unit,
-                  metricNotation,
-                )}`,
+              ? `A ${formatAreaLabel(measurementArea(livePoints), unit)}` // i18n-ignore: quantity symbol
+              : `P ${formatLinearMeasurement(measurementPerimeter(livePoints), unit, metricNotation)}`, // i18n-ignore: quantity symbol
         }
       }
     } else if (kind === 'volume' && points.length >= 3 && baseNormal) {
@@ -1573,6 +1572,7 @@ const MeasurementDraftPreview: FC<{
               center[1] + extrusion[1] / 2,
               center[2] + extrusion[2] / 2,
             ]),
+            // i18n-ignore: quantity symbol
             text: `V ${formatVolumeLabel(measurementPrismVolume(points, extrusion), unit)}`,
           }
         }

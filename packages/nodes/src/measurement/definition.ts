@@ -3,6 +3,7 @@ import type { FloorplanNodeExtension } from '@pascal-app/editor'
 import { buildMeasurementFloorplan } from './floorplan'
 import { measurementMoveVertexAffordance } from './floorplan-affordance'
 import { MeasurementNode } from './schema'
+import { measurementTranslations } from './translations'
 
 export const measurementDefinition: NodeDefinition<typeof MeasurementNode> = {
   kind: 'measurement',
@@ -68,6 +69,8 @@ export const measurementDefinition: NodeDefinition<typeof MeasurementNode> = {
     hidden: true,
     actionMenu: false,
   },
+
+  translations: measurementTranslations,
 
   mcp: {
     description:
