@@ -8,6 +8,7 @@ import {
   dropInLot,
   PanelSection,
   PanelWrapper,
+  useLocale,
   useParcelProvider,
   useT,
 } from '@pascal-app/editor'
@@ -38,6 +39,7 @@ interface Suggestion {
  */
 export function SiteNodePanel() {
   const t = useT(messages)
+  const locale = useLocale()
   const selectedId = useViewer((s) => s.selection.selectedIds[0])
   // The selected site node, else THE site node: the sidebar's Site header
   // mounts this panel directly, where nothing may be selected.
@@ -139,12 +141,14 @@ export function SiteNodePanel() {
   if (!node) return null
 
   // The editor words an edge in English; the same parts read in the locale here.
+  const compassLabel = (compass: string) =>
+    locale === 'sv' ? compass.replaceAll('W', 'V').replaceAll('E', 'Ö') : compass
   const edgeLabel = (label: string) => {
     const match = /^Edge (\d+) — faces (\S+) \((-?\d+)°\), (.+)$/.exec(label)
     return match
       ? t('orientation.edge', {
           n: match[1]!,
-          compass: match[2]!,
+          compass: compassLabel(match[2]!),
           deg: match[3]!,
           length: match[4]!,
         })

@@ -44,6 +44,7 @@ import {
   translate,
   useEditor,
   useInteractionScope,
+  useLocale,
   useMeasurementDraft,
   useT,
 } from '@pascal-app/editor'
@@ -1358,6 +1359,7 @@ const MeasurementDraftPreview: FC<{
   const error = useMeasurementDraft((state) => state.error)
   const unit = useViewer((state) => state.unit)
   const metricNotation = useViewer((state) => state.metricNotation)
+  const locale = useLocale()
   const axisIntersectionCache = useRef<{
     intersections: QueriedAxisSurfaceIntersection[]
     key: string
@@ -1609,6 +1611,7 @@ const MeasurementDraftPreview: FC<{
     hoverOwner,
     kind,
     levelId,
+    locale,
     metricNotation,
     points,
     stage,

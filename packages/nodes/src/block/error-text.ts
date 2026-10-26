@@ -24,6 +24,8 @@ const ERROR_KEYS: Record<string, MessageKey<typeof messages>> = {
   'Extrude Region requires connected faces': 'cmd.extrudeConnected',
   'Selected face normals cancel each other out': 'cmd.normalsCancel',
   'Loop cut requires 1–32 cuts and a factor between 0 and 1': 'cmd.loopRange',
+  'Bevel width must be positive': 'cmd.bevelWidth',
+  'Scale requires finite, non-zero factors and a finite pivot': 'cmd.scaleFactors',
   'Loop cut requires a connected ring of quad faces': 'error.loopRing',
 }
 

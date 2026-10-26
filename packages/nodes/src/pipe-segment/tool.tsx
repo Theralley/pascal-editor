@@ -6,6 +6,7 @@ import {
   EDITOR_LAYER,
   triggerSFX,
   useEditor,
+  useLocale,
   usePathDraftPreview,
   useRegistryToolContext,
 } from '@pascal-app/editor'
@@ -61,6 +62,8 @@ function getConnectionPorts(
 }
 
 const PipeSegmentTool = () => {
+  // The clearance warning in the preview plan words itself in the locale.
+  useLocale()
   const { activeLevelId, sceneApi, unit } = useRegistryToolContext()
   const toolDefaults = useEditor((s) => s.toolDefaults['pipe-segment']) as
     | Partial<PipeSegmentNode>

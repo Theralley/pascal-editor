@@ -6,6 +6,7 @@ import {
   EDITOR_LAYER,
   triggerSFX,
   useEditor,
+  useLocale,
   usePathDraftPreview,
   useRegistryToolContext,
 } from '@pascal-app/editor'
@@ -695,6 +696,8 @@ const DuctSegmentTool = () => {
     }))
   }, [toolDefaults])
 
+  const locale = useLocale()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the plan's clearance warning words itself in the locale
   const previewPlan = useMemo(() => {
     if (!(activeLevelId && run.start && run.cursor)) return null
     return planDuctDraw(
@@ -723,6 +726,7 @@ const DuctSegmentTool = () => {
     run.endConnection,
     run.surfaceTarget,
     sceneApi,
+    locale,
   ])
   const ghostFittings = useMemo(() => previewPlan?.fittings ?? [], [previewPlan])
 
