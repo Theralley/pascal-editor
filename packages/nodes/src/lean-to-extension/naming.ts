@@ -27,3 +27,8 @@ export function localizedLeanToName(name: string | null | undefined): string | u
   }
   return definitionText(nodeRegistry.get('lean-to-extension'), name)
 }
+
+/** `node` with its English default name translated; a name the person chose stays. */
+export function withLocalizedLeanToName<T extends { name?: string | null }>(node: T): T {
+  return { ...node, name: localizedLeanToName(node.name) }
+}

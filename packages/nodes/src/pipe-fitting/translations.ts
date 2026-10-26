@@ -3,7 +3,7 @@ export const pipeFittingTranslations = {
   sv: {
     'Pipe Fitting': 'Rördel',
     'DWV joint — elbow bend, 45° wye, or sanitary tee.':
-      'Avloppsrördel — böj, 45° Y-stycke eller sanitets-T.',
+      'Avloppsrördel — böj, 45° Y-stycke eller T-rör 87°.',
     'Place fitting': 'Placera rördel',
     'Snap onto the run': 'Fäst på ledningen',
     'Rotate ±45°': 'Rotera ±45°',

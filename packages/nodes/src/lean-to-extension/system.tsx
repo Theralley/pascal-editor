@@ -60,7 +60,7 @@ import {
   LEAN_TO_EXTENSION_GEOMETRY_REVISION,
   resolveLeanToSpanArc,
 } from './layout'
-import { localizedLeanToName } from './naming'
+import { withLocalizedLeanToName } from './naming'
 import { reconcileLeanToSlabEdgePlacement } from './placement'
 import { resolveLeanToEndAbutments } from './placement-validation'
 import {
@@ -571,20 +571,30 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
       if (!roof) {
         const assembly = createManagedLeanToRoofAssembly(effectiveLeanTo, hostRoof, nodes)
         create.push(
-          { node: assembly.roof, parentId: leanTo.id },
-          { node: assembly.segment, parentId: assembly.roof.id },
+          { node: withLocalizedLeanToName(assembly.roof), parentId: leanTo.id },
+          { node: withLocalizedLeanToName(assembly.segment), parentId: assembly.roof.id },
           ...(assembly.oppositeSegment
-            ? [{ node: assembly.oppositeSegment, parentId: assembly.roof.id }]
+            ? [
+                {
+                  node: withLocalizedLeanToName(assembly.oppositeSegment),
+                  parentId: assembly.roof.id,
+                },
+              ]
             : []),
-          { node: assembly.gutter, parentId: assembly.segment.id },
-          { node: assembly.downspout, parentId: assembly.segment.id },
+          { node: withLocalizedLeanToName(assembly.gutter), parentId: assembly.segment.id },
+          { node: withLocalizedLeanToName(assembly.downspout), parentId: assembly.segment.id },
           ...(assembly.oppositeGutter && assembly.oppositeSegment
-            ? [{ node: assembly.oppositeGutter, parentId: assembly.oppositeSegment.id }]
+            ? [
+                {
+                  node: withLocalizedLeanToName(assembly.oppositeGutter),
+                  parentId: assembly.oppositeSegment.id,
+                },
+              ]
             : []),
           ...(assembly.oppositeDownspout && assembly.oppositeSegment
             ? [
                 {
-                  node: assembly.oppositeDownspout,
+                  node: withLocalizedLeanToName(assembly.oppositeDownspout),
                   parentId: assembly.oppositeSegment.id,
                 },
               ]
@@ -623,7 +633,7 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
               nodes,
             )
             create.push({
-              node: createdOppositeSegment,
+              node: withLocalizedLeanToName(createdOppositeSegment),
               parentId: roof.id as AnyNodeId,
             })
             if (effectiveLeanTo.canopyForm === 'gable') {
@@ -634,8 +644,14 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
                 nodes,
               )
               create.push(
-                { node: pair.gutter, parentId: createdOppositeSegment.id as AnyNodeId },
-                { node: pair.downspout, parentId: createdOppositeSegment.id as AnyNodeId },
+                {
+                  node: withLocalizedLeanToName(pair.gutter),
+                  parentId: createdOppositeSegment.id as AnyNodeId,
+                },
+                {
+                  node: withLocalizedLeanToName(pair.downspout),
+                  parentId: createdOppositeSegment.id as AnyNodeId,
+                },
               )
             }
           } else {
@@ -674,8 +690,14 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
                   nodes,
                 )
                 create.push(
-                  { node: pair.gutter, parentId: oppositeSegment.id as AnyNodeId },
-                  { node: pair.downspout, parentId: oppositeSegment.id as AnyNodeId },
+                  {
+                    node: withLocalizedLeanToName(pair.gutter),
+                    parentId: oppositeSegment.id as AnyNodeId,
+                  },
+                  {
+                    node: withLocalizedLeanToName(pair.downspout),
+                    parentId: oppositeSegment.id as AnyNodeId,
+                  },
                 )
               } else {
                 const gutterPatch = leanToGutterLayoutPatch(
@@ -842,8 +864,7 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
             const post = createManagedLeanToPost(effectiveLeanTo, index, side)
             create.push({
               node: {
-                ...post,
-                name: localizedLeanToName(post.name),
+                ...withLocalizedLeanToName(post),
                 ...leanToPostLayoutPatch(effectiveLeanTo, index, postBaseY, gutterSetback, side),
               } as ColumnNode,
               parentId: leanTo.id,
@@ -890,7 +911,7 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
         if (!current) {
           create.push({
             node: {
-              ...createManagedLeanToCornerPost(effectiveLeanTo, joint),
+              ...withLocalizedLeanToName(createManagedLeanToCornerPost(effectiveLeanTo, joint)),
               ...patch,
             } as ColumnNode,
             parentId: leanTo.id,
@@ -934,7 +955,9 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
           if (!current) {
             create.push({
               node: {
-                ...createManagedLeanToCanopyCornerPost(effectiveLeanTo, joint, side),
+                ...withLocalizedLeanToName(
+                  createManagedLeanToCanopyCornerPost(effectiveLeanTo, joint, side),
+                ),
                 ...patch,
               } as ColumnNode,
               parentId: leanTo.id,
