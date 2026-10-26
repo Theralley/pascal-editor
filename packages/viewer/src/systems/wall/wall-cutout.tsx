@@ -14,6 +14,7 @@ import {
   uncutMaterials,
 } from '../../lib/display-cut'
 import useViewer, { type WallMode } from '../../store/use-viewer'
+import { WallModeFollowCache } from '../wall-mode/wall-mode-follow'
 import { WallCutCaps } from './wall-cut-caps'
 import { wallCutApplies } from './wall-cut-eligibility'
 import {
@@ -141,6 +142,8 @@ let capturing: { caps: WallCutCaps; height: number } | null = null
  */
 export function refreshCaptureWallCaps(): void {
   capturing?.caps.update(true, capturing.height, useViewer.getState().shading)
+  // The followers' clip planes stand where their levels do, which a capture moves after it begins.
+  WallModeFollowCache.refreshPlanes()
 }
 
 export function presentWallsLowForCapture(height: number): () => void {

@@ -378,7 +378,8 @@ type ThumbnailEvents = {
    * interior view). `exporting`: the scene is cloned for a model export, which must hold the whole
    * building, so nodes the wall mode hides (`followsWallMode`) are shown for the clone.
    * `wallsLow`: the walls are cut low for the frame; `openings` is how doors and windows stand in it
-   * (`lowWallOpening`), the person's own choice when absent.
+   * (`lowWallOpening`), the person's own choice when absent, and `cutHeight` the height the walls and
+   * the followers (`followsWallMode`) are cut at.
    */
   'thumbnail:before-capture':
     | {
@@ -387,6 +388,7 @@ type ThumbnailEvents = {
         finished?: boolean
         wallsLow?: boolean
         openings?: SceneViewOpenings
+        cutHeight?: number
       }
     | undefined
   'thumbnail:after-capture': undefined

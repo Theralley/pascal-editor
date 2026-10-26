@@ -22,7 +22,7 @@ import {
 import RenderObject from 'three/src/renderers/common/RenderObject.js'
 import RenderObjects from 'three/src/renderers/common/RenderObjects.js'
 import { pass } from 'three/tsl'
-import { NodeFrame } from 'three/webgpu'
+import { ClippingGroup, NodeFrame } from 'three/webgpu'
 import {
   cutMaterial,
   displayCutLimitY,
@@ -292,6 +292,19 @@ describe('merged outline proxy bookkeeping', () => {
     expect(added).toBe(0)
     expect(f.internals._proxiesB.size).toBe(0)
     f.dispose()
+  })
+
+  test('a disabled ClippingGroup keeps proxies, an enabled one takes the fallback path', () => {
+    for (const enabled of [false, true]) {
+      const f = makeOutlineFixture()
+      const group = new ClippingGroup()
+      group.enabled = enabled
+      f.root.add(group)
+      group.add(f.mesh)
+      f.tick()
+      expect(f.internals._proxiesB.has(f.mesh)).toBe(!enabled)
+      f.dispose()
+    }
   })
 
   test('releases real RenderObjects and dispose listeners across five hover cycles', () => {

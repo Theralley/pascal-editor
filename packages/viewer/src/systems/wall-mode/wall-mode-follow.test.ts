@@ -16,7 +16,9 @@ import {
   PerspectiveCamera,
   Raycaster,
 } from 'three'
+import { ClippingGroup } from 'three/webgpu'
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { isDisplayCut, setDisplayCutHeight } from '../../lib/display-cut'
 import { SCENE_LAYER, SHADOW_ONLY_LAYER } from '../../lib/layers'
 import { hideFromScene } from '../../lib/scene-visibility'
 import {
@@ -47,16 +49,27 @@ function placeCamera(x: number, targetX = 0) {
  * One wall centred on (2, 0) under a level, and a node of `kind` built at x = 10 (outside). The
  * node sits at the origin, as a block with world-space vertices does: only its mesh is out there.
  */
-function addScene(kind: string, extra: Record<string, unknown> = {}) {
+function addScene(
+  kind: string,
+  extra: Record<string, unknown> = {},
+  { clip = false, y = 0 }: { clip?: boolean; y?: number } = {},
+) {
   const building = new Group()
   const level = new Group()
   const wall = WallNode.parse({ start: [0, 0], end: [4, 0], parentId: 'level_a' })
   const material = new MeshBasicMaterial({ color: '#336699' })
   const mesh = new Mesh(new BoxGeometry(1, 1, 1), material)
-  mesh.position.set(10, 0, 0)
+  mesh.position.set(10, y, 0)
   const group = new Group()
   group.add(mesh)
-  level.add(group)
+  // A follower is rendered in a clip group that clips nothing until the cut passes through it.
+  const clipGroup = new ClippingGroup()
+  clipGroup.enabled = false
+  clipGroup.userData.followerClip = true
+  if (clip) {
+    clipGroup.add(group)
+    level.add(clipGroup)
+  } else level.add(group)
   building.add(level)
   building.updateMatrixWorld(true)
   sceneRegistry.nodes.set('level_a', level)
@@ -73,7 +86,7 @@ function addScene(kind: string, extra: Record<string, unknown> = {}) {
       [id]: { id, type: kind, parentId: 'level_a', children: [], ...extra },
     },
   } as never)
-  return { id, building, group, mesh, material }
+  return { id, building, group, mesh, material, level, clipGroup }
 }
 
 const shown = (mesh: Mesh) => mesh.layers.isEnabled(SCENE_LAYER)
@@ -90,11 +103,22 @@ beforeEach(() => {
     },
   } as never)
   nodeRegistry._register({ kind: 'plain', schemaVersion: 1, capabilities: {} } as never)
+  nodeRegistry._register({
+    kind: 'column',
+    schemaVersion: 1,
+    capabilities: {
+      followsWallMode: {
+        appliesTo: (node: { role?: string }) => node.role !== 'ornament',
+        modes: ['down', 'low'],
+      },
+    },
+  } as never)
   sceneRegistry.clear()
   useScene.setState({ nodes: {}, materials: {} })
   viewerStore = createStore<WallModeFollowViewerState>(() => ({
     wallMode: 'up',
     geometryRevision: 0,
+    wallCutHeight: 0.25,
   }))
   cache = new WallModeFollowCache(viewerStore)
   camera = new PerspectiveCamera()
@@ -380,5 +404,149 @@ describe('WallModeFollowCache', () => {
     expect(shown(mesh)).toBe(false)
     useLiveTransforms.getState().clearAll()
     useLiveNodeOverrides.getState().clearAll()
+  })
+})
+
+describe('followers in Low', () => {
+  const clipped = (clipGroup: ClippingGroup) => clipGroup.enabled
+  const capsOf = (level: Group) => level.getObjectByName('follower-cut-caps') as Mesh | undefined
+
+  test.each([
+    ['wholly under the cut', -1, 'as built'],
+    ['the cut passes through it', 0, 'clipped'],
+    ['wholly over the cut', 1, 'hidden'],
+  ] as const)('a column %s is %s', (_name, y, outcome) => {
+    const { mesh, clipGroup, id } = addScene('column', {}, { clip: true, y })
+    setMode('low')
+    cache.update(camera)
+    expect(shown(mesh)).toBe(outcome !== 'hidden')
+    expect(clipped(clipGroup)).toBe(outcome === 'clipped')
+    expect(isWallModeAffected(id)).toBe(outcome !== 'as built')
+  })
+
+  test('the slider reclassifies it, and the plane stands where its level does', () => {
+    const { mesh, clipGroup, level } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(true)
+    expect(clipGroup.clippingPlanes[0]!.constant).toBeCloseTo(0.25, 6)
+    level.position.y = 5
+    level.updateMatrixWorld(true)
+    cache.update(camera)
+    expect(clipGroup.clippingPlanes[0]!.constant).toBeCloseTo(5.25, 6)
+    viewerStore.setState({ wallCutHeight: 1 })
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(false)
+    expect(shown(mesh)).toBe(true)
+    viewerStore.setState({ wallCutHeight: -1 })
+    cache.update(camera)
+    expect(shown(mesh)).toBe(false)
+    viewerStore.setState({ wallCutHeight: 0.25 })
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(true)
+    expect(shown(mesh)).toBe(true)
+  })
+
+  test('clipping writes no material, and a pick above the cut goes through the stub', () => {
+    const { mesh, material, group } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    cache.update(camera)
+    expect(mesh.material).toBe(material)
+    expect(isDisplayCut(mesh)).toBe(true)
+    group.updateMatrixWorld(true)
+    // The wall system owns the display-cut height; here it is the slider's.
+    setDisplayCutHeight(0.25)
+    const from = (y: number) =>
+      new Raycaster(camera.position.clone().set(20, y, 0), camera.position.clone().set(-1, 0, 0))
+    expect(from(0.1).intersectObject(group, true).length).toBeGreaterThan(0)
+    expect(from(0.4).intersectObject(group, true)).toHaveLength(0)
+    setDisplayCutHeight(0)
+  })
+
+  test('what is hosted on a clipped column is clipped, picked below the cut and capped with it', () => {
+    const { group, level } = addScene('column', {}, { clip: true, y: 0 })
+    const hosted = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial())
+    hosted.position.set(10, 0, 3)
+    group.add(hosted)
+    level.updateMatrixWorld(true)
+    setMode('low')
+    cache.update(camera)
+    expect(isDisplayCut(hosted)).toBe(true)
+    const cap = capsOf(level)!
+    expect(cap).toBeDefined()
+    const position = cap.geometry.getAttribute('position')
+    const zs = new Set<number>()
+    for (let i = 0; i < position.count; i++) zs.add(Math.round(position.getZ(i) * 10) / 10)
+    expect(zs.has(3.5) || zs.has(2.5)).toBe(true)
+  })
+
+  test('the cap is the section of the stub, stands at the cut and goes when the column does not straddle', () => {
+    const { level } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    cache.update(camera)
+    const cap = capsOf(level)!
+    expect(cap.position.y).toBeCloseTo(0.25, 6)
+    viewerStore.setState({ wallCutHeight: 2 })
+    cache.update(camera)
+    expect(capsOf(level)).toBeUndefined()
+  })
+
+  test('an ornament column is untouched, and a column has no cutaway', () => {
+    const ornament = addScene('column', { role: 'ornament' }, { clip: true, y: 1 })
+    setMode('low')
+    cache.update(camera)
+    expect(shown(ornament.mesh)).toBe(true)
+    expect(clipped(ornament.clipGroup)).toBe(false)
+    sceneRegistry.clear()
+    cache.dispose()
+    const column = addScene('column', {}, { clip: true, y: 0 })
+    setMode('cutaway')
+    cache.update(camera)
+    expect(shown(column.mesh)).toBe(true)
+    setMode('down')
+    cache.update(camera)
+    expect(shown(column.mesh)).toBe(false)
+  })
+
+  test('a low capture clips at its own cutHeight and gives the live view back', () => {
+    const { clipGroup, mesh } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('up')
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(false)
+    cache.beforeCapture({ wholeWalls: true, wallsLow: true, cutHeight: 0.25 })
+    expect(clipped(clipGroup)).toBe(true)
+    cache.afterCapture()
+    expect(clipped(clipGroup)).toBe(false)
+    expect(shown(mesh)).toBe(true)
+    setMode('low')
+    cache.update(camera)
+    expect(clipped(clipGroup)).toBe(true)
+    cache.beforeCapture({ wholeWalls: true, wallsLow: true, cutHeight: 1 })
+    expect(clipped(clipGroup)).toBe(false)
+    expect(shown(mesh)).toBe(true)
+    cache.afterCapture()
+    expect(clipped(clipGroup)).toBe(true)
+  })
+
+  test('a capture of whole walls puts the clip and the cap away and brings them back', () => {
+    const { clipGroup, level } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    cache.update(camera)
+    cache.beforeCapture({ wholeWalls: true })
+    expect(clipped(clipGroup)).toBe(false)
+    expect(capsOf(level)!.visible).toBe(false)
+    cache.afterCapture()
+    expect(clipped(clipGroup)).toBe(true)
+    expect(capsOf(level)!.visible).toBe(true)
+  })
+
+  test('a plane refreshed after a capture moves the levels follows them', () => {
+    const { clipGroup, level } = addScene('column', {}, { clip: true, y: 0 })
+    setMode('low')
+    cache.update(camera)
+    level.position.y = 3
+    level.updateMatrixWorld(true)
+    WallModeFollowCache.refreshPlanes()
+    expect(clipGroup.clippingPlanes[0]!.constant).toBeCloseTo(3.25, 6)
   })
 })

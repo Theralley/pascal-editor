@@ -590,7 +590,7 @@ export class MergedOutlineNode extends TempNode {
       for (let ancestor = source; ancestor; ancestor = ancestor.parent) {
         if (
           ancestor.isLOD ||
-          ancestor.isClippingGroup ||
+          (ancestor.isClippingGroup && ancestor.enabled) ||
           (ancestor.isGroup && ancestor.renderOrder !== 0)
         ) {
           return false

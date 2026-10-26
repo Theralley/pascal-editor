@@ -459,22 +459,32 @@ export function captureLift({
   finished,
   wallsLow,
   openings,
+  cutHeight,
 }: {
   wholeWalls: boolean
   finished: boolean
   wallsLow: boolean
   openings?: SceneViewOpenings
+  cutHeight?: number
 }):
   | {
       wholeWalls?: boolean
       finished?: boolean
       wallsLow?: boolean
       openings?: SceneViewOpenings
+      cutHeight?: number
     }
   | undefined {
   const lift = {
     ...(wholeWalls || wallsLow ? { wholeWalls: true } : finished ? { finished: true } : {}),
-    ...(wallsLow ? { wallsLow: true, ...(openings ? { openings } : {}) } : {}),
+    ...(wallsLow
+      ? {
+          wallsLow: true,
+          ...(openings ? { openings } : {}),
+          // The followers (columns, blocks) are cut at the picture's height, not the live slider's.
+          ...(cutHeight === undefined ? {} : { cutHeight }),
+        }
+      : {}),
   }
   return Object.keys(lift).length > 0 ? lift : undefined
 }
@@ -1016,6 +1026,8 @@ export const ThumbnailGenerator = ({ onThumbnailCapture }: ThumbnailGeneratorPro
                   finished: snapLevels,
                   wallsLow: event.presentation?.walls?.mode === 'low',
                   openings: event.presentation?.openings,
+                  cutHeight:
+                    event.presentation?.walls?.cutHeight ?? useViewer.getState().wallCutHeight,
                 }),
               )
               if (cameraPose) {

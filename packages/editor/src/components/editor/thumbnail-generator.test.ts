@@ -693,6 +693,12 @@ describe('what a capture tells the scene before it draws', () => {
       { wholeWalls: true, finished: false, wallsLow: false, openings: 'hidden' as const },
       { wholeWalls: true },
     ],
+    // The height the followers are cut at rides with low walls only.
+    [
+      { wholeWalls: false, finished: false, wallsLow: true, cutHeight: 0.6 },
+      { wholeWalls: true, wallsLow: true, cutHeight: 0.6 },
+    ],
+    [{ wholeWalls: true, finished: false, wallsLow: false, cutHeight: 0.6 }, { wholeWalls: true }],
   ])('%j is %j', (input, expected) => {
     expect(captureLift(input)).toEqual(expected)
   })

@@ -8,7 +8,16 @@ import {
   type RendererSource,
   useScene,
 } from '@pascal-app/core'
-import { type ComponentType, lazy, Suspense, useCallback, useSyncExternalStore } from 'react'
+import {
+  type ComponentType,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
+import { ClippingGroup } from 'three/webgpu'
 import { useRevealPending } from '../../systems/construction-reveal/construction-reveal'
 import { ParametricNodeRenderer } from './parametric-node-renderer'
 
@@ -27,6 +36,23 @@ export function getRegistryRenderer(
   const Comp = lazy(source.module) as unknown as ComponentType<{ node: AnyNode }>
   lazyCache.set(source, Comp)
   return Comp
+}
+
+/**
+ * A kind that follows the wall mode (`capabilities.followsWallMode`) is rendered inside a
+ * `ClippingGroup` that stands at the identity and clips nothing until the Low cut passes through
+ * the node (`WallModeFollowSystem` turns it on and sets its plane). It is always mounted, so the
+ * wall mode never remounts the node, and clipping leaves every material alone.
+ */
+function FollowerClip({ children }: { children: ReactNode }) {
+  const clip = useMemo(() => {
+    const group = new ClippingGroup()
+    group.enabled = false
+    group.name = 'follower-clip'
+    group.userData.followerClip = true
+    return group
+  }, [])
+  return <primitive object={clip}>{children}</primitive>
 }
 
 export const NodeRenderer = ({ nodeId }: { nodeId: AnyNode['id'] }) => {
@@ -49,17 +75,24 @@ export const NodeRenderer = ({ nodeId }: { nodeId: AnyNode['id'] }) => {
   //  2. Else, if the kind ships `def.geometry`, the generic empty-group
   //     <ParametricNodeRenderer> is filled by <GeometrySystem> from the
   //     pure builder.
+  const follows = def.capabilities?.followsWallMode
+  const wrap = (content: ReactNode) =>
+    follows && follows.appliesTo?.(node) !== false ? (
+      <FollowerClip>{content}</FollowerClip>
+    ) : (
+      content
+    )
   if (def.renderer) {
     const Renderer = getRegistryRenderer(def.renderer as RendererSource<AnyNode>)
     if (!Renderer) return null
-    return (
+    return wrap(
       <Suspense fallback={null}>
         <Renderer node={node} />
-      </Suspense>
+      </Suspense>,
     )
   }
   if (def.geometry) {
-    return <ParametricNodeRenderer node={node} />
+    return wrap(<ParametricNodeRenderer node={node} />)
   }
   return null
 }

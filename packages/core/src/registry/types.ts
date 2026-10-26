@@ -1732,10 +1732,12 @@ export type Capabilities = {
    */
   batchable?: BatchableConfig
   /**
-   * Opt this kind into the viewer's wall mode (up / cutaway / down / translucent): walls down hides
-   * the node, and the cutaway hides it when the camera is on its exterior side, with the decision
-   * walls use. It is held off the scene layer, so it is neither drawn, picked nor shadowed; no
-   * material changes. Translucent shows it as built. A kind that only declares
+   * Opt this kind into the viewer's wall mode (up / cutaway / down / low / translucent): walls down
+   * hides the node, and the cutaway hides it when the camera is on its exterior side, with the
+   * decision walls use. It is held off the scene layer, so it is neither drawn, picked nor shadowed;
+   * no material changes. Low cuts it with the walls: wholly over the cut it is hidden, wholly under
+   * it stands as built, and the cut through it clips it to a stub with a cap (what is hosted on it
+   * is cut with it). Translucent shows it as built. `modes` limits which of these a kind follows. A kind that only declares
    * `surfaceRole: 'wall'` (a colour token) is not affected. See `FollowsWallModeConfig`.
    */
   followsWallMode?: FollowsWallModeConfig
@@ -2614,6 +2616,12 @@ export type WallModeFacing = {
 export type FollowsWallModeConfig = {
   /** Which nodes of the kind follow the mode. Without it, every node does. */
   appliesTo?: (node: AnyNode) => boolean
+  /**
+   * The modes the kind follows: `down` (walls hidden), `low` (the cut passes through it: it is
+   * clipped and capped like a wall, and hidden when it stands wholly over the cut) and `cutaway`.
+   * Without it, every mode. A column names `['down', 'low']`: a post has no exterior side to hide.
+   */
+  modes?: readonly ('down' | 'low' | 'cutaway')[]
   /**
    * The node's oriented front/back. Without it, the node counts as the exterior of the building: its
    * front faces away from the centre of the level's walls, so the cutaway hides it when the camera

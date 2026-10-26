@@ -13,26 +13,47 @@ import {
 } from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
-import { Box3, type Camera, Matrix4, type Mesh, type Object3D, Vector3 } from 'three'
+import { Box3, type Camera, Matrix4, type Mesh, type Object3D, Plane, Vector3 } from 'three'
+import type { ClippingGroup } from 'three/webgpu'
+import { setDisplayCutRaycast, setDisplayCutRoot } from '../../lib/display-cut'
 import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import useViewer from '../../store/use-viewer'
 import { wallFacingNegative, wallHiddenFromFacing } from '../wall/wall-cutout-cache'
+import { type CappedFollower, FollowerCutCaps } from './follower-cut-caps'
 
 /**
- * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls hidden (`down`), low (until the
- * display cut reaches followers) and the cutaway hide the node through the scene-visibility owner (`'wall-mode'` hold): off the scene
- * layer it is neither drawn, picked nor shadowed, and no material is ever touched. Walls up shows
- * it. Translucent leaves it shown as built until the display cut gives followers a see-through look.
- * The cutaway decision is `wallHiddenFromFacing`, the one walls use. Walls keep their own `WallCutout`.
+ * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls hidden (`down`) and the
+ * cutaway hide the node through the scene-visibility owner (`'wall-mode'` hold): off the scene layer it is
+ * neither drawn, picked nor shadowed, and no material is ever touched. Walls up shows it. Translucent leaves
+ * it shown as built. The cutaway decision is `wallHiddenFromFacing`, the one walls use. Walls keep their own
+ * `WallCutout`.
+ *
+ * Low judges each follower by its extent over its level: wholly over the cut it is hidden like the walls'
+ * stubs' neighbours, wholly under it it stands as built, and one the cut passes through is clipped at the cut
+ * by the `ClippingGroup` it is rendered in (`FollowerClip`), picked only below the cut, and capped like a
+ * wall. The clip cuts everything inside the group, so what is hosted on a clipped follower is clipped with
+ * it, picked below the cut only, and capped by the same section. Nothing writes a material.
  */
 
 const CAMERA_MOVE_DISTANCE = 0.1
 const CAMERA_TURN_DOT = 0.9995
+/** A follower this close to the cut counts as on the side it mostly stands on. */
+const CUT_EPS = 1e-4
+
+/** Whether the kind follows `mode` at all (`followsWallMode.modes`; every mode when it names none). */
+const followsIn = (config: FollowsWallModeConfig, mode: FollowedMode) =>
+  !config.modes || config.modes.includes(mode)
 
 export type WallModeFollowViewerState = Pick<
   ReturnType<typeof useViewer.getState>,
   'wallMode' | 'geometryRevision'
->
+> & { wallCutHeight?: number }
+
+/** The wall modes a kind can name in `followsWallMode.modes`. */
+type FollowedMode = 'down' | 'low' | 'cutaway'
+
+/** The default cut height (`wallCutHeight` absent): what the viewer starts with. */
+const DEFAULT_CUT_HEIGHT = 0.25
 
 export type WallModeFollowViewerStore = { getState: () => WallModeFollowViewerState }
 
@@ -69,6 +90,13 @@ function collectMeshes(object: Object3D, out: Mesh[], hostedRoots: ReadonlySet<O
   for (const child of object.children) collectMeshes(child, out, hostedRoots)
 }
 
+/** Every mesh under the object, what is hosted on it too: all of it is inside the clip. */
+function allMeshes(object: Object3D, out: Mesh[] = []): Mesh[] {
+  if ((object as Mesh).isMesh) out.push(object as Mesh)
+  for (const child of object.children) allMeshes(child, out)
+  return out
+}
+
 function hostedRootsOf(node: AnyNode): Set<Object3D> {
   const roots = new Set<Object3D>()
   for (const childId of (node as { children?: readonly string[] }).children ?? []) {
@@ -92,7 +120,23 @@ function setHidden(meshes: readonly Mesh[], hidden: boolean): void {
   }
 }
 
-type Follower = { hidden: boolean; negativeFacing: boolean | undefined }
+/** `straddle`: the cut passes through it, so it is clipped and capped and not hidden. */
+type Follower = { hidden: boolean; straddle?: boolean; negativeFacing: boolean | undefined }
+
+/** A follower being clipped: the group that does it, the level it is cut over and the plane now set. */
+type Clipped = {
+  clip: ClippingGroup
+  level: Object3D
+  meshes: Mesh[]
+  group: Object3D
+  constant: number
+}
+
+/** The `ClippingGroup` a follower is rendered in (`FollowerClip`), if it is. */
+function clipGroupOf(group: Object3D): ClippingGroup | undefined {
+  const parent = group.parent as (ClippingGroup & { userData: { followerClip?: boolean } }) | null
+  return parent?.isClippingGroup && parent.userData.followerClip ? parent : undefined
+}
 
 const scratchBox = new Box3()
 const scratchMatrix = new Matrix4()
@@ -123,12 +167,54 @@ export class WallModeFollowCache {
   private live: { transforms: unknown; overrides: unknown } | undefined
   /** Nodes a capture with whole walls has shown, to hide again after it. */
   private shownForCapture: string[] = []
-  private hiddenForCapture: string[] = []
+  /** Followers the Low cut passes through now, and the caps they have. */
+  private readonly clipped = new Map<string, Clipped>()
+  private readonly caps = new FollowerCutCaps()
+  private lastCamera: Camera | undefined
+  /** While a capture presents the walls low: the height it cuts at, whatever the live mode. */
+  private captureCut: number | undefined
+  /** Clips and caps a capture of whole walls has put away, to bring back after it. */
+  private suspended: (() => void)[] = []
+  private static readonly live = new Set<WallModeFollowCache>()
 
-  constructor(private readonly viewerStore: WallModeFollowViewerStore = useViewer) {}
+  constructor(private readonly viewerStore: WallModeFollowViewerStore = useViewer) {
+    WallModeFollowCache.live.add(this)
+  }
+
+  /**
+   * Sets every clip plane from where its level stands now. A capture moves the levels after it
+   * has announced itself, so it calls this once they are where the picture needs them.
+   */
+  static refreshPlanes(): void {
+    for (const cache of WallModeFollowCache.live) cache.syncPlanes()
+  }
+
+  /** The viewer's state, or what a capture presenting the walls low needs in its place. */
+  private effectiveViewer(): WallModeFollowViewerState {
+    const viewer = this.viewerStore.getState()
+    if (this.captureCut === undefined) return viewer
+    return { ...viewer, wallMode: 'low', wallCutHeight: this.captureCut }
+  }
+
+  private cutHeight(viewer: WallModeFollowViewerState): number {
+    return viewer.wallCutHeight ?? DEFAULT_CUT_HEIGHT
+  }
+
+  /** Each clipped follower's plane, from its level's place in the world now: levels lift and animate. */
+  private syncPlanes(): void {
+    const height = this.cutHeight(this.effectiveViewer())
+    for (const entry of this.clipped.values()) {
+      entry.level.updateWorldMatrix(true, false)
+      const constant = entry.level.matrixWorld.elements[13]! + height
+      if (entry.constant === constant && entry.clip.clippingPlanes.length > 0) continue
+      entry.constant = constant
+      entry.clip.clippingPlanes = [new Plane(new Vector3(0, -1, 0), constant)]
+    }
+  }
 
   update(camera: Camera): void {
-    const viewer = this.viewerStore.getState()
+    this.lastCamera = camera
+    const viewer = this.effectiveViewer()
     const scene = useScene.getState()
     const followers = this.followerKinds()
     const previous = this.viewer
@@ -138,6 +224,7 @@ export class WallModeFollowCache {
       this.registryVersion !== this.followersVersion ||
       !previous ||
       previous.wallMode !== viewer.wallMode ||
+      previous.wallCutHeight !== viewer.wallCutHeight ||
       previous.geometryRevision !== viewer.geometryRevision
 
     // A block dragged or turned live (itself or something above it) moves without a scene write.
@@ -147,7 +234,8 @@ export class WallModeFollowCache {
       !!this.live && (this.live.transforms !== transforms || this.live.overrides !== overrides)
     this.live = { transforms, overrides }
     // A capture that never reported its end must not leave nodes shown.
-    if (this.shownForCapture.length > 0 || this.hiddenForCapture.length > 0) this.afterCapture()
+    if (this.shownForCapture.length > 0 || this.suspended.length > 0) this.afterCapture()
+    this.syncPlanes()
 
     camera.getWorldDirection(this.cameraDirection)
     const cutaway = viewer.wallMode === 'cutaway'
@@ -168,6 +256,7 @@ export class WallModeFollowCache {
     // Nothing is hidden in the other modes: let go of what was, and keep no entries.
     if (viewer.wallMode !== 'down' && viewer.wallMode !== 'low' && !cutaway) {
       for (const id of [...this.tracked.keys()]) this.release(id)
+      this.caps.clear()
       return
     }
 
@@ -192,31 +281,105 @@ export class WallModeFollowCache {
         // re-holds them (idempotent); a camera or live-drag pass acts on a changed decision.
         if (!inputsChanged && previousFollower?.hidden === follower.hidden) continue
         setHidden(meshesOf(group, node), follower.hidden)
-        setAffected(id, follower.hidden)
+        this.applyClip(id, group, node, follower, scene.nodes)
+        setAffected(id, follower.hidden || follower.straddle === true)
       }
     }
     for (const id of [...this.tracked.keys()]) {
       if (!seen.has(id)) this.release(id)
     }
+    this.syncPlanes()
+    this.remakeCaps(viewer)
+  }
+
+  /** Clips the follower at the cut while the cut passes through it, and lets go of the clip when it does not. */
+  private applyClip(
+    id: string,
+    group: Object3D,
+    node: AnyNode,
+    follower: Follower,
+    nodes: Readonly<Record<string, AnyNode>>,
+  ): void {
+    const clip = follower.straddle ? clipGroupOf(group) : undefined
+    const level = follower.straddle ? this.levelObjectOf(node, nodes) : undefined
+    const before = this.clipped.get(id)
+    if (!(clip && level)) {
+      if (before) this.unclip(id)
+      return
+    }
+    const meshes = allMeshes(group)
+    // The clip cuts all that is in its group, what is hosted on the follower too: they are picked
+    // below the cut only, as the follower is.
+    if (before) for (const mesh of before.meshes) this.stopFiltering(mesh)
+    for (const mesh of meshes) {
+      setDisplayCutRoot(mesh, level)
+      setDisplayCutRaycast(mesh, true)
+    }
+    clip.enabled = true
+    clip.clipShadows = true
+    this.clipped.set(id, { clip, level, meshes, group, constant: before?.constant ?? Number.NaN })
+  }
+
+  private levelObjectOf(
+    node: AnyNode,
+    nodes: Readonly<Record<string, AnyNode>>,
+  ): Object3D | undefined {
+    for (
+      let at: AnyNode | undefined = node;
+      at;
+      at = at.parentId ? nodes[at.parentId] : undefined
+    ) {
+      if (at.type === 'level') return sceneRegistry.nodes.get(at.id)
+    }
+    return undefined
+  }
+
+  private stopFiltering(mesh: Mesh): void {
+    setDisplayCutRaycast(mesh, false)
+    setDisplayCutRoot(mesh, null)
+  }
+
+  private unclip(id: string): void {
+    const entry = this.clipped.get(id)
+    if (!entry) return
+    this.clipped.delete(id)
+    entry.clip.enabled = false
+    entry.clip.clippingPlanes = []
+    for (const mesh of entry.meshes) this.stopFiltering(mesh)
+  }
+
+  /** The caps of the followers clipped now, at the height they are clipped at. */
+  private remakeCaps(viewer: WallModeFollowViewerState): void {
+    const followers: CappedFollower[] = []
+    for (const [id, entry] of this.clipped)
+      followers.push({ id, group: entry.group, meshes: entry.meshes, level: entry.level })
+    this.caps.update(followers, this.cutHeight(viewer), useViewer.getState().shading)
   }
 
   /** Shows every followed node again, as built. */
   dispose(): void {
     this.afterCapture()
     for (const id of [...this.tracked.keys()]) this.release(id)
+    this.caps.dispose()
+    WallModeFollowCache.live.delete(this)
     this.viewer = undefined
     this.nodes = undefined
   }
 
   /**
-   * A capture of whole walls, or an export, sees every followed node. A capture of low walls does
-   * not: its followers are down, as they are while the walls are low, until the cut reaches them.
+   * A capture of whole walls, or an export, sees every followed node whole: no clip, no cap. A
+   * capture of low walls judges the followers by its own `cutHeight` as the live view does by the
+   * slider, whatever the live mode is.
    */
   beforeCapture(
-    event: { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean } | undefined,
+    event:
+      | { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean; cutHeight?: number }
+      | undefined,
   ): void {
     if (event?.wallsLow && !event.exporting) {
-      this.hideForCapture()
+      this.captureCut = event.cutHeight ?? this.cutHeight(this.viewerStore.getState())
+      this.viewer = undefined
+      if (this.lastCamera) this.update(this.lastCamera)
       return
     }
     if (!(event?.wholeWalls || event?.exporting)) return
@@ -227,30 +390,23 @@ export class WallModeFollowCache {
       setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), false)
       this.shownForCapture.push(id)
     }
-  }
-
-  /** Every follower the low walls would hide that the live view shows (walls up, translucent). */
-  private hideForCapture(): void {
-    const nodes = useScene.getState().nodes
-    for (const [kind, config] of this.followerKinds()) {
-      for (const id of sceneRegistry.byType[kind] ?? []) {
-        const node = nodes[id as AnyNodeId]
-        const group = sceneRegistry.nodes.get(id)
-        if (!(node && group) || config.appliesTo?.(node) === false) continue
-        if (this.tracked.get(id)?.hidden) continue
-        setHidden(meshesOf(group, node), true)
-        this.hiddenForCapture.push(id)
-      }
+    for (const entry of this.clipped.values()) {
+      const { clip } = entry
+      clip.enabled = false
+      this.suspended.push(() => {
+        clip.enabled = true
+      })
     }
+    this.suspended.push(FollowerCutCaps.hideAll())
   }
 
   afterCapture(): void {
-    for (const id of this.hiddenForCapture.splice(0)) {
-      const group = sceneRegistry.nodes.get(id)
-      if (group && !this.tracked.get(id)?.hidden) {
-        setHidden(meshesOf(group, this.nodes?.[id as AnyNodeId]), false)
-      }
+    if (this.captureCut !== undefined) {
+      this.captureCut = undefined
+      this.viewer = undefined
+      if (this.lastCamera) this.update(this.lastCamera)
     }
+    for (const restore of this.suspended.splice(0)) restore()
     for (const id of this.shownForCapture.splice(0)) {
       const group = sceneRegistry.nodes.get(id)
       if (group && this.tracked.get(id)?.hidden) {
@@ -260,6 +416,7 @@ export class WallModeFollowCache {
   }
 
   private release(id: string): void {
+    this.unclip(id)
     this.tracked.delete(id)
     this.nodeCentres.delete(id)
     const group = sceneRegistry.nodes.get(id)
@@ -290,8 +447,10 @@ export class WallModeFollowCache {
     nodes: Readonly<Record<string, AnyNode>>,
   ): Follower {
     const mode = viewer.wallMode
-    // Until the stubs cut them, a follower of a low wall is hidden like one of a hidden wall.
-    if (mode === 'down' || mode === 'low') return { hidden: true, negativeFacing: undefined }
+    if ((mode === 'down' || mode === 'low' || mode === 'cutaway') && !followsIn(config, mode))
+      return { hidden: false, negativeFacing: undefined }
+    if (mode === 'down') return { hidden: true, negativeFacing: undefined }
+    if (mode === 'low') return this.decideLow(node, group, viewer, nodes)
     if (mode !== 'cutaway') return { hidden: false, negativeFacing: undefined }
     const facing = config.facing
       ? this.declaredFacing(config.facing(node, nodes), group)
@@ -302,6 +461,44 @@ export class WallModeFollowCache {
       previousNegative,
     )
     return { hidden: wallHiddenFromFacing(facing, 'cutaway', negativeFacing), negativeFacing }
+  }
+
+  /**
+   * Low: by its extent over its level. Wholly over the cut the follower is hidden; wholly under it
+   * stands as built; the cut through it clips and caps it. One with no meshes to judge is hidden.
+   */
+  private decideLow(
+    node: AnyNode,
+    group: Object3D,
+    viewer: WallModeFollowViewerState,
+    nodes: Readonly<Record<string, AnyNode>>,
+  ): Follower {
+    const level = this.levelObjectOf(node, nodes)
+    const extent = level ? this.heightsOver(node, group, level) : null
+    if (!extent) return { hidden: true, negativeFacing: undefined }
+    const height = this.cutHeight(viewer)
+    if (extent.min >= height - CUT_EPS) return { hidden: true, negativeFacing: undefined }
+    if (extent.max <= height + CUT_EPS) return { hidden: false, negativeFacing: undefined }
+    // The cut can only clip a follower that is rendered in a clip group; one that is not is hidden.
+    if (!clipGroupOf(group)) return { hidden: true, negativeFacing: undefined }
+    return { hidden: false, straddle: true, negativeFacing: undefined }
+  }
+
+  /** How low and how high the node's own meshes reach over `level`. */
+  private heightsOver(node: AnyNode, group: Object3D, level: Object3D) {
+    level.updateWorldMatrix(true, false)
+    scratchInverse.copy(level.matrixWorld).invert()
+    group.updateWorldMatrix(true, true)
+    scratchBox.makeEmpty()
+    for (const mesh of meshesOf(group, node)) {
+      const geometry = mesh.geometry
+      if (!geometry) continue
+      if (!geometry.boundingBox) geometry.computeBoundingBox()
+      if (!geometry.boundingBox || geometry.boundingBox.isEmpty()) continue
+      scratchMatrix.multiplyMatrices(scratchInverse, mesh.matrixWorld)
+      scratchBox.union(geometry.boundingBox.clone().applyMatrix4(scratchMatrix))
+    }
+    return scratchBox.isEmpty() ? null : { min: scratchBox.min.y, max: scratchBox.max.y }
   }
 
   private declaredFacing(
@@ -425,8 +622,12 @@ export const WallModeFollowSystem = ({
   useFrame((state) => cache.update(state.camera), WALL_MODE_FOLLOW_FRAME_PRIORITY)
 
   useEffect(() => {
-    const before = (event?: { wholeWalls?: boolean; exporting?: boolean; wallsLow?: boolean }) =>
-      cache.beforeCapture(event)
+    const before = (event?: {
+      wholeWalls?: boolean
+      exporting?: boolean
+      wallsLow?: boolean
+      cutHeight?: number
+    }) => cache.beforeCapture(event)
     const after = () => cache.afterCapture()
     emitter.on('thumbnail:before-capture', before)
     emitter.on('thumbnail:after-capture', after)
