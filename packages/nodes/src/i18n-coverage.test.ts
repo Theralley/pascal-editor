@@ -172,7 +172,11 @@ export function untranslatedCallbackTexts(english: Entry[], swedish: Entry[]): s
     ...swedish.filter(([id]) => !englishIds.has(id)).map(([id]) => `${id} (only in sv)`),
   ]
   if (reshaped.length > 0) return reshaped
-  return english.filter(([id, text]) => swedishById.get(id) === text).map(([, text]) => text)
+  // A decimal comma alone ("1.5 m" vs "1,5 m") is not a translation.
+  const words = (text: string | undefined) => text?.replace(/\d+(?:[.,]\d+)?/g, '#')
+  return english
+    .filter(([id, text]) => words(swedishById.get(id)) === words(text))
+    .map(([, text]) => text)
 }
 
 /** Every string the editor renders from this definition, in English. */
@@ -249,6 +253,13 @@ describe('untranslatedCallbackTexts', () => {
       'id:Flytta (only in sv)',
     ])
     expect(untranslatedCallbackTexts([['a', 'Move']], [['a', 'Flytta']])).toEqual([])
+  })
+
+  test('a text that differs only by its decimal separator is untranslated', () => {
+    expect(untranslatedCallbackTexts([['a', 'Raise by 1.5 m']], [['a', 'Raise by 1,5 m']])).toEqual(
+      ['Raise by 1.5 m'],
+    )
+    expect(untranslatedCallbackTexts([['a', 'Raise by 1.5 m']], [['a', 'Höj 1,5 m']])).toEqual([])
   })
 })
 
