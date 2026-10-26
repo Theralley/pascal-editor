@@ -14,6 +14,7 @@ import {
   isGridSnapActive,
   isMagneticSnapActive,
   movementSfxStepKey,
+  translate,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
@@ -29,6 +30,7 @@ import {
   subscribeFloorPlacementClicks,
 } from '../shared/floor-placement'
 import { shelfDefinition } from './definition'
+import { messages } from './messages'
 import ShelfPreview from './preview'
 
 const ShelfTool = () => {
@@ -130,7 +132,7 @@ const ShelfTool = () => {
         )
       const shelf = ShelfNode.parse({
         ...shelfDefinition.defaults(),
-        name: 'Shelf',
+        name: translate(messages, 'defaultName'),
         position,
         rotation: [0, 0, 0],
         parentId: activeLevelId,

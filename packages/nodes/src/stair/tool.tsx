@@ -51,6 +51,7 @@ import {
   resolvePointerSupportSurface,
   resolveStairDestinationLevel,
   resolveStairPlacementLevelId,
+  translate,
   triggerSFX,
   useAlignmentGuides,
   useEditor,
@@ -61,6 +62,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { messages } from './messages'
 import { createStairCommitGate, swallowFollowUpBrowserClick } from './stair-click-guard'
 
 const GRID_OFFSET = 0.02
@@ -211,7 +213,7 @@ function commitStairPlacement(
   if (!placementLevelId) return
 
   const stairCount = Object.values(nodes).filter((n) => n.type === 'stair').length
-  const name = `Staircase ${stairCount + 1}`
+  const name = translate(messages, 'staircaseN', { n: stairCount + 1 })
   const storeyRise = getLevelFloorToFloorHeight(placementLevelId, nodes)
   if (!(storeyRise > 0)) return
   const seed = createSeedStairSegment(storeyRise)

@@ -8,7 +8,6 @@ import { builtinPlugin } from './index'
  * test below fails for a pending kind that no longer needs it, so the list can only shrink.
  */
 const PENDING = new Set([
-  'shelf',
   'block',
   'spawn',
   'separator',
@@ -28,8 +27,6 @@ const PENDING = new Set([
   'unit',
   'roof',
   'roof-segment',
-  'stair',
-  'stair-segment',
   'zone',
   'site',
   'building',

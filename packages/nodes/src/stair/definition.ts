@@ -398,6 +398,7 @@ import { stairFloorplanMoveTarget } from './floorplan-move'
 import { stairPaint } from './paint'
 import { stairParametrics } from './parametrics'
 import { StairNode } from './schema'
+import { stairTranslations } from './translations'
 
 /**
  * Stair — Stage A. Composite node like roof: owns overall framing,
@@ -521,6 +522,7 @@ export const stairDefinition: NodeDefinition<typeof StairNode> = {
     'stair-rotate': stairRotateAffordance,
   },
 
+  translations: stairTranslations,
   presentation: {
     label: 'Stair',
     description:
