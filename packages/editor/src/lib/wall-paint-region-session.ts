@@ -7,9 +7,9 @@ import { isPaintErasing, usePaintRegionMode } from './paint-region-mode'
 import {
   addWallRegion,
   type RegionWriteResult,
-  WALL_REGION_CAP_MESSAGE,
   type WallRegionBounds,
   wallFaceHasRoom,
+  wallRegionCapMessage,
 } from './paint-regions'
 import type { WallFaceExtent } from './wall-region-face'
 import {
@@ -171,7 +171,7 @@ export function pressWallRegion(
   const wall = useScene.getState().nodes[hit.wallId as AnyNodeId]
   if (wall?.type !== 'wall' || useScene.getState().readOnly) return false
   if (!wallFaceHasRoom(wall, hit.face)) {
-    regionMode.setNotice(WALL_REGION_CAP_MESSAGE)
+    regionMode.setNotice(wallRegionCapMessage())
     return false
   }
   gesture?.owner.cancel()

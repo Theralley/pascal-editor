@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { emitter } from '@pascal-app/core'
+import { translate } from '../i18n'
 import useEditor from '../store/use-editor'
-import { toolHudTitle } from './hud-title'
+import { messages as helpMessages } from './help-messages'
+import { type HelpKey, hudTitleText, toolHudTitle } from './hud-title'
 import {
   getWallDrawVariant,
   selectWallDrawVariant,
@@ -61,11 +63,13 @@ describe('Rooms variants', () => {
 
   test('name the HUD after the variant in hand', () => {
     expect(toolHudTitle('wall', 'rectangle')).toEqual({
-      label: 'Rectangle room',
+      key: 'continuation.wallRectangle',
       icon: { kind: 'url', src: '/icons/room.webp' },
       shortcut: 'B',
     })
-    expect(toolHudTitle('wall', 'room')?.label).toBe('Polygon room')
-    expect(toolHudTitle('wall', 'single')?.label).toBe('Walls')
+    const say = (key: HelpKey) => translate(helpMessages, key)
+    expect(hudTitleText(toolHudTitle('wall', 'rectangle')!, say)).toBe('Rectangle room')
+    expect(hudTitleText(toolHudTitle('wall', 'room')!, say)).toBe('Polygon room')
+    expect(hudTitleText(toolHudTitle('wall', 'single')!, say)).toBe('Walls')
   })
 })

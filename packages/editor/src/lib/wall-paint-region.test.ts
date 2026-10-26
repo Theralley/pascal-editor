@@ -13,7 +13,7 @@ import { BoxGeometry, BufferGeometry } from 'three'
 import useEditor from '../store/use-editor'
 import useInteractionScope from '../store/use-interaction-scope'
 import { usePaintRegionMode } from './paint-region-mode'
-import { addWallRegion, WALL_REGION_CAP_MESSAGE } from './paint-regions'
+import { addWallRegion, wallRegionCapMessage } from './paint-regions'
 import {
   cancelWallRegion,
   dragWallRegion,
@@ -338,7 +338,7 @@ describe('gesture', () => {
       addWallRegion(wall.id, 'a', { u0: index * 0.4 }, { materialPreset: 'library:oak' })
     const before = pastStates()
     expect(pressWallRegion(hit(2, 0.4), OFF)).toBe(false)
-    expect(usePaintRegionMode.getState().notice).toBe(WALL_REGION_CAP_MESSAGE)
+    expect(usePaintRegionMode.getState().notice).toBe(wallRegionCapMessage())
     expect(isWallRegionGestureActive()).toBe(false)
     expect(pastStates()).toBe(before)
     expect(pressWallRegion(hit(2, 0.4, 'b'), OFF)).toBe(true)

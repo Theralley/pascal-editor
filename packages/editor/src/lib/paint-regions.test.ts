@@ -15,7 +15,7 @@ import {
   addWallRegion,
   removeWallRegion,
   updateWallRegion,
-  WALL_REGION_CAP_MESSAGE,
+  wallRegionCapMessage,
 } from './paint-regions'
 import { snapContextOf } from './snapping-mode'
 
@@ -79,7 +79,7 @@ describe('paint regions', () => {
       ).toBe(true)
     expect(addWallRegion(wall.id, 'a', { u0: 3.5 }, { materialPreset: 'library:oak' })).toEqual({
       ok: false,
-      message: WALL_REGION_CAP_MESSAGE,
+      message: wallRegionCapMessage(),
     })
     // The other face still has room.
     expect(addWallRegion(wall.id, 'b', {}, { materialPreset: 'library:oak' }).ok).toBe(true)
@@ -129,8 +129,8 @@ describe('paint region sub-mode', () => {
       'Backspace',
       'Esc',
     ])
-    expect(paintRegionHints('rectangle', WALL_REGION_CAP_MESSAGE)[0]).toMatchObject({
-      label: WALL_REGION_CAP_MESSAGE,
+    expect(paintRegionHints('rectangle', wallRegionCapMessage())[0]).toMatchObject({
+      label: wallRegionCapMessage(),
       active: true,
     })
   })

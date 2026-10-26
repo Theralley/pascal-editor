@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { setLocale } from '../../../i18n'
-import { SELECT_HUD_TITLE, toolHudTitle } from '../../../lib/hud-title'
+import { setLocale, translate } from '../../../i18n'
+import { messages as helpMessages } from '../../../lib/help-messages'
+import { hudTitleText, SELECT_HUD_TITLE, toolHudTitle } from '../../../lib/hud-title'
 import { renderCurrentMarkup } from '../../../test-utils/render-current-markup'
 import { snapContextOf } from '../../../lib/snapping-mode'
 import { cornerHintRows } from '../../../store/use-corner-snap-hint'
@@ -118,7 +119,8 @@ describe('HUD header', () => {
   })
 
   test('select mode is titled Select with its V key', () => {
-    expect(SELECT_HUD_TITLE).toMatchObject({ label: 'Select', shortcut: 'V' })
+    expect(SELECT_HUD_TITLE).toMatchObject({ key: 'title.select', shortcut: 'V' })
+    expect(hudTitleText(SELECT_HUD_TITLE, (key) => translate(helpMessages, key))).toBe('Select')
   })
 })
 

@@ -23,7 +23,8 @@ import {
   type WallNode,
   wallRoomFinishRole,
 } from '@pascal-app/core'
-import { type MessageKey, translate } from '../i18n'
+import { getLocale, type Locale, type MessageKey, translate } from '../i18n'
+import { formatMessage } from '../i18n/messages'
 import { messages } from './help-messages'
 
 /**
@@ -45,9 +46,13 @@ export type PaintHoverInfo = {
   slotLabel: string
   /** Kind noun for the `'object'` label (e.g. "Whole shelf"). */
   nodeNoun: string
-  /** Labels a surface names itself, per scope, over the generic ones. */
-  labels?: Partial<Record<PaintScope, string>>
+  /** The catalog key of the name the slot goes by when it is not a slot's own label ("Face"). */
+  slotKey?: PaintLabelKey
+  /** Keys of the labels a surface names itself, per scope, over the generic ones. */
+  labels?: Partial<Record<PaintScope, PaintLabelKey>>
 }
+
+type PaintLabelKey = MessageKey<typeof messages>
 
 function nodeHasAsset(node: AnyNode): boolean {
   return Boolean((node as { asset?: { id?: string } }).asset?.id)
@@ -59,7 +64,7 @@ function nodeOffersRoomScope(node: AnyNode): boolean {
 
 const isFloorPlate = (node: AnyNode): boolean => node.type === 'slab' && node.boundary === 'auto'
 
-const FOOTPRINT_FACE_LABELS: Record<string, MessageKey<typeof messages>> = {
+const FOOTPRINT_FACE_LABELS: Record<string, PaintLabelKey> = {
   edge: 'scope.floorEdge',
   riser: 'scope.riser',
   underside: 'scope.underside',
@@ -76,26 +81,25 @@ const FOOTPRINT_FACE_LABELS: Record<string, MessageKey<typeof messages>> = {
 export function platePaintScopes(
   node: AnyNode,
   role: string,
-): { scopes: PaintScope[]; labels: Partial<Record<PaintScope, string>> } | null {
+): { scopes: PaintScope[]; labels: Partial<Record<PaintScope, PaintLabelKey>> } | null {
   if (node.type !== 'slab' || node.boundary !== 'auto') return null
   if (parseFloorStepRole(role))
     return {
       scopes: ['single', 'room'],
       labels: {
-        single: translate(messages, 'scope.thisStep'),
-        room: translate(messages, 'scope.allSteps'),
+        single: 'scope.thisStep',
+        room: 'scope.allSteps',
       },
     }
   if (parseRoomFinishRole(role))
     return {
       scopes: ['single', 'room'],
       labels: {
-        single: translate(messages, 'scope.thisSurface'),
-        room: translate(messages, 'scope.wholeRoom'),
+        single: 'scope.thisSurface',
+        room: 'scope.wholeRoom',
       },
     }
-  const fixedKey = node.plateRole === 'base' ? FOOTPRINT_FACE_LABELS[role] : undefined
-  const fixed = fixedKey ? translate(messages, fixedKey) : undefined
+  const fixed = node.plateRole === 'base' ? FOOTPRINT_FACE_LABELS[role] : undefined
   return { scopes: ['single'], labels: fixed ? { single: fixed } : {} }
 }
 
@@ -133,7 +137,8 @@ export function cyclePaintScope(scope: PaintScope, scopes: PaintScope[]): PaintS
 export function paintHoverInfo(node: AnyNode, role: string, slotRoles: string[]): PaintHoverInfo {
   return {
     scopes: availablePaintScopes({ node, slotRoles, role }),
-    slotLabel: paintSurfaceLabel(node, role),
+    slotLabel: isWallFace(node, role) ? '' : slotDisplayLabel(node, role),
+    ...(isWallFace(node, role) ? { slotKey: 'scope.face' as const } : {}),
     nodeNoun: node.type,
     labels: platePaintScopes(node, role)?.labels,
   }
@@ -144,18 +149,24 @@ export function effectivePaintScope(scope: PaintScope, scopes: PaintScope[]): Pa
   return scopes.includes(scope) ? scope : 'single'
 }
 
-export function paintScopeLabel(scope: PaintScope, info: PaintHoverInfo): string {
+export function paintScopeLabel(
+  scope: PaintScope,
+  info: PaintHoverInfo,
+  locale: Locale = getLocale(),
+): string {
+  const say = (key: PaintLabelKey, vars?: Record<string, string>) =>
+    formatMessage(messages, locale, key, vars)
   const own = info.labels?.[scope]
-  if (own) return own
+  if (own) return say(own)
   switch (scope) {
     case 'object':
-      return translate(messages, 'scope.whole', { noun: info.nodeNoun })
+      return say('scope.whole', { noun: info.nodeNoun })
     case 'matching':
-      return translate(messages, 'scope.allMatching')
+      return say('scope.allMatching')
     case 'room':
-      return translate(messages, 'scope.room')
+      return say('scope.room')
     default:
-      return info.slotLabel || translate(messages, 'scope.thisSurface')
+      return info.slotKey ? say(info.slotKey) : info.slotLabel || say('scope.thisSurface')
   }
 }
 
@@ -176,9 +187,12 @@ export function nodeSlotRoles(node: AnyNode, meshSlotRoles: (node: AnyNode) => s
  * "Face" (the narrow scope), a trim its own name, anything else its slot.
  */
 export function paintSurfaceLabel(node: AnyNode, role: string): string {
-  if (node.type === 'wall' && !WALL_TRIM_ROLE.test(role)) return 'Face'
+  if (isWallFace(node, role)) return translate(messages, 'scope.face')
   return slotDisplayLabel(node, role)
 }
+
+const isWallFace = (node: AnyNode, role: string) =>
+  node.type === 'wall' && !WALL_TRIM_ROLE.test(role)
 
 /** Display label for the hovered slot — declared label wins, else derived from the id. */
 export function slotDisplayLabel(node: AnyNode, role: string): string {

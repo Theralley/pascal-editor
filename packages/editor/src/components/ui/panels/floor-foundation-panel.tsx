@@ -29,8 +29,8 @@ import {
   footprintsToMoveTogether,
   floorTopAboveGround,
   presetPatch,
-  THICK_FLOOR_HINT,
   thickFloorAdvice,
+  thickFloorHint,
 } from '../../../lib/floor-footprints'
 import { formatLinearMeasurement } from '../../../lib/measurements'
 import { FinishSwatch } from '../controls/finish-swatch'
@@ -491,7 +491,7 @@ export function FloorFoundationPanel({ node, onClose }: { node: SlabNode; onClos
           />
           {thickFloor && (
             <p className="text-muted-foreground text-xs" data-thick-floor-hint>
-              {THICK_FLOOR_HINT}
+              {thickFloorHint()}
             </p>
           )}
         </section>

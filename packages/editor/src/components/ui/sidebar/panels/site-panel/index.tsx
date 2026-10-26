@@ -54,7 +54,7 @@ import {
   buildLevelDuplicateCreateOps,
   type LevelDuplicatePreset,
 } from '@pascal-app/core/building'
-import { translate, useLocale, useT } from './../../../../../i18n'
+import { useLocale, useT } from './../../../../../i18n'
 import { addStoreyOnTop } from './../../../../../lib/add-storey'
 import { deleteLevelWithFallbackSelection } from './../../../../../lib/level-selection'
 import {
@@ -565,7 +565,7 @@ const LevelReferences = memo(function LevelReferences({
       useUploadStore.getState().startUpload(levelId, type, file.name)
       useUploadStore
         .getState()
-        .setError(levelId, translate(messages, 'upload.invalidType'))
+        .setError(levelId, { key: 'invalidType' })
       return
     }
 
@@ -573,10 +573,7 @@ const LevelReferences = memo(function LevelReferences({
       useUploadStore.getState().startUpload(levelId, type, file.name)
       useUploadStore
         .getState()
-        .setError(
-          levelId,
-          translate(messages, 'upload.tooLarge', { size: (file.size / 1024 / 1024).toFixed(0) }),
-        )
+        .setError(levelId, { key: 'tooLarge', size: Math.round(file.size / 1024 / 1024) })
       return
     }
 
@@ -592,7 +589,7 @@ const LevelReferences = memo(function LevelReferences({
         useUploadStore.getState().setResult(levelId, guide.url)
         window.setTimeout(() => useUploadStore.getState().clearUpload(levelId), 600)
       } catch {
-        useUploadStore.getState().setError(levelId, translate(messages, 'upload.guideFailed'))
+        useUploadStore.getState().setError(levelId, { key: 'guideFailed' })
       }
       return
     }
@@ -609,14 +606,14 @@ const LevelReferences = memo(function LevelReferences({
         useUploadStore.getState().setResult(levelId, url)
         window.setTimeout(() => useUploadStore.getState().clearUpload(levelId), 600)
       } catch {
-        useUploadStore.getState().setError(levelId, translate(messages, 'upload.scanFailed'))
+        useUploadStore.getState().setError(levelId, { key: 'scanFailed' })
       }
       return
     }
 
     if (!projectId) {
       useUploadStore.getState().startUpload(levelId, 'scan', file.name)
-      useUploadStore.getState().setError(levelId, translate(messages, 'upload.noProject'))
+      useUploadStore.getState().setError(levelId, { key: 'noProject' })
       return
     }
 
@@ -720,7 +717,7 @@ const LevelReferences = memo(function LevelReferences({
             className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-border/50"
             style={{ left: 45 }}
           />
-          {uploadError}
+          {t(`upload.${uploadError.key}`, { size: uploadError.size ?? 0 })}
         </div>
       )}
     </div>

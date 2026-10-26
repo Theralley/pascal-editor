@@ -13,6 +13,7 @@ import {
   type WallFace,
   type WallFaceRegion,
 } from '@pascal-app/core'
+import { defineMessages, translate } from '../i18n'
 
 // Data writes for the paint tool's region sub-modes: a wall face region
 // (`wall.faceRegions`), a room floor region (`zone.floor.regions`) or a ceiling
@@ -21,7 +22,13 @@ import {
 // write is one scene update, so one undo step; a one-off colour mints one
 // shared scene material, the same way the paint fan-out does.
 
-export const WALL_REGION_CAP_MESSAGE = `Up to ${WALL_FACE_REGION_LIMIT} regions per wall face`
+const messages = defineMessages({
+  en: { cap: 'Up to {limit} regions per wall face' },
+  sv: { cap: 'Högst {limit} ytor per väggsida' },
+})
+
+export const wallRegionCapMessage = () =>
+  translate(messages, 'cap', { limit: WALL_FACE_REGION_LIMIT })
 
 type Resolved = { ref: string; newSceneMaterial: SceneMaterial | null }
 
@@ -70,7 +77,7 @@ export function addWallRegion(
   const state = useScene.getState()
   const wall = state.nodes[wallId as AnyNodeId]
   if (wall?.type !== 'wall') return { ok: false, message: 'Select a wall' }
-  if (!wallFaceHasRoom(wall, face)) return { ok: false, message: WALL_REGION_CAP_MESSAGE }
+  if (!wallFaceHasRoom(wall, face)) return { ok: false, message: wallRegionCapMessage() }
   const resolved = resolvePaintRegionFinish(state.materials, paint.material, paint.materialPreset)
   if (!resolved) return { ok: false, message: 'Pick a material first' }
   const id = generateId('region')

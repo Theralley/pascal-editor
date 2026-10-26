@@ -7,7 +7,8 @@ import {
 } from '../../../lib/continuation'
 import { useLocale, useT } from '../../../i18n'
 import type { ContextualShortcutHint } from '../../../lib/contextual-help'
-import type { HudTitle } from '../../../lib/hud-title'
+import { type HudTitle, hudTitleText } from '../../../lib/hud-title'
+import { messages as helpMessages } from '../../../lib/help-messages'
 import { formatDecimal } from '../../../lib/measurements'
 import { hasActivePaintMaterial } from '../../../lib/material-paint'
 import { usePaintRegionMode } from '../../../lib/paint-region-mode'
@@ -359,6 +360,7 @@ function PaintNotice() {
 // per-target table.
 function PaintScopeChip() {
   const t = useT(messages)
+  const locale = useLocale()
   // What the cursor is over (that's what the next click paints). `null` when not
   // over a paintable surface — including an item with no slots.
   const paintHover = useEditor((s) => s.paintHover)
@@ -410,7 +412,7 @@ function PaintScopeChip() {
         icon={picking ? 'lucide:pipette' : PAINT_SCOPE_ICONS[effective]}
         label={t('paintScope.row', {
           verb,
-          scope: paintScopeLabel(picking ? 'single' : effective, paintHover),
+          scope: paintScopeLabel(picking ? 'single' : effective, paintHover, locale),
         })}
       />
     )
@@ -418,9 +420,12 @@ function PaintScopeChip() {
 
   return (
     <ChipRow
-      ariaLabel={t('paintScope.aria', { verb, scope: paintScopeLabel(effective, paintHover) })}
+      ariaLabel={t('paintScope.aria', { verb, scope: paintScopeLabel(effective, paintHover, locale) })}
       icon={PAINT_SCOPE_ICONS[effective]}
-      label={t('paintScope.row', { verb, scope: paintScopeLabel(effective, paintHover) })}
+      label={t('paintScope.row', {
+        verb,
+        scope: paintScopeLabel(effective, paintHover, locale),
+      })}
       onClick={() => cyclePaintScope()}
       shortcut="Shift"
       tooltip={t('paintScope.tooltip', { verb })}
@@ -430,10 +435,12 @@ function PaintScopeChip() {
 
 // The tool in hand: its icon, name and arming key, over a hairline.
 function HudHeader({ title }: { title: HudTitle }) {
+  const t = useT(helpMessages)
+  const text = hudTitleText(title, t)
   return (
     <div
       className="col-span-2 mb-0.5 flex items-center gap-2.5 border-border border-b pb-2.5"
-      data-hud-title={title.label}
+      data-hud-title={text}
     >
       {title.icon ? (
         <span className="flex size-7 shrink-0 items-center justify-center">
@@ -441,7 +448,7 @@ function HudHeader({ title }: { title: HudTitle }) {
         </span>
       ) : null}
       <span className="min-w-0 flex-1 truncate font-medium text-[13px] text-foreground leading-tight">
-        {title.label}
+        {text}
       </span>
       {title.shortcut ? <ShortcutToken className={TOKEN_CLASS} value={title.shortcut} /> : null}
     </div>

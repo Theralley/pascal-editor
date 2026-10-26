@@ -18,6 +18,7 @@ import {
   useScene,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
+import { defineMessages, translate } from '../i18n'
 import useEditor from '../store/use-editor'
 import { conflictMessages } from './conflict-message'
 import { applyRoomPlan } from './room-structure-commands'
@@ -172,7 +173,18 @@ export function footprintHeightPatch(
     : { foundationHeight: Math.max(0, Math.round(value * 1e6) / 1e6) }
 }
 
-export const THICK_FLOOR_HINT = 'Very thick floor — a mezzanine may fit better.'
+const messages = defineMessages({
+  en: {
+    thickFloor: 'Very thick floor — a mezzanine may fit better.',
+    floorGone: 'The floor is gone.',
+  },
+  sv: {
+    thickFloor: 'Mycket tjockt golv – en entresol kan passa bättre.',
+    floorGone: 'Golvet finns inte kvar.',
+  },
+})
+
+export const thickFloorHint = () => translate(messages, 'thickFloor')
 
 /** A plate thick enough that a mezzanine would likely serve better (core's advice; never a refusal). */
 export function thickFloorAdvice(nodes: Record<string, AnyNode>, plate: SlabNode, top?: number) {
@@ -263,7 +275,7 @@ export function footprintsToMoveTogether(
 /** Sets a footprint's height (`footprintHeightValue`'s terms). */
 export function setFootprintHeight(slabId: string, value: number): string | null {
   const plate = useScene.getState().nodes[slabId as AnyNodeId]
-  if (!isBase(plate)) return 'The floor is gone.'
+  if (!isBase(plate)) return translate(messages, 'floorGone')
   return applyFloorFoundation(slabId, footprintHeightPatch(useScene.getState().nodes, plate, value))
 }
 

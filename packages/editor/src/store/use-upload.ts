@@ -1,5 +1,12 @@
 import { create } from 'zustand'
 
+/** Why an upload stopped: a key the panel translates when it shows it. */
+export type UploadError = {
+  key: 'invalidType' | 'guideFailed' | 'scanFailed' | 'noProject' | 'tooLarge'
+  /** The file's size in MB, for 'tooLarge'. */
+  size?: number
+}
+
 export type UploadStatus = 'preparing' | 'uploading' | 'confirming' | 'done' | 'error'
 
 export interface UploadEntry {
@@ -7,7 +14,7 @@ export interface UploadEntry {
   assetType: 'scan' | 'guide'
   fileName: string
   progress: number // 0-100
-  error: string | null
+  error: UploadError | null
   resultUrl: string | null
 }
 
@@ -26,7 +33,7 @@ interface UploadState {
   startUpload: (levelId: string, assetType: 'scan' | 'guide', fileName: string) => void
   setProgress: (levelId: string, progress: number) => void
   setStatus: (levelId: string, status: UploadStatus) => void
-  setError: (levelId: string, error: string) => void
+  setError: (levelId: string, error: UploadError) => void
   setResult: (levelId: string, url: string) => void
   clearUpload: (levelId: string) => void
 }

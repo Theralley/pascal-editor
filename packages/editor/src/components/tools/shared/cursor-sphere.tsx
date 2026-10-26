@@ -54,7 +54,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   ref,
 ) {
   const tool = useEditor((s) => s.tool)
-  useLocale() // the wall variant's name is read as the cursor renders
+  const locale = useLocale()
   const tTools = useT(toolMessages)
   const mode = useEditor((s) => s.mode)
   const catalogCategory = useEditor((s) => s.catalogCategory)
@@ -69,7 +69,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
   let activeToolConfig: { alt: string; iconSrc: string } | null = null
   if (mode === 'build' && tool) {
     if (tool === 'wall') {
-      const { label, iconSrc } = wallCursorIcon(wallMode)
+      const { label, iconSrc } = wallCursorIcon(wallMode, locale)
       activeToolConfig = { alt: label, iconSrc }
     } else {
       const config =

@@ -1,5 +1,6 @@
 import { type IconRef, nodeRegistry, type TerrainVerb } from '@pascal-app/core'
-import { translate } from '../i18n'
+import { getLocale, type Locale, type MessageKey } from '../i18n'
+import { formatMessage } from '../i18n/messages'
 import type { ContinuationMode } from './continuation'
 import { messages } from './help-messages'
 import {
@@ -8,25 +9,37 @@ import {
   wallDrawVariantOf,
 } from './wall-draw-variant'
 
-/** The contextual helper panel's header: what is in hand, and its key. */
+/**
+ * The contextual helper panel's header: what is in hand, and its key. The name is a catalog `key`
+ * the panel translates when it renders (so it follows the language and hydrates like the rest),
+ * or a `label` that is a name as it is — a kind's own.
+ */
 export type HudTitle = {
-  label: string
+  key?: HelpKey
+  vars?: Record<string, string>
+  label?: string
   icon?: IconRef
   shortcut?: string
 }
 
 const url = (src: string): IconRef => ({ kind: 'url', src })
 
+export type HelpKey = MessageKey<typeof messages>
 type TitleKey = Extract<keyof (typeof messages)['en'], `title.${string}`>
 
-// The label is read when the card renders, so the title follows the language.
 const hudTitle = (key: TitleKey, icon: IconRef, shortcut?: string): HudTitle => ({
-  get label() {
-    return translate(messages, key)
-  },
+  key,
   icon,
   shortcut,
 })
+
+/** The header's words in the active language, from the renderer's own `t`. */
+export function hudTitleText(
+  title: HudTitle,
+  t: (key: HelpKey, vars?: Record<string, string>) => string,
+): string {
+  return title.key ? t(title.key, title.vars) : (title.label ?? '')
+}
 
 /** Tools with a global arming key (`use-keyboard.ts`). */
 const TOOL_SHORTCUTS: Record<string, string> = {
@@ -84,8 +97,8 @@ const WALL_VARIANT_KEYS = {
 } as const satisfies Record<WallDrawVariant, keyof (typeof messages)['en']>
 
 /** What the Build panel calls the wall tool's Rooms variant, in the active language. */
-export function wallVariantLabel(variant: WallDrawVariant): string {
-  return translate(messages, WALL_VARIANT_KEYS[variant])
+export function wallVariantLabel(variant: WallDrawVariant, locale: Locale = getLocale()): string {
+  return formatMessage(messages, locale, WALL_VARIANT_KEYS[variant])
 }
 
 /** A kind's registry name and icon, optionally behind a verb ("Move door"). */
@@ -94,7 +107,9 @@ export function nodeKindHudTitle(kind: string, verb?: 'move' | 'edit' | 'split')
   if (!presentation) return null
   const name = presentation.label
   return {
-    label: verb ? translate(messages, `title.${verb}`, { name: name.toLowerCase() }) : name,
+    ...(verb
+      ? { key: `title.${verb}` as const, vars: { name: name.toLowerCase() } }
+      : { label: name }),
     icon: presentation.icon,
     shortcut: verb ? undefined : TOOL_SHORTCUTS[kind],
   }
@@ -108,9 +123,7 @@ export function toolHudTitle(tool: string, wallMode: ContinuationMode): HudTitle
   if (tool === 'wall') {
     const variant = getWallDrawVariantInfo(wallDrawVariantOf(wallMode))
     return {
-      get label() {
-        return wallVariantLabel(wallDrawVariantOf(wallMode))
-      },
+      key: WALL_VARIANT_KEYS[variant.id],
       icon: url(variant.iconSrc),
       shortcut: TOOL_SHORTCUTS.wall,
     }

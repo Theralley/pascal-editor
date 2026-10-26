@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import type { QuickMeasurementReport } from '@pascal-app/core'
 import { QuickMeasurementCard } from '../components/editor/quick-measurement-card'
-import { setLocale } from '../i18n'
+import { setLocale, translate } from '../i18n'
 import { renderCurrentMarkup } from '../test-utils/render-current-markup'
 import { openWallEndsSummary } from './floorplan/open-wall-ends'
+import { messages as helpMessages } from './help-messages'
+import { hudTitleText, toolHudTitle } from './hud-title'
 import { mezzanineConflictMessage, mezzanineOutsideMessage } from './mezzanine-messages'
+import { paintScopeLabel } from './paint-scope'
 import { regionLabel } from './point-ask/region'
 import { placeholderFor, suggestionsFor } from './point-ask/suggestions'
 import { localizeFootprintName, separateFloorSummary } from './room-built-on'
@@ -97,6 +100,25 @@ const cases: { name: string; read: () => string; en: string; sv: string }[] = [
     read: () => regionLabel(2),
     en: 'Area · 2 elements',
     sv: 'Område · 2 element',
+  },
+  {
+    name: 'the HUD title of the wall tool',
+    read: () =>
+      hudTitleText(toolHudTitle('wall', 'rectangle')!, (key) => translate(helpMessages, key)),
+    en: 'Rectangle room',
+    sv: 'Rektangulärt rum',
+  },
+  {
+    name: 'the paint scope of a wall face',
+    read: () =>
+      paintScopeLabel('single', {
+        scopes: ['single'],
+        slotLabel: '',
+        slotKey: 'scope.face',
+        nodeNoun: 'wall',
+      }),
+    en: 'Face',
+    sv: 'Väggsida',
   },
   {
     name: 'the quick measure card',

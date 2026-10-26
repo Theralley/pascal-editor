@@ -3,8 +3,12 @@
 import { type MaterialTarget, toLibraryMaterialRef } from '@pascal-app/core'
 import { Plus } from 'lucide-react'
 import { useT } from '../../../i18n'
-import { useMaterialCatalogModel } from '../../../lib/material-catalog-model'
+import {
+  SOURCE_FILTER_KEYS,
+  useMaterialCatalogModel,
+} from '../../../lib/material-catalog-model'
 import { triggerSFX } from '../../../lib/sfx-bus'
+import { messages as helpMessages } from '../../../lib/help-messages'
 import { messages } from './messages'
 
 export type { MaterialSourceFilter } from '../../../lib/material-catalog-model'
@@ -34,6 +38,7 @@ export function MaterialPicker({
   selectOnCategoryChange = true,
 }: MaterialPickerProps) {
   const t = useT(messages)
+  const h = useT(helpMessages)
   const { selectedCategory, setSelectedCategory, sourceFilter, setSourceFilter, visibleSourceFilters, availableCategories, catalogItems, select: handleCatalogSelect } = useMaterialCatalogModel(selectedMaterialPreset, onSelectMaterialPreset, disabled, selectOnCategoryChange)
 
   return (
@@ -78,7 +83,7 @@ export function MaterialPicker({
             onMouseEnter={() => triggerSFX('sfx:menu-hover')}
             type="button"
           >
-            {filter.label}
+            {h(SOURCE_FILTER_KEYS[filter.id])}
           </button>
         ))}
       </div>

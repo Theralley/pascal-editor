@@ -14,13 +14,16 @@ const SRC_REASON_KEYS = {
   httpsOnly: 'src.httpsOnly',
 } as const satisfies Record<ImportSrcReason, MessageKey<typeof messages>>
 
+// A failed create is a catalog key, translated where it shows; a thrown error's own text stays as is.
+type CreateError = { key: MessageKey<typeof messages>; vars?: MessageVars } | { message: string }
+
 type Phase =
   | { kind: 'fetching' }
   // createError keeps the review alive after a failed create: the
   // validated graph stays on screen and Import can simply be retried —
   // a refresh would re-fetch `src`, and a short-lived scan URL may
   // already be gone (review feedback).
-  | { kind: 'review'; result: ValidateBuildJsonResult; createError?: string }
+  | { kind: 'review'; result: ValidateBuildJsonResult; createError?: CreateError }
   | { kind: 'creating'; result: ValidateBuildJsonResult }
   | { kind: 'error'; key: MessageKey<typeof messages>; vars?: MessageVars }
 
@@ -134,10 +137,10 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
           result: review,
           createError:
             response.status === 401 || response.status === 403
-              ? translate(messages, 'signInNeeded')
+              ? { key: 'signInNeeded' }
               : response.status === 413
-                ? translate(messages, 'storeTooLarge')
-                : translate(messages, 'createFailedStatus', { status: response.status }),
+                ? { key: 'storeTooLarge' }
+                : { key: 'createFailedStatus', vars: { status: response.status } },
         })
         return
       }
@@ -147,7 +150,7 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
       setPhase({
         kind: 'review',
         result: review,
-        createError: error instanceof Error ? error.message : translate(messages, 'createFailed'),
+        createError: error instanceof Error ? { message: error.message } : { key: 'createFailed' },
       })
     } finally {
       // Released in every path: after an error the user may retry.
@@ -235,7 +238,13 @@ export function ImportClient({ src, name }: { src: string | null; name: string |
         )}
       </div>
 
-      {phase.createError && <p className="text-destructive text-sm">{phase.createError}</p>}
+      {phase.createError && (
+        <p className="text-destructive text-sm">
+          {'message' in phase.createError
+            ? phase.createError.message
+            : t(phase.createError.key, phase.createError.vars)}
+        </p>
+      )}
       <button
         className="rounded-md border border-border bg-accent px-4 py-2 font-medium text-sm hover:bg-accent/80 disabled:opacity-50"
         disabled={!result.ok || !result.parsed}

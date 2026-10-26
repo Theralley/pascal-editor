@@ -19,8 +19,8 @@ import {
   beginFootprintHeightPreview,
   footprintHeightMinimum,
   footprintHeightValue,
-  THICK_FLOOR_HINT,
   thickFloorAdvice,
+  thickFloorHint,
 } from '../../lib/floor-footprints'
 import { formatLinearMeasurement } from '../../lib/measurements'
 import { runRoomHandleDrag } from '../../lib/room-handle-drag'
@@ -151,7 +151,7 @@ function FootprintHeightArrows({ plate }: { plate: SlabNode }) {
         // Live: the building follows, outside history until the release.
         const refused = preview.preview(next)
         setNotice(refused)
-        setHint(thickFloorAdvice(startNodes, plate, next) ? THICK_FLOOR_HINT : null)
+        setHint(thickFloorAdvice(startNodes, plate, next) ? thickFloorHint() : null)
         if (!refused) value = next
         setDragValue(next)
       },

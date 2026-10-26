@@ -12,24 +12,24 @@ import {
   toLibraryMaterialRef,
 } from '@pascal-app/core'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { translate } from '../i18n'
-import { messages } from './help-messages'
+import type { MessageKey } from '../i18n'
+import type { messages } from './help-messages'
 
 export type MaterialSourceFilter = MaterialSource
-const sourceFilter = (
-  id: MaterialSourceFilter,
-  key: 'source.pascal' | 'source.mine' | 'source.workspace' | 'source.community',
-) => ({
-  id,
-  get label() {
-    return translate(messages, key)
-  },
-})
-const SOURCE_FILTERS: { id: MaterialSourceFilter; label: string }[] = [
-  sourceFilter('pascal', 'source.pascal'),
-  sourceFilter('mine', 'source.mine'),
-  sourceFilter('workspace', 'source.workspace'),
-  sourceFilter('community', 'source.community'),
+
+/** The catalog key of each source tab; the picker translates it when it renders. */
+export const SOURCE_FILTER_KEYS = {
+  pascal: 'source.pascal',
+  mine: 'source.mine',
+  workspace: 'source.workspace',
+  community: 'source.community',
+} as const satisfies Record<MaterialSourceFilter, MessageKey<typeof messages>>
+
+const SOURCE_FILTERS: { id: MaterialSourceFilter }[] = [
+  { id: 'pascal' },
+  { id: 'mine' },
+  { id: 'workspace' },
+  { id: 'community' },
 ]
 
 export function useMaterialCatalogModel(
