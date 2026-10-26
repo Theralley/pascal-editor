@@ -19,12 +19,14 @@ import {
   useAlignmentGuides,
   useDragAction,
   useInteractionScope,
+  useT,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { moveFenceEndpointDragAction } from './actions/move-endpoint'
 import type { FencePlanPoint } from './drafting'
+import { messages } from './messages'
 
 /**
  * Phase 5 Stage D — thin React wrapper around `moveFenceEndpointDragAction`.
@@ -95,6 +97,7 @@ function pickAngleLabel(args: {
 }
 
 export const MoveFenceEndpointTool: React.FC<{ target: MovingFenceEndpoint }> = ({ target }) => {
+  const t = useT(messages)
   const fenceId = target.fence.id
   const endpoint = target.endpoint
   const initialPoint: FencePlanPoint =
@@ -278,7 +281,7 @@ export const MoveFenceEndpointTool: React.FC<{ target: MovingFenceEndpoint }> = 
                 : 'border-border/70 bg-background/90 text-foreground/80'
             }`}
           >
-            {altPressed ? 'Detach endpoint' : 'Drag endpoint'}
+            {altPressed ? t('detachEndpoint') : t('dragEndpoint')}
           </div>
         </div>
       </Html>

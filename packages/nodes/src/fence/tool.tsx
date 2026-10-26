@@ -255,7 +255,7 @@ function toMiterWall(segment: SegmentLike): WallNode {
     object: 'node',
     id: segment.id as WallNode['id'],
     type: 'wall',
-    name: 'Fence reference',
+    name: 'Fence reference', // i18n-ignore: internal reference node
     parentId: null,
     visible: true,
     metadata: {},

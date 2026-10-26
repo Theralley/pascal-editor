@@ -1,9 +1,10 @@
 'use client'
 import { type AnyNodeId, useScene } from '@pascal-app/core'
-import { ActionMenuButton } from '@pascal-app/editor'
+import { ActionMenuButton, useT } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { DoorClosed, DoorOpen } from 'lucide-react'
 import { toggleFenceGate } from './interaction'
+import { messages } from './messages'
 
 /**
  * Open/Close for a single selected gate, the door's button in the action menu.
@@ -11,6 +12,7 @@ import { toggleFenceGate } from './interaction'
  * never write the node.
  */
 export default function FenceGateActions() {
+  const t = useT(messages)
   const selected = useViewer((s) => s.selection.selectedIds)
   const gate = useScene((s) => {
     const node = selected.length === 1 ? s.nodes[selected[0] as AnyNodeId] : undefined
@@ -21,7 +23,7 @@ export default function FenceGateActions() {
   return (
     <ActionMenuButton
       keys={['E']}
-      label={open ? 'Close' : 'Open'}
+      label={open ? t('close') : t('open')}
       onClick={(event) => {
         event.stopPropagation()
         toggleFenceGate(gate.id as AnyNodeId)
