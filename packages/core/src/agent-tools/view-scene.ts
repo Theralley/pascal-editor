@@ -57,7 +57,7 @@ const wallsField = z
   })
   .optional()
   .describe(
-    'Walls low, as in The Sims: with mode low every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows follow `openings`. up is the walls whole (the default).',
+    'Walls low, as in The Sims: with mode low every wall stands as a short stub (cutHeight, default 0.25 m) with a flat cap, so the rooms and what stands in them read from above; doors and windows follow `openings`, and columns and blocks that follow the wall mode are cut at the same height (a stub with a cap where the cut passes through, hidden when wholly above it). up is the walls whole (the default).',
   )
 
 const openingsField = z

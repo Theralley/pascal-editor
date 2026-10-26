@@ -388,6 +388,12 @@ export const columnDefinition: NodeDefinition<typeof ColumnNode> = {
     reveal: { phase: 'structure', style: 'drop', height: 4 },
     revealOnEdit: ['height', 'radius', 'width', 'depth', 'crossSection', 'shaftProfile', 'style'],
     batchable: columnBatchable,
+    // Walls hidden hide the post, and Low cuts it to a stub with the walls. No cutaway: a post has
+    // no exterior side. An ornament (a column that is not structure) stays an object.
+    followsWallMode: {
+      appliesTo: (node) => (node as ColumnNodeType).role !== 'ornament',
+      modes: ['down', 'low'],
+    },
     surfacePlacement: 'floor-only',
     selectable: { hitVolume: 'bbox' },
     surfaces: {

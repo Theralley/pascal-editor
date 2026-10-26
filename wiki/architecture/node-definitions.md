@@ -454,6 +454,17 @@ opted-in node: `down` hides it, `cutaway` hides it when the camera is on its ext
 `wallHiddenFromFacing` decision walls use), `up` shows it. `translucent` shows it as built for now;
 a see-through look for followers comes with the display-cut work.
 
+`low` cuts it with the walls, judged by the extent of its meshes over its level: wholly over the cut
+it is hidden, wholly under it stands as built, and one the cut passes through is clipped at the cut. A
+follower is rendered in an always-mounted, identity `ClippingGroup` (`FollowerClip` in `node-renderer.tsx`;
+disabled until the cut reaches it), so nothing writes a material and the selection highlight and the paint
+preview are untouched. The system sets the plane (world space, from the level, every frame), filters picks
+above the cut (`setDisplayCutRaycast`), has the node batch release it, and adds a per-level cap from the
+section of its meshes (`prepareSection`), picked as the follower. The clip cuts everything inside its
+group, so what is hosted on a clipped follower is clipped, picked below the cut only and capped with it.
+A capture of low walls clips at its own `cutHeight`; a capture of whole walls and every export put the
+clips and caps away. A baked scene stamps `extras.followsWallMode` and cuts the stamped nodes as walls.
+
 Hiding goes through the one owner of visibility (`scene-visibility.ts`, reason `'wall-mode'`): the node's
 meshes leave the scene layer, so they are not drawn, not picked and not shadowed, and no material is
 ever written, whatever other hold (solo, batching) the node has. A capture of whole walls and every model
@@ -465,10 +476,14 @@ changes and when a live drag or override moves something: a kind that remounts i
 ```ts
 type FollowsWallModeConfig = {
   appliesTo?: (node: AnyNode) => boolean
+  modes?: readonly ('down' | 'low' | 'cutaway')[]
   facing?: (node: AnyNode, nodes: Readonly<Record<string, AnyNode>>) => WallModeFacing | undefined
 }
 ```
 
+- `modes` limits the wall modes a kind follows (every mode without it). Column names `['down', 'low']` and
+  `appliesTo` leaves out an ornament column (`role: 'ornament'`): a post has no exterior side to hide in the
+  cutaway, and it is cut to a stub in Low with the walls.
 - `appliesTo` picks the nodes of the kind that follow. Block uses it for its per-node
   `followsWallMode` flag (off by default, so counters, plinths and pads stay objects and old scenes load
   unchanged). The inspector's "Follows wall modes" toggle is one undo step; agents set the same flag
