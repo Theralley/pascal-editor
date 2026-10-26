@@ -16,7 +16,7 @@ export const solarPanelTranslations = {
     'Gap y': 'Mellanrum y',
     Mounting: 'Montering',
     'Mounting type': 'Monteringstyp',
-    Flush: 'Planlig',
+    Flush: 'Parallell med taket',
     Tilted: 'Lutad',
     'Tilt angle': 'Lutningsvinkel',
     'Standoff height': 'Avståndshöjd',

@@ -111,5 +111,10 @@ export const leanToExtensionTranslations = {
     'Freestanding Butterfly Canopy': 'Fristående skärmtak med fjärilstak',
     'Freestanding Lean-to Canopy': 'Fristående skärmtak med pulpettak',
     'Slab-attached Lean-to Canopy': 'Skärmtak fäst i bjälklag',
+    'Lean-to Extension': 'Skärmtak',
+    'Lean-to Shed Roof': 'Skärmtakets pulpettak',
+    'Canopy Gable Roof': 'Skärmtakets sadeltak',
+    'Canopy Butterfly Left Roof': 'Skärmtakets fjärilstak, vänster',
+    'Canopy Butterfly Right Roof': 'Skärmtakets fjärilstak, höger',
   },
 }

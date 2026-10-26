@@ -60,6 +60,7 @@ import {
   LEAN_TO_EXTENSION_GEOMETRY_REVISION,
   resolveLeanToSpanArc,
 } from './layout'
+import { localizedLeanToName } from './naming'
 import { reconcileLeanToSlabEdgePlacement } from './placement'
 import { resolveLeanToEndAbutments } from './placement-validation'
 import {
@@ -838,9 +839,11 @@ export function initializeLeanToExtensionSync(sceneApi: SceneApi) {
               ? resolveLeanToPostGutterSetback(effectiveLeanTo, current)
               : 0
           if (!current) {
+            const post = createManagedLeanToPost(effectiveLeanTo, index, side)
             create.push({
               node: {
-                ...createManagedLeanToPost(effectiveLeanTo, index, side),
+                ...post,
+                name: localizedLeanToName(post.name),
                 ...leanToPostLayoutPatch(effectiveLeanTo, index, postBaseY, gutterSetback, side),
               } as ColumnNode,
               parentId: leanTo.id,

@@ -12,10 +12,10 @@ export const pipeFittingTranslations = {
     'Pipe fittings & accessories': 'Rördelar och tillbehör',
     Elbow: 'Böj',
     Wye: 'Y-stycke',
-    'Sanitary tee': 'Sanitets-T',
+    'Sanitary tee': 'T-rör 87°',
     Cross: 'Korsstycke',
     'End cap': 'Ändlock',
-    Cleanout: 'Rensstycke',
+    Cleanout: 'Rensbit',
     Reducer: 'Reducering',
     'Connects matching profiles with different sizes.':
       'Förbinder likadana profiler med olika storlek.',

@@ -38,7 +38,7 @@ export const messages = defineMessages({
     customDimensionsDonTMatch: 'Anpassad — måtten matchar ingen förinställning',
     delete: 'Ta bort',
     flipOrientation: 'Vänd orientering',
-    flush: 'Planlig',
+    flush: 'Parallell med taket',
     frameDepth: 'Ramdjup',
     frameThickness: 'Ramtjocklek',
     gapX: 'Mellanrum X',
