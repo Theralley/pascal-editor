@@ -61,6 +61,16 @@ const KNOWN_MESSAGES = new Map<string, MessageKey<typeof messages>>([
     'Detailed stair construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
     'msg.constructionBudget',
   ],
+  ['The handrail inset and radius must fit within the stair width.', 'msg.handrailFit'],
+  ['Guard height must be positive.', 'msg.guardHeight'],
+  [
+    'Detailed stair geometry exceeds the 10,000-surface computation budget. The authored counts are preserved.',
+    'msg.detailBudgetCounts',
+  ],
+  [
+    'Detailed stair rails exceed the 10,000-unit computation budget. The authored dimensions are preserved.',
+    'msg.railBudget',
+  ],
 ])
 
 export const stairMessageKey = (message: string) => KNOWN_MESSAGES.get(message)

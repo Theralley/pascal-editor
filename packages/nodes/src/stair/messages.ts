@@ -166,6 +166,12 @@ export const messages = defineMessages({
     'msg.winderLine': 'The winder walking line must lie within the flight width.',
     'msg.constructionBudget':
       'Detailed stair construction exceeds the 10,000-surface computation budget. The authored values are preserved.',
+    'msg.handrailFit': 'The handrail inset and radius must fit within the stair width.',
+    'msg.guardHeight': 'Guard height must be positive.',
+    'msg.detailBudgetCounts':
+      'Detailed stair geometry exceeds the 10,000-surface computation budget. The authored counts are preserved.',
+    'msg.railBudget':
+      'Detailed stair rails exceed the 10,000-unit computation budget. The authored dimensions are preserved.',
   },
   sv: {
     original: 'Ursprunglig',
@@ -333,5 +339,11 @@ export const messages = defineMessages({
     'msg.winderLine': 'Kilstegets gånglinje måste ligga inom löpets bredd.',
     'msg.constructionBudget':
       'Detaljerad trappkonstruktion överskrider beräkningsbudgeten på 10 000 ytor. De angivna värdena behålls.',
+    'msg.handrailFit': 'Ledstångens indragning och radie måste rymmas inom trappans bredd.',
+    'msg.guardHeight': 'Räckets höjd måste vara positiv.',
+    'msg.detailBudgetCounts':
+      'Detaljerad trappgeometri överskrider beräkningsbudgeten på 10 000 ytor. De angivna antalen behålls.',
+    'msg.railBudget':
+      'Detaljerade trappräcken överskrider beräkningsbudgeten på 10 000 enheter. De angivna måtten behålls.',
   },
 })
