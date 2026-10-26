@@ -20,7 +20,7 @@ import { ClippingGroup } from 'three/webgpu'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import { isDisplayCut, setDisplayCutHeight } from '../../lib/display-cut'
 import { SCENE_LAYER, SHADOW_ONLY_LAYER } from '../../lib/layers'
-import { hideFromScene } from '../../lib/scene-visibility'
+import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import {
   isWallModeAffected,
   subscribeWallModeAffected,
@@ -638,5 +638,56 @@ describe('followers in Low', () => {
       expect(capsOf(level)).toBeUndefined()
     }
     expect(disposed).toBe(5)
+  })
+
+  test('a presentation that shows a held follower (solo to stacked) caps it with no other change', () => {
+    const { mesh, level } = addScene('column', {}, { clip: true, y: 0 })
+    hideFromScene(mesh, 'isolated')
+    setMode('low')
+    cache.update(camera)
+    expect(capsOf(level)).toBeUndefined()
+    showInScene(mesh, 'isolated')
+    cache.update(camera)
+    expect(capsOf(level)).toBeDefined()
+    hideFromScene(mesh, 'isolated')
+    cache.update(camera)
+    expect(capsOf(level)).toBeUndefined()
+  })
+
+  test('a capture of whole walls makes no cap while it lasts, and leaves none behind that should not be', () => {
+    const { mesh, level } = addScene('column', {}, { clip: true, y: 0 })
+    hideFromScene(mesh, 'isolated')
+    setMode('low')
+    cache.update(camera)
+    expect(capsOf(level)).toBeUndefined()
+    cache.beforeCapture({ wholeWalls: true })
+    // The capture lifts the isolation, then the planes are refreshed.
+    showInScene(mesh, 'isolated')
+    WallModeFollowCache.refreshPlanes()
+    expect(capsOf(level)).toBeUndefined()
+    hideFromScene(mesh, 'isolated')
+    cache.afterCapture()
+    expect(capsOf(level)).toBeUndefined()
+    showInScene(mesh, 'isolated')
+    cache.update(camera)
+    expect(capsOf(level)).toBeDefined()
+  })
+
+  test('two pieces of a follower with a gap across the cut leave that space open', () => {
+    const { mesh, group, level } = addScene('column', {}, { clip: true, y: 0 })
+    mesh.geometry = new BoxGeometry(0.4, 0.5, 0.4).translate(0, 0.25, 0)
+    mesh.position.set(10, 0, 0)
+    const upper = new Mesh(
+      new BoxGeometry(0.4, 0.5, 0.4).translate(0, 2.25, 0),
+      new MeshBasicMaterial(),
+    )
+    upper.position.set(10, 0, 0)
+    group.add(upper)
+    level.updateMatrixWorld(true)
+    setMode('low')
+    viewerStore.setState({ wallCutHeight: 1 })
+    cache.update(camera)
+    // The cut at 1 passes between the pieces: nothing crosses it, so nothing is capped.
+    expect(capsOf(level)).toBeUndefined()
   })
 })

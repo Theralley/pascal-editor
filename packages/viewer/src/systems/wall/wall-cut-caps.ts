@@ -293,7 +293,7 @@ function scanParts(object: Object3D, wall: Object3D): void {
   }
 }
 
-const EMPTY: Section = { solids: [], complete: true }
+const EMPTY: Section = { solids: [], complete: true, crossed: false }
 
 type Cap = {
   mesh: Mesh | null
@@ -547,7 +547,11 @@ export class WallCutCaps {
     height: number,
   ): Section {
     const body = kept.body.at(height)
-    return { solids: [...body.solids, ...kept.parts.at(height).solids], complete: body.complete }
+    return {
+      solids: [...body.solids, ...kept.parts.at(height).solids],
+      complete: body.complete,
+      crossed: body.crossed,
+    }
   }
 
   private build(

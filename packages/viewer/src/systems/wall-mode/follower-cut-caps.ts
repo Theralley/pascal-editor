@@ -45,7 +45,7 @@ type Prepared = {
 }
 
 /** Drawn: visible up to the level, and on the scene layer itself (layers are not inherited). */
-function drawn(mesh: Mesh, level: Object3D): boolean {
+export function drawn(mesh: Mesh, level: Object3D): boolean {
   if (!isDrawnInScene(mesh)) return false
   for (let object: Object3D | null = mesh; object && object !== level; object = object.parent)
     if (!object.visible) return false
@@ -199,7 +199,10 @@ export class FollowerCutCaps {
       entry.section = entry.prepared.at(height)
       entry.height = height
     }
-    if (entry.section.complete && entry.section.solids.length > 0) return entry.section.solids
+    // A complete section with nothing in it is valid when nothing crosses the cut (two pieces of a
+    // follower with a gap between them); it is a hollow top only when something does.
+    if (entry.section.complete && (entry.section.solids.length > 0 || !entry.section.crossed))
+      return entry.section.solids
     const own = follower.own.filter((mesh) => entry.shown.includes(mesh))
     entry.footprint ??= baseFootprint(own, level)
     return entry.footprint

@@ -361,4 +361,23 @@ describe('double-sided shells', () => {
     expect(section.complete).toBe(true)
     expect(sectionArea(section)).toBeGreaterThan(0.009)
   })
+
+  test('a few faces shared in reverse by touching single-sided solids are not read as a double-sided shell', () => {
+    const left = new BoxGeometry(1, 1, 0.2).translate(0, 0.5, 0)
+    const right = new BoxGeometry(1, 1, 0.2).translate(1, 0.5, 0)
+    const section = sectionOfBody(joined(left, right), 0.37)
+    expect(section.complete).toBe(true)
+    expect(sectionArea(section)).toBeCloseTo(2 * 0.2, 4)
+  })
+
+  test('an empty section where nothing crosses is told from one where something does', () => {
+    const body = joined(
+      new BoxGeometry(1, 0.5, 1).translate(0, 0.25, 0),
+      new BoxGeometry(1, 0.5, 1).translate(0, 2.25, 0),
+    )
+    const between = sectionOfBody(body, 1)
+    expect(between.complete).toBe(true)
+    expect(between.crossed).toBe(false)
+    expect(sectionOfBody(body, 0.25).crossed).toBe(true)
+  })
 })

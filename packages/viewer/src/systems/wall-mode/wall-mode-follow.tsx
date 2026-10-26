@@ -19,7 +19,7 @@ import { setDisplayCutRaycast, setDisplayCutRoot } from '../../lib/display-cut'
 import { hideFromScene, showInScene } from '../../lib/scene-visibility'
 import useViewer from '../../store/use-viewer'
 import { wallFacingNegative, wallHiddenFromFacing } from '../wall/wall-cutout-cache'
-import { type CappedFollower, FollowerCutCaps } from './follower-cut-caps'
+import { type CappedFollower, drawn, FollowerCutCaps } from './follower-cut-caps'
 
 /**
  * Wall mode for nodes of kinds that declare `capabilities.followsWallMode`. Walls hidden (`down`) and the
@@ -176,6 +176,10 @@ export class WallModeFollowCache {
   private captureCut: number | undefined
   /** Clips and caps a capture of whole walls has put away, to bring back after it. */
   private suspended: (() => void)[] = []
+  /** A capture of whole walls is under way: no cap is made until it ends. */
+  private capsSuspended = false
+  /** Which of the clipped followers' meshes were drawn when the caps were last made. */
+  private drawnSeen = 0
   private static readonly live = new Set<WallModeFollowCache>()
 
   constructor(private readonly viewerStore: WallModeFollowViewerStore = useViewer) {
@@ -241,6 +245,8 @@ export class WallModeFollowCache {
     // A capture that never reported its end must not leave nodes shown.
     if (this.shownForCapture.length > 0 || this.suspended.length > 0) this.afterCapture()
     this.syncPlanes()
+    // A presentation (solo to stacked) shows or hides meshes with no scene write: remake the caps.
+    if (this.drawnChanged()) this.remakeCaps(viewer)
 
     camera.getWorldDirection(this.cameraDirection)
     const cutaway = viewer.wallMode === 'cutaway'
@@ -365,8 +371,20 @@ export class WallModeFollowCache {
     for (const mesh of entry.meshes) this.stopFiltering(mesh)
   }
 
+  /** Whether the set of drawn meshes among the clipped followers' differs from when the caps were made. */
+  private drawnChanged(): boolean {
+    let hash = 0
+    for (const entry of this.clipped.values())
+      for (let i = 0; i < entry.meshes.length; i++)
+        hash = Math.imul(hash ^ (drawn(entry.meshes[i]!, entry.level) ? 1 : 2), 16777619) | 0
+    if (hash === this.drawnSeen) return false
+    this.drawnSeen = hash
+    return true
+  }
+
   /** The caps of the followers clipped now, at the height they are clipped at. */
   private remakeCaps(viewer: WallModeFollowViewerState): void {
+    if (this.capsSuspended) return
     const followers: CappedFollower[] = []
     for (const [id, entry] of this.clipped)
       followers.push({
@@ -421,6 +439,7 @@ export class WallModeFollowCache {
       })
     }
     this.suspended.push(FollowerCutCaps.hideAll())
+    this.capsSuspended = true
   }
 
   afterCapture(): void {
@@ -430,6 +449,11 @@ export class WallModeFollowCache {
       if (this.lastCamera) this.update(this.lastCamera)
     }
     for (const restore of this.suspended.splice(0)) restore()
+    if (this.capsSuspended) {
+      this.capsSuspended = false
+      // What the capture lifted is back: take the caps once, from the real state.
+      this.remakeCaps(this.effectiveViewer())
+    }
     for (const id of this.shownForCapture.splice(0)) {
       const group = sceneRegistry.nodes.get(id)
       if (group && this.tracked.get(id)?.hidden) {

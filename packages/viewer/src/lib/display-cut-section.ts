@@ -27,9 +27,10 @@ export type Solid = readonly SectionLoop[]
 
 /**
  * `solids` is the section; `complete` is false when an outline would not close, so the section is
- * missing a piece and the caller should not trust it for a cap.
+ * missing a piece and the caller should not trust it for a cap. `crossed` is whether any face of the
+ * meshes crosses the plane at all: an empty, complete section of meshes that do not is simply empty.
  */
-export type Section = { solids: Solid[]; complete: boolean }
+export type Section = { solids: Solid[]; complete: boolean; crossed: boolean }
 
 const toLevel = new Matrix4()
 const footA = new Vector3()
@@ -98,6 +99,9 @@ const cellKey = (cx: number, cz: number) => cx * 67108864 + cz
 /** Point ids stay under this, so a piece's two ids pack into one number (`a * MAX_POINTS + b`). */
 const MAX_POINTS = 4194304
 
+/** Distinct points a twin pass can pack three of into one exact number (2^17 cubed is 2^51). */
+const TWIN_IDS = 131072
+
 /** A piece of the outline, directed so the solid is on its right (the outward normal on its left). */
 type Segment = readonly [from: number, to: number]
 
@@ -158,12 +162,14 @@ export function prepareSection(
     at: (height) => {
       const solids: Solid[] = []
       let complete = true
+      let crossed = false
       for (const body of bodies) {
         const section = sectionBody(body, height, joinTolerance)
         if (section.loops.length > 0) solids.push(section.loops)
         if (!section.complete) complete = false
+        if (section.crossed) crossed = true
       }
-      return { solids, complete }
+      return { solids, complete, crossed }
     },
   }
 }
@@ -216,37 +222,60 @@ function prepareBody(meshes: readonly Mesh[], inverse: Matrix4): Body {
  * winding that faces away from the body's middle is kept, so the shell reads as a single-sided one.
  */
 function dropOppositeTwins(xyz: Float64Array, corners: number[]): number[] {
-  const canonical = new Map<string, number>()
+  const count = xyz.length / 3
+  // Past this many distinct points a triple of ids no longer packs into one exact number.
+  if (count >= TWIN_IDS) return corners
+  const canonicalIds = new Int32Array(count).fill(-1)
+  const buckets = new Map<number, number[]>()
+  const qx: number[] = []
+  const qy: number[] = []
+  const qz: number[] = []
+  // Points within a weld are one: found through a hash of their rounded place and checked exactly.
   const idOf = (vertex: number) => {
-    const key = `${Math.round(xyz[vertex * 3]! / WELD)},${Math.round(xyz[vertex * 3 + 1]! / WELD)},${Math.round(xyz[vertex * 3 + 2]! / WELD)}`
-    let id = canonical.get(key)
+    const known = canonicalIds[vertex]!
+    if (known >= 0) return known
+    const x = Math.round(xyz[vertex * 3]! / WELD)
+    const y = Math.round(xyz[vertex * 3 + 1]! / WELD)
+    const z = Math.round(xyz[vertex * 3 + 2]! / WELD)
+    const hash = (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) | 0
+    const list = buckets.get(hash) ?? []
+    buckets.set(hash, list)
+    let id = list.find((other) => qx[other] === x && qy[other] === y && qz[other] === z)
     if (id === undefined) {
-      id = canonical.size
-      canonical.set(key, id)
+      id = qx.length
+      qx.push(x)
+      qy.push(y)
+      qz.push(z)
+      list.push(id)
     }
+    canonicalIds[vertex] = id
     return id
   }
   // Per sorted triple: the triangles with an even and with an odd arrangement of its corners.
-  const twins = new Map<string, [number[], number[]]>()
+  const twins = new Map<number, [number[], number[]]>()
   for (let i = 0; i < corners.length; i += 3) {
-    const ids = [idOf(corners[i]!), idOf(corners[i + 1]!), idOf(corners[i + 2]!)]
-    const sorted = [...ids].sort((a, b) => a - b)
-    const key = sorted.join(',')
-    if (sorted[0] === sorted[1] || sorted[1] === sorted[2]) continue
+    const a = idOf(corners[i]!)
+    const b = idOf(corners[i + 1]!)
+    const c = idOf(corners[i + 2]!)
+    const lo = Math.min(a, b, c)
+    const hi = Math.max(a, b, c)
+    const mid = a + b + c - lo - hi
+    if (lo === mid || mid === hi) continue
+    const key = (lo * TWIN_IDS + mid) * TWIN_IDS + hi
     // The parity of the permutation that sorts the corners.
-    const swaps =
-      (ids[0]! > ids[1]! ? 1 : 0) + (ids[0]! > ids[2]! ? 1 : 0) + (ids[1]! > ids[2]! ? 1 : 0)
+    const swaps = (a > b ? 1 : 0) + (a > c ? 1 : 0) + (b > c ? 1 : 0)
     const entry = twins.get(key) ?? [[], []]
     entry[swaps % 2]!.push(i)
     twins.set(key, entry)
   }
-  let doubled = false
-  for (const [even, odd] of twins.values()) if (even.length > 0 && odd.length > 0) doubled = true
-  if (!doubled) return corners
+  // Only a shell drawn in both windings is read as one: a few shared faces of touching solids are not.
+  let twinned = 0
+  for (const [even, odd] of twins.values())
+    if (even.length > 0 && odd.length > 0) twinned += even.length + odd.length
+  if (twinned * 2 < corners.length / 3) return corners
   let cx = 0
   let cy = 0
   let cz = 0
-  const count = xyz.length / 3
   for (let v = 0; v < count; v++) {
     cx += xyz[v * 3]!
     cy += xyz[v * 3 + 1]!
@@ -278,7 +307,7 @@ function dropOppositeTwins(xyz: Float64Array, corners: number[]): number[] {
   return kept
 }
 
-const NONE = { loops: [] as SectionLoop[], complete: true }
+const NONE = { loops: [] as SectionLoop[], complete: true, crossed: false }
 
 /**
  * The section of one solid at the plane y = `height`, read as the cut reads it: what is at or under
@@ -290,7 +319,7 @@ function sectionBody(
   body: Body,
   height: number,
   joinTolerance: number,
-): { loops: SectionLoop[]; complete: boolean } {
+): { loops: SectionLoop[]; complete: boolean; crossed: boolean } {
   // A body that starts at or above the height keeps nothing: its base is not a stub's top.
   if (height <= body.min + ON_PLANE || height >= body.max + ON_PLANE) return NONE
   const { xyz, corners } = body
@@ -362,7 +391,7 @@ function sectionBody(
     const turn = (to.x - from.x) * nz - (to.y - from.y) * nx
     segments.push(turn >= 0 ? [found[0]!, found[1]!] : [found[1]!, found[0]!])
   }
-  return closeOutlines(points, segments, joinTolerance)
+  return { ...closeOutlines(points, segments, joinTolerance), crossed: segments.length > 0 }
 }
 
 /**
